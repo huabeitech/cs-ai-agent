@@ -154,11 +154,11 @@ export default function WidgetTestPage() {
     <main className="min-h-screen px-4 py-6 md:px-6 md:py-7">
       <div className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <section className="rounded-lg border border-white/70 bg-white/80 p-4 backdrop-blur md:p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          {/* <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
               {status}
             </div>
-          </div>
+          </div> */}
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="block">
