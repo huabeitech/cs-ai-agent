@@ -251,9 +251,11 @@ func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAge
 	case enums.AIAgentFallbackModeHandoff:
 		return s.handoffConversation(conversation, aiAgent, reason)
 	case enums.AIAgentFallbackModeGuideRephrase:
+		// TODO 这个文案不能写死，需要配置到AIAgent中
 		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。", "", s.buildAIPrincipal(aiAgent))
 		return err
 	default:
+		// TODO 这个文案不能写死，需要配置到AIAgent中
 		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, "我暂时没有找到明确答案。", "", s.buildAIPrincipal(aiAgent))
 		return err
 	}
