@@ -16,6 +16,7 @@ import (
 	"cs-agent/internal/repositories"
 
 	"github.com/google/uuid"
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 )
 
@@ -52,6 +53,7 @@ func (s *index) IndexDocumentByID(ctx context.Context, documentID int64) error {
 }
 
 func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDocument) error {
+	start := time.Now()
 	// TODO 这里每次都查询下知识库不太友好
 	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), document.KnowledgeBaseID)
 	if knowledgeBase == nil {
@@ -88,14 +90,13 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		return fmt.Errorf("vectordb provider not initialized")
 	}
 
-	_, err = ai.Embedding.GetModel(ctx)
-	if err != nil {
+	if _, err := ai.Embedding.GetModel(ctx); err != nil {
 		return fmt.Errorf("failed to get embedding model: %w", err)
 	}
 
 	existingVectorIDs := make([]string, 0, len(existingChunks))
 	for _, chunk := range existingChunks {
-		if chunk.VectorID != "" {
+		if strs.IsNotBlank(chunk.VectorID) {
 			existingVectorIDs = append(existingVectorIDs, chunk.VectorID)
 		}
 	}
@@ -193,9 +194,11 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 	}
 
 	slog.Info("Document indexed successfully",
-		"document_id", document.ID,
-		"chunks_count", len(chunks),
-		"vectors_count", len(vectors))
+		slog.Any("document_id", document.ID),
+		slog.Any("chunks_count", len(chunks)),
+		slog.Any("vectors_count", len(vectors)),
+		slog.Any("time_taken", time.Since(start).String()),
+	)
 
 	return nil
 }
