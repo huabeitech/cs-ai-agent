@@ -165,7 +165,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <AlertList alerts={data.alerts} quickLinks={data.quickLinks} />
+          <AlertList alerts={data.alerts} />
         </>
       ) : (
         <Card>
