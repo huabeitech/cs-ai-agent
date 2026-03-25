@@ -232,6 +232,7 @@ func (s *aiReplyService) generateReply(ctx context.Context, aiConfig *models.AIC
 }
 
 func (s *aiReplyService) buildSystemPrompt(aiAgent *models.AIAgent, knowledgeBase *models.KnowledgeBase) string {
+	// TODO 系统提示词模版，不同的AI Agent可以配置不同的模版，目前先写死
 	basePrompt := "你是严格的客服知识库助手。只能依据提供的知识片段回答；如果资料不足，请明确说明知识库暂无明确信息。"
 	if knowledgeBase != nil && enums.KnowledgeAnswerMode(knowledgeBase.AnswerMode) == enums.KnowledgeAnswerModeAssist {
 		basePrompt = "你是客服知识库助手。请优先依据提供的知识片段回答，可以做轻度归纳，但不要编造未提供的事实。"
