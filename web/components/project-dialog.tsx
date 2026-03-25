@@ -36,6 +36,7 @@ type ProjectDialogProps = React.ComponentProps<typeof Dialog> & {
   bodyClassName?: string;
   footerClassName?: string;
   showCloseButton?: boolean;
+  closeOnEsc?: boolean;
   allowFullscreen?: boolean;
   defaultFullscreen?: boolean;
   bodyScrollable?: boolean;
@@ -54,6 +55,7 @@ function ProjectDialog({
   bodyClassName,
   footerClassName,
   showCloseButton = true,
+  closeOnEsc = false,
   allowFullscreen = false,
   defaultFullscreen = false,
   bodyScrollable = true,
@@ -61,6 +63,11 @@ function ProjectDialog({
   const [fullscreen, setFullscreen] = useState(defaultFullscreen);
 
   function handleOpenChange(nextOpen: boolean, eventDetails: unknown) {
+    const reason = (eventDetails as { reason?: string } | undefined)?.reason;
+    if (!nextOpen && !closeOnEsc && reason === "escape-key") {
+      return;
+    }
+
     if (!nextOpen) {
       setFullscreen(defaultFullscreen);
     }
@@ -91,7 +98,11 @@ function ProjectDialog({
         }
 
         .project-dialog-native-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: color-mix(in srgb, hsl(var(--border)) 80%, hsl(var(--foreground)));
+          background: color-mix(
+            in srgb,
+            hsl(var(--border)) 80%,
+            hsl(var(--foreground))
+          );
           border: 2px solid transparent;
           background-clip: content-box;
         }
@@ -147,14 +158,7 @@ function ProjectDialog({
             <div className="space-y-4 p-6">{children}</div>
           </div>
         ) : (
-          <div
-            className={cn(
-              "min-h-0 flex-1",
-              bodyClassName,
-            )}
-          >
-            {children}
-          </div>
+          <div className={cn("min-h-0 flex-1", bodyClassName)}>{children}</div>
         )}
         {footer ? (
           <DialogFooter
