@@ -130,6 +130,7 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 
 	mvc.Configure(app.Party("/api/console", AuthMiddleware), func(m *mvc.Application) {
 		m.Register(cfg)
+		m.Party("/dashboard").Handle(new(console.DashboardController))
 		m.Party("/user").Handle(new(console.UserController))
 		m.Party("/role").Handle(new(console.RoleController))
 		m.Party("/permission").Handle(new(console.PermissionController))

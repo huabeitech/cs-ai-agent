@@ -2,6 +2,7 @@
 .idea
 
 data/
+config/config.yaml
 
 bin/
 __debug_bin*
