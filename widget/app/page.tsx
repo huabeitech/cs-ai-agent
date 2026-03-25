@@ -16,6 +16,15 @@ function getWidgetSdkUrl(baseUrl: string, pathname: string): string {
   return `${baseUrl.replace(/\/$/, "")}${getWidgetRootPath(pathname)}/sdk/cs-agent-widget.js`;
 }
 
+function generateRandomSubject(): string {
+  const uuid =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+
+  return `用户${uuid.replace(/-/g, "").slice(0, 8)}`;
+}
+
 function buildDefaultConfig(baseUrl: string): TestConfig {
   return {
     appId: "",
@@ -25,7 +34,7 @@ function buildDefaultConfig(baseUrl: string): TestConfig {
     position: "right",
     themeColor: "#0f6cbd",
     width: "680px",
-    subject: "",
+    subject: generateRandomSubject(),
   };
 }
 
@@ -79,6 +88,7 @@ export default function WidgetTestPage() {
         savedConfig.baseUrl ??
         origin,
       width: query.get("width") ?? savedConfig.width ?? "680px",
+      subject: query.get("subject") ?? savedConfig.subject ?? generateRandomSubject(),
     };
     setConfig(nextConfig);
 
@@ -154,11 +164,11 @@ export default function WidgetTestPage() {
     <main className="min-h-screen px-4 py-6 md:px-6 md:py-7">
       <div className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <section className="rounded-lg border border-white/70 bg-white/80 p-4 backdrop-blur md:p-5">
-          {/* <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
               {status}
             </div>
-          </div> */}
+          </div>
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="block">
@@ -278,6 +288,7 @@ export default function WidgetTestPage() {
                 const nextConfig = buildDefaultConfig(window.location.origin);
                 setConfig(nextConfig);
                 window.localStorage.removeItem(STORAGE_KEY);
+                window.localStorage.removeItem(":cs-agent:visitor-id");
                 removeMountedWidget();
                 setStatus("已重置");
               }}
