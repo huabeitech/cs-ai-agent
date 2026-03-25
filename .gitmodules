@@ -1,0 +1,3 @@
+[submodule "qdrant"]
+	path = qdrant
+	url = git@github.com:huabeitech/cs-ai-agend-qdrant.git
