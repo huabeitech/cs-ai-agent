@@ -1,0 +1,106 @@
+"use client"
+
+import { useRouter, useSearchParams } from "next/navigation"
+import { startTransition, useEffect, useState } from "react"
+import { toast } from "sonner"
+
+import { useAuth } from "@/components/auth-provider"
+import { loginWithPassword } from "@/lib/api/auth"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+
+export function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<"form">) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { session } = useAuth()
+  const [isPending, setIsPending] = useState(false)
+  const nextPath = searchParams.get("next")
+  const redirectPath =
+    nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard"
+
+  useEffect(() => {
+    if (session) {
+      router.replace(redirectPath)
+    }
+  }, [redirectPath, router, session])
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const username = formData.get("username")?.toString().trim() ?? ""
+    const password = formData.get("password")?.toString() ?? ""
+
+    setIsPending(true)
+
+    try {
+      await loginWithPassword({ username, password })
+      toast.success("登录成功，正在进入系统")
+      startTransition(() => {
+        router.push(redirectPath)
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "登录失败")
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      onSubmit={handleSubmit}
+      {...props}
+    >
+      <FieldGroup>
+        <div className="flex flex-col gap-2 text-center">
+          {/* <span className="mx-auto inline-flex rounded-full border border-amber-300/60 bg-amber-50 px-3 py-1 text-[11px] font-medium tracking-[0.22em] text-amber-900 uppercase">
+            AI Service Console
+          </span> */}
+          <h1 className="text-3xl font-semibold tracking-tight">登录管理后台</h1>
+          <p className="text-sm text-balance text-muted-foreground">
+            使用账号登录后进入对应工作区，可访问后台管理台或用户会话页。
+          </p>
+        </div>
+        <Field>
+          <FieldLabel htmlFor="username">用户名</FieldLabel>
+          <Input
+            id="username"
+            name="username"
+            placeholder="admin"
+            autoComplete="username"
+            required
+          />
+        </Field>
+        <Field>
+          <div className="flex items-center">
+            <FieldLabel htmlFor="password">密码</FieldLabel>
+            {/* <span className="ml-auto text-xs text-muted-foreground">
+              演示环境接受任意非空密码
+            </span> */}
+          </div>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </Field>
+        <Field>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "登录中..." : "登录"}
+          </Button>
+        </Field>
+      </FieldGroup>
+    </form>
+  )
+}

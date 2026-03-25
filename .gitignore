@@ -1,0 +1,10 @@
+.worktrees
+.idea
+
+data/
+
+bin/
+__debug_bin*
+node_modules/
+.next/
+*.tsbuildinfo

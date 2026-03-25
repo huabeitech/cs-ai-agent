@@ -1,0 +1,52 @@
+server:
+  port: 8083
+
+db:
+  type: sqlite
+  dsn: file:./data/app.db?_busy_timeout=5000
+  maxIdleConns: 5
+  maxOpenConns: 20
+  connMaxIdleTimeSeconds: 300
+  connMaxLifetimeSeconds: 1800
+
+logger:
+  level: info
+  format: text
+  addSource: false
+
+auth:
+  accessTokenTTLHours: 12
+  refreshTokenTTLDays: 7
+  maxFailedAttempts: 5
+  credentialLockMinute: 15
+
+storage:
+  default: local
+  maxUploadSizeMB: 20
+  local:
+    root: data/storage
+    baseUrl: /storage
+  oss:
+    endpoint: ""
+    bucket: ""
+    accessKeyId: ""
+    accessKeySecret: ""
+    baseUrl: ""
+    private: false
+    signedUrlExpireSeconds: 600
+
+vectorDB:
+  type: qdrant
+  host: 127.0.0.1
+  grpcPort: 6334
+  apiKey: ""
+  useTls: false
+
+mcp:
+  enabled: true
+  servers:
+    system:
+      enabled: true
+      endpoint: "http://127.0.0.1:8083/api/mcp"
+      timeoutMs: 15000
+      headers: {}

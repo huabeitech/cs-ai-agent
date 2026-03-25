@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "module": "登录与会话",
+    "owner": "前端",
+    "status": "已完成",
+    "progress": "100%",
+    "updatedAt": "2026-03-14 11:30:00"
+  },
+  {
+    "id": 2,
+    "module": "用户管理",
+    "owner": "前后端",
+    "status": "进行中",
+    "progress": "60%",
+    "updatedAt": "2026-03-14 11:45:00"
+  },
+  {
+    "id": 3,
+    "module": "角色权限",
+    "owner": "后端",
+    "status": "进行中",
+    "progress": "55%",
+    "updatedAt": "2026-03-14 10:50:00"
+  },
+  {
+    "id": 4,
+    "module": "知识库",
+    "owner": "产品",
+    "status": "进行中",
+    "progress": "35%",
+    "updatedAt": "2026-03-14 10:20:00"
+  },
+  {
+    "id": 5,
+    "module": "渠道接入",
+    "owner": "架构",
+    "status": "进行中",
+    "progress": "25%",
+    "updatedAt": "2026-03-14 09:40:00"
+  }
+]
