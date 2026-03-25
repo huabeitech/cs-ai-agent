@@ -289,10 +289,13 @@ function WidgetTestPageInner() {
             <button
               type="button"
               onClick={() => {
-                const nextConfig = buildDefaultConfig(window.location.origin);
+                const nextConfig = {
+                  ...currentConfig,
+                  subject: generateRandomSubject(),
+                };
                 setConfig(nextConfig);
-                window.localStorage.removeItem(STORAGE_KEY);
-                window.localStorage.removeItem(":cs-agent:visitor-id");
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextConfig));
+                window.localStorage.removeItem("cs-agent:visitor-id");
                 removeMountedWidget();
                 setStatus("已重置");
               }}
