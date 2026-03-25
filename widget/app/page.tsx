@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 
 import type { WidgetHostConfig } from "@/lib/widget/config";
 
@@ -38,6 +39,34 @@ function buildDefaultConfig(baseUrl: string): TestConfig {
   };
 }
 
+function getInitialConfig(): TestConfig {
+  if (typeof window === "undefined") {
+    return buildDefaultConfig("");
+  }
+
+  const origin = window.location.origin;
+  const query = new URLSearchParams(window.location.search);
+  const savedText = window.localStorage.getItem(STORAGE_KEY);
+  const savedConfig = savedText
+    ? (JSON.parse(savedText) as Partial<TestConfig>)
+    : {};
+
+  return {
+    ...buildDefaultConfig(origin),
+    ...savedConfig,
+    appId: query.get("appId") ?? savedConfig.appId ?? "",
+    baseUrl: query.get("baseUrl") ?? savedConfig.baseUrl ?? origin,
+    apiBaseUrl:
+      query.get("apiBaseUrl") ??
+      savedConfig.apiBaseUrl ??
+      savedConfig.baseUrl ??
+      origin,
+    width: query.get("width") ?? savedConfig.width ?? "680px",
+    subject:
+      query.get("subject") ?? savedConfig.subject ?? generateRandomSubject(),
+  };
+}
+
 function removeMountedWidget() {
   if (typeof window === "undefined") {
     return;
@@ -66,48 +95,23 @@ function injectWidget(config: TestConfig) {
   document.body.appendChild(script);
 }
 
-export default function WidgetTestPage() {
-  const [config, setConfig] = useState<TestConfig | null>(null);
-  const [status, setStatus] = useState("准备中");
+function WidgetTestPageInner() {
+  const [config, setConfig] = useState<TestConfig>(getInitialConfig);
+  const [status, setStatus] = useState(() =>
+    getInitialConfig().appId ? "Widget 已挂载" : "请先填写 appId",
+  );
 
   useEffect(() => {
-    const origin = window.location.origin;
-    const query = new URLSearchParams(window.location.search);
-    const savedText = window.localStorage.getItem(STORAGE_KEY);
-    const savedConfig = savedText
-      ? (JSON.parse(savedText) as Partial<TestConfig>)
-      : {};
-    const nextConfig: TestConfig = {
-      ...buildDefaultConfig(origin),
-      ...savedConfig,
-      appId: query.get("appId") ?? savedConfig.appId ?? "",
-      baseUrl: query.get("baseUrl") ?? savedConfig.baseUrl ?? origin,
-      apiBaseUrl:
-        query.get("apiBaseUrl") ??
-        savedConfig.apiBaseUrl ??
-        savedConfig.baseUrl ??
-        origin,
-      width: query.get("width") ?? savedConfig.width ?? "680px",
-      subject: query.get("subject") ?? savedConfig.subject ?? generateRandomSubject(),
-    };
-    setConfig(nextConfig);
-
-    if (nextConfig.appId) {
-      injectWidget(nextConfig);
-      setStatus("Widget 已挂载");
+    if (config.appId) {
+      injectWidget(config);
     } else {
       removeMountedWidget();
-      setStatus("请先填写 appId");
     }
 
     return () => {
       removeMountedWidget();
     };
-  }, []);
-
-  if (!config) {
-    return null;
-  }
+  }, [config]);
 
   const currentConfig = config;
 
@@ -311,3 +315,9 @@ export default function WidgetTestPage() {
     </main>
   );
 }
+
+const WidgetTestPage = dynamic(async () => WidgetTestPageInner, {
+  ssr: false,
+});
+
+export default WidgetTestPage;
