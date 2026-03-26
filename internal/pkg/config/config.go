@@ -108,6 +108,7 @@ type MCPServerConfig struct {
 }
 
 type WxWorkConfig struct {
+	Enabled        bool   `yaml:"enabled"`
 	CorpID         string `yaml:"corpId"`
 	CorpSecret     string `yaml:"corpSecret"`
 	AgentID        string `yaml:"agentId"`

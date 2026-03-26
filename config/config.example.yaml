@@ -54,6 +54,7 @@ mcp:
 wxWork:
   enabled: false
   corpId: 
+  corpSecret: ""
   agentId: 
   rsaPrivateKey: ""
   token: ""
