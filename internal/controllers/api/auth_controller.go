@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/mvc"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -18,15 +17,15 @@ type AuthController struct {
 	Cfg *config.Config
 }
 
-func (c *AuthController) BeforeActivation(b mvc.BeforeActivation) {
-	b.Handle("POST", "/login", "PostLogin")
-	b.Handle("GET", "/wxwork/login", "GetWxWorkLogin")
-	b.Handle("GET", "/wxwork/callback", "GetWxWorkCallback")
-	b.Handle("POST", "/wxwork/exchange", "PostWxWorkExchange")
-	b.Handle("POST", "/refresh-token", "PostRefreshToken")
-	b.Handle("POST", "/logout", "PostLogout")
-	b.Handle("GET", "/profile", "GetProfile")
-}
+// func (c *AuthController) BeforeActivation(b mvc.BeforeActivation) {
+// 	b.Handle("POST", "/login", "PostLogin")
+// 	b.Handle("GET", "/wxwork/login", "GetWxWorkLogin")
+// 	b.Handle("GET", "/wxwork/callback", "GetWxWorkCallback")
+// 	b.Handle("POST", "/wxwork/exchange", "PostWxWorkExchange")
+// 	b.Handle("POST", "/refresh-token", "PostRefreshToken")
+// 	b.Handle("POST", "/logout", "PostLogout")
+// 	b.Handle("GET", "/profile", "GetProfile")
+// }
 
 func (c *AuthController) PostLogin() *web.JsonResult {
 	req := request.LoginRequest{}
