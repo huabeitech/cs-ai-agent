@@ -112,6 +112,8 @@ type WxWorkConfig struct {
 	CorpID         string `yaml:"corpId"`
 	CorpSecret     string `yaml:"corpSecret"`
 	AgentID        string `yaml:"agentId"`
+	OAuthRedirect  string `yaml:"oauthRedirect"`
+	StateSecret    string `yaml:"stateSecret"`
 	RsaPrivateKey  string `yaml:"rsaPrivateKey"`
 	Token          string `yaml:"token"`
 	EncodingAESKey string `yaml:"encodingAESKey"`

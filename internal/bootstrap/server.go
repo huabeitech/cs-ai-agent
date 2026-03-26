@@ -14,6 +14,7 @@ import (
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/logx"
 	"cs-agent/internal/services/cronx"
+	"cs-agent/internal/wxwork"
 
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/cors"
@@ -42,6 +43,7 @@ func NewServer(configPath string) (*iris.Application, *config.Config, error) {
 	if err = vectordb.Init(&cfg.VectorDB); err != nil {
 		return nil, nil, err
 	}
+	wxwork.Init(cfg)
 
 	// 启动任务调度器
 	cronx.Init()

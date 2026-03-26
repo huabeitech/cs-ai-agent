@@ -24,6 +24,7 @@ export function LoginForm({
   const { session } = useAuth()
   const [isPending, setIsPending] = useState(false)
   const nextPath = searchParams.get("next")
+  const wxworkError = searchParams.get("wxworkError")
   const redirectPath =
     nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard"
 
@@ -32,6 +33,12 @@ export function LoginForm({
       router.replace(redirectPath)
     }
   }, [redirectPath, router, session])
+
+  useEffect(() => {
+    if (wxworkError) {
+      toast.error(wxworkError)
+    }
+  }, [wxworkError])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,6 +105,19 @@ export function LoginForm({
         <Field>
           <Button type="submit" disabled={isPending}>
             {isPending ? "登录中..." : "登录"}
+          </Button>
+        </Field>
+        <Field>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              window.location.href = `/api/auth/wxwork_login?next=${encodeURIComponent(
+                redirectPath
+              )}`
+            }}
+          >
+            企业微信登录
           </Button>
         </Field>
       </FieldGroup>

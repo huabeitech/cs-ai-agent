@@ -12,3 +12,7 @@ type RefreshTokenRequest struct {
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
+type WxWorkExchangeRequest struct {
+	Ticket string `json:"ticket"`
+}
