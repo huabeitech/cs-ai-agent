@@ -50,3 +50,11 @@ mcp:
       endpoint: "http://127.0.0.1:8083/api/mcp"
       timeoutMs: 15000
       headers: {}
+
+wxWork:
+  enabled: false
+  corpId: 
+  agentId: 
+  rsaPrivateKey: ""
+  token: ""
+  encodingAESKey: ""

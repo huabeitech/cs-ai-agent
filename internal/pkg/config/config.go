@@ -16,6 +16,7 @@ type Config struct {
 	Storage  StorageConfig  `yaml:"storage"`
 	VectorDB VectorDBConfig `yaml:"vectorDB"`
 	MCP      MCPConfig      `yaml:"mcp"`
+	WxWork   WxWorkConfig   `yaml:"wxWork"`
 }
 
 type ServerConfig struct {
@@ -104,6 +105,15 @@ type MCPServerConfig struct {
 	Endpoint  string            `yaml:"endpoint"`
 	TimeoutMS int               `yaml:"timeoutMs"`
 	Headers   map[string]string `yaml:"headers"`
+}
+
+type WxWorkConfig struct {
+	CorpID         string `yaml:"corpId"`
+	CorpSecret     string `yaml:"corpSecret"`
+	AgentID        string `yaml:"agentId"`
+	RsaPrivateKey  string `yaml:"rsaPrivateKey"`
+	Token          string `yaml:"token"`
+	EncodingAESKey string `yaml:"encodingAESKey"`
 }
 
 func Load(path string) (*Config, error) {
