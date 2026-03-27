@@ -123,6 +123,7 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		return nil, errorsx.InvalidParam("AI Agent not found")
 	}
 
+	auditFields := utils.BuildAuditFields(operator)
 	conversation := &models.Conversation{
 		AIAgentID:         aiAgentID,
 		ChannelType:       channelType,
@@ -134,13 +135,13 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		ExternalUserID:    "",
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
-		AuditFields:       utils.BuildAuditFields(operator),
+		LastMessageAt:     time.Now(),
+		AuditFields:       auditFields,
 	}
 	if operator.IsVisitor {
 		conversation.SourceUserID = 0
 		conversation.ExternalUserID = operator.VisitorID
 	}
-	now := time.Now()
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
@@ -148,7 +149,7 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		if err := ConversationParticipantService.EnsureCustomerParticipantTx(ctx, conversation.ID, operator); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, operator.UserID, "用户创建会话", "", now)
+		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, operator.UserID, "用户创建会话", "", time.Now())
 	}); err != nil {
 		return nil, err
 	}
