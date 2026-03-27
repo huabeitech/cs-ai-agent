@@ -109,6 +109,7 @@ func seedEnabledAIAgent(t *testing.T, id int64, name string) *models.AIAgent {
 func TestCreateOrMatchConversationWithAIAgentPersistsAIAgentID(t *testing.T) {
 	setupIMServiceTestDB(t)
 
+	seedEnabledAIAgent(t, 301, "AI接待")
 	customer := &dto.AuthPrincipal{UserID: 1011, Username: "customer_ai_agent"}
 	item, err := ConversationService.Create(
 		enums.IMConversationChannelWebChat,
@@ -129,6 +130,39 @@ func TestCreateOrMatchConversationWithAIAgentPersistsAIAgentID(t *testing.T) {
 	}
 	if stored.AIAgentID != 301 {
 		t.Fatalf("expected stored ai agent id 301, got %d", stored.AIAgentID)
+	}
+}
+
+func TestCreateConversationInitializesLastMessageAt(t *testing.T) {
+	setupIMServiceTestDB(t)
+
+	seedEnabledAIAgent(t, 303, "初始化最后消息时间")
+	customer := &dto.AuthPrincipal{UserID: 1014, Username: "customer_last_message_at"}
+	item, err := ConversationService.Create(
+		enums.IMConversationChannelWebChat,
+		"初始化最后消息时间测试",
+		303,
+		customer,
+	)
+	if err != nil {
+		t.Fatalf("create conversation failed: %v", err)
+	}
+	if item.LastMessageAt == nil {
+		t.Fatal("expected last message at to be initialized")
+	}
+	if !item.LastMessageAt.Equal(item.CreatedAt) {
+		t.Fatalf("expected last message at %v to equal created at %v", item.LastMessageAt, item.CreatedAt)
+	}
+
+	stored := ConversationService.Get(item.ID)
+	if stored == nil {
+		t.Fatalf("expected stored conversation, got nil")
+	}
+	if stored.LastMessageAt == nil {
+		t.Fatal("expected stored last message at to be initialized")
+	}
+	if !stored.LastMessageAt.Equal(stored.CreatedAt) {
+		t.Fatalf("expected stored last message at %v to equal created at %v", stored.LastMessageAt, stored.CreatedAt)
 	}
 }
 

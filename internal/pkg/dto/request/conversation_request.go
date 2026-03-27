@@ -2,6 +2,15 @@ package request
 
 import "cs-agent/internal/pkg/enums"
 
+type AgentConversationFilter string
+
+const (
+	AgentConversationFilterMine    AgentConversationFilter = "mine"
+	AgentConversationFilterActive  AgentConversationFilter = "active"
+	AgentConversationFilterPending AgentConversationFilter = "pending"
+	AgentConversationFilterClosed  AgentConversationFilter = "closed"
+)
+
 type ConversationListRequest struct {
 	Status            int    `json:"status"`
 	ChannelType       string `json:"channelType"`

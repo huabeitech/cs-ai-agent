@@ -120,7 +120,7 @@ export function fetchAgentConversations(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AgentConversation>>(
-    `/api/console/conversation/list${toQueryString(query)}`
+    `/api/console/conversation/conversations${toQueryString(query)}`
   )
 }
 

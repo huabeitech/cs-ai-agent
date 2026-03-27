@@ -9,6 +9,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
@@ -44,6 +45,46 @@ func (s *conversationService) FindOne(cnd *sqls.Cnd) *models.Conversation {
 
 func (s *conversationService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Conversation, paging *sqls.Paging) {
 	return repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
+}
+
+func (s *conversationService) FindAgentConversationPage(operator *dto.AuthPrincipal, filter request.AgentConversationFilter, keyword string, page, limit int) (list []models.Conversation, paging *sqls.Paging, err error) {
+	if operator == nil || operator.UserID <= 0 {
+		return nil, nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	cnd := sqls.NewCnd().
+		Eq("current_assignee_id", operator.UserID).
+		Page(page, limit)
+
+	if strs.IsNotBlank(keyword) {
+		keyword = strings.TrimSpace(keyword)
+		cnd.Where("subject LIKE ? OR external_user_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	}
+
+	switch filter {
+	case request.AgentConversationFilterMine:
+		cnd.Desc("last_message_at").Desc("id")
+	case request.AgentConversationFilterActive:
+		cnd.Eq("status", enums.IMConversationStatusActive).Desc("last_message_at").Desc("id")
+	case request.AgentConversationFilterPending:
+		cnd.Eq("status", enums.IMConversationStatusPending).Asc("id")
+	case request.AgentConversationFilterClosed:
+		cnd.Eq("status", enums.IMConversationStatusClosed).Desc("last_message_at").Desc("id")
+	default:
+		return nil, nil, errorsx.InvalidParam("会话筛选项不合法")
+	}
+
+	list, paging = repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
+	return list, paging, nil
 }
 
 func (s *conversationService) Updates(id int64, columns map[string]interface{}) error {

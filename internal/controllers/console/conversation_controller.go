@@ -50,6 +50,35 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
 
+func (c *ConversationController) AnyConversations() *web.JsonResult {
+	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+		return web.JsonError(err)
+	}
+
+	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
+	filterValue, _ := params.Get(c.Ctx, "filter")
+	keyword, _ := params.Get(c.Ctx, "keyword")
+	page, _ := params.GetInt(c.Ctx, "page")
+	limit, _ := params.GetInt(c.Ctx, "limit")
+
+	list, paging, err := services.ConversationService.FindAgentConversationPage(
+		principal,
+		request.AgentConversationFilter(strings.TrimSpace(filterValue)),
+		keyword,
+		page,
+		limit,
+	)
+	if err != nil {
+		return web.JsonError(err)
+	}
+
+	results := make([]response.ConversationResponse, 0, len(list))
+	for _, item := range list {
+		results = append(results, builders.BuildConversationResponse(&item))
+	}
+	return web.JsonData(&web.PageResult{Results: results, Page: paging})
+}
+
 func (c *ConversationController) GetBy(id int64) *web.JsonResult {
 	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)

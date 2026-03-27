@@ -12,12 +12,11 @@ import {
   type AgentConversation,
   type AgentMessage,
 } from "@/lib/api/agent"
-import { readSession } from "@/lib/auth"
 
 export const agentConversationFilterOptions = [
-  { value: "my-active", label: "我处理中的" },
-  { value: "pending", label: "待接入" },
+  { value: "mine", label: "我的" },
   { value: "active", label: "处理中" },
+  { value: "pending", label: "待接入" },
   { value: "closed", label: "已关闭" },
 ] as const
 
@@ -25,26 +24,10 @@ export type AgentConversationFilterKey =
   (typeof agentConversationFilterOptions)[number]["value"]
 
 function buildConversationQuery(filter: AgentConversationFilterKey, keyword: string) {
-  const session = readSession()
   const query: Record<string, string | number | undefined> = {
+    filter,
     keyword: keyword.trim() || undefined,
-    limit: 50,
-  }
-
-  switch (filter) {
-    case "my-active":
-      query.status = 2
-      query.currentAssigneeId = session?.user.id
-      break
-    case "pending":
-      query.status = 1
-      break
-    case "active":
-      query.status = 2
-      break
-    case "closed":
-      query.status = 3
-      break
+    limit: 100,
   }
 
   return query
@@ -87,7 +70,7 @@ let messagesRequestSeq = 0
 
 export const useAgentConversationsStore = create<AgentConversationsStore>((set, get) => ({
   searchKeyword: "",
-  conversationFilter: "my-active",
+  conversationFilter: "mine",
   conversations: [],
   conversationsLoading: false,
   conversationsLoaded: false,
