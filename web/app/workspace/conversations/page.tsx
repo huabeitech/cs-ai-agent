@@ -195,8 +195,8 @@ export default function ConversationsPage() {
             </>
           ) : (
             <div className="min-w-0">
-              <p className="text-sm font-medium">会话工作台</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="truncate font-medium">会话工作台</p>
+              <p className="truncate text-sm text-muted-foreground">
                 请选择左侧会话开始处理消息
               </p>
             </div>
