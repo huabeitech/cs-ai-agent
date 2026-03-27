@@ -24,7 +24,7 @@ type SkillDefinitionController struct {
 }
 
 func (c *SkillDefinitionController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -42,7 +42,7 @@ func (c *SkillDefinitionController) AnyList() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -54,7 +54,7 @@ func (c *SkillDefinitionController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -86,7 +86,7 @@ func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -127,7 +127,7 @@ func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -158,7 +158,7 @@ func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -185,7 +185,7 @@ func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostUpdate_priority() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

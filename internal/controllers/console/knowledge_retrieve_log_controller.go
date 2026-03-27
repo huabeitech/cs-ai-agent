@@ -16,7 +16,7 @@ type KnowledgeRetrieveLogController struct {
 }
 
 func (c *KnowledgeRetrieveLogController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -50,7 +50,7 @@ func (c *KnowledgeRetrieveLogController) AnyList() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveLogController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 

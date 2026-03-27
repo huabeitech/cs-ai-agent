@@ -17,7 +17,7 @@ type RoleController struct {
 }
 
 func (c *RoleController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
 		return web.JsonError(err)
 	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
@@ -40,7 +40,7 @@ func (c *RoleController) AnyList() *web.JsonResult {
 }
 
 func (c *RoleController) GetList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -60,7 +60,7 @@ func (c *RoleController) GetList_all() *web.JsonResult {
 }
 
 func (c *RoleController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -89,7 +89,7 @@ func (c *RoleController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *RoleController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -112,7 +112,7 @@ func (c *RoleController) PostCreate() *web.JsonResult {
 }
 
 func (c *RoleController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -127,7 +127,7 @@ func (c *RoleController) PostUpdate() *web.JsonResult {
 }
 
 func (c *RoleController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -142,7 +142,7 @@ func (c *RoleController) PostDelete() *web.JsonResult {
 }
 
 func (c *RoleController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -157,7 +157,7 @@ func (c *RoleController) PostUpdate_status() *web.JsonResult {
 }
 
 func (c *RoleController) PostAssign_permission() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleAssignPermission); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleAssignPermission); err != nil {
 		return web.JsonError(err)
 	}
 

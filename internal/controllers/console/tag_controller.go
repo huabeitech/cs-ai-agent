@@ -17,7 +17,7 @@ type TagController struct {
 }
 
 func (c *TagController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
 		return web.JsonError(err)
 	}
 	list, paging := services.TagService.FindPageByCnd(params.NewPagedSqlCnd(c.Ctx,
@@ -42,7 +42,7 @@ func (c *TagController) AnyList() *web.JsonResult {
 }
 
 func (c *TagController) GetList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
 		return web.JsonError(err)
 	}
 	list := services.TagService.FindAll()
@@ -63,7 +63,7 @@ func (c *TagController) GetList_all() *web.JsonResult {
 }
 
 func (c *TagController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -84,7 +84,7 @@ func (c *TagController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *TagController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -109,7 +109,7 @@ func (c *TagController) PostCreate() *web.JsonResult {
 }
 
 func (c *TagController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -124,7 +124,7 @@ func (c *TagController) PostUpdate() *web.JsonResult {
 }
 
 func (c *TagController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -150,7 +150,7 @@ func (c *TagController) PostUpdate_sort() *web.JsonResult {
 }
 
 func (c *TagController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

@@ -23,7 +23,7 @@ type KnowledgeBaseController struct {
 }
 
 func (c *KnowledgeBaseController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -43,7 +43,7 @@ func (c *KnowledgeBaseController) AnyList() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) AnyList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -59,7 +59,7 @@ func (c *KnowledgeBaseController) AnyList_all() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -73,7 +73,7 @@ func (c *KnowledgeBaseController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -89,7 +89,7 @@ func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -104,7 +104,7 @@ func (c *KnowledgeBaseController) PostUpdate() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -132,7 +132,7 @@ func (c *KnowledgeBaseController) PostUpdate_sort() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostRebuild_index() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

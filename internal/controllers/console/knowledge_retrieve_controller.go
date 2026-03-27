@@ -18,7 +18,7 @@ type KnowledgeRetrieveController struct {
 }
 
 func (c *KnowledgeRetrieveController) PostDebugSearch() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -35,7 +35,7 @@ func (c *KnowledgeRetrieveController) PostDebugSearch() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -52,7 +52,7 @@ func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveController) PostDebugCompare() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -69,7 +69,7 @@ func (c *KnowledgeRetrieveController) PostDebugCompare() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveController) PostBuild() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

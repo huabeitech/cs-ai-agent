@@ -16,7 +16,7 @@ type AgentController struct {
 }
 
 func (c *AgentController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
 		return web.JsonError(err)
 	}
 	list, paging := services.AgentProfileService.FindPageByCnd(params.NewPagedSqlCnd(c.Ctx,
@@ -31,7 +31,7 @@ func (c *AgentController) AnyList() *web.JsonResult {
 }
 
 func (c *AgentController) GetList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
 		return web.JsonError(err)
 	}
 	list := services.AgentProfileService.Find(params.NewPagedSqlCnd(c.Ctx,
@@ -45,7 +45,7 @@ func (c *AgentController) GetList_all() *web.JsonResult {
 }
 
 func (c *AgentController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.AgentProfileService.Get(id)
@@ -56,14 +56,15 @@ func (c *AgentController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AgentController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateAgentProfileRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.AgentProfileService.CreateAgentProfile(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AgentProfileService.CreateAgentProfile(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -71,7 +72,7 @@ func (c *AgentController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentProfileRequest{}
@@ -85,7 +86,7 @@ func (c *AgentController) PostUpdate() *web.JsonResult {
 }
 
 func (c *AgentController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentDelete); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteAgentProfileRequest{}

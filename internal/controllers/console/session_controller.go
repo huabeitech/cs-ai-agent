@@ -18,7 +18,7 @@ type SessionController struct {
 }
 
 func (c *SessionController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -51,7 +51,7 @@ func (c *SessionController) AnyList() *web.JsonResult {
 }
 
 func (c *SessionController) PostRevoke() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -67,7 +67,7 @@ func (c *SessionController) PostRevoke() *web.JsonResult {
 }
 
 func (c *SessionController) PostRevokeByUser() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
 		return web.JsonError(err)
 	}
 

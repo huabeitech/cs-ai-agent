@@ -16,7 +16,7 @@ type CompanyController struct {
 }
 
 func (c *CompanyController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyView); err != nil {
 		return web.JsonError(err)
 	}
 	list, paging := services.CompanyService.FindPageByCnd(params.NewPagedSqlCnd(c.Ctx,
@@ -38,7 +38,7 @@ func (c *CompanyController) AnyList() *web.JsonResult {
 }
 
 func (c *CompanyController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.CompanyService.Get(id)
@@ -50,7 +50,7 @@ func (c *CompanyController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *CompanyController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyCreate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateCompanyRequest{}
@@ -66,7 +66,7 @@ func (c *CompanyController) PostCreate() *web.JsonResult {
 }
 
 func (c *CompanyController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCompanyRequest{}
@@ -80,7 +80,7 @@ func (c *CompanyController) PostUpdate() *web.JsonResult {
 }
 
 func (c *CompanyController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyDelete); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteCompanyRequest{}
@@ -95,7 +95,7 @@ func (c *CompanyController) PostDelete() *web.JsonResult {
 }
 
 func (c *CompanyController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCompanyStatusRequest{}

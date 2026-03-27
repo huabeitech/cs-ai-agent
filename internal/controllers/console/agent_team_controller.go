@@ -19,7 +19,7 @@ type AgentTeamController struct {
 }
 
 func (c *AgentTeamController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
 		return web.JsonError(err)
 	}
 	cnd := params.NewSqlCnd(c.Ctx,
@@ -39,7 +39,7 @@ func (c *AgentTeamController) AnyList() *web.JsonResult {
 }
 
 func (c *AgentTeamController) GetList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
 		return web.JsonError(err)
 	}
 	list := services.AgentTeamService.Find(sqls.NewCnd().Eq("status", enums.StatusOk))
@@ -51,7 +51,7 @@ func (c *AgentTeamController) GetList_all() *web.JsonResult {
 }
 
 func (c *AgentTeamController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.AgentTeamService.Get(id)
@@ -62,7 +62,7 @@ func (c *AgentTeamController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AgentTeamController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamCreate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateAgentTeamRequest{}
@@ -77,7 +77,7 @@ func (c *AgentTeamController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentTeamController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentTeamRequest{}
@@ -91,7 +91,7 @@ func (c *AgentTeamController) PostUpdate() *web.JsonResult {
 }
 
 func (c *AgentTeamController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamDelete); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteAgentTeamRequest{}

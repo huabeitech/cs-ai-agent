@@ -87,16 +87,21 @@ func (s *authService) setAuthPrincipal(ctx iris.Context, user *models.User, role
 	return principal
 }
 
-func (s *authService) RequirePermission(ctx iris.Context, permission constants.Permission) error {
-	if s.GetAuthPrincipal(ctx) == nil {
-		if _, err := s.Authenticate(ctx); err != nil {
-			return err
+func (s *authService) RequirePermission(ctx iris.Context, permission constants.Permission) (principal *dto.AuthPrincipal, err error) {
+	if principal = s.GetAuthPrincipal(ctx); principal == nil {
+		if principal, err = s.Authenticate(ctx); err != nil {
+			return nil, err
 		}
 	}
-	if !s.HasPermission(ctx, permission.Code) {
-		return errorsx.Forbidden("无权限执行该操作")
+
+	if principal == nil {
+		return nil, errorsx.Forbidden("无权限执行该操作")
 	}
-	return nil
+
+	if !s.HasPermission(ctx, permission.Code) {
+		return principal, errorsx.Forbidden("无权限执行该操作")
+	}
+	return principal, nil
 }
 
 func (s *authService) Login(req request.LoginRequest, authCfg config.AuthConfig, clientIP, userAgent string) (*response.LoginResponse, error) {

@@ -19,7 +19,7 @@ type TicketReplyController struct {
 }
 
 func (c *TicketReplyController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -50,7 +50,7 @@ func (c *TicketReplyController) AnyList() *web.JsonResult {
 }
 
 func (c *TicketReplyController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -87,7 +87,7 @@ func (c *TicketReplyController) PostCreate() *web.JsonResult {
 }
 
 func (c *TicketReplyController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -105,7 +105,7 @@ func (c *TicketReplyController) PostUpdate() *web.JsonResult {
 }
 
 func (c *TicketReplyController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyDelete); err != nil {
 		return web.JsonError(err)
 	}
 

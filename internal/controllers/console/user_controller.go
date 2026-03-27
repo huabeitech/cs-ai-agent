@@ -17,7 +17,7 @@ type UserController struct {
 }
 
 func (c *UserController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -36,7 +36,7 @@ func (c *UserController) AnyList() *web.JsonResult {
 }
 
 func (c *UserController) AnyList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -56,7 +56,7 @@ func (c *UserController) AnyList_all() *web.JsonResult {
 }
 
 func (c *UserController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -71,7 +71,7 @@ func (c *UserController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *UserController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -91,7 +91,7 @@ func (c *UserController) PostCreate() *web.JsonResult {
 }
 
 func (c *UserController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -106,7 +106,7 @@ func (c *UserController) PostUpdate() *web.JsonResult {
 }
 
 func (c *UserController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -121,7 +121,7 @@ func (c *UserController) PostDelete() *web.JsonResult {
 }
 
 func (c *UserController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -136,7 +136,7 @@ func (c *UserController) PostUpdate_status() *web.JsonResult {
 }
 
 func (c *UserController) PostReset_password() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -178,7 +178,7 @@ func (c *UserController) PostChange_password() *web.JsonResult {
 }
 
 func (c *UserController) PostAssign_role() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserAssignRole); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserAssignRole); err != nil {
 		return web.JsonError(err)
 	}
 

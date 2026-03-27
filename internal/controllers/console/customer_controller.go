@@ -17,7 +17,7 @@ type CustomerController struct {
 }
 
 func (c *CustomerController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
 		return web.JsonError(err)
 	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
@@ -36,7 +36,7 @@ func (c *CustomerController) AnyList() *web.JsonResult {
 }
 
 func (c *CustomerController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.CustomerService.Get(id)
@@ -48,7 +48,7 @@ func (c *CustomerController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *CustomerController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerCreate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateCustomerRequest{}
@@ -64,7 +64,7 @@ func (c *CustomerController) PostCreate() *web.JsonResult {
 }
 
 func (c *CustomerController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCustomerRequest{}
@@ -78,7 +78,7 @@ func (c *CustomerController) PostUpdate() *web.JsonResult {
 }
 
 func (c *CustomerController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerDelete); err != nil {
 		return web.JsonError(err)
 	}
 	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
@@ -93,7 +93,7 @@ func (c *CustomerController) PostDelete() *web.JsonResult {
 }
 
 func (c *CustomerController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCustomerStatusRequest{}

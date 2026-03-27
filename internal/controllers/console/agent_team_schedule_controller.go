@@ -17,7 +17,7 @@ type AgentTeamScheduleController struct {
 }
 
 func (c *AgentTeamScheduleController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleView); err != nil {
 		return web.JsonError(err)
 	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
@@ -32,7 +32,7 @@ func (c *AgentTeamScheduleController) AnyList() *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.AgentTeamScheduleService.Get(id)
@@ -43,7 +43,7 @@ func (c *AgentTeamScheduleController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleCreate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateAgentTeamScheduleRequest{}
@@ -58,7 +58,7 @@ func (c *AgentTeamScheduleController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleUpdate); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentTeamScheduleRequest{}
@@ -72,7 +72,7 @@ func (c *AgentTeamScheduleController) PostUpdate() *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleDelete); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteAgentTeamScheduleRequest{}

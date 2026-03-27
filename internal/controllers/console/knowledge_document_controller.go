@@ -18,7 +18,7 @@ type KnowledgeDocumentController struct {
 }
 
 func (c *KnowledgeDocumentController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -42,7 +42,7 @@ func (c *KnowledgeDocumentController) AnyList() *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -54,7 +54,7 @@ func (c *KnowledgeDocumentController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -70,7 +70,7 @@ func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -85,7 +85,7 @@ func (c *KnowledgeDocumentController) PostUpdate() *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentDelete); err != nil {
 		return web.JsonError(err)
 	}
 

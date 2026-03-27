@@ -17,7 +17,7 @@ type AIConfigController struct {
 }
 
 func (c *AIConfigController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigView); err != nil {
 		return web.JsonError(err)
 	}
 	list, paging := services.AIConfigService.FindPageByCnd(params.NewPagedSqlCnd(c.Ctx,
@@ -35,7 +35,7 @@ func (c *AIConfigController) AnyList() *web.JsonResult {
 }
 
 func (c *AIConfigController) AnyList_all() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -51,7 +51,7 @@ func (c *AIConfigController) AnyList_all() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -67,7 +67,7 @@ func (c *AIConfigController) PostCreate() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -82,7 +82,7 @@ func (c *AIConfigController) PostUpdate() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -97,7 +97,7 @@ func (c *AIConfigController) PostDelete() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostUpdate_status() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -112,7 +112,7 @@ func (c *AIConfigController) PostUpdate_status() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostUpdate_sort() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

@@ -18,7 +18,7 @@ type PermissionController struct {
 }
 
 func (c *PermissionController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionPermissionView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionPermissionView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -51,7 +51,7 @@ func (c *PermissionController) AnyList() *web.JsonResult {
 }
 
 func (c *PermissionController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionPermissionView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionPermissionView); err != nil {
 		return web.JsonError(err)
 	}
 

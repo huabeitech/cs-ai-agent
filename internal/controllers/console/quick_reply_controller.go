@@ -16,7 +16,7 @@ type QuickReplyController struct {
 }
 
 func (c *QuickReplyController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -41,7 +41,7 @@ func (c *QuickReplyController) AnyList() *web.JsonResult {
 }
 
 func (c *QuickReplyController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -64,7 +64,7 @@ func (c *QuickReplyController) PostCreate() *web.JsonResult {
 }
 
 func (c *QuickReplyController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -79,7 +79,7 @@ func (c *QuickReplyController) PostUpdate() *web.JsonResult {
 }
 
 func (c *QuickReplyController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyDelete); err != nil {
 		return web.JsonError(err)
 	}
 

@@ -20,14 +20,14 @@ type MCPController struct {
 }
 
 func (c *MCPController) AnyList_servers() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonData(response.BuildMCPServerInfoResponses(services.MCPDebugService.ListServers(c.Cfg)))
 }
 
 func (c *MCPController) PostTest_connection() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.MCPServerDebugRequest{}
@@ -42,7 +42,7 @@ func (c *MCPController) PostTest_connection() *web.JsonResult {
 }
 
 func (c *MCPController) PostList_tools() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.MCPServerDebugRequest{}
@@ -57,7 +57,7 @@ func (c *MCPController) PostList_tools() *web.JsonResult {
 }
 
 func (c *MCPController) PostCall_tool() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPCall); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPCall); err != nil {
 		return web.JsonError(err)
 	}
 	req := request.MCPCallToolRequest{}

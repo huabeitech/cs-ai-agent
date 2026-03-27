@@ -15,7 +15,7 @@ type TicketCategoryController struct {
 }
 
 func (c *TicketCategoryController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -43,7 +43,7 @@ func (c *TicketCategoryController) AnyList() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) GetTree() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryView); err != nil {
 		return web.JsonError(err)
 	}
 	list := services.TicketCategoryService.FindTree()
@@ -64,7 +64,7 @@ func (c *TicketCategoryController) GetTree() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -89,7 +89,7 @@ func (c *TicketCategoryController) PostCreate() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostUpdate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -104,7 +104,7 @@ func (c *TicketCategoryController) PostUpdate() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryDelete); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -119,7 +119,7 @@ func (c *TicketCategoryController) PostDelete() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostUpdate_sort() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate); err != nil {
 		return web.JsonError(err)
 	}
 

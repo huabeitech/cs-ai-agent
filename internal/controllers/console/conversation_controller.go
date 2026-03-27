@@ -23,7 +23,7 @@ type ConversationController struct {
 }
 
 func (c *ConversationController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -51,7 +51,7 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 }
 
 func (c *ConversationController) AnyConversations() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -80,7 +80,7 @@ func (c *ConversationController) AnyConversations() *web.JsonResult {
 }
 
 func (c *ConversationController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -97,7 +97,7 @@ func (c *ConversationController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *ConversationController) AnyMessage_list() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -123,7 +123,7 @@ func (c *ConversationController) AnyMessage_list() *web.JsonResult {
 }
 
 func (c *ConversationController) PostAssign() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -138,7 +138,7 @@ func (c *ConversationController) PostAssign() *web.JsonResult {
 }
 
 func (c *ConversationController) PostDispatch() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -153,7 +153,7 @@ func (c *ConversationController) PostDispatch() *web.JsonResult {
 }
 
 func (c *ConversationController) PostTransfer() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTransfer); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTransfer); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -168,7 +168,7 @@ func (c *ConversationController) PostTransfer() *web.JsonResult {
 }
 
 func (c *ConversationController) PostClose() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationClose); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationClose); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -183,7 +183,7 @@ func (c *ConversationController) PostClose() *web.JsonResult {
 }
 
 func (c *ConversationController) PostSend_message() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -199,7 +199,7 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 }
 
 func (c *ConversationController) PostRead() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -214,7 +214,7 @@ func (c *ConversationController) PostRead() *web.JsonResult {
 }
 
 func (c *ConversationController) PostUpload_image() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -240,7 +240,7 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 }
 
 func (c *ConversationController) PostAdd_tag() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -255,7 +255,7 @@ func (c *ConversationController) PostAdd_tag() *web.JsonResult {
 }
 
 func (c *ConversationController) PostRemove_tag() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag); err != nil {
 		return web.JsonError(err)
 	}
 

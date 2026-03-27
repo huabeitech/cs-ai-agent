@@ -22,7 +22,7 @@ type AssetController struct {
 }
 
 func (c *AssetController) AnyList() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetView); err != nil {
 		return web.JsonError(err)
 	}
 	provider, err := storage.NewProvider(c.Cfg.Storage)
@@ -49,7 +49,7 @@ func (c *AssetController) AnyList() *web.JsonResult {
 }
 
 func (c *AssetController) GetBy(id int64) *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetView); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetView); err != nil {
 		return web.JsonError(err)
 	}
 	item := services.AssetService.Get(id)
@@ -64,7 +64,7 @@ func (c *AssetController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AssetController) PostCreate() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetCreate); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetCreate); err != nil {
 		return web.JsonError(err)
 	}
 
@@ -90,7 +90,7 @@ func (c *AssetController) PostCreate() *web.JsonResult {
 }
 
 func (c *AssetController) PostDelete() *web.JsonResult {
-	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetDelete); err != nil {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetDelete); err != nil {
 		return web.JsonError(err)
 	}
 
