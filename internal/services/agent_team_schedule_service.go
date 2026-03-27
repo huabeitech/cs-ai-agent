@@ -82,9 +82,7 @@ func (s *agentTeamScheduleService) CreateAgentTeamSchedule(req request.CreateAge
 		return nil, err
 	}
 	item.AuditFields = utils.BuildAuditFields(operator)
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Create(item).Error
-	}); err != nil {
+	if err := repositories.AgentTeamScheduleRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
 	}
 	s.dispatchPendingConversationsIfActive(item)

@@ -70,9 +70,7 @@ func (s *agentProfileService) CreateAgentProfile(req request.CreateAgentProfileR
 		return nil, err
 	}
 	item.AuditFields = utils.BuildAuditFields(operator)
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Create(item).Error
-	}); err != nil {
+	if err := repositories.AgentProfileRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
 	}
 	s.dispatchPendingConversationsIfEligible(item)

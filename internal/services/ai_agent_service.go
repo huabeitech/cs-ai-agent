@@ -65,9 +65,7 @@ func (s *aIAgentService) CreateAIAgent(req request.CreateAIAgentRequest, operato
 	item.Status = enums.StatusOk
 	item.SortNo = 0
 	item.AuditFields = utils.BuildAuditFields(operator)
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Create(item).Error
-	}); err != nil {
+	if err := repositories.AIAgentRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
 	}
 	return item, nil

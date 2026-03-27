@@ -101,9 +101,7 @@ func (s *widgetSiteService) CreateSite(req request.CreateWidgetSiteRequest, oper
 		Remark:      strings.TrimSpace(req.Remark),
 		AuditFields: utils.BuildAuditFields(operator),
 	}
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Create(item).Error
-	}); err != nil {
+	if err := repositories.WidgetSiteRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
 	}
 	return item, nil
