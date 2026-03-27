@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mlogclub/simple/common/jsons"
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"gorm.io/gorm"
 )
@@ -73,7 +74,7 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 	}
 
 	var (
-		identity = UserIdentityService.GetBy(enums.ThirdProviderWxWork, profile.CorpID, profile.UserID)
+		identity = repositories.UserIdentityRepository.GetBy(sqls.DB(), enums.ThirdProviderWxWork, profile.CorpID, profile.UserID)
 		user     *models.User
 		err      error
 	)
@@ -128,9 +129,9 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 }
 
 func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*models.User, *models.UserIdentity, error) {
-	username := s.buildWxWorkUsername(profile.UserID)
-	mobileValue := strings.TrimSpace(profile.Mobile)
-	emailValue := strings.TrimSpace(s.firstNonEmpty(profile.Email, profile.BizMail))
+	username := strings.TrimSpace(profile.UserID)
+	mobile := strings.TrimSpace(profile.Mobile)
+	email := strings.TrimSpace(s.firstNonEmpty(profile.Email, profile.BizMail))
 
 	user := &models.User{
 		Username:     username,
@@ -151,16 +152,7 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*model
 
 	var createdIdentity *models.UserIdentity
 	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if existing := repositories.UserRepository.Take(ctx.Tx, "username = ?", username); existing != nil {
-			return errorsx.BusinessError(5, "企业微信用户ID已被系统用户名占用")
-		}
-		var err error
-		user.Mobile, err = s.normalizeAvailableContactTx(ctx.Tx, mobileValue, "mobile")
-		if err != nil {
-			return err
-		}
-		user.Email, err = s.normalizeAvailableContactTx(ctx.Tx, emailValue, "email")
-		if err != nil {
+		if err := s.checkWxWorkProfile(ctx.Tx, username, mobile, email); err != nil {
 			return err
 		}
 		if err := ctx.Tx.Create(user).Error; err != nil {
@@ -195,22 +187,9 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*model
 		return nil
 	})
 	if err != nil {
-		if existing := UserIdentityService.FindOne(sqls.NewCnd().
-			Eq("provider", enums.ThirdProviderWxWork).
-			Eq("provider_corp_id", strings.TrimSpace(profile.CorpID)).
-			Eq("provider_user_id", strings.TrimSpace(profile.UserID))); existing != nil {
-			existingUser := UserService.Get(existing.UserID)
-			if existingUser != nil {
-				return existingUser, existing, nil
-			}
-		}
 		return nil, nil, err
 	}
 	return user, createdIdentity, nil
-}
-
-func (s *wxWorkLoginService) buildWxWorkUsername(userID string) string {
-	return strings.TrimSpace(userID)
 }
 
 func (s *wxWorkLoginService) resolveWxWorkNickname(current string, profile *wxwork.LoginUser) string {
@@ -237,22 +216,24 @@ func (s *wxWorkLoginService) resolveWxWorkAvatar(current string, profile *wxwork
 	return strings.TrimSpace(current)
 }
 
-func (s *wxWorkLoginService) normalizeAvailableContactTx(tx *gorm.DB, value string, field string) (*string, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return nil, nil
+func (s *wxWorkLoginService) checkWxWorkProfile(tx *gorm.DB, username, mobile string, email string) error {
+	if strs.IsBlank(username) {
+		return errorsx.BusinessError(5, "企业微信用户ID获取失败")
 	}
-	switch field {
-	case "mobile":
-		if repositories.UserRepository.Take(tx, "mobile = ? AND status != ?", value, enums.StatusDisabled) != nil {
-			return nil, errorsx.BusinessError(6, "企业微信手机号已被系统用户占用")
-		}
-	case "email":
-		if repositories.UserRepository.Take(tx, "email = ? AND status != ?", value, enums.StatusDisabled) != nil {
-			return nil, errorsx.BusinessError(7, "企业微信邮箱已被系统用户占用")
+	if existing := repositories.UserRepository.GetByUsername(tx, username); existing != nil {
+		return errorsx.BusinessError(5, "企业微信用户ID已被系统用户名占用")
+	}
+	if strs.IsNotBlank(mobile) {
+		if repositories.UserRepository.GetByMobile(tx, mobile) != nil {
+			return errorsx.BusinessError(6, "企业微信手机号已被系统用户占用")
 		}
 	}
-	return &value, nil
+	if strs.IsNotBlank(email) {
+		if repositories.UserRepository.GetByEmail(tx, email) != nil {
+			return errorsx.BusinessError(7, "企业微信邮箱已被系统用户占用")
+		}
+	}
+	return nil
 }
 
 func (s *wxWorkLoginService) firstNonEmpty(values ...string) string {

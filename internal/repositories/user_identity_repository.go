@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -98,4 +100,11 @@ func (r *userIdentityRepository) UpdateColumn(db *gorm.DB, id int64, name string
 
 func (r *userIdentityRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.UserIdentity{}, "id = ?", id)
+}
+
+func (r *userIdentityRepository) GetBy(db *gorm.DB, provider enums.ThirdProvider, corpId, userId string) *models.UserIdentity {
+	return r.FindOne(db, sqls.NewCnd().
+		Eq("provider", provider).
+		Eq("provider_corp_id", strings.TrimSpace(corpId)).
+		Eq("provider_user_id", strings.TrimSpace(userId)))
 }
