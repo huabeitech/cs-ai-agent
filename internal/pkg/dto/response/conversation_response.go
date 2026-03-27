@@ -31,7 +31,7 @@ type ConversationResponse struct {
 	CurrentAssigneeName       string                          `json:"currentAssigneeName,omitempty"`
 	LastMessageID             int64                           `json:"lastMessageId"`
 	LastMessageAt             string                          `json:"lastMessageAt,omitempty"`
-	LastActiveTime            string                          `json:"lastActiveTime,omitempty"`
+	LastActiveAt              string                          `json:"lastActiveAt,omitempty"`
 	LastMessageSummary        string                          `json:"lastMessageSummary,omitempty"`
 	CustomerUnreadCount       int                             `json:"customerUnreadCount"`
 	AgentUnreadCount          int                             `json:"agentUnreadCount"`

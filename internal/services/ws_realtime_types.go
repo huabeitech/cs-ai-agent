@@ -166,7 +166,7 @@ type RealtimeConversationChangedPayload struct {
 	CurrentAssigneeID         int64                           `json:"currentAssigneeId,omitempty"`
 	LastMessageID             int64                           `json:"lastMessageId,omitempty"`
 	LastMessageAt             string                          `json:"lastMessageAt,omitempty"`
-	LastActiveTime            string                          `json:"lastActiveTime,omitempty"`
+	LastActiveAt              string                          `json:"lastActiveAt,omitempty"`
 	LastMessageSummary        string                          `json:"lastMessageSummary,omitempty"`
 	CustomerUnreadCount       int                             `json:"customerUnreadCount,omitempty"`
 	AgentUnreadCount          int                             `json:"agentUnreadCount,omitempty"`

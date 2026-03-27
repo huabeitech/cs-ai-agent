@@ -150,8 +150,8 @@ func TestCreateConversationInitializesLastMessageAt(t *testing.T) {
 	if !item.LastMessageAt.Equal(item.CreatedAt) {
 		t.Fatalf("expected last message at %v to equal created at %v", item.LastMessageAt, item.CreatedAt)
 	}
-	if !item.LastActiveTime.Equal(item.CreatedAt) {
-		t.Fatalf("expected last active time %v to equal created at %v", item.LastActiveTime, item.CreatedAt)
+	if !item.LastActiveAt.Equal(item.CreatedAt) {
+		t.Fatalf("expected last active time %v to equal created at %v", item.LastActiveAt, item.CreatedAt)
 	}
 
 	stored := ConversationService.Get(item.ID)
@@ -161,8 +161,8 @@ func TestCreateConversationInitializesLastMessageAt(t *testing.T) {
 	if !stored.LastMessageAt.Equal(stored.CreatedAt) {
 		t.Fatalf("expected stored last message at %v to equal created at %v", stored.LastMessageAt, stored.CreatedAt)
 	}
-	if !stored.LastActiveTime.Equal(stored.CreatedAt) {
-		t.Fatalf("expected stored last active time %v to equal created at %v", stored.LastActiveTime, stored.CreatedAt)
+	if !stored.LastActiveAt.Equal(stored.CreatedAt) {
+		t.Fatalf("expected stored last active time %v to equal created at %v", stored.LastActiveAt, stored.CreatedAt)
 	}
 }
 
@@ -238,8 +238,8 @@ func TestSendCustomerMessageUpdatesConversationSummary(t *testing.T) {
 	if updated.LastMessageID != message.ID {
 		t.Fatalf("expected last message id %d, got %d", message.ID, updated.LastMessageID)
 	}
-	if updated.LastActiveTime.Before(conversation.CreatedAt) {
-		t.Fatalf("expected last active time %v after created at %v", updated.LastActiveTime, conversation.CreatedAt)
+	if updated.LastActiveAt.Before(conversation.CreatedAt) {
+		t.Fatalf("expected last active time %v after created at %v", updated.LastActiveAt, conversation.CreatedAt)
 	}
 	if updated.LastMessageSummary != "你好，想查询物流" {
 		t.Fatalf("unexpected last message summary: %s", updated.LastMessageSummary)

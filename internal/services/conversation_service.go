@@ -69,13 +69,13 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 
 	switch filter {
 	case request.AgentConversationFilterMine:
-		cnd.Desc("last_message_at").Desc("id")
+		cnd.Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterActive:
-		cnd.Eq("status", enums.IMConversationStatusActive).Desc("last_message_at").Desc("id")
+		cnd.Eq("status", enums.IMConversationStatusActive).Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterPending:
-		cnd.Eq("status", enums.IMConversationStatusPending).Asc("id")
+		cnd.Eq("status", enums.IMConversationStatusPending).Asc("last_active_at").Desc("id")
 	case request.AgentConversationFilterClosed:
-		cnd.Eq("status", enums.IMConversationStatusClosed).Desc("last_message_at").Desc("id")
+		cnd.Eq("status", enums.IMConversationStatusClosed).Desc("last_active_at").Desc("id")
 	default:
 		return nil, nil, errorsx.InvalidParam("会话筛选项不合法")
 	}
@@ -139,7 +139,7 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
 		LastMessageAt:     now,
-		LastActiveTime:    now,
+		LastActiveAt:      now,
 		AuditFields:       auditFields,
 	}
 	if operator.IsVisitor {

@@ -252,7 +252,7 @@ func (s *wsService) PublishConversationChanged(conversation *models.Conversation
 			CurrentAssigneeID:         conversation.CurrentAssigneeID,
 			LastMessageID:             conversation.LastMessageID,
 			LastMessageAt:             formatWsTime(&conversation.LastMessageAt),
-			LastActiveTime:            formatWsTime(&conversation.LastActiveTime),
+			LastActiveAt:              formatWsTime(&conversation.LastActiveAt),
 			LastMessageSummary:        conversation.LastMessageSummary,
 			CustomerUnreadCount:       conversation.CustomerUnreadCount,
 			AgentUnreadCount:          conversation.AgentUnreadCount,

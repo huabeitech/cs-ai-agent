@@ -25,7 +25,7 @@ func BuildConversationResponse(item *models.Conversation) response.ConversationR
 		CurrentAssigneeID:         item.CurrentAssigneeID,
 		LastMessageID:             item.LastMessageID,
 		LastMessageAt:             utils.FormatTime(item.LastMessageAt),
-		LastActiveTime:            utils.FormatTime(item.LastActiveTime),
+		LastActiveAt:              utils.FormatTime(item.LastActiveAt),
 		LastMessageSummary:        item.LastMessageSummary,
 		CustomerUnreadCount:       item.CustomerUnreadCount,
 		AgentUnreadCount:          item.AgentUnreadCount,

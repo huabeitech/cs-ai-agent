@@ -40,7 +40,7 @@ export type ImConversation = {
   currentAssigneeName?: string
   lastMessageId: number
   lastMessageAt?: string
-  lastActiveTime?: string
+  lastActiveAt?: string
   lastMessageSummary?: string
   customerUnreadCount: number
   agentUnreadCount: number
