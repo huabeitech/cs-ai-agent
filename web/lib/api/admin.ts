@@ -23,7 +23,7 @@ export type AdminUser = {
   isSystem: boolean
   lastLoginAt?: string
   lastLoginIp?: string
-  roles?: string[]
+  roles?: AdminRole[]
   permissions?: string[]
 }
 
@@ -556,6 +556,10 @@ export function fetchRoles(query?: Record<string, string | number | undefined>) 
   return request<PageResult<AdminRole>>(
     `/api/console/role/list${toQueryString(query)}`
   )
+}
+
+export function fetchRoleListAll() {
+  return request<AdminRole[]>("/api/console/role/list_all")
 }
 
 export function fetchRoleDetail(id: number) {

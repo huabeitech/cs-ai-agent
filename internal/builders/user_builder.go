@@ -42,12 +42,27 @@ func BuildUserResponse(item *models.User, options UserBuildOptions) *response.Us
 	}
 
 	if options.Roles {
-		roleCodes, _ := services.AuthService.GetUserRoles(item.ID)
-		ret.Roles = roleCodes
+		ret.Roles = buildAssignedRoles(item.ID)
 	}
 	if options.Permissions {
 		permissionCodes, _ := services.AuthService.GetUserPermissions(item.ID)
 		ret.Permissions = permissionCodes
 	}
 	return ret
+}
+
+func buildAssignedRoles(userID int64) []response.RoleResponse {
+	roles, _ := services.AuthService.GetUserRoles(userID)
+	results := make([]response.RoleResponse, 0, len(roles))
+	for _, role := range roles {
+		results = append(results, response.RoleResponse{
+			ID:       role.ID,
+			Name:     role.Name,
+			Code:     role.Code,
+			Status:   role.Status,
+			IsSystem: role.IsSystem,
+			SortNo:   role.SortNo,
+		})
+	}
+	return results
 }

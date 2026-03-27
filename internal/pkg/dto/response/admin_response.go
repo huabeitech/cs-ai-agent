@@ -25,17 +25,17 @@ type RoleResponse struct {
 }
 
 type UserResponse struct {
-	ID          int64        `json:"id"`
-	Username    string       `json:"username"`
-	Nickname    string       `json:"nickname"`
-	Avatar      string       `json:"avatar"`
-	Mobile      string       `json:"mobile,omitempty"`
-	Email       string       `json:"email,omitempty"`
-	Status      enums.Status `json:"status"`
-	LastLoginAt string       `json:"lastLoginAt,omitempty"`
-	LastLoginIP string       `json:"lastLoginIp,omitempty"`
-	Roles       []string     `json:"roles,omitempty"`
-	Permissions []string     `json:"permissions,omitempty"`
+	ID          int64          `json:"id"`
+	Username    string         `json:"username"`
+	Nickname    string         `json:"nickname"`
+	Avatar      string         `json:"avatar"`
+	Mobile      string         `json:"mobile,omitempty"`
+	Email       string         `json:"email,omitempty"`
+	Status      enums.Status   `json:"status"`
+	LastLoginAt string         `json:"lastLoginAt,omitempty"`
+	LastLoginIP string         `json:"lastLoginIp,omitempty"`
+	Roles       []RoleResponse `json:"assignedRoles,omitempty"`
+	Permissions []string       `json:"permissions,omitempty"`
 }
 
 type SessionResponse struct {

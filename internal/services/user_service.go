@@ -232,6 +232,9 @@ func (s *userService) replaceUserRoles(userID int64, roleIDs []int64, operator *
 			if role == nil {
 				return errorsx.InvalidParam("角色不存在")
 			}
+			if role.Status != enums.StatusOk {
+				return errorsx.InvalidParam("禁用角色不允许分配")
+			}
 			relation := &models.UserRole{
 				UserID:      userID,
 				RoleID:      roleID,

@@ -39,6 +39,26 @@ func (c *RoleController) AnyList() *web.JsonResult {
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
 
+func (c *RoleController) GetList_all() *web.JsonResult {
+	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
+		return web.JsonError(err)
+	}
+
+	list := services.RoleService.Find(sqls.NewCnd().Asc("sort_no").Desc("id"))
+	results := make([]response.RoleResponse, 0, len(list))
+	for _, item := range list {
+		results = append(results, response.RoleResponse{
+			ID:       item.ID,
+			Name:     item.Name,
+			Code:     item.Code,
+			Status:   item.Status,
+			IsSystem: item.IsSystem,
+			SortNo:   item.SortNo,
+		})
+	}
+	return web.JsonData(results)
+}
+
 func (c *RoleController) GetBy(id int64) *web.JsonResult {
 	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionRoleView); err != nil {
 		return web.JsonError(err)

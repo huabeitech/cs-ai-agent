@@ -252,8 +252,8 @@ func (s *authService) CurrentProfile(ctx iris.Context) (*response.LoginResponse,
 	}, nil
 }
 
-func (s *authService) GetUserRoles(userID int64) ([]string, error) {
-	return s.loadUserRoleCodes(userID)
+func (s *authService) GetUserRoles(userID int64) ([]models.Role, error) {
+	return s.loadUserRoles(userID)
 }
 
 func (s *authService) GetUserPermissions(userID int64) ([]string, error) {
@@ -384,24 +384,30 @@ func (s *authService) loadUserAuthScope(userID int64) ([]string, []string, error
 }
 
 func (s *authService) loadUserRoleCodes(userID int64) ([]string, error) {
-	roleRows := make([]struct {
-		Code string
-	}, 0)
-	if err := sqls.DB().
-		Table("t_role AS r").
-		Select("r.code").
-		Joins("JOIN t_user_role AS ur ON ur.role_id = r.id").
-		Where("ur.user_id = ? AND r.status = ?", userID, enums.StatusOk).
-		Order("r.sort_no ASC, r.id ASC").
-		Scan(&roleRows).Error; err != nil {
+	roles, err := s.loadUserRoles(userID)
+	if err != nil {
 		return nil, err
 	}
-
-	roleCodes := make([]string, 0, len(roleRows))
-	for _, role := range roleRows {
+	roleCodes := make([]string, 0, len(roles))
+	for _, role := range roles {
 		roleCodes = append(roleCodes, role.Code)
 	}
 	return roleCodes, nil
+}
+
+func (s *authService) loadUserRoles(userID int64) ([]models.Role, error) {
+	roles := make([]models.Role, 0)
+	if err := sqls.DB().
+		Table("t_role AS r").
+		Select("r.*").
+		Joins("JOIN t_user_role AS ur ON ur.role_id = r.id").
+		Where("ur.user_id = ? AND r.status = ?", userID, enums.StatusOk).
+		Order("r.sort_no ASC, r.id ASC").
+		Scan(&roles).Error; err != nil {
+		return nil, err
+	}
+
+	return roles, nil
 }
 
 func (s *authService) loadUserPermissionCodes(userID int64) ([]string, error) {

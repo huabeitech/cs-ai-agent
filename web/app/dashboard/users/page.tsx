@@ -13,7 +13,7 @@ import { toast } from "sonner"
 
 import {
   assignUserRoles,
-  fetchRoles,
+  fetchRoleListAll,
   fetchUserDetail,
   fetchUsers,
   resetUserPassword,
@@ -116,17 +116,12 @@ export default function DashboardUsersPage() {
     setAssigningRolesUser(user)
     setAssignRolesLoading(true)
     try {
-      const [rolesResult, userDetail] = await Promise.all([
-        fetchRoles({ limit: 200, status: 1 }),
+      const [roles, userDetail] = await Promise.all([
+        fetchRoleListAll(),
         fetchUserDetail(user.id),
       ])
-      const roleCodeSet = new Set(userDetail.roles || [])
-      setAssignRoleOptions(rolesResult.results)
-      setAssignRoleIds(
-        rolesResult.results
-          .filter((role) => roleCodeSet.has(role.code))
-          .map((role) => role.id)
-      )
+      setAssignRoleOptions(roles)
+      setAssignRoleIds((userDetail.roles || []).map((role) => role.id))
     } catch (error) {
       setAssigningRolesUser(null)
       toast.error(error instanceof Error ? error.message : "加载角色分配数据失败")
@@ -308,9 +303,9 @@ export default function DashboardUsersPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {(item.roles || []).length > 0 ? (
                           item.roles?.map((role) => (
-                            <Badge key={role} variant="outline">
+                            <Badge key={role.id} variant="outline">
                               <ShieldIcon className="size-3" />
-                              {role}
+                              {role.name}
                             </Badge>
                           ))
                         ) : (
