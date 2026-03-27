@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+function detectWxWorkEnvironment() {
+  if (typeof navigator === "undefined") {
+    return false
+  }
+  const userAgent = navigator.userAgent.toLowerCase()
+  return userAgent.includes("wxwork")
+}
+
 export function LoginForm({
   className,
   ...props
@@ -24,6 +32,7 @@ export function LoginForm({
   const searchParams = useSearchParams()
   const { session } = useAuth()
   const [isPending, setIsPending] = useState(false)
+  const [isWxWorkEnv, setIsWxWorkEnv] = useState(false)
   const nextPath = searchParams.get("next")
   const wxworkError = searchParams.get("wxworkError")
   const redirectPath =
@@ -40,6 +49,10 @@ export function LoginForm({
       toast.error(wxworkError)
     }
   }, [wxworkError])
+
+  useEffect(() => {
+    setIsWxWorkEnv(detectWxWorkEnvironment())
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -114,28 +127,12 @@ export function LoginForm({
             variant="outline"
             className="gap-2"
             onClick={() => {
-              window.location.href = `/api/auth/wxwork_login?next=${encodeURIComponent(
-                redirectPath
-              )}`
+              const path = isWxWorkEnv ? "/api/auth/wxwork_login" : "/api/auth/wxwork_qr_login"
+              window.location.href = `${path}?next=${encodeURIComponent(redirectPath)}`
             }}
           >
             <Image src="/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
-            企微内登录
-          </Button>
-        </Field>
-        <Field>
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            onClick={() => {
-              window.location.href = `/api/auth/wxwork_qr_login?next=${encodeURIComponent(
-                redirectPath
-              )}`
-            }}
-          >
-            <Image src="/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
-            企微扫码登录
+            企业微信登录
           </Button>
         </Field>
       </FieldGroup>
