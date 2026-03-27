@@ -72,14 +72,15 @@ func (c *AgentController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentProfileRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AgentProfileService.UpdateAgentProfile(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AgentProfileService.UpdateAgentProfile(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
