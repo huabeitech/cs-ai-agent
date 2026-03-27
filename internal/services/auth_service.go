@@ -10,6 +10,7 @@ import (
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/repositories"
 	"encoding/hex"
 	"slices"
 	"sort"
@@ -17,8 +18,10 @@ import (
 	"time"
 
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 const (
@@ -103,30 +106,37 @@ func (s *authService) Login(req request.LoginRequest, authCfg config.AuthConfig,
 		return nil, errorsx.InvalidParam("用户名和密码不能为空")
 	}
 
-	user := UserService.Take("username = ? AND status = ?", username, enums.StatusOk)
-	if user == nil {
+	user := UserService.GetByUsername(username)
+	if user == nil || user.Status != enums.StatusOk {
 		_ = s.createLoginCredentialLog(username, 0, false, clientIP, userAgent, "user not found")
 		return nil, errorsx.InvalidAccount("用户名或密码错误")
 	}
-	if user.Password == "" || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+	if strs.IsBlank(user.Password) || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		_ = s.createLoginCredentialLog(username, user.ID, false, clientIP, userAgent, "password mismatch")
 		return nil, errorsx.InvalidAccount("用户名或密码错误")
 	}
 
-	ret, err := s.issueTokens(user, clientIP, userAgent, authCfg)
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now()
-	if err = UserService.Updates(user.ID, map[string]any{
-		"last_login_at":    now,
-		"last_login_ip":    clientIP,
-		"update_user_id":   user.ID,
-		"update_user_name": user.Username,
-		"updated_at":       now,
+	var ret *response.LoginResponse
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		var dbErr error
+		ret, dbErr = s.issueTokens(ctx, user, clientIP, userAgent, authCfg)
+		if dbErr != nil {
+			return dbErr
+		}
+		if dbErr = UserService.Updates(user.ID, map[string]any{
+			"last_login_at":    time.Now(),
+			"last_login_ip":    clientIP,
+			"update_user_id":   user.ID,
+			"update_user_name": user.Username,
+			"updated_at":       time.Now(),
+		}); dbErr != nil {
+			return dbErr
+		}
+		return nil
 	}); err != nil {
 		return nil, err
 	}
+
 	_ = s.createLoginCredentialLog(username, user.ID, true, clientIP, userAgent, "")
 	return ret, nil
 }
@@ -145,16 +155,25 @@ func (s *authService) RefreshToken(refreshToken string, authCfg config.AuthConfi
 		return nil, errorsx.Unauthorized("用户不存在或已被禁用")
 	}
 
-	now := time.Now()
-	if err = LoginSessionService.Updates(session.ID, map[string]any{
-		"revoked_at":       now,
-		"update_user_id":   user.ID,
-		"update_user_name": user.Username,
-		"updated_at":       now,
+	var ret *response.LoginResponse
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		var dbErr error
+		if dbErr = repositories.LoginSessionRepository.Updates(ctx.Tx, session.ID, map[string]any{
+			"revoked_at":       time.Now(),
+			"update_user_id":   user.ID,
+			"update_user_name": user.Username,
+			"updated_at":       time.Now(),
+		}); dbErr != nil {
+			return dbErr
+		}
+		if ret, dbErr = s.issueTokens(ctx, user, clientIP, userAgent, authCfg); dbErr != nil {
+			return dbErr
+		}
+		return nil
 	}); err != nil {
 		return nil, err
 	}
-	return s.issueTokens(user, clientIP, userAgent, authCfg)
+	return ret, nil
 }
 
 func (s *authService) Logout(accessToken, refreshToken string) error {
@@ -206,7 +225,7 @@ func (s *authService) Authenticate(ctx iris.Context) (*dto.AuthPrincipal, error)
 		return nil, errorsx.Unauthorized("用户不存在或已被禁用")
 	}
 
-	roles, permissions, err := s.loadUserAuthScope(user.ID)
+	roles, permissions, err := s.loadUserAuthScope(sqls.DB(), user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -253,21 +272,20 @@ func (s *authService) CurrentProfile(ctx iris.Context) (*response.LoginResponse,
 }
 
 func (s *authService) GetUserRoles(userID int64) ([]models.Role, error) {
-	return s.loadUserRoles(userID)
+	return s.loadUserRoles(sqls.DB(), userID)
 }
 
 func (s *authService) GetUserPermissions(userID int64) ([]string, error) {
-	return s.loadUserPermissionCodes(userID)
+	return s.loadUserPermissionCodes(sqls.DB(), userID)
 }
 
-func (s *authService) issueTokens(user *models.User, clientIP, userAgent string, authCfg config.AuthConfig) (*response.LoginResponse, error) {
-	roles, permissions, err := s.loadUserAuthScope(user.ID)
+func (s *authService) issueTokens(ctx *sqls.TxContext, user *models.User, clientIP, userAgent string, authCfg config.AuthConfig) (*response.LoginResponse, error) {
+	roles, permissions, err := s.loadUserAuthScope(ctx.Tx, user.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	accessTTL, refreshTTL := s.resolveTokenTTL(authCfg)
-	now := time.Now()
 	accessToken, err := randomToken(constants.AccessTokenPrefix)
 	if err != nil {
 		return nil, err
@@ -277,48 +295,47 @@ func (s *authService) issueTokens(user *models.User, clientIP, userAgent string,
 		return nil, err
 	}
 
-	if err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		accessSession := &models.LoginSession{
-			UserID:     user.ID,
-			TokenID:    accessToken,
-			TokenType:  constants.TokenTypeAccess,
-			ClientType: constants.ClientTypeAdminWeb,
-			ClientIP:   clientIP,
-			UserAgent:  userAgent,
-			ExpiredAt:  now.Add(accessTTL),
-			LastSeenAt: &now,
-			AuditFields: models.AuditFields{
-				CreatedAt:      now,
-				CreateUserID:   user.ID,
-				CreateUserName: user.Username,
-				UpdatedAt:      now,
-				UpdateUserID:   user.ID,
-				UpdateUserName: user.Username,
-			},
-		}
-		if err := ctx.Tx.Create(accessSession).Error; err != nil {
-			return err
-		}
+	now := time.Now()
+	// accessSession
+	if err := repositories.LoginSessionRepository.Create(ctx.Tx, &models.LoginSession{
+		UserID:     user.ID,
+		TokenID:    accessToken,
+		TokenType:  constants.TokenTypeAccess,
+		ClientType: constants.ClientTypeAdminWeb,
+		ClientIP:   clientIP,
+		UserAgent:  userAgent,
+		ExpiredAt:  now.Add(accessTTL),
+		LastSeenAt: &now,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   user.ID,
+			CreateUserName: user.Username,
+			UpdatedAt:      now,
+			UpdateUserID:   user.ID,
+			UpdateUserName: user.Username,
+		},
+	}); err != nil {
+		return nil, err
+	}
 
-		refreshSession := &models.LoginSession{
-			UserID:     user.ID,
-			TokenID:    refreshToken,
-			TokenType:  constants.TokenTypeRefresh,
-			ClientType: constants.ClientTypeAdminWeb,
-			ClientIP:   clientIP,
-			UserAgent:  userAgent,
-			ExpiredAt:  now.Add(refreshTTL),
-			LastSeenAt: &now,
-			AuditFields: models.AuditFields{
-				CreatedAt:      now,
-				CreateUserID:   user.ID,
-				CreateUserName: user.Username,
-				UpdatedAt:      now,
-				UpdateUserID:   user.ID,
-				UpdateUserName: user.Username,
-			},
-		}
-		return ctx.Tx.Create(refreshSession).Error
+	// refreshSession
+	if err := repositories.LoginSessionRepository.Create(ctx.Tx, &models.LoginSession{
+		UserID:     user.ID,
+		TokenID:    refreshToken,
+		TokenType:  constants.TokenTypeRefresh,
+		ClientType: constants.ClientTypeAdminWeb,
+		ClientIP:   clientIP,
+		UserAgent:  userAgent,
+		ExpiredAt:  now.Add(refreshTTL),
+		LastSeenAt: &now,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   user.ID,
+			CreateUserName: user.Username,
+			UpdatedAt:      now,
+			UpdateUserID:   user.ID,
+			UpdateUserName: user.Username,
+		},
 	}); err != nil {
 		return nil, err
 	}
@@ -371,20 +388,20 @@ func (s *authService) validateSessionToken(token, tokenType string) (*models.Log
 	return session, nil
 }
 
-func (s *authService) loadUserAuthScope(userID int64) ([]string, []string, error) {
-	roleCodes, err := s.loadUserRoleCodes(userID)
+func (s *authService) loadUserAuthScope(tx *gorm.DB, userID int64) ([]string, []string, error) {
+	roleCodes, err := s.loadUserRoleCodes(tx, userID)
 	if err != nil {
 		return nil, nil, err
 	}
-	permissionCodes, err := s.loadUserPermissionCodes(userID)
+	permissionCodes, err := s.loadUserPermissionCodes(tx, userID)
 	if err != nil {
 		return nil, nil, err
 	}
 	return roleCodes, permissionCodes, nil
 }
 
-func (s *authService) loadUserRoleCodes(userID int64) ([]string, error) {
-	roles, err := s.loadUserRoles(userID)
+func (s *authService) loadUserRoleCodes(tx *gorm.DB, userID int64) ([]string, error) {
+	roles, err := s.loadUserRoles(tx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -395,9 +412,9 @@ func (s *authService) loadUserRoleCodes(userID int64) ([]string, error) {
 	return roleCodes, nil
 }
 
-func (s *authService) loadUserRoles(userID int64) ([]models.Role, error) {
+func (s *authService) loadUserRoles(tx *gorm.DB, userID int64) ([]models.Role, error) {
 	roles := make([]models.Role, 0)
-	if err := sqls.DB().
+	if err := tx.
 		Table("t_role AS r").
 		Select("r.*").
 		Joins("JOIN t_user_role AS ur ON ur.role_id = r.id").
@@ -410,8 +427,8 @@ func (s *authService) loadUserRoles(userID int64) ([]models.Role, error) {
 	return roles, nil
 }
 
-func (s *authService) loadUserPermissionCodes(userID int64) ([]string, error) {
-	isSuperAdmin, err := s.hasSuperAdminRole(userID)
+func (s *authService) loadUserPermissionCodes(tx *gorm.DB, userID int64) ([]string, error) {
+	isSuperAdmin, err := s.hasSuperAdminRole(tx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +436,7 @@ func (s *authService) loadUserPermissionCodes(userID int64) ([]string, error) {
 	permissionRows := make([]struct {
 		Code string
 	}, 0)
-	db := sqls.DB().Table("t_permission AS p").Select("DISTINCT p.code").Where("p.status = ?", enums.StatusOk)
+	db := tx.Table("t_permission AS p").Select("DISTINCT p.code").Where("p.status = ?", enums.StatusOk)
 	if !isSuperAdmin {
 		db = db.Joins("JOIN t_role_permission AS rp ON rp.permission_id = p.id").
 			Joins("JOIN t_user_role AS ur ON ur.role_id = rp.role_id").
@@ -438,7 +455,7 @@ func (s *authService) loadUserPermissionCodes(userID int64) ([]string, error) {
 		Code   string
 		Effect int
 	}, 0)
-	if err := sqls.DB().
+	if err := tx.
 		Table("t_user_permission AS up").
 		Select("p.code, up.effect").
 		Joins("JOIN t_permission AS p ON p.id = up.permission_id").
@@ -467,9 +484,9 @@ func (s *authService) loadUserPermissionCodes(userID int64) ([]string, error) {
 	return permissionCodes, nil
 }
 
-func (s *authService) hasSuperAdminRole(userID int64) (bool, error) {
+func (s *authService) hasSuperAdminRole(tx *gorm.DB, userID int64) (bool, error) {
 	var count int64
-	if err := sqls.DB().
+	if err := tx.
 		Table("t_role AS r").
 		Joins("JOIN t_user_role AS ur ON ur.role_id = r.id").
 		Where("ur.user_id = ? AND r.status = ? AND r.code = ?", userID, enums.StatusOk, constants.RoleCodeSuperAdmin).

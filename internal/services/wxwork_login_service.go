@@ -73,37 +73,33 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 		return nil, errorsx.BusinessError(2, "企业微信用户信息不存在")
 	}
 
-	var (
-		identity = repositories.UserIdentityRepository.GetBy(sqls.DB(), enums.ThirdProviderWxWork, profile.CorpID, profile.UserID)
-		user     *models.User
-		err      error
-	)
-	if identity == nil {
-		user, identity, err = s.createWxWorkUser(profile)
-		if err != nil {
-			return nil, err
+	var ret *response.LoginResponse
+	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		var (
+			identity = repositories.UserIdentityRepository.GetBy(ctx.Tx, enums.ThirdProviderWxWork, profile.CorpID, profile.UserID)
+			user     *models.User
+			err      error
+		)
+		if identity == nil {
+			user, identity, err = s.createWxWorkUser(ctx, profile)
+			if err != nil {
+				return err
+			}
+		} else {
+			if identity.Status != enums.StatusOk {
+				return errorsx.BusinessError(3, "当前企业微信绑定已停用")
+			}
+			user = repositories.UserRepository.Get(ctx.Tx, identity.UserID)
+			if user == nil {
+				return errorsx.BusinessError(4, "企业微信账号绑定的系统用户不存在")
+			}
 		}
-	} else {
-		if identity.Status != enums.StatusOk {
-			return nil, errorsx.BusinessError(3, "当前企业微信绑定已停用")
+
+		if user.Status != enums.StatusOk {
+			return errorsx.Unauthorized("当前系统账号已被禁用")
 		}
-		user = UserService.Get(identity.UserID)
-		if user == nil {
-			return nil, errorsx.BusinessError(4, "企业微信账号绑定的系统用户不存在")
-		}
-	}
 
-	if user.Status != enums.StatusOk {
-		return nil, errorsx.Unauthorized("当前系统账号已被禁用")
-	}
-
-	ret, err := AuthService.issueTokens(user, clientIP, userAgent, authCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := repositories.UserRepository.Updates(ctx.Tx, user.ID, map[string]any{
+		if err = repositories.UserRepository.Updates(ctx.Tx, user.ID, map[string]any{
 			"nickname":         s.resolveWxWorkNickname(user.Nickname, profile),
 			"avatar":           s.resolveWxWorkAvatar(user.Avatar, profile),
 			"last_login_at":    time.Now(),
@@ -114,24 +110,39 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 		}); err != nil {
 			return err
 		}
-		return repositories.UserIdentityRepository.Updates(ctx.Tx, identity.ID, map[string]any{
+
+		if err = repositories.UserIdentityRepository.Updates(ctx.Tx, identity.ID, map[string]any{
 			"raw_profile":      jsons.ToJsonStr(profile),
 			"last_auth_at":     time.Now(),
 			"status":           enums.StatusOk,
 			"update_user_id":   user.ID,
 			"update_user_name": user.Username,
 			"updated_at":       time.Now(),
-		})
-	}); err != nil {
+		}); err != nil {
+			return err
+		}
+
+		ret, err = AuthService.issueTokens(ctx, user, clientIP, userAgent, authCfg)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*models.User, *models.UserIdentity, error) {
+func (s *wxWorkLoginService) createWxWorkUser(ctx *sqls.TxContext, profile *wxwork.LoginUser) (*models.User, *models.UserIdentity, error) {
 	username := strings.TrimSpace(profile.UserID)
 	mobile := strings.TrimSpace(profile.Mobile)
 	email := strings.TrimSpace(s.firstNonEmpty(profile.Email, profile.BizMail))
+
+	if err := s.checkWxWorkProfile(ctx.Tx, username, mobile, email); err != nil {
+		return nil, nil, err
+	}
 
 	user := &models.User{
 		Username:     username,
@@ -149,47 +160,35 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*model
 			UpdateUserName: enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
 		},
 	}
-
-	var createdIdentity *models.UserIdentity
-	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := s.checkWxWorkProfile(ctx.Tx, username, mobile, email); err != nil {
-			return err
-		}
-		if err := ctx.Tx.Create(user).Error; err != nil {
-			return err
-		}
-
-		identity := &models.UserIdentity{
-			UserID:         user.ID,
-			Provider:       enums.ThirdProviderWxWork,
-			ProviderUserID: strings.TrimSpace(profile.UserID),
-			ProviderCorpID: strings.TrimSpace(profile.CorpID),
-			ProviderName:   enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
-			RawProfile:     jsons.ToJsonStr(profile),
-			Status:         enums.StatusOk,
-			LastAuthAt:     new(time.Now()),
-			AuditFields: models.AuditFields{
-				CreatedAt:      time.Now(),
-				CreateUserID:   user.ID,
-				CreateUserName: user.Username,
-				UpdatedAt:      time.Now(),
-				UpdateUserID:   user.ID,
-				UpdateUserName: user.Username,
-			},
-		}
-		if unionID := strings.TrimSpace(profile.OpenID); unionID != "" {
-			identity.ProviderUnionID = &unionID
-		}
-		if err := ctx.Tx.Create(identity).Error; err != nil {
-			return err
-		}
-		createdIdentity = identity
-		return nil
-	})
-	if err != nil {
+	if err := repositories.UserRepository.Create(ctx.Tx, user); err != nil {
 		return nil, nil, err
 	}
-	return user, createdIdentity, nil
+
+	identity := &models.UserIdentity{
+		UserID:         user.ID,
+		Provider:       enums.ThirdProviderWxWork,
+		ProviderUserID: strings.TrimSpace(profile.UserID),
+		ProviderCorpID: strings.TrimSpace(profile.CorpID),
+		ProviderName:   enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
+		RawProfile:     jsons.ToJsonStr(profile),
+		Status:         enums.StatusOk,
+		LastAuthAt:     new(time.Now()),
+		AuditFields: models.AuditFields{
+			CreatedAt:      time.Now(),
+			CreateUserID:   user.ID,
+			CreateUserName: user.Username,
+			UpdatedAt:      time.Now(),
+			UpdateUserID:   user.ID,
+			UpdateUserName: user.Username,
+		},
+	}
+	if unionID := strings.TrimSpace(profile.OpenID); unionID != "" {
+		identity.ProviderUnionID = &unionID
+	}
+	if err := repositories.UserIdentityRepository.Create(ctx.Tx, identity); err != nil {
+		return nil, nil, err
+	}
+	return user, identity, nil
 }
 
 func (s *wxWorkLoginService) resolveWxWorkNickname(current string, profile *wxwork.LoginUser) string {
