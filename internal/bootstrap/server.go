@@ -134,6 +134,8 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Register(cfg)
 		m.Party("/dashboard").Handle(new(console.DashboardController))
 		m.Party("/user").Handle(new(console.UserController))
+		m.Party("/company").Handle(new(console.CompanyController))
+		m.Party("/customer").Handle(new(console.CustomerController))
 		m.Party("/role").Handle(new(console.RoleController))
 		m.Party("/permission").Handle(new(console.PermissionController))
 		m.Party("/session").Handle(new(console.SessionController))

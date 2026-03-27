@@ -17,6 +17,13 @@ func newCustomerRepository() *customerRepository {
 type customerRepository struct {
 }
 
+func (r *customerRepository) UpdateCompanyNameByCompanyID(db *gorm.DB, companyID int64, companyName string) (err error) {
+	err = db.Model(&models.Customer{}).Where("company_id = ?", companyID).Updates(map[string]any{
+		"company_name": companyName,
+	}).Error
+	return
+}
+
 func (r *customerRepository) Get(db *gorm.DB, id int64) *models.Customer {
 	ret := &models.Customer{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {
@@ -62,12 +69,12 @@ func (r *customerRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []m
 	return
 }
 
-func (r *customerRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.Customer) {
+func (r *customerRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.Customer) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *customerRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *customerRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -99,4 +106,3 @@ func (r *customerRepository) UpdateColumn(db *gorm.DB, id int64, name string, va
 func (r *customerRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.Customer{}, "id = ?", id)
 }
-

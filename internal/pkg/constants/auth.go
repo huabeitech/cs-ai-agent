@@ -84,6 +84,18 @@ var (
 	PermissionTagUpdate = Permission{Name: "更新标签", Code: "tag.update", Type: "api", GroupName: "tag", Method: "POST", APIPath: "/api/console/tag/update", SortNo: 570}
 	PermissionTagDelete = Permission{Name: "删除标签", Code: "tag.delete", Type: "api", GroupName: "tag", Method: "POST", APIPath: "/api/console/tag/delete", SortNo: 580}
 
+	// 公司相关权限
+	PermissionCompanyView   = Permission{Name: "查看公司", Code: "company.view", Type: "api", GroupName: "company", Method: "ANY", APIPath: "/api/console/company/list", SortNo: 590}
+	PermissionCompanyCreate = Permission{Name: "创建公司", Code: "company.create", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/create", SortNo: 600}
+	PermissionCompanyUpdate = Permission{Name: "更新公司", Code: "company.update", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/update", SortNo: 610}
+	PermissionCompanyDelete = Permission{Name: "删除公司", Code: "company.delete", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/delete", SortNo: 620}
+
+	// 客户相关权限
+	PermissionCustomerView   = Permission{Name: "查看客户", Code: "customer.view", Type: "api", GroupName: "customer", Method: "ANY", APIPath: "/api/console/customer/list", SortNo: 630}
+	PermissionCustomerCreate = Permission{Name: "创建客户", Code: "customer.create", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/create", SortNo: 640}
+	PermissionCustomerUpdate = Permission{Name: "更新客户", Code: "customer.update", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/update", SortNo: 650}
+	PermissionCustomerDelete = Permission{Name: "删除客户", Code: "customer.delete", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/delete", SortNo: 660}
+
 	// 客服相关权限
 	PermissionAgentView         = Permission{Name: "查看客服", Code: "agent.view", Type: "api", GroupName: "agent", Method: "ANY", APIPath: "/api/console/agent/list", SortNo: 610}
 	PermissionAgentCreate       = Permission{Name: "创建客服", Code: "agent.create", Type: "api", GroupName: "agent", Method: "POST", APIPath: "/api/console/agent/create", SortNo: 620}
@@ -192,6 +204,14 @@ var Permissions = []Permission{
 	PermissionTagCreate,
 	PermissionTagUpdate,
 	PermissionTagDelete,
+	PermissionCompanyView,
+	PermissionCompanyCreate,
+	PermissionCompanyUpdate,
+	PermissionCompanyDelete,
+	PermissionCustomerView,
+	PermissionCustomerCreate,
+	PermissionCustomerUpdate,
+	PermissionCustomerDelete,
 	PermissionAgentView,
 	PermissionAgentCreate,
 	PermissionAgentUpdate,
@@ -278,6 +298,8 @@ var RolePermissions = map[string][]Permission{
 		PermissionConversationView, PermissionConversationAssign, PermissionConversationTransfer, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
+		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
+		PermissionCustomerView, PermissionCustomerCreate, PermissionCustomerUpdate, PermissionCustomerDelete,
 		PermissionAgentView, PermissionAgentCreate, PermissionAgentUpdate, PermissionAgentDelete, PermissionAgentUpdateStatus, PermissionAgentConfig,
 		PermissionAgentTeamView, PermissionAgentTeamCreate, PermissionAgentTeamUpdate, PermissionAgentTeamDelete,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
@@ -296,6 +318,8 @@ var RolePermissions = map[string][]Permission{
 		PermissionConversationView, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
+		PermissionCompanyView,
+		PermissionCustomerView, PermissionCustomerCreate, PermissionCustomerUpdate,
 		PermissionAgentView, PermissionAgentUpdate,
 		PermissionAgentTeamView,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
@@ -313,6 +337,8 @@ var RolePermissions = map[string][]Permission{
 		PermissionConversationView,
 		PermissionQuickReplyView,
 		PermissionTagView,
+		PermissionCompanyView,
+		PermissionCustomerView,
 		PermissionAssetView,
 		PermissionAgentView,
 		PermissionAgentTeamView,
