@@ -74,6 +74,18 @@ func (s *userService) UpdateColumn(id int64, name string, value interface{}) err
 	return repositories.UserRepository.UpdateColumn(sqls.DB(), id, name, value)
 }
 
+func (s *userService) GetByUsername(username string) *models.User {
+	return repositories.UserRepository.GetByUsername(sqls.DB(), username)
+}
+
+func (s *userService) GetByMobile(mobile string) *models.User {
+	return repositories.UserRepository.GetByMobile(sqls.DB(), mobile)
+}
+
+func (s *userService) GetByEmail(email string) *models.User {
+	return repositories.UserRepository.GetByEmail(sqls.DB(), email)
+}
+
 func (s *userService) CreateUser(req request.CreateUserRequest, operator *dto.AuthPrincipal) (*models.User, error) {
 	username := strings.TrimSpace(req.Username)
 	if username == "" {
@@ -82,16 +94,16 @@ func (s *userService) CreateUser(req request.CreateUserRequest, operator *dto.Au
 	if strings.TrimSpace(req.Password) == "" {
 		return nil, errorsx.InvalidParam("密码不能为空")
 	}
-	if s.Take("username = ? AND status != ?", username, enums.StatusDisabled) != nil {
+	if s.GetByUsername(username) != nil {
 		return nil, errorsx.InvalidParam("用户名已存在")
 	}
 
 	mobile := utils.NormalizeNullableString(req.Mobile)
 	email := utils.NormalizeNullableString(req.Email)
-	if mobile != nil && s.Take("mobile = ? AND status != ?", *mobile, enums.StatusDisabled) != nil {
+	if mobile != nil && s.GetByMobile(*mobile) != nil {
 		return nil, errorsx.InvalidParam("手机号已存在")
 	}
-	if email != nil && s.Take("email = ? AND status != ?", *email, enums.StatusDisabled) != nil {
+	if email != nil && s.GetByEmail(*email) != nil {
 		return nil, errorsx.InvalidParam("邮箱已存在")
 	}
 
@@ -131,12 +143,12 @@ func (s *userService) UpdateUser(req request.UpdateUserRequest, operator *dto.Au
 	mobile := utils.NormalizeNullableString(req.Mobile)
 	email := utils.NormalizeNullableString(req.Email)
 	if mobile != nil {
-		if existed := s.Take("mobile = ? AND id <> ? AND status != ?", *mobile, req.ID, enums.StatusDisabled); existed != nil {
+		if existed := s.GetByMobile(*mobile); existed != nil && existed.ID != req.ID {
 			return errorsx.InvalidParam("手机号已存在")
 		}
 	}
 	if email != nil {
-		if existed := s.Take("email = ? AND id <> ? AND status != ?", *email, req.ID, enums.StatusDisabled); existed != nil {
+		if existed := s.GetByEmail(*email); existed != nil && existed.ID != req.ID {
 			return errorsx.InvalidParam("邮箱已存在")
 		}
 	}

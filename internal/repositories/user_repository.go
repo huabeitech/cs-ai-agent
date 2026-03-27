@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"cs-agent/internal/models"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -107,4 +108,28 @@ func (r *userRepository) FindByIds(db *gorm.DB, ids []int64) []models.User {
 	var list []models.User
 	db.Where("id IN ?", ids).Find(&list)
 	return list
+}
+
+func (r *userRepository) GetByUsername(db *gorm.DB, username string) *models.User {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return nil
+	}
+	return r.Take(db, "username = ?", username)
+}
+
+func (r *userRepository) GetByMobile(db *gorm.DB, mobile string) *models.User {
+	mobile = strings.TrimSpace(mobile)
+	if mobile == "" {
+		return nil
+	}
+	return r.Take(db, "mobile = ?", mobile)
+}
+
+func (r *userRepository) GetByEmail(db *gorm.DB, email string) *models.User {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return nil
+	}
+	return r.Take(db, "email = ?", email)
 }

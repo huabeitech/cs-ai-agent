@@ -8,6 +8,7 @@ import (
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
 	"encoding/base64"
 	"encoding/hex"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/mlogclub/simple/sqls"
+	"gorm.io/gorm"
 )
 
 const (
@@ -156,12 +158,14 @@ func (s *authService) loginWithWxWorkProfile(profile *wxwork.LoginUser, authCfg 
 
 func (s *authService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time) (*models.User, *models.UserIdentity, error) {
 	rawProfile, _ := json.Marshal(profile)
+	username := s.buildWxWorkUsername(profile.UserID)
+	mobileValue := strings.TrimSpace(profile.Mobile)
+	emailValue := strings.TrimSpace(s.firstNonEmpty(profile.Email, profile.BizMail))
+
 	user := &models.User{
-		Username:     s.buildWxWorkUsername(profile.CorpID, profile.UserID),
+		Username:     username,
 		Nickname:     s.resolveWxWorkNickname("", profile),
 		Avatar:       s.resolveWxWorkAvatar("", profile),
-		Mobile:       s.normalizeAvailableContact(profile.Mobile, "mobile"),
-		Email:        s.normalizeAvailableContact(s.firstNonEmpty(profile.Email, profile.BizMail), "email"),
 		Password:     "",
 		PasswordSalt: "",
 		Status:       enums.StatusOk,
@@ -177,6 +181,18 @@ func (s *authService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time)
 
 	var createdIdentity *models.UserIdentity
 	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if existing := repositories.UserRepository.Take(ctx.Tx, "username = ?", username); existing != nil {
+			return errorsx.BusinessError(5, "企业微信用户ID已被系统用户名占用")
+		}
+		var err error
+		user.Mobile, err = s.normalizeAvailableContactTx(ctx.Tx, mobileValue, "mobile")
+		if err != nil {
+			return err
+		}
+		user.Email, err = s.normalizeAvailableContactTx(ctx.Tx, emailValue, "email")
+		if err != nil {
+			return err
+		}
 		if err := ctx.Tx.Create(user).Error; err != nil {
 			return err
 		}
@@ -223,16 +239,8 @@ func (s *authService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time)
 	return user, createdIdentity, nil
 }
 
-func (s *authService) buildWxWorkUsername(corpID, userID string) string {
-	raw := strings.ToLower(strings.TrimSpace(corpID) + "_" + strings.TrimSpace(userID))
-	raw = strings.NewReplacer("@", "_", ".", "_", "-", "_", " ", "_", "/", "_", "\\", "_", ":", "_").Replace(raw)
-	raw = strings.Trim(raw, "_")
-	base := "wxwork_" + raw
-	if len(base) <= 100 && UserService.Take("username = ?", base) == nil {
-		return base
-	}
-	sum := sha256.Sum256([]byte(strings.TrimSpace(corpID) + ":" + strings.TrimSpace(userID)))
-	return "wxwork_" + hex.EncodeToString(sum[:16])
+func (s *authService) buildWxWorkUsername(userID string) string {
+	return strings.TrimSpace(userID)
 }
 
 func (s *authService) resolveWxWorkNickname(current string, profile *wxwork.LoginUser) string {
@@ -259,22 +267,22 @@ func (s *authService) resolveWxWorkAvatar(current string, profile *wxwork.LoginU
 	return strings.TrimSpace(current)
 }
 
-func (s *authService) normalizeAvailableContact(value string, field string) *string {
+func (s *authService) normalizeAvailableContactTx(tx *gorm.DB, value string, field string) (*string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return nil
+		return nil, nil
 	}
 	switch field {
 	case "mobile":
-		if UserService.Take("mobile = ? AND status != ?", value, enums.StatusDisabled) != nil {
-			return nil
+		if repositories.UserRepository.Take(tx, "mobile = ? AND status != ?", value, enums.StatusDisabled) != nil {
+			return nil, errorsx.BusinessError(6, "企业微信手机号已被系统用户占用")
 		}
 	case "email":
-		if UserService.Take("email = ? AND status != ?", value, enums.StatusDisabled) != nil {
-			return nil
+		if repositories.UserRepository.Take(tx, "email = ? AND status != ?", value, enums.StatusDisabled) != nil {
+			return nil, errorsx.BusinessError(7, "企业微信邮箱已被系统用户占用")
 		}
 	}
-	return &value
+	return &value, nil
 }
 
 func (s *authService) createWxWorkState(next string) (string, error) {
