@@ -36,7 +36,7 @@ func ExtractPlainText(content string, contentType enums.KnowledgeDocumentContent
 }
 
 func ExtractPlainTextFromMarkdown(content string) string {
-	content = normalizeWhitespace(content)
+	content = strings.TrimSpace(content)
 	if content == "" {
 		return ""
 	}
@@ -54,19 +54,26 @@ func ExtractPlainTextFromHTML(content string) string {
 		return ""
 	}
 
+	var builder strings.Builder
 	parent := &htmlparser.Node{
 		Type: htmlparser.ElementNode,
 		Data: "div",
 	}
 	nodes, err := htmlparser.ParseFragment(strings.NewReader(content), parent)
+	if err == nil {
+		for _, node := range nodes {
+			writeHTMLNodeText(&builder, node)
+		}
+		return normalizeWhitespace(builder.String())
+	}
+
+	// 兜底：部分输入在 ParseFragment 下会失败（例如不符合 fragment 规则或上下文不匹配）。
+	// 这里用完整 HTML 解析保证可用性。
+	doc, err := htmlparser.Parse(strings.NewReader("<div>" + content + "</div>"))
 	if err != nil {
 		return normalizeWhitespace(content)
 	}
-
-	var builder strings.Builder
-	for _, node := range nodes {
-		writeHTMLNodeText(&builder, node)
-	}
+	writeHTMLNodeText(&builder, doc)
 	return normalizeWhitespace(builder.String())
 }
 
