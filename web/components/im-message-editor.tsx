@@ -60,7 +60,7 @@ export function ImMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-slate-900 outline-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain",
+          "h-full min-h-12 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-slate-900 outline-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -165,7 +165,7 @@ export function ImMessageEditor({
   }
 
   return (
-    <div className="p-2">
+    <div className="flex h-full min-h-0 flex-col p-2">
       <input
         ref={imageInputRef}
         type="file"
@@ -173,8 +173,8 @@ export function ImMessageEditor({
         className="hidden"
         onChange={handleSelectImage}
       />
-      <div className="rounded-sm border bg-background">
-        <div className="min-h-12 px-2 py-1">
+      <div className="flex h-full min-h-0 flex-col rounded-sm border bg-background">
+        <div className="min-h-0 flex-1 px-2 py-1">
           <EditorContent editor={editor} />
         </div>
         <div className="flex items-center justify-between border-t px-2 pb-2 pt-1">
