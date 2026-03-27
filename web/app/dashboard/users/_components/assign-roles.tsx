@@ -135,12 +135,12 @@ function AssignRolesDrawerBody({
   }
 
   return (
-    <DrawerContent className="max-w-2xl">
+    <DrawerContent className="min-w-2xl">
       <DrawerHeader>
         <DrawerTitle>分配角色</DrawerTitle>
-        <DrawerDescription>
+        {/* <DrawerDescription>
           为用户 {item?.nickname || item?.username || "-"} 配置后台角色，保存后立即生效
-        </DrawerDescription>
+        </DrawerDescription> */}
       </DrawerHeader>
       <form
         className="flex h-full min-h-0 flex-col"
@@ -170,7 +170,7 @@ function AssignRolesDrawerBody({
 
             return (
               <div className="min-h-0 space-y-4 px-4 pb-4">
-                <div className="grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3">
+                {/* <div className="grid gap-3 rounded-lg border bg-muted/20 p-4 sm:grid-cols-3">
                   <div>
                     <div className="text-xs text-muted-foreground">用户账号</div>
                     <div className="mt-1 font-medium">{item?.username || "-"}</div>
@@ -185,12 +185,12 @@ function AssignRolesDrawerBody({
                     <div className="text-xs text-muted-foreground">当前角色数</div>
                     <div className="mt-1 font-medium">{selectedRoles.length}</div>
                   </div>
-                </div>
+                </div> */}
 
                 <Field>
                   <FieldLabel>当前已分配</FieldLabel>
                   <FieldContent>
-                    <div className="rounded-2xl border p-4">
+                    <div className="rounded-lg border p-4">
                       {selectedRoles.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {selectedRoles.map((role) => (
@@ -218,9 +218,9 @@ function AssignRolesDrawerBody({
 
                 <Field data-invalid={!!errors.roleIds}>
                   <FieldLabel>角色列表</FieldLabel>
-                  <FieldDescription>
+                  {/* <FieldDescription>
                     禁用角色不会允许新分配；如果用户已持有禁用角色，仍可在这里移除。
-                  </FieldDescription>
+                  </FieldDescription> */}
                   <FieldContent>
                     <div className="relative">
                       <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -232,7 +232,7 @@ function AssignRolesDrawerBody({
                         disabled={loading}
                       />
                     </div>
-                    <div className="max-h-96 space-y-2 overflow-y-auto rounded-2xl border p-3">
+                    <div className="max-h-96 space-y-2 overflow-y-auto rounded-lg border p-3 mt-2">
                       {loading ? (
                         <div className="py-8 text-center text-sm text-muted-foreground">
                           正在加载角色列表...
@@ -305,7 +305,7 @@ function AssignRolesDrawerBody({
                 <Field>
                   <FieldLabel>本次变更</FieldLabel>
                   <FieldContent>
-                    <div className="space-y-3 rounded-2xl border p-4">
+                    <div className="space-y-3 rounded-lg border p-4">
                       <div>
                         <div className="mb-2 text-sm font-medium">新增角色</div>
                         {addedRoles.length > 0 ? (
