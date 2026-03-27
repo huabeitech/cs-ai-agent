@@ -55,6 +55,10 @@ type LoadMessagesOptions = {
   reset?: boolean
 }
 
+function ensureArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : []
+}
+
 type AgentConversationsStore = {
   searchKeyword: string
   conversationFilter: AgentConversationFilterKey
@@ -115,6 +119,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       const data = await fetchAgentConversations(
         buildConversationQuery(store.conversationFilter, store.searchKeyword)
       )
+      const conversations = ensureArray(data.results)
 
       if (requestSeq !== conversationsRequestSeq) {
         return
@@ -122,12 +127,12 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
 
       const currentSelectedId = get().selectedConversationId
       const hasCurrentSelection =
-        currentSelectedId !== null && data.results.some((item) => item.id === currentSelectedId)
-      const nextSelectedId = hasCurrentSelection ? currentSelectedId : (data.results[0]?.id ?? null)
+        currentSelectedId !== null && conversations.some((item) => item.id === currentSelectedId)
+      const nextSelectedId = hasCurrentSelection ? currentSelectedId : (conversations[0]?.id ?? null)
       const selectionChanged = nextSelectedId !== currentSelectedId
 
       set({
-        conversations: data.results,
+        conversations,
         conversationsLoaded: true,
         conversationsLoading: false,
         selectedConversationId: nextSelectedId,
@@ -202,7 +207,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       }
 
       set({
-        messages: data.results,
+        messages: ensureArray(data.results),
         messagesLoading: false,
         messagesLoadedConversationId: conversationId,
       })

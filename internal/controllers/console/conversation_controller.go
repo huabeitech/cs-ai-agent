@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -34,7 +35,7 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "sourceUserId"},
 	).Desc("last_message_at").Desc("id")
 
-	if keyword := c.Ctx.URLParamTrim("keyword"); keyword != "" {
+	if keyword, _ := params.Get(c.Ctx, "keyword"); strs.IsNotBlank(keyword) {
 		cnd.Where("subject LIKE ? OR external_user_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 	if tagID, _ := params.GetInt64(c.Ctx, "tagId"); tagID > 0 {

@@ -33,7 +33,8 @@ export function ChatPanel() {
   const conversation = useAgentConversationsStore(
     agentConversationSelectors.selectedConversation,
   );
-  const messages = useAgentConversationsStore((state) => state.messages);
+  const messages =
+    useAgentConversationsStore((state) => state.messages) ?? [];
   const loading = useAgentConversationsStore((state) => state.messagesLoading);
   const sending = useAgentConversationsStore((state) => state.sending);
   const uploadingImage = useAgentConversationsStore(
