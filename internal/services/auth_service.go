@@ -123,7 +123,7 @@ func (s *authService) Login(req request.LoginRequest, authCfg config.AuthConfig,
 		if dbErr != nil {
 			return dbErr
 		}
-		if dbErr = UserService.Updates(user.ID, map[string]any{
+		if dbErr = repositories.UserRepository.Updates(ctx.Tx, user.ID, map[string]any{
 			"last_login_at":    time.Now(),
 			"last_login_ip":    clientIP,
 			"update_user_id":   user.ID,
