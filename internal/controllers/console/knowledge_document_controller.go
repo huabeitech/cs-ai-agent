@@ -54,7 +54,8 @@ func (c *KnowledgeDocumentController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -62,7 +63,7 @@ func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.KnowledgeDocumentService.CreateKnowledgeDocument(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.KnowledgeDocumentService.CreateKnowledgeDocument(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -70,7 +71,8 @@ func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
 }
 
 func (c *KnowledgeDocumentController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -78,7 +80,7 @@ func (c *KnowledgeDocumentController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.KnowledgeDocumentService.UpdateKnowledgeDocument(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.KnowledgeDocumentService.UpdateKnowledgeDocument(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

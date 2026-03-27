@@ -71,8 +71,7 @@ func (c *TicketReplyController) PostCreate() *web.JsonResult {
 		AttachmentIDs: req.AttachmentIDs,
 		AuditFields:   utils.BuildAuditFields(operator),
 	}
-	err := services.TicketReplyService.Create(reply)
-	if err != nil {
+	if err = services.TicketReplyService.Create(reply); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonData(map[string]any{

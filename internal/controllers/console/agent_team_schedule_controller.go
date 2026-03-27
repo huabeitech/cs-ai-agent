@@ -43,14 +43,15 @@ func (c *AgentTeamScheduleController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateAgentTeamScheduleRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.AgentTeamScheduleService.CreateAgentTeamSchedule(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AgentTeamScheduleService.CreateAgentTeamSchedule(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -58,14 +59,15 @@ func (c *AgentTeamScheduleController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentTeamScheduleController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentTeamScheduleRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AgentTeamScheduleService.UpdateAgentTeamSchedule(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AgentTeamScheduleService.UpdateAgentTeamSchedule(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
