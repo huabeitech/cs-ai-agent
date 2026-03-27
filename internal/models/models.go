@@ -116,7 +116,7 @@ type Customer struct {
 	Name          string       `gorm:"type:varchar(100);not null;default:'';index"` // Name 为客户姓名或展示名称。
 	Nickname      string       `gorm:"type:varchar(100);not null;default:'';index"` // Nickname 为客户昵称。
 	Avatar        string       `gorm:"type:varchar(500);not null;default:''"`       // Avatar 为客户头像URL。
-	Gender        int          `gorm:"type:int;not null;default:0;index"`           // Gender 为性别：0未知 1男 2女。
+	Gender        enums.Gender `gorm:"type:int;not null;default:0;index"`           // Gender 为性别：0未知 1男 2女。
 	Province      string       `gorm:"type:varchar(50);not null;default:''"`        // Province 为所在省份。
 	City          string       `gorm:"type:varchar(50);not null;default:''"`        // City 为所在城市。
 	LastActiveAt  *time.Time   `gorm:"type:datetime;index"`                         // LastActiveAt 为最近活跃时间。

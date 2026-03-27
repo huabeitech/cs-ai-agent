@@ -29,6 +29,35 @@ func IsValidStatus(status int) bool {
 	return false
 }
 
+type Gender int
+
+const (
+	GenderUnknown Gender = 0
+	GenderMale    Gender = 1
+	GenderFemale  Gender = 2
+)
+
+var GenderValues = []Gender{GenderUnknown, GenderMale, GenderFemale}
+
+var genderLabelMap = map[Gender]string{
+	GenderUnknown: "未知",
+	GenderMale:    "男",
+	GenderFemale:  "女",
+}
+
+func GetGenderLabel(gender Gender) string {
+	return genderLabelMap[gender]
+}
+
+func IsValidGender(gender int) bool {
+	for _, g := range GenderValues {
+		if int(g) == gender {
+			return true
+		}
+	}
+	return false
+}
+
 type ThirdProvider string
 
 const (
