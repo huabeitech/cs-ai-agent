@@ -147,22 +147,22 @@ func TestCreateConversationInitializesLastMessageAt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create conversation failed: %v", err)
 	}
-	if item.LastMessageAt == nil {
-		t.Fatal("expected last message at to be initialized")
-	}
 	if !item.LastMessageAt.Equal(item.CreatedAt) {
 		t.Fatalf("expected last message at %v to equal created at %v", item.LastMessageAt, item.CreatedAt)
+	}
+	if !item.LastActiveTime.Equal(item.CreatedAt) {
+		t.Fatalf("expected last active time %v to equal created at %v", item.LastActiveTime, item.CreatedAt)
 	}
 
 	stored := ConversationService.Get(item.ID)
 	if stored == nil {
 		t.Fatalf("expected stored conversation, got nil")
 	}
-	if stored.LastMessageAt == nil {
-		t.Fatal("expected stored last message at to be initialized")
-	}
 	if !stored.LastMessageAt.Equal(stored.CreatedAt) {
 		t.Fatalf("expected stored last message at %v to equal created at %v", stored.LastMessageAt, stored.CreatedAt)
+	}
+	if !stored.LastActiveTime.Equal(stored.CreatedAt) {
+		t.Fatalf("expected stored last active time %v to equal created at %v", stored.LastActiveTime, stored.CreatedAt)
 	}
 }
 
@@ -211,8 +211,9 @@ func TestCreateOrMatchConversationWithAIAgentFillsExistingConversationAIAgentID(
 func TestSendCustomerMessageUpdatesConversationSummary(t *testing.T) {
 	setupIMServiceTestDB(t)
 
+	seedEnabledAIAgent(t, 304, "发送消息测试AI")
 	customer := &dto.AuthPrincipal{UserID: 1002, Username: "customer_2"}
-	conversation, err := ConversationService.Create(enums.IMConversationChannelWebChat, "物流问题", 0, customer)
+	conversation, err := ConversationService.Create(enums.IMConversationChannelWebChat, "物流问题", 304, customer)
 	if err != nil {
 		t.Fatalf("create conversation failed: %v", err)
 	}
@@ -236,6 +237,9 @@ func TestSendCustomerMessageUpdatesConversationSummary(t *testing.T) {
 	updated := ConversationService.Get(conversation.ID)
 	if updated.LastMessageID != message.ID {
 		t.Fatalf("expected last message id %d, got %d", message.ID, updated.LastMessageID)
+	}
+	if updated.LastActiveTime.Before(conversation.CreatedAt) {
+		t.Fatalf("expected last active time %v after created at %v", updated.LastActiveTime, conversation.CreatedAt)
 	}
 	if updated.LastMessageSummary != "你好，想查询物流" {
 		t.Fatalf("unexpected last message summary: %s", updated.LastMessageSummary)

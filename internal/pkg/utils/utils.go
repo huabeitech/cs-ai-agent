@@ -45,6 +45,13 @@ func FormatTimePtr(t *time.Time) string {
 	return t.Format(time.DateTime)
 }
 
+func FormatTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.DateTime)
+}
+
 func GenerateRandomPassword(length int) (string, error) {
 	if length <= 0 {
 		return "", errorsx.InvalidParam("密码长度不合法")

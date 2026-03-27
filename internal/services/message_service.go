@@ -248,6 +248,7 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversationID).Updates(map[string]any{
 			"last_message_id":       message.ID,
 			"last_message_at":       now,
+			"last_active_time":      now,
 			"last_message_summary":  limitText(summary, 255),
 			"update_user_id":        operator.UserID,
 			"update_user_name":      updateUserName,

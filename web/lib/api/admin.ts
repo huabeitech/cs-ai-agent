@@ -91,6 +91,7 @@ export type AdminConversation = {
   currentAssigneeName?: string
   lastMessageId: number
   lastMessageAt?: string
+  lastActiveTime?: string
   lastMessageSummary?: string
   customerUnreadCount: number
   agentUnreadCount: number

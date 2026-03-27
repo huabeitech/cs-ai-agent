@@ -229,6 +229,7 @@ type Conversation struct {
 	CurrentTeamID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // CurrentTeamID 为当前处理客服组ID。
 	LastMessageID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // LastMessageID 为最后一条消息ID。
 	LastMessageAt       time.Time                       `gorm:"type:datetime;index"`                         // LastMessageAt 为最后消息时间。
+	LastActiveTime      time.Time                       `gorm:"type:datetime;index"`                         // LastActiveTime 为会话最近活跃时间。
 	LastMessageSummary  string                          `gorm:"type:varchar(255);not null;default:''"`       // LastMessageSummary 为最后一条消息摘要。
 	CustomerUnreadCount int                             `gorm:"type:int;not null;default:0"`                 // CustomerUnreadCount 为用户侧未读数。
 	AgentUnreadCount    int                             `gorm:"type:int;not null;default:0"`                 // AgentUnreadCount 为客服侧未读数。

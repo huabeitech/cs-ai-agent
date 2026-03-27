@@ -279,6 +279,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
               ? {
                   ...item,
                   lastMessageAt: message.sentAt,
+                  lastActiveTime: message.sentAt,
                   lastMessageSummary: summarizeHTML(trimmedContent),
                   agentUnreadCount: 0,
                   customerUnreadCount: (item.customerUnreadCount ?? 0) + 1,

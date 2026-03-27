@@ -96,14 +96,14 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		Subject:           "mine active older",
 		Status:            enums.IMConversationStatusActive,
 		CurrentAssigneeID: 9001,
-		LastMessageAt:     timePtr(now.Add(-2 * time.Hour)),
+		LastMessageAt:     now.Add(-2 * time.Hour),
 	})
 	seedConversationListTestItem(t, &models.Conversation{
 		ID:                102,
 		Subject:           "mine active newer",
 		Status:            enums.IMConversationStatusActive,
 		CurrentAssigneeID: 9001,
-		LastMessageAt:     timePtr(now.Add(-1 * time.Hour)),
+		LastMessageAt:     now.Add(-1 * time.Hour),
 	})
 	seedConversationListTestItem(t, &models.Conversation{
 		ID:                103,
@@ -116,7 +116,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		Subject:           "mine closed",
 		Status:            enums.IMConversationStatusClosed,
 		CurrentAssigneeID: 9001,
-		LastMessageAt:     timePtr(now.Add(-30 * time.Minute)),
+		LastMessageAt:     now.Add(-30 * time.Minute),
 	})
 	seedConversationListTestItem(t, &models.Conversation{
 		ID:                99,
@@ -129,7 +129,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		Subject:           "other active",
 		Status:            enums.IMConversationStatusActive,
 		CurrentAssigneeID: 9002,
-		LastMessageAt:     timePtr(now),
+		LastMessageAt:     now,
 	})
 
 	operator := &dto.AuthPrincipal{UserID: 9001, Username: "agent_9001"}
@@ -180,7 +180,7 @@ func TestFindAgentConversationPageLimitsToHundred(t *testing.T) {
 			Subject:           "limit test",
 			Status:            enums.IMConversationStatusActive,
 			CurrentAssigneeID: 9101,
-			LastMessageAt:     timePtr(time.Now().Add(time.Duration(i) * time.Minute)),
+			LastMessageAt:     time.Now().Add(time.Duration(i) * time.Minute),
 		})
 	}
 

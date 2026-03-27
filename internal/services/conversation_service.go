@@ -123,7 +123,10 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		return nil, errorsx.InvalidParam("AI Agent not found")
 	}
 
+	now := time.Now()
 	auditFields := utils.BuildAuditFields(operator)
+	auditFields.CreatedAt = now
+	auditFields.UpdatedAt = now
 	conversation := &models.Conversation{
 		AIAgentID:         aiAgentID,
 		ChannelType:       channelType,
@@ -135,13 +138,15 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		ExternalUserID:    "",
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
-		LastMessageAt:     time.Now(),
+		LastMessageAt:     now,
+		LastActiveTime:    now,
 		AuditFields:       auditFields,
 	}
 	if operator.IsVisitor {
 		conversation.SourceUserID = 0
 		conversation.ExternalUserID = operator.VisitorID
 	}
+	now = conversation.CreatedAt
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
