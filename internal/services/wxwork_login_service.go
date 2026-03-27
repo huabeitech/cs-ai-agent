@@ -16,11 +16,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	wxWorkProviderName        = "wxwork"
-	wxWorkProviderDisplayName = "企业微信"
-)
-
 var WxWorkLoginService = &wxWorkLoginService{}
 
 type wxWorkLoginService struct {
@@ -78,7 +73,7 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 	}
 	now := time.Now()
 	identity := UserIdentityService.FindOne(sqls.NewCnd().
-		Eq("provider", wxWorkProviderName).
+		Eq("provider", enums.ThirdProviderWxWork).
 		Eq("provider_corp_id", strings.TrimSpace(profile.CorpID)).
 		Eq("provider_user_id", strings.TrimSpace(profile.UserID)))
 
@@ -151,10 +146,10 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now tim
 		AuditFields: models.AuditFields{
 			CreatedAt:      now,
 			CreateUserID:   0,
-			CreateUserName: wxWorkProviderDisplayName,
+			CreateUserName: enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
 			UpdatedAt:      now,
 			UpdateUserID:   0,
-			UpdateUserName: wxWorkProviderDisplayName,
+			UpdateUserName: enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
 		},
 	}
 
@@ -178,10 +173,10 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now tim
 
 		identity := &models.UserIdentity{
 			UserID:         user.ID,
-			Provider:       wxWorkProviderName,
+			Provider:       enums.ThirdProviderWxWork,
 			ProviderUserID: strings.TrimSpace(profile.UserID),
 			ProviderCorpID: strings.TrimSpace(profile.CorpID),
-			ProviderName:   wxWorkProviderDisplayName,
+			ProviderName:   enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
 			RawProfile:     string(rawProfile),
 			Status:         enums.StatusOk,
 			LastAuthAt:     &now,
@@ -205,7 +200,7 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now tim
 	})
 	if err != nil {
 		if existing := UserIdentityService.FindOne(sqls.NewCnd().
-			Eq("provider", wxWorkProviderName).
+			Eq("provider", enums.ThirdProviderWxWork).
 			Eq("provider_corp_id", strings.TrimSpace(profile.CorpID)).
 			Eq("provider_user_id", strings.TrimSpace(profile.UserID))); existing != nil {
 			existingUser := UserService.Get(existing.UserID)

@@ -92,16 +92,16 @@ type User struct {
 
 // UserIdentity 第三方身份绑定信息。
 type UserIdentity struct {
-	ID              int64        `gorm:"primaryKey;autoIncrement"`
-	UserID          int64        `gorm:"type:bigint;not null;index;uniqueIndex:uk_provider_user"`
-	Provider        string       `gorm:"type:varchar(50);not null;default:'';index;uniqueIndex:uk_provider_user;uniqueIndex:uk_provider_union"`
-	ProviderUserID  string       `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_provider_user"`
-	ProviderUnionID *string      `gorm:"type:varchar(128);uniqueIndex:uk_provider_union"`
-	ProviderCorpID  string       `gorm:"type:varchar(128);not null;default:'';index"`
-	ProviderName    string       `gorm:"type:varchar(100);not null;default:''"`
-	RawProfile      string       `gorm:"type:text"`
-	Status          enums.Status `gorm:"type:int;not null;default:0;index"`
-	LastAuthAt      *time.Time   `gorm:"type:datetime"`
+	ID              int64               `gorm:"primaryKey;autoIncrement"`
+	UserID          int64               `gorm:"type:bigint;not null;index;uniqueIndex:uk_provider_user"`
+	Provider        enums.ThirdProvider `gorm:"type:varchar(50);not null;default:'';index;uniqueIndex:uk_provider_user;uniqueIndex:uk_provider_union"`
+	ProviderUserID  string              `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_provider_user"`
+	ProviderUnionID *string             `gorm:"type:varchar(128);uniqueIndex:uk_provider_union"`
+	ProviderCorpID  string              `gorm:"type:varchar(128);not null;default:'';index"`
+	ProviderName    string              `gorm:"type:varchar(100);not null;default:''"`
+	RawProfile      string              `gorm:"type:text"`
+	Status          enums.Status        `gorm:"type:int;not null;default:0;index"`
+	LastAuthAt      *time.Time          `gorm:"type:datetime"`
 	AuditFields
 }
 

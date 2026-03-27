@@ -28,3 +28,30 @@ func IsValidStatus(status int) bool {
 	}
 	return false
 }
+
+type ThirdProvider string
+
+const (
+	ThirdProviderWxWork   ThirdProvider = "wxwork"
+	ThirdProviderDingtalk ThirdProvider = "dingtalk"
+)
+
+var ThirdProviderValues = []ThirdProvider{ThirdProviderWxWork, ThirdProviderDingtalk}
+
+var thirdProviderLabelMap = map[ThirdProvider]string{
+	ThirdProviderWxWork:   "企业微信",
+	ThirdProviderDingtalk: "钉钉",
+}
+
+func GetThirdProviderLabel(provider ThirdProvider) string {
+	return thirdProviderLabelMap[provider]
+}
+
+func IsValidThirdProvider(provider string) bool {
+	for _, p := range ThirdProviderValues {
+		if string(p) == provider {
+			return true
+		}
+	}
+	return false
+}
