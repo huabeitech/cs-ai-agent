@@ -15,7 +15,6 @@ import { toast } from "sonner";
 
 import { ConversationCloseDialog } from "@/components/conversation-actions/close-dialog";
 import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog";
-import { OptionCombobox } from "@/components/option-combobox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +24,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAgentConversationRealtime } from "@/hooks/use-agent-conversation-realtime";
 import {
   agentConversationFilterOptions,
@@ -60,6 +66,9 @@ export default function ConversationsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
+  const currentFilterLabel =
+    agentConversationFilterOptions.find((opt) => opt.value === conversationFilter)
+      ?.label ?? "筛选";
 
   useEffect(() => {
     void loadConversations().catch((error) => {
@@ -99,17 +108,23 @@ export default function ConversationsPage() {
                 />
               </div>
               <div>
-                <OptionCombobox
+                <Select
                   value={conversationFilter}
-                  options={agentConversationFilterOptions.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                  }))}
-                  placeholder="筛选"
-                  searchPlaceholder="搜索筛选项"
-                  emptyText="没有筛选项"
-                  onChange={(value) => setConversationFilter(value as typeof conversationFilter)}
-                />
+                  onValueChange={(value) =>
+                    setConversationFilter(value as typeof conversationFilter)
+                  }
+                >
+                  <SelectTrigger className="w-[116px]">
+                    <SelectValue>{currentFilterLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agentConversationFilterOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button

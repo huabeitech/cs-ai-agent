@@ -33,7 +33,7 @@ async function refreshAccessToken() {
   }
 
   const data = await request<AuthSession>(
-    "/api/auth/refresh-token",
+    "/api/auth/refresh_token",
     {
       method: "POST",
       body: JSON.stringify({ refreshToken: session.refreshToken }),
