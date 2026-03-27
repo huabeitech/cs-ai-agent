@@ -44,7 +44,7 @@ func (c *AuthController) PostRefreshToken() *web.JsonResult {
 }
 
 func (c *AuthController) GetWxwork_login() {
-	loginURL, err := services.AuthService.BuildWxWorkLoginURL(c.Ctx.URLParam("next"))
+	loginURL, err := services.WxWorkLoginService.BuildWxWorkLoginURL(c.Ctx.URLParam("next"))
 	if err != nil {
 		c.redirectWxWorkError(err.Error())
 		return
@@ -53,7 +53,7 @@ func (c *AuthController) GetWxwork_login() {
 }
 
 func (c *AuthController) GetWxwork_qr_login() {
-	loginURL, err := services.AuthService.BuildWxWorkQRCodeLoginURL(c.Ctx.URLParam("next"))
+	loginURL, err := services.WxWorkLoginService.BuildWxWorkQRCodeLoginURL(c.Ctx.URLParam("next"))
 	if err != nil {
 		c.redirectWxWorkError(err.Error())
 		return
@@ -62,7 +62,7 @@ func (c *AuthController) GetWxwork_qr_login() {
 }
 
 func (c *AuthController) GetWxwork_callback() {
-	ticket, next, err := services.AuthService.LoginByWxWork(
+	ticket, next, err := services.WxWorkLoginService.LoginByWxWork(
 		c.Ctx.URLParam("code"),
 		c.Ctx.URLParam("state"),
 		c.Cfg.Auth,
@@ -81,7 +81,7 @@ func (c *AuthController) PostWxwork_exchange() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	ret, err := services.AuthService.ExchangeWxWorkLoginTicket(req.Ticket)
+	ret, err := services.WxWorkLoginService.ExchangeWxWorkLoginTicket(req.Ticket)
 	if err != nil {
 		return web.JsonError(err)
 	}

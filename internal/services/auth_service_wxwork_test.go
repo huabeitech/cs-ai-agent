@@ -16,14 +16,14 @@ func TestWxWorkStateRoundTrip(t *testing.T) {
 		},
 	})
 
-	next, err := AuthService.createWxWorkState("/workspace")
+	next, err := wxwork.CreateState("/workspace")
 	if err != nil {
-		t.Fatalf("createWxWorkState failed: %v", err)
+		t.Fatalf("CreateState failed: %v", err)
 	}
 
-	got, err := AuthService.parseWxWorkState(next)
+	got, err := wxwork.ParseState(next)
 	if err != nil {
-		t.Fatalf("parseWxWorkState failed: %v", err)
+		t.Fatalf("ParseState failed: %v", err)
 	}
 	if got != "/workspace" {
 		t.Fatalf("expected /workspace, got %s", got)
@@ -31,28 +31,28 @@ func TestWxWorkStateRoundTrip(t *testing.T) {
 }
 
 func TestWxWorkLoginTicketSingleUse(t *testing.T) {
-	ticket, err := AuthService.issueWxWorkLoginTicket(nil)
+	ticket, err := wxwork.IssueLoginTicket(nil)
 	if err == nil {
 		t.Fatal("expected nil login response to fail")
 	}
 
-	ticket, err = AuthService.issueWxWorkLoginTicket(&response.LoginResponse{
+	ticket, err = wxwork.IssueLoginTicket(&response.LoginResponse{
 		AccessToken:  "access",
 		RefreshToken: "refresh",
 	})
 	if err != nil {
-		t.Fatalf("issueWxWorkLoginTicket failed: %v", err)
+		t.Fatalf("IssueLoginTicket failed: %v", err)
 	}
 
-	resp, err := AuthService.consumeWxWorkLoginTicket(ticket)
+	resp, err := wxwork.ConsumeLoginTicket(ticket)
 	if err != nil {
-		t.Fatalf("consumeWxWorkLoginTicket failed: %v", err)
+		t.Fatalf("ConsumeLoginTicket failed: %v", err)
 	}
 	if resp.AccessToken != "access" {
 		t.Fatalf("expected access token access, got %s", resp.AccessToken)
 	}
 
-	if _, err = AuthService.consumeWxWorkLoginTicket(ticket); err == nil {
+	if _, err = wxwork.ConsumeLoginTicket(ticket); err == nil {
 		t.Fatal("expected consumed ticket to become invalid")
 	}
 }

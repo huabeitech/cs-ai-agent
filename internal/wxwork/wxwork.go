@@ -3,7 +3,6 @@ package wxwork
 import (
 	"cs-agent/internal/pkg/config"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/silenceper/wechat/v2/cache"
@@ -64,44 +63,6 @@ func StateSecret() string {
 		return strings.TrimSpace(wxCfg.StateSecret)
 	}
 	return strings.TrimSpace(wxCfg.CorpSecret)
-}
-
-func BuildLoginURL(state string) (string, error) {
-	if !Enabled() {
-		return "", fmt.Errorf("企业微信登录未启用")
-	}
-	if strings.TrimSpace(wxCfg.OAuthRedirect) == "" {
-		return "", fmt.Errorf("企业微信登录回调地址未配置")
-	}
-	if strings.TrimSpace(wxCfg.AgentID) == "" {
-		return "", fmt.Errorf("企业微信 AgentID 未配置")
-	}
-	return fmt.Sprintf(
-		"https://open.weixin.qq.com/connect/oauth2/authorize?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_privateinfo&agentid=%s&state=%s#wechat_redirect",
-		url.QueryEscape(strings.TrimSpace(wxCfg.CorpID)),
-		url.QueryEscape(strings.TrimSpace(wxCfg.OAuthRedirect)),
-		url.QueryEscape(strings.TrimSpace(wxCfg.AgentID)),
-		url.QueryEscape(strings.TrimSpace(state)),
-	), nil
-}
-
-func BuildQRCodeLoginURL(state string) (string, error) {
-	if !Enabled() {
-		return "", fmt.Errorf("企业微信登录未启用")
-	}
-	if strings.TrimSpace(wxCfg.OAuthRedirect) == "" {
-		return "", fmt.Errorf("企业微信登录回调地址未配置")
-	}
-	if strings.TrimSpace(wxCfg.AgentID) == "" {
-		return "", fmt.Errorf("企业微信 AgentID 未配置")
-	}
-	return fmt.Sprintf(
-		"https://open.work.weixin.qq.com/wwopen/sso/qrConnect?appid=%s&agentid=%s&redirect_uri=%s&state=%s",
-		url.QueryEscape(strings.TrimSpace(wxCfg.CorpID)),
-		url.QueryEscape(strings.TrimSpace(wxCfg.AgentID)),
-		url.QueryEscape(strings.TrimSpace(wxCfg.OAuthRedirect)),
-		url.QueryEscape(strings.TrimSpace(state)),
-	), nil
 }
 
 func GetLoginUser(code string) (*LoginUser, error) {

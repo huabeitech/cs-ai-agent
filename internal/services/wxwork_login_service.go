@@ -1,8 +1,6 @@
 package services
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto/response"
@@ -10,13 +8,8 @@ import (
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/mlogclub/simple/sqls"
@@ -24,53 +17,39 @@ import (
 )
 
 const (
-	wxWorkProviderName         = "wxwork"
-	wxWorkProviderDisplayName  = "企业微信"
-	wxWorkStateTTL             = 5 * time.Minute
-	wxWorkLoginTicketTTL       = 1 * time.Minute
-	defaultWxWorkLoginNextPath = "/dashboard"
+	wxWorkProviderName        = "wxwork"
+	wxWorkProviderDisplayName = "企业微信"
 )
 
-var (
-	errWxWorkStateInvalid  = errors.New("企业微信登录状态无效")
-	wxWorkLoginTicketStore sync.Map
-)
+var WxWorkLoginService = &wxWorkLoginService{}
 
-type wxWorkStatePayload struct {
-	Next      string `json:"next"`
-	Nonce     string `json:"nonce"`
-	ExpiredAt int64  `json:"expiredAt"`
+type wxWorkLoginService struct {
 }
 
-type wxWorkLoginTicket struct {
-	Response  *response.LoginResponse
-	ExpiredAt time.Time
-}
-
-func (s *authService) BuildWxWorkLoginURL(next string) (string, error) {
+func (s *wxWorkLoginService) BuildWxWorkLoginURL(next string) (string, error) {
 	if !wxwork.Enabled() {
 		return "", errorsx.BusinessError(1, "企业微信登录未启用")
 	}
-	state, err := s.createWxWorkState(next)
+	state, err := wxwork.CreateState(next)
 	if err != nil {
 		return "", err
 	}
 	return wxwork.BuildLoginURL(state)
 }
 
-func (s *authService) BuildWxWorkQRCodeLoginURL(next string) (string, error) {
+func (s *wxWorkLoginService) BuildWxWorkQRCodeLoginURL(next string) (string, error) {
 	if !wxwork.Enabled() {
 		return "", errorsx.BusinessError(1, "企业微信登录未启用")
 	}
-	state, err := s.createWxWorkState(next)
+	state, err := wxwork.CreateState(next)
 	if err != nil {
 		return "", err
 	}
 	return wxwork.BuildQRCodeLoginURL(state)
 }
 
-func (s *authService) LoginByWxWork(code, state string, authCfg config.AuthConfig, clientIP, userAgent string) (string, string, error) {
-	next, err := s.parseWxWorkState(state)
+func (s *wxWorkLoginService) LoginByWxWork(code, state string, authCfg config.AuthConfig, clientIP, userAgent string) (string, string, error) {
+	next, err := wxwork.ParseState(state)
 	if err != nil {
 		return "", "", errorsx.Unauthorized("企业微信登录状态无效或已过期")
 	}
@@ -82,18 +61,18 @@ func (s *authService) LoginByWxWork(code, state string, authCfg config.AuthConfi
 	if err != nil {
 		return "", "", err
 	}
-	ticket, err := s.issueWxWorkLoginTicket(loginResp)
+	ticket, err := wxwork.IssueLoginTicket(loginResp)
 	if err != nil {
 		return "", "", err
 	}
 	return ticket, next, nil
 }
 
-func (s *authService) ExchangeWxWorkLoginTicket(ticket string) (*response.LoginResponse, error) {
-	return s.consumeWxWorkLoginTicket(ticket)
+func (s *wxWorkLoginService) ExchangeWxWorkLoginTicket(ticket string) (*response.LoginResponse, error) {
+	return wxwork.ConsumeLoginTicket(ticket)
 }
 
-func (s *authService) loginWithWxWorkProfile(profile *wxwork.LoginUser, authCfg config.AuthConfig, clientIP, userAgent string) (*response.LoginResponse, error) {
+func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, authCfg config.AuthConfig, clientIP, userAgent string) (*response.LoginResponse, error) {
 	if profile == nil || strings.TrimSpace(profile.UserID) == "" {
 		return nil, errorsx.BusinessError(2, "企业微信用户信息不存在")
 	}
@@ -124,7 +103,7 @@ func (s *authService) loginWithWxWorkProfile(profile *wxwork.LoginUser, authCfg 
 		return nil, errorsx.Unauthorized("当前系统账号已被禁用")
 	}
 
-	ret, err := s.issueTokens(user, clientIP, userAgent, authCfg)
+	ret, err := AuthService.issueTokens(user, clientIP, userAgent, authCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +135,7 @@ func (s *authService) loginWithWxWorkProfile(profile *wxwork.LoginUser, authCfg 
 	return ret, nil
 }
 
-func (s *authService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time) (*models.User, *models.UserIdentity, error) {
+func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time) (*models.User, *models.UserIdentity, error) {
 	rawProfile, _ := json.Marshal(profile)
 	username := s.buildWxWorkUsername(profile.UserID)
 	mobileValue := strings.TrimSpace(profile.Mobile)
@@ -239,11 +218,11 @@ func (s *authService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time)
 	return user, createdIdentity, nil
 }
 
-func (s *authService) buildWxWorkUsername(userID string) string {
+func (s *wxWorkLoginService) buildWxWorkUsername(userID string) string {
 	return strings.TrimSpace(userID)
 }
 
-func (s *authService) resolveWxWorkNickname(current string, profile *wxwork.LoginUser) string {
+func (s *wxWorkLoginService) resolveWxWorkNickname(current string, profile *wxwork.LoginUser) string {
 	if profile != nil {
 		if name := strings.TrimSpace(profile.Name); name != "" {
 			return name
@@ -258,7 +237,7 @@ func (s *authService) resolveWxWorkNickname(current string, profile *wxwork.Logi
 	return ""
 }
 
-func (s *authService) resolveWxWorkAvatar(current string, profile *wxwork.LoginUser) string {
+func (s *wxWorkLoginService) resolveWxWorkAvatar(current string, profile *wxwork.LoginUser) string {
 	if profile != nil {
 		if avatar := strings.TrimSpace(profile.Avatar); avatar != "" {
 			return avatar
@@ -267,7 +246,7 @@ func (s *authService) resolveWxWorkAvatar(current string, profile *wxwork.LoginU
 	return strings.TrimSpace(current)
 }
 
-func (s *authService) normalizeAvailableContactTx(tx *gorm.DB, value string, field string) (*string, error) {
+func (s *wxWorkLoginService) normalizeAvailableContactTx(tx *gorm.DB, value string, field string) (*string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return nil, nil
@@ -285,117 +264,11 @@ func (s *authService) normalizeAvailableContactTx(tx *gorm.DB, value string, fie
 	return &value, nil
 }
 
-func (s *authService) createWxWorkState(next string) (string, error) {
-	secret := strings.TrimSpace(wxwork.StateSecret())
-	if secret == "" {
-		return "", errorsx.BusinessError(1, "企业微信登录密钥未配置")
-	}
-	payload := wxWorkStatePayload{
-		Next:      sanitizeNextPath(next),
-		ExpiredAt: time.Now().Add(wxWorkStateTTL).Unix(),
-	}
-	nonce, err := randomToken("ws_")
-	if err != nil {
-		return "", err
-	}
-	payload.Nonce = nonce
-
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-	encoded := base64.RawURLEncoding.EncodeToString(body)
-	return encoded + "." + s.signWxWorkState(encoded, secret), nil
-}
-
-func (s *authService) parseWxWorkState(state string) (string, error) {
-	secret := strings.TrimSpace(wxwork.StateSecret())
-	if secret == "" {
-		return "", errWxWorkStateInvalid
-	}
-	parts := strings.Split(strings.TrimSpace(state), ".")
-	if len(parts) != 2 {
-		return "", errWxWorkStateInvalid
-	}
-	if !hmac.Equal([]byte(parts[1]), []byte(s.signWxWorkState(parts[0], secret))) {
-		return "", errWxWorkStateInvalid
-	}
-	body, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return "", errWxWorkStateInvalid
-	}
-	payload := wxWorkStatePayload{}
-	if err = json.Unmarshal(body, &payload); err != nil {
-		return "", errWxWorkStateInvalid
-	}
-	if payload.ExpiredAt <= time.Now().Unix() {
-		return "", errWxWorkStateInvalid
-	}
-	return sanitizeNextPath(payload.Next), nil
-}
-
-func (s *authService) signWxWorkState(content, secret string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(content))
-	return hex.EncodeToString(mac.Sum(nil))
-}
-
-func (s *authService) issueWxWorkLoginTicket(loginResp *response.LoginResponse) (string, error) {
-	if loginResp == nil {
-		return "", fmt.Errorf("登录结果不能为空")
-	}
-	ticket, err := randomToken("wlt_")
-	if err != nil {
-		return "", err
-	}
-	s.cleanupExpiredWxWorkLoginTickets()
-	wxWorkLoginTicketStore.Store(ticket, wxWorkLoginTicket{
-		Response:  loginResp,
-		ExpiredAt: time.Now().Add(wxWorkLoginTicketTTL),
-	})
-	return ticket, nil
-}
-
-func (s *authService) consumeWxWorkLoginTicket(ticket string) (*response.LoginResponse, error) {
-	ticket = strings.TrimSpace(ticket)
-	if ticket == "" {
-		return nil, errorsx.InvalidParam("ticket 不能为空")
-	}
-	value, ok := wxWorkLoginTicketStore.LoadAndDelete(ticket)
-	if !ok {
-		return nil, errorsx.Unauthorized("登录票据无效或已过期")
-	}
-	record, ok := value.(wxWorkLoginTicket)
-	if !ok || record.Response == nil || time.Now().After(record.ExpiredAt) {
-		return nil, errorsx.Unauthorized("登录票据无效或已过期")
-	}
-	return record.Response, nil
-}
-
-func (s *authService) cleanupExpiredWxWorkLoginTickets() {
-	now := time.Now()
-	wxWorkLoginTicketStore.Range(func(key, value any) bool {
-		record, ok := value.(wxWorkLoginTicket)
-		if !ok || now.After(record.ExpiredAt) {
-			wxWorkLoginTicketStore.Delete(key)
-		}
-		return true
-	})
-}
-
-func (s *authService) firstNonEmpty(values ...string) string {
+func (s *wxWorkLoginService) firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if value = strings.TrimSpace(value); value != "" {
 			return value
 		}
 	}
 	return ""
-}
-
-func sanitizeNextPath(next string) string {
-	next = strings.TrimSpace(next)
-	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
-		return defaultWxWorkLoginNextPath
-	}
-	return next
 }
