@@ -59,7 +59,6 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 	}
 
 	cnd := sqls.NewCnd().
-		Eq("current_assignee_id", userID).
 		Page(page, limit)
 
 	if strs.IsNotBlank(keyword) {
@@ -69,13 +68,13 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 
 	switch filter {
 	case request.AgentConversationFilterMine:
-		cnd.Desc("last_active_at").Desc("id")
+		cnd.Eq("current_assignee_id", userID).Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterActive:
-		cnd.Eq("status", enums.IMConversationStatusActive).Desc("last_active_at").Desc("id")
+		cnd.Eq("current_assignee_id", userID).Eq("status", enums.IMConversationStatusActive).Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterPending:
-		cnd.Eq("status", enums.IMConversationStatusPending).Asc("last_active_at").Desc("id")
+		cnd.Eq("current_assignee_id", 0).Eq("status", enums.IMConversationStatusPending).Asc("last_active_at").Desc("id")
 	case request.AgentConversationFilterClosed:
-		cnd.Eq("status", enums.IMConversationStatusClosed).Desc("last_active_at").Desc("id")
+		cnd.Eq("current_assignee_id", userID).Eq("status", enums.IMConversationStatusClosed).Desc("last_active_at").Desc("id")
 	default:
 		return nil, nil, errorsx.InvalidParam("会话筛选项不合法")
 	}
