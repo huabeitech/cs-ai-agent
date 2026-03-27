@@ -1,6 +1,7 @@
 import {
   BotMessageSquareIcon,
   BrainCircuitIcon,
+  Building2Icon,
   CalendarClockIcon,
   ClipboardListIcon,
   FileTextIcon,
@@ -51,6 +52,16 @@ export const dashboardNavSections = [
         title: "工单分类",
         url: "/dashboard/ticket-categories",
         icon: <ClipboardListIcon />,
+      },
+      {
+        title: "公司管理",
+        url: "/dashboard/companies",
+        icon: <Building2Icon />,
+      },
+      {
+        title: "客户管理",
+        url: "/dashboard/customers",
+        icon: <UsersIcon />,
       },
     ],
   },

@@ -268,7 +268,7 @@ export default function ConversationsPage() {
             minSize="20%"
             collapsedSize="0%"
             collapsible
-            onResize={(panelSize) => {
+            onResize={(panelSize: { asPercentage: number }) => {
               setSidebarCollapsed(panelSize.asPercentage <= 1);
             }}
             className="min-h-0"

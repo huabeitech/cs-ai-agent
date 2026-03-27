@@ -25,7 +25,13 @@ type EditorToolbarSeparatorAction = {
 export type EditorToolbarAction = EditorToolbarButtonAction | EditorToolbarSeparatorAction
 
 type EditorToolbarProps = {
-  actions: EditorToolbarAction[]
+  actions: ReadonlyArray<EditorToolbarAction>
+}
+
+function isSeparatorAction(
+  action: EditorToolbarAction
+): action is EditorToolbarSeparatorAction {
+  return "type" in action && action.type === "separator"
 }
 
 export function EditorToolbar({ actions }: EditorToolbarProps) {
@@ -33,7 +39,7 @@ export function EditorToolbar({ actions }: EditorToolbarProps) {
     <div className="flex items-center gap-1 border-b p-2">
       <ToggleGroup className="flex-wrap gap-1">
         {actions.map((action) => {
-          if (action.type === "separator") {
+          if (isSeparatorAction(action)) {
             return <Separator key={action.key} orientation="vertical" className="mx-1 h-6" />
           }
           const Icon = action.icon
