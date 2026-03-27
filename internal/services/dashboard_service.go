@@ -299,14 +299,8 @@ func (s *dashboardService) buildAlerts(now time.Time, db *gorm.DB, activeConvers
 }
 
 func buildConversationStatusDistribution(db *gorm.DB) []response.DashboardStatusDistributionItem {
-	statuses := []enums.IMConversationStatus{
-		enums.IMConversationStatusPending,
-		enums.IMConversationStatusActive,
-		enums.IMConversationStatusClosed,
-		enums.IMConversationStatusArchived,
-	}
-	ret := make([]response.DashboardStatusDistributionItem, 0, len(statuses))
-	for _, status := range statuses {
+	ret := make([]response.DashboardStatusDistributionItem, 0, len(enums.IMConversationStatusValues))
+	for _, status := range enums.IMConversationStatusValues {
 		ret = append(ret, response.DashboardStatusDistributionItem{
 			Status: int(status),
 			Label:  labelOrDefault(enums.GetIMConversationStatusLabel(status), fmt.Sprintf("状态 %d", status)),
@@ -453,9 +447,6 @@ func calcAIServiceRate(conversations []models.Conversation) float64 {
 	var aiCount int64
 	var total int64
 	for _, item := range conversations {
-		if item.Status == enums.IMConversationStatusArchived {
-			continue
-		}
 		total++
 		if item.ServiceMode == enums.IMConversationServiceModeAIOnly || item.ServiceMode == enums.IMConversationServiceModeAIFirst {
 			aiCount++

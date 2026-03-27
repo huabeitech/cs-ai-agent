@@ -91,24 +91,21 @@ func (s *agentProfileService) UpdateAgentProfile(req request.UpdateAgentProfileR
 	if err != nil {
 		return err
 	}
-	now := time.Now()
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AgentProfile{}).Where("id = ?", req.ID).Updates(map[string]any{
-			"user_id":                 item.UserID,
-			"team_id":                 item.TeamID,
-			"agent_code":              item.AgentCode,
-			"display_name":            item.DisplayName,
-			"avatar":                  item.Avatar,
-			"service_status":          item.ServiceStatus,
-			"max_concurrent_count":    item.MaxConcurrentCount,
-			"priority_level":          item.PriorityLevel,
-			"auto_assign_enabled":     item.AutoAssignEnabled,
-			"receive_offline_message": item.ReceiveOfflineMessage,
-			"remark":                  item.Remark,
-			"update_user_id":          operator.UserID,
-			"update_user_name":        operator.Username,
-			"updated_at":              now,
-		}).Error
+	if err := repositories.AgentProfileRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"user_id":                 item.UserID,
+		"team_id":                 item.TeamID,
+		"agent_code":              item.AgentCode,
+		"display_name":            item.DisplayName,
+		"avatar":                  item.Avatar,
+		"service_status":          item.ServiceStatus,
+		"max_concurrent_count":    item.MaxConcurrentCount,
+		"priority_level":          item.PriorityLevel,
+		"auto_assign_enabled":     item.AutoAssignEnabled,
+		"receive_offline_message": item.ReceiveOfflineMessage,
+		"remark":                  item.Remark,
+		"update_user_id":          operator.UserID,
+		"update_user_name":        operator.Username,
+		"updated_at":              time.Now(),
 	}); err != nil {
 		return err
 	}
@@ -121,9 +118,8 @@ func (s *agentProfileService) DeleteAgentProfile(id int64) error {
 	if current == nil {
 		return errorsx.InvalidParam("客服档案不存在")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Delete(&models.AgentProfile{}, "id = ?", id).Error
-	})
+	repositories.AgentProfileRepository.Delete(sqls.DB(), id)
+	return nil
 }
 
 func (s *agentProfileService) buildProfileModel(id int64, req request.CreateAgentProfileRequest) (*models.AgentProfile, error) {

@@ -3,17 +3,21 @@ package enums
 type IMConversationStatus int
 
 const (
-	IMConversationStatusPending  IMConversationStatus = 1
-	IMConversationStatusActive   IMConversationStatus = 2
-	IMConversationStatusClosed   IMConversationStatus = 3
-	IMConversationStatusArchived IMConversationStatus = 4
+	IMConversationStatusPending IMConversationStatus = 1
+	IMConversationStatusActive  IMConversationStatus = 2
+	IMConversationStatusClosed  IMConversationStatus = 3
 )
 
 var imConversationStatusLabelMap = map[IMConversationStatus]string{
 	IMConversationStatusPending: "待接入",
 	IMConversationStatusActive:  "处理中",
 	IMConversationStatusClosed:  "已关闭",
-	// IMConversationStatusArchived: "已归档",
+}
+
+var IMConversationStatusValues = []IMConversationStatus{
+	IMConversationStatusPending,
+	IMConversationStatusActive,
+	IMConversationStatusClosed,
 }
 
 func GetIMConversationStatusLabel(status IMConversationStatus) string {

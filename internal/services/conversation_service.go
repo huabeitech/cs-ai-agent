@@ -146,12 +146,9 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 		return errorsx.InvalidParam("目标客服不存在")
 	}
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := &models.Conversation{}
-		if err := ctx.Tx.First(conversation, "id = ?", conversationID).Error; err != nil {
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if conversation == nil {
 			return errorsx.InvalidParam("会话不存在")
-		}
-		if conversation.Status == enums.IMConversationStatusArchived {
-			return errorsx.InvalidParam("已归档会话不允许分配")
 		}
 		if conversation.Status != enums.IMConversationStatusPending {
 			return errorsx.InvalidParam("只有待接入会话允许分配")
@@ -199,9 +196,6 @@ func (s *conversationService) DispatchConversation(conversationID int64, operato
 	conversation := s.Get(conversationID)
 	if conversation == nil {
 		return errorsx.InvalidParam("会话不存在")
-	}
-	if conversation.Status == enums.IMConversationStatusArchived {
-		return errorsx.InvalidParam("已归档会话不允许自动分配")
 	}
 	if conversation.Status != enums.IMConversationStatusPending {
 		return errorsx.InvalidParam("只有待接入会话允许自动分配")
