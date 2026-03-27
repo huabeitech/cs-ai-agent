@@ -113,11 +113,11 @@ type UserIdentity struct {
 //
 //	用于存储公司主体信息；Customer（人）可通过 CompanyID 关联到所属公司。
 type Company struct {
-	ID     int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为公司主键。
-	Name   string       `gorm:"type:varchar(200);not null;default:'';index"` // Name 为公司名称。
-	Code   string       `gorm:"type:varchar(64);not null;default:'';index"`  // Code 为公司编码/统一社会信用代码（可空语义用空串表示）。
-	Status enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为公司状态。
-	Remark string       `gorm:"type:text"`                                   // Remark 为备注。
+	ID     int64        `gorm:"primaryKey;autoIncrement"`                               // ID 为公司主键。
+	Name   string       `gorm:"type:varchar(200);not null;uniqueIndex:uk_company_name"` // Name 为公司名称（唯一）。
+	Code   string       `gorm:"type:varchar(64);not null;index"`                        // Code 为公司编码/统一社会信用代码（可空语义用空串表示）。
+	Status enums.Status `gorm:"type:int;not null;default:0"`                            // Status 为公司状态。
+	Remark string       `gorm:"type:text"`                                              // Remark 为备注。
 	AuditFields
 }
 

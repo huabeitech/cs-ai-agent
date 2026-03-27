@@ -17,6 +17,14 @@ func newCompanyRepository() *companyRepository {
 type companyRepository struct {
 }
 
+func (r *companyRepository) GetByName(db *gorm.DB, name string) *models.Company {
+	ret := &models.Company{}
+	if err := db.First(ret, "name = ?", name).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *companyRepository) Get(db *gorm.DB, id int64) *models.Company {
 	ret := &models.Company{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {
@@ -62,12 +70,12 @@ func (r *companyRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []mo
 	return
 }
 
-func (r *companyRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.Company) {
+func (r *companyRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.Company) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *companyRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *companyRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -99,4 +107,3 @@ func (r *companyRepository) UpdateColumn(db *gorm.DB, id int64, name string, val
 func (r *companyRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.Company{}, "id = ?", id)
 }
-

@@ -7,6 +7,7 @@ import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
+	"cs-agent/internal/repositories"
 	"strings"
 	"time"
 
@@ -20,6 +21,11 @@ func (s *companyService) CreateCompany(req request.CreateCompanyRequest, operato
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return nil, errorsx.InvalidParam("公司名称不能为空")
+	}
+
+	existing := repositories.CompanyRepository.GetByName(sqls.DB(), name)
+	if existing != nil && existing.Status != enums.StatusDeleted {
+		return nil, errorsx.InvalidParam("公司名称已存在")
 	}
 
 	item := &models.Company{
@@ -46,6 +52,11 @@ func (s *companyService) UpdateCompany(req request.UpdateCompanyRequest, operato
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return errorsx.InvalidParam("公司名称不能为空")
+	}
+
+	existing := repositories.CompanyRepository.GetByName(sqls.DB(), name)
+	if existing != nil && existing.ID != req.ID {
+		return errorsx.InvalidParam("公司名称已存在")
 	}
 
 	now := time.Now()
