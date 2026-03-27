@@ -141,9 +141,8 @@ func (s *aIConfigService) DeleteAIConfig(id int64) error {
 	if current.Status == enums.StatusOk {
 		return errorsx.Forbidden("启用中的AI配置不允许删除")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Delete(&models.AIConfig{}, "id = ?", id).Error
-	})
+	repositories.AIConfigRepository.Delete(sqls.DB(), id)
+	return nil
 }
 
 func (s *aIConfigService) UpdateStatus(id int64, status enums.Status, operator *dto.AuthPrincipal) error {

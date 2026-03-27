@@ -125,9 +125,8 @@ func (s *agentTeamScheduleService) DeleteAgentTeamSchedule(id int64) error {
 	if s.Get(id) == nil {
 		return errorsx.InvalidParam("客服组排班不存在")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Delete(&models.AgentTeamSchedule{}, "id = ?", id).Error
-	})
+	repositories.AgentTeamScheduleRepository.Delete(sqls.DB(), id)
+	return nil
 }
 
 func (s *agentTeamScheduleService) buildScheduleModel(id, teamID int64, startAt, endAt, sourceType, remark string) (*models.AgentTeamSchedule, error) {

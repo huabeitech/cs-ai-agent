@@ -132,10 +132,8 @@ func (s *knowledgeBaseService) DeleteKnowledgeBase(id int64) error {
 	if docCount > 0 {
 		return errorsx.InvalidParam("知识库下存在文档，无法删除")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		ctx.Tx.Delete(&models.KnowledgeBase{}, "id = ?", id)
-		return nil
-	})
+	repositories.KnowledgeBaseRepository.Delete(sqls.DB(), id)
+	return nil
 }
 
 func (s *knowledgeBaseService) UpdateSort(ids []int64) error {
