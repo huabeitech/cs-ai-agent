@@ -10,6 +10,9 @@ var Models = []any{
 	&Migration{},
 	&User{},
 	&UserIdentity{},
+	&Customer{},
+	&CustomerIdentity{},
+	&CustomerContact{},
 	&Role{},
 	&Permission{},
 	&UserRole{},
@@ -102,6 +105,55 @@ type UserIdentity struct {
 	RawProfile      string              `gorm:"type:text"`
 	Status          enums.Status        `gorm:"type:int;not null;default:0;index"`
 	LastAuthAt      *time.Time          `gorm:"type:datetime"`
+	AuditFields
+}
+
+// Customer 客户主表。
+//
+//	用于存储客户稳定画像信息，不包含平台身份映射和多联系方式明细。
+type Customer struct {
+	ID            int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为客户主键。
+	Name          string       `gorm:"type:varchar(100);not null;default:'';index"` // Name 为客户姓名或展示名称。
+	Nickname      string       `gorm:"type:varchar(100);not null;default:'';index"` // Nickname 为客户昵称。
+	Avatar        string       `gorm:"type:varchar(500);not null;default:''"`       // Avatar 为客户头像URL。
+	Gender        int          `gorm:"type:int;not null;default:0;index"`           // Gender 为性别：0未知 1男 2女。
+	Province      string       `gorm:"type:varchar(50);not null;default:''"`        // Province 为所在省份。
+	City          string       `gorm:"type:varchar(50);not null;default:''"`        // City 为所在城市。
+	LastActiveAt  *time.Time   `gorm:"type:datetime;index"`                         // LastActiveAt 为最近活跃时间。
+	PrimaryMobile string       `gorm:"type:varchar(32);not null;default:'';index"`  // PrimaryMobile 为主手机号（冗余展示字段）。
+	PrimaryEmail  string       `gorm:"type:varchar(100);not null;default:'';index"` // PrimaryEmail 为主邮箱（冗余展示字段）。
+	Status        enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为客户状态。
+	Remark        string       `gorm:"type:text"`                                   // Remark 为备注。
+	AuditFields
+}
+
+// CustomerIdentity 客户第三方身份映射表。
+//
+//	用于维护客户与外部平台账号的映射关系，如 wxwork/openid 等。
+type CustomerIdentity struct {
+	ID         int64        `gorm:"primaryKey;autoIncrement"`
+	CustomerID int64        `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_source_user"`                 // CustomerID 为所属客户ID。
+	SourseType string       `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_source_user"` // SourseType 为来源平台类型，如 wxwork。
+	SourceID   string       `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_customer_source_user"`      // SourceID 为平台侧用户唯一ID。
+	RawProfile string       `gorm:"type:text"`                                                                      // RawProfile 为第三方原始资料JSON。
+	Status     enums.Status `gorm:"type:int;not null;default:0;index"`                                              // Status 为映射状态。
+	AuditFields
+}
+
+// CustomerContact 客户联系方式表。
+//
+//	用于维护客户的一对多联系方式，支持主联系方式、验证状态与失效标记。
+type CustomerContact struct {
+	ID           int64        `gorm:"primaryKey;autoIncrement"`
+	CustomerID   int64        `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_contact"`                  // CustomerID 为所属客户ID。
+	ContactType  string       `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_contact"`  // ContactType 为联系方式类型：mobile/email/wechat/other。
+	ContactValue string       `gorm:"type:varchar(200);not null;default:'';index;uniqueIndex:uk_customer_contact"` // ContactValue 为联系方式值。
+	IsPrimary    bool         `gorm:"not null;default:false;index"`                                                // IsPrimary 表示是否主联系方式。
+	IsVerified   bool         `gorm:"not null;default:false;index"`                                                // IsVerified 表示是否已验证。
+	VerifiedAt   *time.Time   `gorm:"type:datetime"`                                                               // VerifiedAt 为验证时间。
+	Source       string       `gorm:"type:varchar(30);not null;default:'';index"`                                  // Source 为来源：manual/import/system。
+	Status       enums.Status `gorm:"type:int;not null;default:0;index"`                                           // Status 为联系方式状态。
+	Remark       string       `gorm:"type:varchar(255);not null;default:''"`                                       // Remark 为备注。
 	AuditFields
 }
 
