@@ -2,7 +2,14 @@ package services
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
+	"strings"
+	"time"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -45,23 +52,96 @@ func (s *companyService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.CompanyRepository.Count(sqls.DB(), cnd)
 }
 
-func (s *companyService) Create(t *models.Company) error {
-	return repositories.CompanyRepository.Create(sqls.DB(), t)
+func (s *companyService) CreateCompany(req request.CreateCompanyRequest, operator *dto.AuthPrincipal) (*models.Company, error) {
+	if operator == nil {
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, errorsx.InvalidParam("公司名称不能为空")
+	}
+
+	existing := repositories.CompanyRepository.GetByName(sqls.DB(), name)
+	if existing != nil && existing.Status != enums.StatusDeleted {
+		return nil, errorsx.InvalidParam("公司名称已存在")
+	}
+
+	item := &models.Company{
+		Name:        name,
+		Code:        strings.TrimSpace(req.Code),
+		Status:      enums.StatusOk,
+		Remark:      strings.TrimSpace(req.Remark),
+		AuditFields: utils.BuildAuditFields(operator),
+	}
+	if err := repositories.CompanyRepository.Create(sqls.DB(), item); err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 
-func (s *companyService) Update(t *models.Company) error {
-	return repositories.CompanyRepository.Update(sqls.DB(), t)
+func (s *companyService) UpdateCompany(req request.UpdateCompanyRequest, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	item := s.Get(req.ID)
+	if item == nil {
+		return errorsx.InvalidParam("公司不存在")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return errorsx.InvalidParam("公司名称不能为空")
+	}
+
+	existing := repositories.CompanyRepository.GetByName(sqls.DB(), name)
+	if existing != nil && existing.ID != req.ID {
+		return errorsx.InvalidParam("公司名称已存在")
+	}
+
+	now := time.Now()
+	if err := repositories.CompanyRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"name":             name,
+		"code":             strings.TrimSpace(req.Code),
+		"remark":           strings.TrimSpace(req.Remark),
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       now,
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s *companyService) Updates(id int64, columns map[string]interface{}) error {
-	return repositories.CompanyRepository.Updates(sqls.DB(), id, columns)
-}
+func (s *companyService) DeleteCompany(id int64) error {
+	item := s.Get(id)
+	if item == nil {
+		return errorsx.InvalidParam("公司不存在")
+	}
 
-func (s *companyService) UpdateColumn(id int64, name string, value interface{}) error {
-	return repositories.CompanyRepository.UpdateColumn(sqls.DB(), id, name, value)
-}
+	// 存在归属客户则不允许删除（避免客户“失联”）
+	if CustomerService.Count(sqls.NewCnd().Eq("company_id", id)) > 0 {
+		return errorsx.InvalidParam("该公司下存在客户，无法删除")
+	}
 
-func (s *companyService) Delete(id int64) {
 	repositories.CompanyRepository.Delete(sqls.DB(), id)
+	return nil
 }
 
+func (s *companyService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	item := s.Get(id)
+	if item == nil {
+		return errorsx.InvalidParam("公司不存在")
+	}
+	if status != int(enums.StatusOk) && status != int(enums.StatusDisabled) {
+		return errorsx.InvalidParam("状态值不合法")
+	}
+	now := time.Now()
+	return repositories.CompanyRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           status,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       now,
+	})
+}
