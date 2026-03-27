@@ -34,7 +34,7 @@ type UserResponse struct {
 	Status      enums.Status   `json:"status"`
 	LastLoginAt string         `json:"lastLoginAt,omitempty"`
 	LastLoginIP string         `json:"lastLoginIp,omitempty"`
-	Roles       []RoleResponse `json:"assignedRoles,omitempty"`
+	Roles       []RoleResponse `json:"roles,omitempty"`
 	Permissions []string       `json:"permissions,omitempty"`
 }
 
