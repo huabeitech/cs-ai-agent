@@ -10,6 +10,7 @@ var Models = []any{
 	&Migration{},
 	&User{},
 	&UserIdentity{},
+	&Company{},
 	&Customer{},
 	&CustomerIdentity{},
 	&CustomerContact{},
@@ -108,19 +109,30 @@ type UserIdentity struct {
 	AuditFields
 }
 
+// Company 客户公司（组织）表。
+//
+//	用于存储公司主体信息；Customer（人）可通过 CompanyID 关联到所属公司。
+type Company struct {
+	ID     int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为公司主键。
+	Name   string       `gorm:"type:varchar(200);not null;default:'';index"` // Name 为公司名称。
+	Code   string       `gorm:"type:varchar(64);not null;default:'';index"`  // Code 为公司编码/统一社会信用代码（可空语义用空串表示）。
+	Status enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为公司状态。
+	Remark string       `gorm:"type:text"`                                   // Remark 为备注。
+	AuditFields
+}
+
 // Customer 客户主表。
 //
 //	用于存储客户稳定画像信息，不包含平台身份映射和多联系方式明细。
 type Customer struct {
 	ID            int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为客户主键。
 	Name          string       `gorm:"type:varchar(100);not null;default:'';index"` // Name 为客户姓名或展示名称。
-	Gender        enums.Gender `gorm:"type:int;not null;default:0;index"`           // Gender 为性别：0未知 1男 2女。
-	Province      string       `gorm:"type:varchar(50);not null;default:''"`        // Province 为所在省份。
-	City          string       `gorm:"type:varchar(50);not null;default:''"`        // City 为所在城市。
-	LastActiveAt  *time.Time   `gorm:"type:datetime;index"`                         // LastActiveAt 为最近活跃时间。
+	Gender        enums.Gender `gorm:"type:int;not null;default:0;"`                // Gender 为性别：0未知 1男 2女。
+	CompanyID     int64        `gorm:"type:bigint;not null;default:0;index"`        // CompanyID 为所属公司ID；0表示无所属公司（个人客户）。
+	LastActiveAt  *time.Time   `gorm:"type:datetime;"`                              // LastActiveAt 为最近活跃时间。
 	PrimaryMobile string       `gorm:"type:varchar(32);not null;default:'';index"`  // PrimaryMobile 为主手机号（冗余展示字段）。
 	PrimaryEmail  string       `gorm:"type:varchar(100);not null;default:'';index"` // PrimaryEmail 为主邮箱（冗余展示字段）。
-	Status        enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为客户状态。
+	Status        enums.Status `gorm:"type:int;not null;default:0;"`                // Status 为客户状态。
 	Remark        string       `gorm:"type:text"`                                   // Remark 为备注。
 	AuditFields
 }
