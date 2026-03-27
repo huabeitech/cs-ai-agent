@@ -1,27 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
 import {
-  Building2Icon,
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
-  Trash2Icon,
+  Trash2Icon
 } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import {
-  createCompany,
-  deleteCompany,
-  fetchCompanies,
-  updateCompany,
-  updateCompanyStatus,
-  type AdminCompany,
-  type CreateAdminCompanyPayload,
-} from "@/lib/api/company"
-import { type PageResult } from "@/lib/api/admin"
-import { EditDialog } from "./_components/edit"
+import { ListPagination } from "@/components/list-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -32,7 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { ListPagination } from "@/components/list-pagination"
 import {
   Select,
   SelectContent,
@@ -48,6 +36,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { type PageResult } from "@/lib/api/admin"
+import {
+  createCompany,
+  deleteCompany,
+  fetchCompanies,
+  updateCompany,
+  updateCompanyStatus,
+  type AdminCompany,
+  type CreateAdminCompanyPayload,
+} from "@/lib/api/company"
+import { EditDialog } from "./_components/edit"
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
