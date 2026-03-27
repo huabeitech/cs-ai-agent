@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
@@ -19,14 +20,18 @@ func (c *CustomerController) AnyList() *web.JsonResult {
 	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
 		return web.JsonError(err)
 	}
-	list, paging := services.CustomerService.FindPageByCnd(params.NewPagedSqlCnd(c.Ctx,
+	cnd := params.NewPagedSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "gender"},
 		params.QueryFilter{ParamName: "companyId"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "primaryMobile", Op: params.Like},
 		params.QueryFilter{ParamName: "primaryEmail", Op: params.Like},
-	).Desc("id"))
+	).Desc("id")
+	// 默认不返回已删除
+	cnd.Where("status <> ?", enums.StatusDeleted)
+
+	list, paging := services.CustomerService.FindPageByCnd(cnd)
 	return web.JsonData(&web.PageResult{Results: builders.BuildCustomerList(list), Page: paging})
 }
 
@@ -76,11 +81,12 @@ func (c *CustomerController) PostDelete() *web.JsonResult {
 	if err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerDelete); err != nil {
 		return web.JsonError(err)
 	}
+	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	req := request.DeleteCustomerRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.CustomerService.DeleteCustomer(req.ID); err != nil {
+	if err := services.CustomerService.DeleteCustomer(req.ID, *principal); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

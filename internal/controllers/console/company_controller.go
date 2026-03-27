@@ -24,7 +24,17 @@ func (c *CompanyController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "code", Op: params.Like},
 	).Desc("id"))
-	return web.JsonData(&web.PageResult{Results: builders.BuildCompanyList(list), Page: paging})
+
+	results := builders.BuildCompanyList(list)
+	companyIDs := make([]int64, 0, len(results))
+	for _, item := range results {
+		companyIDs = append(companyIDs, item.ID)
+	}
+	countMap := services.CustomerService.CountByCompanyIDs(companyIDs)
+	for i := range results {
+		results[i].CustomerCount = countMap[results[i].ID]
+	}
+	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
 
 func (c *CompanyController) GetBy(id int64) *web.JsonResult {
@@ -77,7 +87,8 @@ func (c *CompanyController) PostDelete() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.CompanyService.DeleteCompany(req.ID); err != nil {
+	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
+	if err := services.CompanyService.DeleteCompany(req.ID, *principal); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

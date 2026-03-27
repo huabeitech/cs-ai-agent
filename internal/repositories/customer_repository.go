@@ -17,6 +17,31 @@ func newCustomerRepository() *customerRepository {
 type customerRepository struct {
 }
 
+type CompanyCustomerCount struct {
+	CompanyID int64 `gorm:"column:company_id"`
+	Count     int64 `gorm:"column:cnt"`
+}
+
+func (r *customerRepository) CountByCompanyIDs(db *gorm.DB, companyIDs []int64, excludeStatus int) map[int64]int64 {
+	ret := make(map[int64]int64)
+	if len(companyIDs) == 0 {
+		return ret
+	}
+
+	rows := make([]CompanyCustomerCount, 0, len(companyIDs))
+	db.Model(&models.Customer{}).
+		Select("company_id, count(1) as cnt").
+		Where("company_id in ?", companyIDs).
+		Where("status <> ?", excludeStatus).
+		Group("company_id").
+		Scan(&rows)
+
+	for _, row := range rows {
+		ret[row.CompanyID] = row.Count
+	}
+	return ret
+}
+
 func (r *customerRepository) Get(db *gorm.DB, id int64) *models.Customer {
 	ret := &models.Customer{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {

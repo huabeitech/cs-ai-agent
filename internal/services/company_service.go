@@ -111,19 +111,18 @@ func (s *companyService) UpdateCompany(req request.UpdateCompanyRequest, operato
 	return nil
 }
 
-func (s *companyService) DeleteCompany(id int64) error {
+func (s *companyService) DeleteCompany(id int64, operator dto.AuthPrincipal) error {
 	item := s.Get(id)
 	if item == nil {
 		return errorsx.InvalidParam("公司不存在")
 	}
 
-	// 存在归属客户则不允许删除（避免客户“失联”）
-	if CustomerService.Count(sqls.NewCnd().Eq("company_id", id)) > 0 {
-		return errorsx.InvalidParam("该公司下存在客户，无法删除")
-	}
-
-	repositories.CompanyRepository.Delete(sqls.DB(), id)
-	return nil
+	return repositories.CompanyRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
 }
 
 func (s *companyService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {

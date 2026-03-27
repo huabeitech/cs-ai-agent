@@ -52,6 +52,10 @@ func (s *customerService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.CustomerRepository.Count(sqls.DB(), cnd)
 }
 
+func (s *customerService) CountByCompanyIDs(companyIDs []int64) map[int64]int64 {
+	return repositories.CustomerRepository.CountByCompanyIDs(sqls.DB(), companyIDs, int(enums.StatusDeleted))
+}
+
 func (s *customerService) CreateCustomer(req request.CreateCustomerRequest, operator *dto.AuthPrincipal) (*models.Customer, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
@@ -118,14 +122,17 @@ func (s *customerService) UpdateCustomer(req request.UpdateCustomerRequest, oper
 	})
 }
 
-func (s *customerService) DeleteCustomer(id int64) error {
+func (s *customerService) DeleteCustomer(id int64, operator dto.AuthPrincipal) error {
 	item := s.Get(id)
 	if item == nil {
 		return errorsx.InvalidParam("客户不存在")
 	}
-	// TODO 软删除
-	repositories.CustomerRepository.Delete(sqls.DB(), id)
-	return nil
+	return repositories.CustomerRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
 }
 
 func (s *customerService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {
