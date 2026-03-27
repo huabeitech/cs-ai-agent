@@ -47,10 +47,7 @@ func (s *conversationService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Conver
 	return repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
 }
 
-func (s *conversationService) FindAgentConversationPage(operator *dto.AuthPrincipal, filter request.AgentConversationFilter, keyword string, page, limit int) (list []models.Conversation, paging *sqls.Paging, err error) {
-	if operator == nil || operator.UserID <= 0 {
-		return nil, nil, errorsx.Unauthorized("未登录或登录已过期")
-	}
+func (s *conversationService) ListConversations(userID int64, filter request.AgentConversationFilter, keyword string, page, limit int) (list []models.Conversation, paging *sqls.Paging, err error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -62,7 +59,7 @@ func (s *conversationService) FindAgentConversationPage(operator *dto.AuthPrinci
 	}
 
 	cnd := sqls.NewCnd().
-		Eq("current_assignee_id", operator.UserID).
+		Eq("current_assignee_id", userID).
 		Page(page, limit)
 
 	if strs.IsNotBlank(keyword) {

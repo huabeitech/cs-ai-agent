@@ -134,7 +134,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 
 	operator := &dto.AuthPrincipal{UserID: 9001, Username: "agent_9001"}
 
-	mineList, _, err := ConversationService.FindAgentConversationPage(operator, request.AgentConversationFilterMine, "", 1, 100)
+	mineList, _, err := ConversationService.ListConversations(operator.UserID, request.AgentConversationFilterMine, "", 1, 100)
 	if err != nil {
 		t.Fatalf("find mine conversations failed: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		t.Fatalf("unexpected mine order: got ids [%d %d %d]", mineList[0].ID, mineList[1].ID, mineList[2].ID)
 	}
 
-	activeList, _, err := ConversationService.FindAgentConversationPage(operator, request.AgentConversationFilterActive, "", 1, 100)
+	activeList, _, err := ConversationService.ListConversations(operator.UserID, request.AgentConversationFilterActive, "", 1, 100)
 	if err != nil {
 		t.Fatalf("find active conversations failed: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		t.Fatalf("unexpected active result order")
 	}
 
-	pendingList, _, err := ConversationService.FindAgentConversationPage(operator, request.AgentConversationFilterPending, "", 1, 100)
+	pendingList, _, err := ConversationService.ListConversations(operator.UserID, request.AgentConversationFilterPending, "", 1, 100)
 	if err != nil {
 		t.Fatalf("find pending conversations failed: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestFindAgentConversationPageAppliesFilterAndSort(t *testing.T) {
 		t.Fatalf("unexpected pending result order")
 	}
 
-	closedList, _, err := ConversationService.FindAgentConversationPage(operator, request.AgentConversationFilterClosed, "", 1, 100)
+	closedList, _, err := ConversationService.ListConversations(operator.UserID, request.AgentConversationFilterClosed, "", 1, 100)
 	if err != nil {
 		t.Fatalf("find closed conversations failed: %v", err)
 	}
@@ -184,8 +184,8 @@ func TestFindAgentConversationPageLimitsToHundred(t *testing.T) {
 		})
 	}
 
-	list, paging, err := ConversationService.FindAgentConversationPage(
-		&dto.AuthPrincipal{UserID: 9101, Username: "agent_9101"},
+	list, paging, err := ConversationService.ListConversations(
+		9101,
 		request.AgentConversationFilterMine,
 		"",
 		1,

@@ -61,8 +61,8 @@ func (c *ConversationController) AnyConversations() *web.JsonResult {
 	page, _ := params.GetInt(c.Ctx, "page")
 	limit, _ := params.GetInt(c.Ctx, "limit")
 
-	list, paging, err := services.ConversationService.FindAgentConversationPage(
-		principal,
+	list, paging, err := services.ConversationService.ListConversations(
+		principal.UserID,
 		request.AgentConversationFilter(strings.TrimSpace(filterValue)),
 		keyword,
 		page,
