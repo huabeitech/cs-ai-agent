@@ -29,6 +29,8 @@ import {
   type AdminCustomer,
   type CreateAdminCustomerPayload,
 } from "@/lib/api/customer"
+import { getEnumLabel, getEnumOptions } from "@/lib/enums"
+import { Gender, GenderLabels } from "@/lib/generated/enums"
 
 type CustomerEditDialogProps = {
   open: boolean
@@ -39,14 +41,21 @@ type CustomerEditDialogProps = {
 }
 
 const genderOptions = [
-  { value: "0", label: "未知" },
-  { value: "1", label: "男" },
-  { value: "2", label: "女" },
+  ...getEnumOptions(GenderLabels).map((item) => ({
+    value: String(item.value),
+    label: item.label,
+  })),
+] as const
+
+const genderValueOptions = [
+  String(Gender.Unknown),
+  String(Gender.Male),
+  String(Gender.Female),
 ] as const
 
 const customerFormSchema = z.object({
   name: z.string().trim().min(1, "客户名称不能为空"),
-  gender: z.enum(["0", "1", "2"], { message: "请选择性别" }),
+  gender: z.enum(genderValueOptions, { message: "请选择性别" }),
   companyId: z.string().trim().regex(/^\d+$/, "请选择所属公司"),
   primaryMobile: z.string().trim(),
   primaryEmail: z.string().trim(),
@@ -94,7 +103,7 @@ function buildPayload(form: EditForm): CreateAdminCustomerPayload {
 }
 
 function getGenderLabel(value: string) {
-  return genderOptions.find((option) => option.value === value)?.label ?? "请选择性别"
+  return getEnumLabel(GenderLabels, Number(value) as Gender)
 }
 
 export function EditDialog({
@@ -285,7 +294,7 @@ function CustomerEditDialogBody({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.primaryMobile}>
-              <FieldLabel htmlFor="customer-mobile">主手机号</FieldLabel>
+              <FieldLabel htmlFor="customer-mobile">手机号</FieldLabel>
               <FieldContent>
                 <Input
                   id="customer-mobile"
@@ -297,7 +306,7 @@ function CustomerEditDialogBody({
               </FieldContent>
             </Field>
             <Field data-invalid={!!errors.primaryEmail}>
-              <FieldLabel htmlFor="customer-email">主邮箱</FieldLabel>
+              <FieldLabel htmlFor="customer-email">邮箱</FieldLabel>
               <FieldContent>
                 <Input
                   id="customer-email"

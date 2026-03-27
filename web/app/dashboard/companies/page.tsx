@@ -46,12 +46,18 @@ import {
   type AdminCompany,
   type CreateAdminCompanyPayload,
 } from "@/lib/api/company"
+import { getEnumOptions } from "@/lib/enums"
+import { Status, StatusLabels } from "@/lib/generated/enums"
 import { EditDialog } from "./_components/edit"
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
-  { value: "0", label: "启用" },
-  { value: "1", label: "禁用" },
+  ...getEnumOptions(StatusLabels)
+    .filter((item) => Number(item.value) !== Status.Deleted)
+    .map((item) => ({
+      value: String(item.value),
+      label: item.label,
+    })),
 ] as const
 
 function getStatusLabel(

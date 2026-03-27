@@ -49,18 +49,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { getEnumLabel, getEnumOptions } from "@/lib/enums"
+import { Gender, GenderLabels, Status, StatusLabels } from "@/lib/generated/enums"
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
-  { value: "0", label: "启用" },
-  { value: "1", label: "禁用" },
+  ...getEnumOptions(StatusLabels)
+    .filter((item) => Number(item.value) !== Status.Deleted)
+    .map((item) => ({
+      value: String(item.value),
+      label: item.label,
+    })),
 ] as const
 
 const genderOptions = [
   { value: "all", label: "全部性别" },
-  { value: "0", label: "未知" },
-  { value: "1", label: "男" },
-  { value: "2", label: "女" },
+  ...getEnumOptions(GenderLabels).map((item) => ({
+    value: String(item.value),
+    label: item.label,
+  })),
 ] as const
 
 function getLabel(
@@ -244,9 +251,7 @@ export default function DashboardCustomersPage() {
   }
 
   function getGenderText(gender: number) {
-    if (gender === 1) return "男"
-    if (gender === 2) return "女"
-    return "未知"
+    return getEnumLabel(GenderLabels, gender as Gender)
   }
 
   return (
