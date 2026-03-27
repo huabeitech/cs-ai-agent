@@ -289,7 +289,7 @@ export function ChatPanel() {
 
   if (!conversation) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center mt-10">
         <div className="text-center text-muted-foreground">
           <p className="text-lg">暂无会话</p>
           <p className="mt-1 text-sm">请从左侧选择会话开始聊天</p>
