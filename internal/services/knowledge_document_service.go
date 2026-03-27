@@ -124,19 +124,15 @@ func (s *knowledgeDocumentService) UpdateKnowledgeDocument(req request.UpdateKno
 		return err
 	}
 	oldKnowledgeBaseID := current.KnowledgeBaseID
-	now := time.Now()
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		updates := map[string]any{
-			"knowledge_base_id": item.KnowledgeBaseID,
-			"title":             item.Title,
-			"content_type":      item.ContentType,
-			"content_hash":      item.ContentHash,
-			"content":           item.Content,
-			"update_user_id":    operator.UserID,
-			"update_user_name":  operator.Username,
-			"updated_at":        now,
-		}
-		return ctx.Tx.Model(&models.KnowledgeDocument{}).Where("id = ?", req.ID).Updates(updates).Error
+	if err := repositories.KnowledgeDocumentRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"knowledge_base_id": item.KnowledgeBaseID,
+		"title":             item.Title,
+		"content_type":      item.ContentType,
+		"content_hash":      item.ContentHash,
+		"content":           item.Content,
+		"update_user_id":    operator.UserID,
+		"update_user_name":  operator.Username,
+		"updated_at":        time.Now(),
 	}); err != nil {
 		return err
 	}
@@ -161,7 +157,7 @@ func (s *knowledgeDocumentService) DeleteKnowledgeDocument(id int64) error {
 	}
 	chunks := repositories.KnowledgeChunkRepository.FindByDocumentID(sqls.DB(), id)
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		ctx.Tx.Model(&models.KnowledgeDocument{}).Where("id = ?", id).Updates(map[string]any{
+		_ = repositories.KnowledgeDocumentRepository.Updates(ctx.Tx, id, map[string]any{
 			"status":     enums.StatusDeleted,
 			"updated_at": time.Now(),
 		})

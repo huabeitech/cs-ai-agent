@@ -85,7 +85,7 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 		return err
 	}
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AIAgent{}).Where("id = ?", req.ID).Updates(map[string]any{
+		return repositories.AIAgentRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"name":                item.Name,
 			"description":         item.Description,
 			"ai_config_id":        item.AIConfigID,
@@ -101,7 +101,7 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 			"update_user_id":      operator.UserID,
 			"update_user_name":    operator.Username,
 			"updated_at":          time.Now(),
-		}).Error
+		})
 	})
 }
 
@@ -231,7 +231,7 @@ func (s *aIAgentService) normalizeKnowledgeIDs(input []int64) ([]int64, error) {
 func (s *aIAgentService) UpdateSort(ids []int64) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for i, id := range ids {
-			if err := ctx.Tx.Model(&models.AIAgent{}).Where("id = ?", id).Update("sort_no", i+1).Error; err != nil {
+			if err := repositories.AIAgentRepository.UpdateColumn(ctx.Tx, id, "sort_no", i+1); err != nil {
 				return err
 			}
 		}
@@ -252,11 +252,11 @@ func (s *aIAgentService) UpdateStatus(id int64, status int, operator *dto.AuthPr
 	}
 
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AIAgent{}).Where("id = ?", id).Updates(map[string]any{
+		return repositories.AIAgentRepository.Updates(ctx.Tx, id, map[string]any{
 			"status":           status,
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       time.Now(),
-		}).Error
+		})
 	})
 }

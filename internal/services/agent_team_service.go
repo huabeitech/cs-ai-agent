@@ -107,7 +107,7 @@ func (s *agentTeamService) UpdateAgentTeam(req request.UpdateAgentTeamRequest, o
 	}
 	now := time.Now()
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AgentTeam{}).Where("id = ?", req.ID).Updates(map[string]any{
+		return repositories.AgentTeamRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"name":             item.Name,
 			"leader_user_id":   item.LeaderUserID,
 			"status":           item.Status,
@@ -116,7 +116,7 @@ func (s *agentTeamService) UpdateAgentTeam(req request.UpdateAgentTeamRequest, o
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       now,
-		}).Error
+		})
 	})
 }
 
@@ -146,12 +146,12 @@ func (s *agentTeamService) DeleteAgentTeam(id int64, operator *dto.AuthPrincipal
 	}
 	now := time.Now()
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AgentTeam{}).Where("id = ?", id).Updates(map[string]any{
+		return repositories.AgentTeamRepository.Updates(ctx.Tx, id, map[string]any{
 			"status":           enums.StatusDeleted,
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       now,
-		}).Error
+		})
 	})
 }
 

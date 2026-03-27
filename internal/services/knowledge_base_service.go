@@ -103,7 +103,7 @@ func (s *knowledgeBaseService) UpdateKnowledgeBase(req request.UpdateKnowledgeBa
 		return err
 	}
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.KnowledgeBase{}).Where("id = ?", req.ID).Updates(map[string]any{
+		return repositories.KnowledgeBaseRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"name":                    item.Name,
 			"description":             item.Description,
 			"default_top_k":           item.DefaultTopK,
@@ -119,7 +119,7 @@ func (s *knowledgeBaseService) UpdateKnowledgeBase(req request.UpdateKnowledgeBa
 			"update_user_id":          operator.UserID,
 			"update_user_name":        operator.Username,
 			"updated_at":              time.Now(),
-		}).Error
+		})
 	})
 }
 
@@ -141,8 +141,7 @@ func (s *knowledgeBaseService) DeleteKnowledgeBase(id int64) error {
 func (s *knowledgeBaseService) UpdateSort(ids []int64) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for i, id := range ids {
-			err := ctx.Tx.Model(&models.KnowledgeBase{}).Where("id = ?", id).Update("sort_no", i).Error
-			if err != nil {
+			if err := repositories.KnowledgeBaseRepository.UpdateColumn(ctx.Tx, id, "sort_no", i); err != nil {
 				return err
 			}
 		}

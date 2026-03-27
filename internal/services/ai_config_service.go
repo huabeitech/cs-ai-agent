@@ -111,7 +111,7 @@ func (s *aIConfigService) UpdateAIConfig(req request.UpdateAIConfigRequest, oper
 	}
 
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AIConfig{}).Where("id = ?", req.ID).Updates(map[string]any{
+		return repositories.AIConfigRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"name":               item.Name,
 			"provider":           item.Provider,
 			"base_url":           item.BaseURL,
@@ -129,7 +129,7 @@ func (s *aIConfigService) UpdateAIConfig(req request.UpdateAIConfigRequest, oper
 			"update_user_id":     operator.UserID,
 			"update_user_name":   operator.Username,
 			"updated_at":         time.Now(),
-		}).Error
+		})
 	})
 }
 
@@ -164,19 +164,19 @@ func (s *aIConfigService) UpdateStatus(id int64, status enums.Status, operator *
 				return err
 			}
 		}
-		return ctx.Tx.Model(&models.AIConfig{}).Where("id = ?", id).Updates(map[string]any{
+		return repositories.AIConfigRepository.Updates(ctx.Tx, id, map[string]any{
 			"status":           status,
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       time.Now(),
-		}).Error
+		})
 	})
 }
 
 func (s *aIConfigService) UpdateSort(ids []int64) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for i, id := range ids {
-			if err := ctx.Tx.Model(&models.AIConfig{}).Where("id = ?", id).Update("sort_no", i).Error; err != nil {
+			if err := repositories.AIConfigRepository.UpdateColumn(ctx.Tx, id, "sort_no", i); err != nil {
 				return err
 			}
 		}

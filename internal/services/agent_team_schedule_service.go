@@ -104,7 +104,7 @@ func (s *agentTeamScheduleService) UpdateAgentTeamSchedule(req request.UpdateAge
 	}
 	now := time.Now()
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return ctx.Tx.Model(&models.AgentTeamSchedule{}).Where("id = ?", req.ID).Updates(map[string]any{
+		return repositories.AgentTeamScheduleRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"team_id":          item.TeamID,
 			"start_at":         item.StartAt,
 			"end_at":           item.EndAt,
@@ -113,7 +113,7 @@ func (s *agentTeamScheduleService) UpdateAgentTeamSchedule(req request.UpdateAge
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       now,
-		}).Error
+		})
 	}); err != nil {
 		return err
 	}
