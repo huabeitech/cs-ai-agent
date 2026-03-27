@@ -14,6 +14,7 @@ import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
+	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
 )
@@ -268,7 +269,7 @@ func (s *aiReplyService) handoffConversation(conversation *models.Conversation, 
 	}
 	now := time.Now()
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		updates := map[string]any{
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversation.ID, map[string]any{
 			"handoff_at":          now,
 			"handoff_reason":      strings.TrimSpace(reason),
 			"status":              enums.IMConversationStatusPending,
@@ -277,8 +278,7 @@ func (s *aiReplyService) handoffConversation(conversation *models.Conversation, 
 			"update_user_id":      0,
 			"update_user_name":    aiAgent.Name,
 			"updated_at":          now,
-		}
-		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversation.ID).Updates(updates).Error; err != nil {
+		}); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason), now)

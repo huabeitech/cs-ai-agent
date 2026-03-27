@@ -64,4 +64,3 @@ func (s *skillRunLogService) UpdateColumn(id int64, name string, value interface
 func (s *skillRunLogService) Delete(id int64) {
 	repositories.SkillRunLogRepository.Delete(sqls.DB(), id)
 }
-

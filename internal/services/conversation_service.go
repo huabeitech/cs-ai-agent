@@ -203,13 +203,13 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 		if err := ConversationAssignmentService.CreateAssignmentTx(ctx, conversationID, conversation.CurrentAssigneeID, assigneeID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
 			return err
 		}
-		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversationID).Updates(map[string]any{
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"current_assignee_id": assigneeID,
 			"status":              enums.IMConversationStatusActive,
 			"update_user_id":      operator.UserID,
 			"update_user_name":    operator.Username,
 			"updated_at":          now,
-		}).Error; err != nil {
+		}); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeAssign, enums.IMSenderTypeAgent, operator.UserID, "会话已分配", s.buildEventPayload(map[string]any{
@@ -292,13 +292,13 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		if err := ConversationAssignmentService.CreateAssignmentTx(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, operator, now); err != nil {
 			return err
 		}
-		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversationID).Updates(map[string]any{
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"current_assignee_id": toUserID,
 			"status":              enums.IMConversationStatusActive,
 			"update_user_id":      operator.UserID,
 			"update_user_name":    operator.Username,
 			"updated_at":          now,
-		}).Error; err != nil {
+		}); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeTransfer, enums.IMSenderTypeAgent, operator.UserID, "会话已转接", s.buildEventPayload(map[string]any{
@@ -373,7 +373,7 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversationID).Updates(map[string]any{
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"status":           enums.IMConversationStatusClosed,
 			"closed_at":        now,
 			"closed_by":        operator.UserID,
@@ -381,7 +381,7 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 			"update_user_id":   operator.UserID,
 			"update_user_name": updateUserName,
 			"updated_at":       now,
-		}).Error; err != nil {
+		}); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeClose, senderType, operator.UserID, eventDesc, s.buildEventPayload(map[string]any{
@@ -562,13 +562,13 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		if readerType == enums.IMSenderTypeCustomer && operator.IsVisitor {
 			updateUserName = operator.Nickname
 		}
-		return ctx.Tx.Model(&models.Conversation{}).Where("id = ?", currentConversation.ID).Updates(map[string]any{
+		return repositories.ConversationRepository.Updates(ctx.Tx, currentConversation.ID, map[string]any{
 			"agent_unread_count":    agentUnreadCount,
 			"customer_unread_count": customerUnreadCount,
 			"update_user_id":        operator.UserID,
 			"update_user_name":      updateUserName,
 			"updated_at":            now,
-		}).Error
+		})
 	})
 	if err != nil {
 		return false, err

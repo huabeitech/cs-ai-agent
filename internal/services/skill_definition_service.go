@@ -75,7 +75,7 @@ func (s *skillDefinitionService) NextPriority() int {
 func (s *skillDefinitionService) UpdatePriority(ids []int64) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for i, id := range ids {
-			if err := ctx.Tx.Model(&models.SkillDefinition{}).Where("id = ?", id).Update("priority", i+1).Error; err != nil {
+			if err := repositories.SkillDefinitionRepository.UpdateColumn(ctx.Tx, id, "priority", i+1); err != nil {
 				return err
 			}
 		}

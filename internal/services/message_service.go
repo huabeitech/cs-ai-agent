@@ -245,7 +245,7 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		}
 		eventOperatorType := senderType
 		eventContent := enums.GetIMSenderTypeLabel(senderType) + "发送消息"
-		if err := ctx.Tx.Model(&models.Conversation{}).Where("id = ?", conversationID).Updates(map[string]any{
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"last_message_id":       message.ID,
 			"last_message_at":       now,
 			"last_active_at":        now,
@@ -255,7 +255,7 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 			"updated_at":            now,
 			"agent_unread_count":    agentUnreadCount,
 			"customer_unread_count": customerUnreadCount,
-		}).Error; err != nil {
+		}); err != nil {
 			return err
 		}
 		if err := ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeMessageSend, eventOperatorType, operator.UserID, eventContent, "", now); err != nil {

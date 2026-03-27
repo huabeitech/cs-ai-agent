@@ -124,8 +124,7 @@ func (s *roleService) NextSortNo() int {
 func (s *roleService) UpdateSort(ids []int64) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for i, id := range ids {
-			err := ctx.Tx.Model(&models.Role{}).Where("id = ?", id).Update("sort_no", i).Error
-			if err != nil {
+			if err := repositories.RoleRepository.UpdateColumn(ctx.Tx, id, "sort_no", i); err != nil {
 				return err
 			}
 		}

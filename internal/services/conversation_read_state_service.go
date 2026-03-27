@@ -185,7 +185,7 @@ func (s *conversationReadStateService) MarkReadTx(ctx *sqls.TxContext, conversat
 	if readerType == enums.IMSenderTypeCustomer && operator.IsVisitor {
 		updates["update_user_name"] = operator.Nickname
 	}
-	if err := ctx.Tx.Model(&models.ConversationReadState{}).Where("id = ?", item.ID).Updates(updates).Error; err != nil {
+	if err := repositories.ConversationReadStateRepository.Updates(ctx.Tx, item.ID, updates); err != nil {
 		return nil, err
 	}
 
