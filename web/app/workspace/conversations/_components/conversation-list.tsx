@@ -20,8 +20,6 @@ function getStatusVariant(status: number) {
       return "bg-green-100 text-green-700"
     case IMConversationStatus.Closed:
       return "bg-gray-100 text-gray-700"
-    // case IMConversationStatus.Archived:
-    //   return "bg-yellow-100 text-yellow-700"
     default:
       return "bg-gray-100 text-gray-700"
   }
