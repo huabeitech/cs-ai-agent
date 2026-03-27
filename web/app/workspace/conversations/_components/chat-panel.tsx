@@ -300,7 +300,7 @@ export function ChatPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="h-full min-h-0 flex-1">
         <div ref={messagesContainerRef} className="p-4">
           {loading ? (
             <div className="py-8 text-center text-sm text-muted-foreground">

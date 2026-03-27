@@ -157,7 +157,7 @@ export default function ConversationsPage() {
   );
 
   const workspaceContent = (
-    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
       <div className="shrink-0 flex items-center justify-between gap-3 border-b px-3 py-1">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
@@ -279,7 +279,9 @@ export default function ConversationsPage() {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize="72%" minSize="40%" className="min-h-0">
-            {workspaceContent}
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              {workspaceContent}
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
