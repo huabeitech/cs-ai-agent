@@ -131,12 +131,12 @@ type Customer struct {
 //
 //	用于维护客户与外部平台账号的映射关系，如 wxwork/openid 等。
 type CustomerIdentity struct {
-	ID         int64        `gorm:"primaryKey;autoIncrement"`
-	CustomerID int64        `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_source_user"`                 // CustomerID 为所属客户ID。
-	SourseType string       `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_source_user"` // SourseType 为来源平台类型，如 wxwork。
-	SourceID   string       `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_customer_source_user"`      // SourceID 为平台侧用户唯一ID。
-	RawProfile string       `gorm:"type:text"`                                                                      // RawProfile 为第三方原始资料JSON。
-	Status     enums.Status `gorm:"type:int;not null;default:0;index"`                                              // Status 为映射状态。
+	ID         int64                    `gorm:"primaryKey;autoIncrement"`
+	CustomerID int64                    `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_source_user"`                 // CustomerID 为所属客户ID。
+	SourseType enums.CustomerSourceType `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_source_user"` // SourseType 为来源平台类型，如 wxwork。
+	SourceID   string                   `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_customer_source_user"`      // SourceID 为平台侧用户唯一ID。
+	RawProfile string                   `gorm:"type:text"`                                                                      // RawProfile 为第三方原始资料JSON。
+	Status     enums.Status             `gorm:"type:int;not null;default:0;index"`                                              // Status 为映射状态。
 	AuditFields
 }
 
@@ -144,16 +144,16 @@ type CustomerIdentity struct {
 //
 //	用于维护客户的一对多联系方式，支持主联系方式、验证状态与失效标记。
 type CustomerContact struct {
-	ID           int64        `gorm:"primaryKey;autoIncrement"`
-	CustomerID   int64        `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_contact"`                  // CustomerID 为所属客户ID。
-	ContactType  string       `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_contact"`  // ContactType 为联系方式类型：mobile/email/wechat/other。
-	ContactValue string       `gorm:"type:varchar(200);not null;default:'';index;uniqueIndex:uk_customer_contact"` // ContactValue 为联系方式值。
-	IsPrimary    bool         `gorm:"not null;default:false;index"`                                                // IsPrimary 表示是否主联系方式。
-	IsVerified   bool         `gorm:"not null;default:false;index"`                                                // IsVerified 表示是否已验证。
-	VerifiedAt   *time.Time   `gorm:"type:datetime"`                                                               // VerifiedAt 为验证时间。
-	Source       string       `gorm:"type:varchar(30);not null;default:'';index"`                                  // Source 为来源：manual/import/system。
-	Status       enums.Status `gorm:"type:int;not null;default:0;index"`                                           // Status 为联系方式状态。
-	Remark       string       `gorm:"type:varchar(255);not null;default:''"`                                       // Remark 为备注。
+	ID           int64             `gorm:"primaryKey;autoIncrement"`
+	CustomerID   int64             `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_contact"`                  // CustomerID 为所属客户ID。
+	ContactType  enums.ContactType `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_contact"`  // ContactType 为联系方式类型：mobile/email/wechat/other。
+	ContactValue string            `gorm:"type:varchar(200);not null;default:'';index;uniqueIndex:uk_customer_contact"` // ContactValue 为联系方式值。
+	IsPrimary    bool              `gorm:"not null;default:false;index"`                                                // IsPrimary 表示是否主联系方式。
+	IsVerified   bool              `gorm:"not null;default:false;index"`                                                // IsVerified 表示是否已验证。
+	VerifiedAt   *time.Time        `gorm:"type:datetime"`                                                               // VerifiedAt 为验证时间。
+	Source       string            `gorm:"type:varchar(30);not null;default:'';index"`                                  // Source 为来源：manual/import/system。
+	Status       enums.Status      `gorm:"type:int;not null;default:0;index"`                                           // Status 为联系方式状态。
+	Remark       string            `gorm:"type:varchar(255);not null;default:''"`                                       // Remark 为备注。
 	AuditFields
 }
 

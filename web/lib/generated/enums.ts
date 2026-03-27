@@ -62,6 +62,37 @@ export const AssetStatusLabels: Record<AssetStatus, string> = {
   [AssetStatus.Deleted]: "已删除",
 }
 
+export enum ContactType {
+  Mobile = "mobile",
+  Email = "email",
+  WeChat = "wechat",
+  Other = "other",
+}
+export const ContactTypeLabels: Record<ContactType, string> = {
+  [ContactType.Mobile]: "手机号",
+  [ContactType.Email]: "邮箱",
+  [ContactType.WeChat]: "微信",
+  [ContactType.Other]: "其他",
+}
+
+export enum CustomerSourceType {
+  WebChat = "web_chat",
+}
+export const CustomerSourceTypeLabels: Record<CustomerSourceType, string> = {
+  [CustomerSourceType.WebChat]: "网页客服",
+}
+
+export enum Gender {
+  Unknown = 0,
+  Male = 1,
+  Female = 2,
+}
+export const GenderLabels: Record<Gender, string> = {
+  [Gender.Unknown]: "未知",
+  [Gender.Male]: "男",
+  [Gender.Female]: "女",
+}
+
 export enum IMAssignmentStatus {
   Active = 0,
   Inactive = 1,
@@ -303,6 +334,15 @@ export const StatusLabels: Record<Status, string> = {
   [Status.Ok]: "启用",
   [Status.Disabled]: "禁用",
   [Status.Deleted]: "已删除",
+}
+
+export enum ThirdProvider {
+  WxWork = "wxwork",
+  Dingtalk = "dingtalk",
+}
+export const ThirdProviderLabels: Record<ThirdProvider, string> = {
+  [ThirdProvider.WxWork]: "企业微信",
+  [ThirdProvider.Dingtalk]: "钉钉",
 }
 
 export enum TicketAssignStatus {
