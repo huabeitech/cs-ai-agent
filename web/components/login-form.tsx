@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { startTransition, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -111,12 +112,14 @@ export function LoginForm({
           <Button
             type="button"
             variant="outline"
+            className="gap-2"
             onClick={() => {
               window.location.href = `/api/auth/wxwork_login?next=${encodeURIComponent(
                 redirectPath
               )}`
             }}
           >
+            <Image src="/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
             企微内登录
           </Button>
         </Field>
@@ -124,12 +127,14 @@ export function LoginForm({
           <Button
             type="button"
             variant="outline"
+            className="gap-2"
             onClick={() => {
               window.location.href = `/api/auth/wxwork_qr_login?next=${encodeURIComponent(
                 redirectPath
               )}`
             }}
           >
+            <Image src="/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
             企微扫码登录
           </Button>
         </Field>
