@@ -5,6 +5,7 @@ import (
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
+	"cs-agent/internal/repositories"
 	"errors"
 	"log/slog"
 	"math"
@@ -390,8 +391,8 @@ func (s *conversationDispatchService) tryAssignConversation(conversationID int64
 	operator := systemDispatchPrincipal()
 
 	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := &models.Conversation{}
-		if err := ctx.Tx.First(conversation, "id = ?", conversationID).Error; err != nil {
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if conversation == nil {
 			return errConversationDispatchConflict
 		}
 		if conversation.Status != enums.IMConversationStatusPending || conversation.CurrentAssigneeID > 0 {

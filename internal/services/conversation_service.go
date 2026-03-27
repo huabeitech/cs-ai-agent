@@ -272,8 +272,8 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		return errorsx.InvalidParam("目标客服不存在")
 	}
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := &models.Conversation{}
-		if err := ctx.Tx.First(conversation, "id = ?", conversationID).Error; err != nil {
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if conversation == nil {
 			return errorsx.InvalidParam("会话不存在")
 		}
 		if conversation.Status != enums.IMConversationStatusActive {
@@ -341,8 +341,8 @@ func (s *conversationService) CloseCustomerConversation(conversationID int64, op
 
 func (s *conversationService) closeConversation(conversationID int64, senderType enums.IMSenderType, closeReason string, operator *dto.AuthPrincipal) error {
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := &models.Conversation{}
-		if err := ctx.Tx.First(conversation, "id = ?", conversationID).Error; err != nil {
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if conversation == nil {
 			return errorsx.InvalidParam("会话不存在")
 		}
 		if conversation.Status == enums.IMConversationStatusClosed {
@@ -532,8 +532,8 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 	}
 
 	err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		currentConversation := &models.Conversation{}
-		if err := ctx.Tx.First(currentConversation, "id = ?", conversation.ID).Error; err != nil {
+		currentConversation := repositories.ConversationRepository.Get(ctx.Tx, conversation.ID)
+		if currentConversation == nil {
 			return errorsx.InvalidParam("会话不存在")
 		}
 		now := time.Now()
