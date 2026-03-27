@@ -17,16 +17,6 @@ type AuthController struct {
 	Cfg *config.Config
 }
 
-// func (c *AuthController) BeforeActivation(b mvc.BeforeActivation) {
-// 	b.Handle("POST", "/login", "PostLogin")
-// 	b.Handle("GET", "/wxwork/login", "GetWxWorkLogin")
-// 	b.Handle("GET", "/wxwork/callback", "GetWxWorkCallback")
-// 	b.Handle("POST", "/wxwork/exchange", "PostWxWorkExchange")
-// 	b.Handle("POST", "/refresh-token", "PostRefreshToken")
-// 	b.Handle("POST", "/logout", "PostLogout")
-// 	b.Handle("GET", "/profile", "GetProfile")
-// }
-
 func (c *AuthController) PostLogin() *web.JsonResult {
 	req := request.LoginRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
@@ -55,6 +45,15 @@ func (c *AuthController) PostRefreshToken() *web.JsonResult {
 
 func (c *AuthController) GetWxwork_login() {
 	loginURL, err := services.AuthService.BuildWxWorkLoginURL(c.Ctx.URLParam("next"))
+	if err != nil {
+		c.redirectWxWorkError(err.Error())
+		return
+	}
+	c.Ctx.Redirect(loginURL, iris.StatusFound)
+}
+
+func (c *AuthController) GetWxwork_qr_login() {
+	loginURL, err := services.AuthService.BuildWxWorkQRCodeLoginURL(c.Ctx.URLParam("next"))
 	if err != nil {
 		c.redirectWxWorkError(err.Error())
 		return

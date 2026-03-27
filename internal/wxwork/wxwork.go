@@ -85,6 +85,25 @@ func BuildLoginURL(state string) (string, error) {
 	), nil
 }
 
+func BuildQRCodeLoginURL(state string) (string, error) {
+	if !Enabled() {
+		return "", fmt.Errorf("企业微信登录未启用")
+	}
+	if strings.TrimSpace(wxCfg.OAuthRedirect) == "" {
+		return "", fmt.Errorf("企业微信登录回调地址未配置")
+	}
+	if strings.TrimSpace(wxCfg.AgentID) == "" {
+		return "", fmt.Errorf("企业微信 AgentID 未配置")
+	}
+	return fmt.Sprintf(
+		"https://open.work.weixin.qq.com/wwopen/sso/qrConnect?appid=%s&agentid=%s&redirect_uri=%s&state=%s",
+		url.QueryEscape(strings.TrimSpace(wxCfg.CorpID)),
+		url.QueryEscape(strings.TrimSpace(wxCfg.AgentID)),
+		url.QueryEscape(strings.TrimSpace(wxCfg.OAuthRedirect)),
+		url.QueryEscape(strings.TrimSpace(state)),
+	), nil
+}
+
 func GetLoginUser(code string) (*LoginUser, error) {
 	if !Enabled() {
 		return nil, fmt.Errorf("企业微信登录未启用")

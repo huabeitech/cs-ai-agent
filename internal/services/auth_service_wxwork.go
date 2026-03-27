@@ -56,6 +56,17 @@ func (s *authService) BuildWxWorkLoginURL(next string) (string, error) {
 	return wxwork.BuildLoginURL(state)
 }
 
+func (s *authService) BuildWxWorkQRCodeLoginURL(next string) (string, error) {
+	if !wxwork.Enabled() {
+		return "", errorsx.BusinessError(1, "企业微信登录未启用")
+	}
+	state, err := s.createWxWorkState(next)
+	if err != nil {
+		return "", err
+	}
+	return wxwork.BuildQRCodeLoginURL(state)
+}
+
 func (s *authService) LoginByWxWork(code, state string, authCfg config.AuthConfig, clientIP, userAgent string) (string, string, error) {
 	next, err := s.parseWxWorkState(state)
 	if err != nil {
@@ -63,7 +74,7 @@ func (s *authService) LoginByWxWork(code, state string, authCfg config.AuthConfi
 	}
 	profile, err := wxwork.GetLoginUser(code)
 	if err != nil {
-		return "", "", errorsx.BusinessError(2, "企业微信登录失败，请稍后重试")
+		return "", "", err
 	}
 	loginResp, err := s.loginWithWxWorkProfile(profile, authCfg, clientIP, userAgent)
 	if err != nil {

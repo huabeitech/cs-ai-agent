@@ -117,7 +117,20 @@ export function LoginForm({
               )}`
             }}
           >
-            企业微信登录
+            企微内登录
+          </Button>
+        </Field>
+        <Field>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              window.location.href = `/api/auth/wxwork_qr_login?next=${encodeURIComponent(
+                redirectPath
+              )}`
+            }}
+          >
+            企微扫码登录
           </Button>
         </Field>
       </FieldGroup>

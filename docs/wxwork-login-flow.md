@@ -1,15 +1,41 @@
 # 企业微信登录流程
 
-本文说明当前项目中“企业微信登录”的整体链路，以及浏览器、前端、后端、企业微信之间的接口调用顺序。
+本文说明当前项目中“企业微信登录”的双模式链路，以及浏览器、前端、后端、企业微信之间的接口调用顺序。
 
 ## 相关接口
 
 - `GET /api/auth/wxwork_login`
-  - 作用：生成企业微信授权地址，并由后端 `302` 跳转到企业微信授权页
+  - 作用：生成“企微内网页授权登录”地址，并由后端 `302` 跳转到企业微信授权页
+- `GET /api/auth/wxwork_qr_login`
+  - 作用：生成“企微扫码登录”地址，并由后端 `302` 跳转到企业微信扫码页
 - `GET /api/auth/wxwork_callback`
   - 作用：接收企业微信回调 `code/state`，完成系统内登录，生成一次性 `ticket`
 - `POST /api/auth/wxwork_exchange`
   - 作用：前端用 `ticket` 换取系统自己的 `accessToken/refreshToken`
+
+## 两种登录模式
+
+### 1. 企微内网页登录
+
+适用场景：
+
+- 从企业微信工作台进入页面
+- 在企业微信内置浏览器中打开后台
+
+入口接口：
+
+- `GET /api/auth/wxwork_login`
+
+### 2. 企微扫码登录
+
+适用场景：
+
+- PC 普通浏览器访问后台登录页
+- 不在企业微信内打开，但希望用企业微信扫码完成登录
+
+入口接口：
+
+- `GET /api/auth/wxwork_qr_login`
 
 ## 关键配置
 
@@ -28,6 +54,8 @@ wxWork:
 ```
 
 ## 登录时序图
+
+### 企微内网页登录时序
 
 ```mermaid
 sequenceDiagram
@@ -69,6 +97,39 @@ sequenceDiagram
     FE-->>U: 跳转到 next 页面，例如 /dashboard
 ```
 
+### 企微扫码登录时序
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 用户浏览器
+    participant FE as 前端页面 /login
+    participant BE as 后端 API
+    participant WW as 企业微信
+    participant APP as 企业微信 App
+
+    U->>FE: 打开登录页
+    U->>FE: 点击“企微扫码登录”
+    FE->>BE: GET /api/auth/wxwork_qr_login?next=/dashboard
+    BE->>BE: 生成 state 并拼接企微扫码登录地址
+    BE-->>U: 302 跳转到企微扫码页
+    U->>WW: 浏览器展示扫码页
+    APP->>WW: 用户用企业微信 App 扫码并确认
+    WW-->>U: 302 跳转到 wxWork.oauthRedirect
+    U->>BE: GET /api/auth/wxwork_callback?code=xxx&state=xxx
+    BE->>BE: 校验 state
+    BE->>WW: 用 code 获取用户身份(userid/user_ticket)
+    WW-->>BE: 返回企业微信用户身份
+    BE->>BE: 查询或自动创建 User / UserIdentity
+    BE->>BE: 生成系统 token 与一次性 ticket
+    BE-->>U: 302 跳转 /login/wxwork/callback?ticket=xxx&next=/dashboard
+    U->>FE: 打开前端回调页
+    FE->>BE: POST /api/auth/wxwork_exchange
+    BE-->>FE: 返回 LoginResponse
+    FE->>FE: writeSession(...)
+    FE-->>U: 跳转到 next 页面
+```
+
 ## 后端内部处理说明
 
 ### 1. `GET /api/auth/wxwork_login`
@@ -78,7 +139,14 @@ sequenceDiagram
 1. 生成带签名的 `state`
 2. 根据 `corpId/agentId/oauthRedirect/state` 拼接企业微信授权地址并重定向
 
-### 2. `GET /api/auth/wxwork_callback`
+### 2. `GET /api/auth/wxwork_qr_login`
+
+后端主要做两件事：
+
+1. 生成带签名的 `state`
+2. 根据 `corpId/agentId/oauthRedirect/state` 拼接企业微信扫码登录地址并重定向
+
+### 3. `GET /api/auth/wxwork_callback`
 
 后端主要做这些事：
 
@@ -92,7 +160,7 @@ sequenceDiagram
 6. 创建一次性 `ticket`
 7. 重定向到前端回调页
 
-### 3. `POST /api/auth/wxwork_exchange`
+### 4. `POST /api/auth/wxwork_exchange`
 
 前端回调页调用该接口：
 
