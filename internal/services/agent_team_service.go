@@ -106,17 +106,15 @@ func (s *agentTeamService) UpdateAgentTeam(req request.UpdateAgentTeamRequest, o
 		return err
 	}
 	now := time.Now()
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AgentTeamRepository.Updates(ctx.Tx, req.ID, map[string]any{
-			"name":             item.Name,
-			"leader_user_id":   item.LeaderUserID,
-			"status":           item.Status,
-			"description":      item.Description,
-			"remark":           item.Remark,
-			"update_user_id":   operator.UserID,
-			"update_user_name": operator.Username,
-			"updated_at":       now,
-		})
+	return repositories.AgentTeamRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"name":             item.Name,
+		"leader_user_id":   item.LeaderUserID,
+		"status":           item.Status,
+		"description":      item.Description,
+		"remark":           item.Remark,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       now,
 	})
 }
 
@@ -144,14 +142,11 @@ func (s *agentTeamService) DeleteAgentTeam(id int64, operator *dto.AuthPrincipal
 	) != nil {
 		return errorsx.Forbidden("客服组下仍有关联 AI Agent，无法删除")
 	}
-	now := time.Now()
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AgentTeamRepository.Updates(ctx.Tx, id, map[string]any{
-			"status":           enums.StatusDeleted,
-			"update_user_id":   operator.UserID,
-			"update_user_name": operator.Username,
-			"updated_at":       now,
-		})
+	return repositories.AgentTeamRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
 	})
 }
 

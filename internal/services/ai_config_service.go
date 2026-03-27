@@ -110,26 +110,24 @@ func (s *aIConfigService) UpdateAIConfig(req request.UpdateAIConfigRequest, oper
 		return err
 	}
 
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AIConfigRepository.Updates(ctx.Tx, req.ID, map[string]any{
-			"name":               item.Name,
-			"provider":           item.Provider,
-			"base_url":           item.BaseURL,
-			"api_key":            item.APIKey,
-			"model_type":         item.ModelType,
-			"model_name":         item.ModelName,
-			"dimension":          item.Dimension,
-			"max_context_tokens": item.MaxContextTokens,
-			"max_output_tokens":  item.MaxOutputTokens,
-			"timeout_ms":         item.TimeoutMS,
-			"max_retry_count":    item.MaxRetryCount,
-			"rpm_limit":          item.RPMLimit,
-			"tpm_limit":          item.TPMLimit,
-			"remark":             item.Remark,
-			"update_user_id":     operator.UserID,
-			"update_user_name":   operator.Username,
-			"updated_at":         time.Now(),
-		})
+	return repositories.AIConfigRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"name":               item.Name,
+		"provider":           item.Provider,
+		"base_url":           item.BaseURL,
+		"api_key":            item.APIKey,
+		"model_type":         item.ModelType,
+		"model_name":         item.ModelName,
+		"dimension":          item.Dimension,
+		"max_context_tokens": item.MaxContextTokens,
+		"max_output_tokens":  item.MaxOutputTokens,
+		"timeout_ms":         item.TimeoutMS,
+		"max_retry_count":    item.MaxRetryCount,
+		"rpm_limit":          item.RPMLimit,
+		"tpm_limit":          item.TPMLimit,
+		"remark":             item.Remark,
+		"update_user_id":     operator.UserID,
+		"update_user_name":   operator.Username,
+		"updated_at":         time.Now(),
 	})
 }
 

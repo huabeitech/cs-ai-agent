@@ -102,24 +102,22 @@ func (s *knowledgeBaseService) UpdateKnowledgeBase(req request.UpdateKnowledgeBa
 	if err != nil {
 		return err
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.KnowledgeBaseRepository.Updates(ctx.Tx, req.ID, map[string]any{
-			"name":                    item.Name,
-			"description":             item.Description,
-			"default_top_k":           item.DefaultTopK,
-			"default_score_threshold": item.DefaultScoreThreshold,
-			"default_rerank_limit":    item.DefaultRerankLimit,
-			"chunk_provider":          item.ChunkProvider,
-			"chunk_target_tokens":     item.ChunkTargetTokens,
-			"chunk_max_tokens":        item.ChunkMaxTokens,
-			"chunk_overlap_tokens":    item.ChunkOverlapTokens,
-			"answer_mode":             item.AnswerMode,
-			"fallback_mode":           item.FallbackMode,
-			"remark":                  item.Remark,
-			"update_user_id":          operator.UserID,
-			"update_user_name":        operator.Username,
-			"updated_at":              time.Now(),
-		})
+	return repositories.KnowledgeBaseRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"name":                    item.Name,
+		"description":             item.Description,
+		"default_top_k":           item.DefaultTopK,
+		"default_score_threshold": item.DefaultScoreThreshold,
+		"default_rerank_limit":    item.DefaultRerankLimit,
+		"chunk_provider":          item.ChunkProvider,
+		"chunk_target_tokens":     item.ChunkTargetTokens,
+		"chunk_max_tokens":        item.ChunkMaxTokens,
+		"chunk_overlap_tokens":    item.ChunkOverlapTokens,
+		"answer_mode":             item.AnswerMode,
+		"fallback_mode":           item.FallbackMode,
+		"remark":                  item.Remark,
+		"update_user_id":          operator.UserID,
+		"update_user_name":        operator.Username,
+		"updated_at":              time.Now(),
 	})
 }
 

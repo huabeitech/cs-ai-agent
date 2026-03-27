@@ -84,24 +84,22 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 	if err != nil {
 		return err
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AIAgentRepository.Updates(ctx.Tx, req.ID, map[string]any{
-			"name":                item.Name,
-			"description":         item.Description,
-			"ai_config_id":        item.AIConfigID,
-			"service_mode":        item.ServiceMode,
-			"system_prompt":       item.SystemPrompt,
-			"welcome_message":     item.WelcomeMessage,
-			"team_ids":            item.TeamIDs,
-			"handoff_mode":        item.HandoffMode,
-			"max_ai_reply_rounds": item.MaxAIReplyRounds,
-			"fallback_mode":       item.FallbackMode,
-			"knowledge_ids":       item.KnowledgeIDs,
-			"remark":              item.Remark,
-			"update_user_id":      operator.UserID,
-			"update_user_name":    operator.Username,
-			"updated_at":          time.Now(),
-		})
+	return repositories.AIAgentRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"name":                item.Name,
+		"description":         item.Description,
+		"ai_config_id":        item.AIConfigID,
+		"service_mode":        item.ServiceMode,
+		"system_prompt":       item.SystemPrompt,
+		"welcome_message":     item.WelcomeMessage,
+		"team_ids":            item.TeamIDs,
+		"handoff_mode":        item.HandoffMode,
+		"max_ai_reply_rounds": item.MaxAIReplyRounds,
+		"fallback_mode":       item.FallbackMode,
+		"knowledge_ids":       item.KnowledgeIDs,
+		"remark":              item.Remark,
+		"update_user_id":      operator.UserID,
+		"update_user_name":    operator.Username,
+		"updated_at":          time.Now(),
 	})
 }
 
@@ -251,12 +249,10 @@ func (s *aIAgentService) UpdateStatus(id int64, status int, operator *dto.AuthPr
 		return errorsx.InvalidParam("状态值不合法")
 	}
 
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AIAgentRepository.Updates(ctx.Tx, id, map[string]any{
-			"status":           status,
-			"update_user_id":   operator.UserID,
-			"update_user_name": operator.Username,
-			"updated_at":       time.Now(),
-		})
+	return repositories.AIAgentRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           status,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
 	})
 }

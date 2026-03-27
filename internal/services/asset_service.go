@@ -143,13 +143,11 @@ func (s *assetService) DeleteAsset(id int64, principal *dto.AuthPrincipal) error
 	if item == nil {
 		return errorsx.InvalidParam("文件不存在")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return repositories.AssetRepository.Updates(ctx.Tx, id, map[string]any{
-			"status":           enums.AssetStatusDeleted,
-			"update_user_id":   principal.UserID,
-			"update_user_name": principal.Username,
-			"updated_at":       time.Now(),
-		})
+	return repositories.AssetRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           enums.AssetStatusDeleted,
+		"update_user_id":   principal.UserID,
+		"update_user_name": principal.Username,
+		"updated_at":       time.Now(),
 	})
 }
 
