@@ -62,14 +62,15 @@ func (c *AgentTeamController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AgentTeamController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateAgentTeamRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.AgentTeamService.CreateAgentTeam(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AgentTeamService.CreateAgentTeam(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -77,28 +78,30 @@ func (c *AgentTeamController) PostCreate() *web.JsonResult {
 }
 
 func (c *AgentTeamController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateAgentTeamRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AgentTeamService.UpdateAgentTeam(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AgentTeamService.UpdateAgentTeam(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *AgentTeamController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamDelete); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteAgentTeamRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AgentTeamService.DeleteAgentTeam(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AgentTeamService.DeleteAgentTeam(req.ID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

@@ -41,7 +41,8 @@ func (c *QuickReplyController) AnyList() *web.JsonResult {
 }
 
 func (c *QuickReplyController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -49,7 +50,7 @@ func (c *QuickReplyController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.QuickReplyService.CreateQuickReply(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.QuickReplyService.CreateQuickReply(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -64,7 +65,8 @@ func (c *QuickReplyController) PostCreate() *web.JsonResult {
 }
 
 func (c *QuickReplyController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -72,7 +74,7 @@ func (c *QuickReplyController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.QuickReplyService.UpdateQuickReply(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.QuickReplyService.UpdateQuickReply(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

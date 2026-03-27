@@ -50,14 +50,15 @@ func (c *CompanyController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *CompanyController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.CreateCompanyRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.CompanyService.CreateCompany(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.CompanyService.CreateCompany(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -66,43 +67,45 @@ func (c *CompanyController) PostCreate() *web.JsonResult {
 }
 
 func (c *CompanyController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCompanyRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.CompanyService.UpdateCompany(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.CompanyService.UpdateCompany(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *CompanyController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyDelete); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.DeleteCompanyRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
-	if err := services.CompanyService.DeleteCompany(req.ID, *principal); err != nil {
+	if err := services.CompanyService.DeleteCompany(req.ID, *user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *CompanyController) PostUpdate_status() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCompanyUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	req := request.UpdateCompanyStatusRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.CompanyService.UpdateStatus(req.ID, req.Status, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.CompanyService.UpdateStatus(req.ID, req.Status, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

@@ -50,7 +50,8 @@ func (c *TicketReplyController) AnyList() *web.JsonResult {
 }
 
 func (c *TicketReplyController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReplyCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -58,18 +59,17 @@ func (c *TicketReplyController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	reply := &models.TicketReply{
 		TicketID:      req.TicketID,
 		ParentID:      req.ParentID,
 		Content:       req.Content,
 		SenderType:    string(enums.TicketSenderTypeAgent),
-		SenderID:      principal.UserID,
-		SenderName:    principal.Nickname,
+		SenderID:      operator.UserID,
+		SenderName:    operator.Nickname,
 		IsInternal:    req.IsInternal,
 		SendStatus:    int(enums.TicketReplySendStatusSent),
 		AttachmentIDs: req.AttachmentIDs,
-		AuditFields:   utils.BuildAuditFields(principal),
+		AuditFields:   utils.BuildAuditFields(operator),
 	}
 	err := services.TicketReplyService.Create(reply)
 	if err != nil {

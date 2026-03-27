@@ -51,18 +51,18 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 }
 
 func (c *ConversationController) AnyConversations() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	filterValue, _ := params.Get(c.Ctx, "filter")
 	keyword, _ := params.Get(c.Ctx, "keyword")
 	page, _ := params.GetInt(c.Ctx, "page")
 	limit, _ := params.GetInt(c.Ctx, "limit")
 
 	list, paging, err := services.ConversationService.ListConversations(
-		principal.UserID,
+		operator.UserID,
 		request.AgentConversationFilter(strings.TrimSpace(filterValue)),
 		keyword,
 		page,
@@ -123,7 +123,8 @@ func (c *ConversationController) AnyMessage_list() *web.JsonResult {
 }
 
 func (c *ConversationController) PostAssign() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -131,14 +132,15 @@ func (c *ConversationController) PostAssign() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.AssignConversation(req.ConversationID, req.AssigneeID, req.Reason, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationService.AssignConversation(req.ConversationID, req.AssigneeID, req.Reason, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ConversationController) PostDispatch() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationAssign)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -146,14 +148,15 @@ func (c *ConversationController) PostDispatch() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.DispatchConversation(req.ConversationID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationService.DispatchConversation(req.ConversationID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ConversationController) PostTransfer() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTransfer); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTransfer)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -161,14 +164,15 @@ func (c *ConversationController) PostTransfer() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.TransferConversation(req.ConversationID, req.ToUserID, req.Reason, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationService.TransferConversation(req.ConversationID, req.ToUserID, req.Reason, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ConversationController) PostClose() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationClose); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationClose)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -176,14 +180,15 @@ func (c *ConversationController) PostClose() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.CloseConversation(req.ConversationID, req.CloseReason, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationService.CloseConversation(req.ConversationID, req.CloseReason, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ConversationController) PostSend_message() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -191,7 +196,7 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.MessageService.SendAgentMessage(req.ConversationID, 0, req.ClientMsgID, req.MessageType, req.Content, req.Payload, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.MessageService.SendAgentMessage(req.ConversationID, 0, req.ClientMsgID, req.MessageType, req.Content, req.Payload, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -199,7 +204,8 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 }
 
 func (c *ConversationController) PostRead() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -207,14 +213,15 @@ func (c *ConversationController) PostRead() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.MarkConversationReadToMessage(req.ConversationID, req.MessageID, "agent", services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationService.MarkConversationReadToMessage(req.ConversationID, req.MessageID, "agent", operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ConversationController) PostUpload_image() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -228,7 +235,7 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 		return web.JsonErrorMsg("仅支持上传图片文件")
 	}
 
-	item, err := services.AssetService.UploadFile(c.Cfg, header, "im-images", services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AssetService.UploadFile(c.Cfg, header, "im-images", operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -240,7 +247,8 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 }
 
 func (c *ConversationController) PostAdd_tag() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationTag)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -248,7 +256,7 @@ func (c *ConversationController) PostAdd_tag() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationTagService.AddTag(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.ConversationTagService.AddTag(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

@@ -64,7 +64,8 @@ func (c *AssetController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AssetController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -78,7 +79,7 @@ func (c *AssetController) PostCreate() *web.JsonResult {
 	}
 	_ = f.Close()
 
-	item, err := services.AssetService.UploadFile(c.Cfg, header, req.Prefix, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AssetService.UploadFile(c.Cfg, header, req.Prefix, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -90,7 +91,8 @@ func (c *AssetController) PostCreate() *web.JsonResult {
 }
 
 func (c *AssetController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetDelete); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAssetDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -98,7 +100,7 @@ func (c *AssetController) PostDelete() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AssetService.DeleteAsset(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AssetService.DeleteAsset(req.ID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

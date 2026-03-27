@@ -51,7 +51,8 @@ func (c *AIConfigController) AnyList_all() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -59,7 +60,7 @@ func (c *AIConfigController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.AIConfigService.CreateAIConfig(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AIConfigService.CreateAIConfig(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -67,7 +68,8 @@ func (c *AIConfigController) PostCreate() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -75,7 +77,7 @@ func (c *AIConfigController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIConfigService.UpdateAIConfig(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AIConfigService.UpdateAIConfig(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
@@ -97,7 +99,8 @@ func (c *AIConfigController) PostDelete() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostUpdate_status() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -105,7 +108,7 @@ func (c *AIConfigController) PostUpdate_status() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIConfigService.UpdateStatus(req.ID, req.Status, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AIConfigService.UpdateStatus(req.ID, req.Status, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

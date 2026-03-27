@@ -97,7 +97,8 @@ func (c *TicketController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *TicketController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -105,7 +106,7 @@ func (c *TicketController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.TicketService.CreateTicket(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.TicketService.CreateTicket(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -119,7 +120,8 @@ func (c *TicketController) PostCreate() *web.JsonResult {
 }
 
 func (c *TicketController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -127,7 +129,7 @@ func (c *TicketController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TicketService.UpdateTicket(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TicketService.UpdateTicket(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
@@ -149,7 +151,8 @@ func (c *TicketController) PostDelete() *web.JsonResult {
 }
 
 func (c *TicketController) PostAssign() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketAssign); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketAssign)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -157,14 +160,15 @@ func (c *TicketController) PostAssign() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TicketService.AssignTicket(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TicketService.AssignTicket(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *TicketController) PostClose() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketClose); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketClose)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -172,14 +176,15 @@ func (c *TicketController) PostClose() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TicketService.CloseTicket(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TicketService.CloseTicket(req.ID, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *TicketController) PostReopen() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReopen); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketReopen)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -187,7 +192,7 @@ func (c *TicketController) PostReopen() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TicketService.ReopenTicket(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TicketService.ReopenTicket(req.ID, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

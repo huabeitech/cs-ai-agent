@@ -71,7 +71,8 @@ func (c *UserController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *UserController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -79,8 +80,7 @@ func (c *UserController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
-	user, err := services.UserService.CreateUser(req, principal)
+	user, err := services.UserService.CreateUser(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -91,7 +91,8 @@ func (c *UserController) PostCreate() *web.JsonResult {
 }
 
 func (c *UserController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -99,14 +100,15 @@ func (c *UserController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.UserService.UpdateUser(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.UserService.UpdateUser(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *UserController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserDelete); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -114,14 +116,15 @@ func (c *UserController) PostDelete() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.UserService.DeleteUser(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.UserService.DeleteUser(req.ID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *UserController) PostUpdate_status() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -129,14 +132,15 @@ func (c *UserController) PostUpdate_status() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.UserService.UpdateStatus(req.ID, req.Status, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.UserService.UpdateStatus(req.ID, req.Status, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *UserController) PostReset_password() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -146,7 +150,7 @@ func (c *UserController) PostReset_password() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	password, err := services.UserService.ResetPassword(req.UserID, services.AuthService.GetAuthPrincipal(c.Ctx))
+	password, err := services.UserService.ResetPassword(req.UserID, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -178,7 +182,8 @@ func (c *UserController) PostChange_password() *web.JsonResult {
 }
 
 func (c *UserController) PostAssign_role() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserAssignRole); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionUserAssignRole)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -186,7 +191,7 @@ func (c *UserController) PostAssign_role() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.UserService.AssignRoles(req.UserID, req.RoleIDs, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.UserService.AssignRoles(req.UserID, req.RoleIDs, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

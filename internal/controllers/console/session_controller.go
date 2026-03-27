@@ -51,7 +51,8 @@ func (c *SessionController) AnyList() *web.JsonResult {
 }
 
 func (c *SessionController) PostRevoke() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -59,15 +60,15 @@ func (c *SessionController) PostRevoke() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
-	if err := services.LoginSessionService.Revoke(req.ID, principal.UserID, principal.Username); err != nil {
+	if err := services.LoginSessionService.Revoke(req.ID, user.UserID, user.Username); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *SessionController) PostRevokeByUser() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSessionRevoke)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -75,8 +76,7 @@ func (c *SessionController) PostRevokeByUser() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
-	if err := services.LoginSessionService.RevokeByUser(req.UserID, principal.UserID, principal.Username); err != nil {
+	if err := services.LoginSessionService.RevokeByUser(req.UserID, user.UserID, user.Username); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

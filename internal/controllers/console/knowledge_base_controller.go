@@ -73,7 +73,8 @@ func (c *KnowledgeBaseController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -81,7 +82,7 @@ func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.KnowledgeBaseService.CreateKnowledgeBase(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.KnowledgeBaseService.CreateKnowledgeBase(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -89,7 +90,8 @@ func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
 }
 
 func (c *KnowledgeBaseController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeBaseUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -97,7 +99,7 @@ func (c *KnowledgeBaseController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.KnowledgeBaseService.UpdateKnowledgeBase(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.KnowledgeBaseService.UpdateKnowledgeBase(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

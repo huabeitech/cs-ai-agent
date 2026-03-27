@@ -54,7 +54,8 @@ func (c *SkillDefinitionController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -77,7 +78,7 @@ func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
 		Priority:    0,
 		Status:      enums.StatusOk,
 		Remark:      strings.TrimSpace(req.Remark),
-		AuditFields: utils.BuildAuditFields(services.AuthService.GetAuthPrincipal(c.Ctx)),
+		AuditFields: utils.BuildAuditFields(operator),
 	}
 	if err := services.SkillDefinitionService.Create(item); err != nil {
 		return web.JsonError(err)
@@ -86,7 +87,8 @@ func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -110,15 +112,14 @@ func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
 		return web.JsonErrorMsg("Skill 编码已存在")
 	}
 
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
 		"code":             strings.TrimSpace(req.Code),
 		"name":             strings.TrimSpace(req.Name),
 		"description":      strings.TrimSpace(req.Description),
 		"prompt":           strings.TrimSpace(req.Prompt),
 		"remark":           strings.TrimSpace(req.Remark),
-		"update_user_id":   principal.UserID,
-		"update_user_name": principal.Username,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),
 	}); err != nil {
 		return web.JsonError(err)
@@ -127,7 +128,8 @@ func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -145,11 +147,10 @@ func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
 		return web.JsonErrorMsg("Skill 不存在")
 	}
 
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
 		"status":           req.Status,
-		"update_user_id":   principal.UserID,
-		"update_user_name": principal.Username,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),
 	}); err != nil {
 		return web.JsonError(err)
@@ -158,7 +159,8 @@ func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
 }
 
 func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionDelete); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -172,11 +174,10 @@ func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
 	if services.SkillDefinitionService.Get(req.ID) == nil {
 		return web.JsonErrorMsg("Skill 不存在")
 	}
-	principal := services.AuthService.GetAuthPrincipal(c.Ctx)
 	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
 		"status":           enums.StatusDeleted,
-		"update_user_id":   principal.UserID,
-		"update_user_name": principal.Username,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),
 	}); err != nil {
 		return web.JsonError(err)

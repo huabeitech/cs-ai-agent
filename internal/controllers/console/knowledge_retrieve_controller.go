@@ -35,7 +35,8 @@ func (c *KnowledgeRetrieveController) PostDebugSearch() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -44,7 +45,7 @@ func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	resp, err := rag.Answer.DebugAnswer(context.Background(), req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	resp, err := rag.Answer.DebugAnswer(context.Background(), req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}

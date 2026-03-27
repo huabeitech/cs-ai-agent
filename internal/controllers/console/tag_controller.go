@@ -84,7 +84,8 @@ func (c *TagController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *TagController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagCreate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -92,7 +93,7 @@ func (c *TagController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.TagService.CreateTag(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.TagService.CreateTag(req, user)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -109,7 +110,8 @@ func (c *TagController) PostCreate() *web.JsonResult {
 }
 
 func (c *TagController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -117,7 +119,7 @@ func (c *TagController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TagService.UpdateTag(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TagService.UpdateTag(req, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
@@ -150,7 +152,8 @@ func (c *TagController) PostUpdate_sort() *web.JsonResult {
 }
 
 func (c *TagController) PostUpdate_status() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate); err != nil {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTagUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -158,7 +161,7 @@ func (c *TagController) PostUpdate_status() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TagService.UpdateStatus(req.ID, req.Status, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TagService.UpdateStatus(req.ID, req.Status, user); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
