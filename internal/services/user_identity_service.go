@@ -2,7 +2,9 @@ package services
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/repositories"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -63,4 +65,11 @@ func (s *userIdentityService) UpdateColumn(id int64, name string, value interfac
 
 func (s *userIdentityService) Delete(id int64) {
 	repositories.UserIdentityRepository.Delete(sqls.DB(), id)
+}
+
+func (s *userIdentityService) GetBy(provider enums.ThirdProvider, corpId, userId string) *models.UserIdentity {
+	return s.FindOne(sqls.NewCnd().
+		Eq("provider", provider).
+		Eq("provider_corp_id", strings.TrimSpace(corpId)).
+		Eq("provider_user_id", strings.TrimSpace(userId)))
 }

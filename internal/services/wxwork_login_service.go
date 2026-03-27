@@ -8,10 +8,10 @@ import (
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
-	"encoding/json"
 	"strings"
 	"time"
 
+	"github.com/mlogclub/simple/common/jsons"
 	"github.com/mlogclub/simple/sqls"
 	"gorm.io/gorm"
 )
@@ -71,16 +71,14 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 	if profile == nil || strings.TrimSpace(profile.UserID) == "" {
 		return nil, errorsx.BusinessError(2, "企业微信用户信息不存在")
 	}
-	now := time.Now()
-	identity := UserIdentityService.FindOne(sqls.NewCnd().
-		Eq("provider", enums.ThirdProviderWxWork).
-		Eq("provider_corp_id", strings.TrimSpace(profile.CorpID)).
-		Eq("provider_user_id", strings.TrimSpace(profile.UserID)))
 
-	var user *models.User
-	var err error
+	var (
+		identity = UserIdentityService.GetBy(enums.ThirdProviderWxWork, profile.CorpID, profile.UserID)
+		user     *models.User
+		err      error
+	)
 	if identity == nil {
-		user, identity, err = s.createWxWorkUser(profile, now)
+		user, identity, err = s.createWxWorkUser(profile)
 		if err != nil {
 			return nil, err
 		}
@@ -103,35 +101,33 @@ func (s *wxWorkLoginService) loginWithWxWorkProfile(profile *wxwork.LoginUser, a
 		return nil, err
 	}
 
-	rawProfile, _ := json.Marshal(profile)
 	if err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := ctx.Tx.Model(&models.User{}).Where("id = ?", user.ID).Updates(map[string]any{
+		if err := repositories.UserRepository.Updates(ctx.Tx, user.ID, map[string]any{
 			"nickname":         s.resolveWxWorkNickname(user.Nickname, profile),
 			"avatar":           s.resolveWxWorkAvatar(user.Avatar, profile),
-			"last_login_at":    now,
+			"last_login_at":    time.Now(),
 			"last_login_ip":    clientIP,
 			"update_user_id":   user.ID,
 			"update_user_name": user.Username,
-			"updated_at":       now,
-		}).Error; err != nil {
+			"updated_at":       time.Now(),
+		}); err != nil {
 			return err
 		}
-		return ctx.Tx.Model(&models.UserIdentity{}).Where("id = ?", identity.ID).Updates(map[string]any{
-			"raw_profile":      string(rawProfile),
-			"last_auth_at":     now,
+		return repositories.UserIdentityRepository.Updates(ctx.Tx, identity.ID, map[string]any{
+			"raw_profile":      jsons.ToJsonStr(profile),
+			"last_auth_at":     time.Now(),
 			"status":           enums.StatusOk,
 			"update_user_id":   user.ID,
 			"update_user_name": user.Username,
-			"updated_at":       now,
-		}).Error
+			"updated_at":       time.Now(),
+		})
 	}); err != nil {
 		return nil, err
 	}
 	return ret, nil
 }
 
-func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now time.Time) (*models.User, *models.UserIdentity, error) {
-	rawProfile, _ := json.Marshal(profile)
+func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser) (*models.User, *models.UserIdentity, error) {
 	username := s.buildWxWorkUsername(profile.UserID)
 	mobileValue := strings.TrimSpace(profile.Mobile)
 	emailValue := strings.TrimSpace(s.firstNonEmpty(profile.Email, profile.BizMail))
@@ -144,10 +140,10 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now tim
 		PasswordSalt: "",
 		Status:       enums.StatusOk,
 		AuditFields: models.AuditFields{
-			CreatedAt:      now,
+			CreatedAt:      time.Now(),
 			CreateUserID:   0,
 			CreateUserName: enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
-			UpdatedAt:      now,
+			UpdatedAt:      time.Now(),
 			UpdateUserID:   0,
 			UpdateUserName: enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
 		},
@@ -177,14 +173,14 @@ func (s *wxWorkLoginService) createWxWorkUser(profile *wxwork.LoginUser, now tim
 			ProviderUserID: strings.TrimSpace(profile.UserID),
 			ProviderCorpID: strings.TrimSpace(profile.CorpID),
 			ProviderName:   enums.GetThirdProviderLabel(enums.ThirdProviderWxWork),
-			RawProfile:     string(rawProfile),
+			RawProfile:     jsons.ToJsonStr(profile),
 			Status:         enums.StatusOk,
-			LastAuthAt:     &now,
+			LastAuthAt:     new(time.Now()),
 			AuditFields: models.AuditFields{
-				CreatedAt:      now,
+				CreatedAt:      time.Now(),
 				CreateUserID:   user.ID,
 				CreateUserName: user.Username,
-				UpdatedAt:      now,
+				UpdatedAt:      time.Now(),
 				UpdateUserID:   user.ID,
 				UpdateUserName: user.Username,
 			},
