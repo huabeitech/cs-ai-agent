@@ -20,22 +20,17 @@ func (s *customerService) CreateCustomer(req request.CreateCustomerRequest, oper
 		return nil, errorsx.InvalidParam("客户名称不能为空")
 	}
 
-	companyName := ""
 	if req.CompanyID > 0 {
 		company := CompanyService.Get(req.CompanyID)
 		if company == nil {
 			return nil, errorsx.InvalidParam("所属公司不存在")
 		}
-		companyName = company.Name
 	}
 
 	item := &models.Customer{
 		Name:          name,
 		Gender:        enums.Gender(req.Gender),
 		CompanyID:     req.CompanyID,
-		CompanyName:   companyName,
-		Province:      strings.TrimSpace(req.Province),
-		City:          strings.TrimSpace(req.City),
 		PrimaryMobile: strings.TrimSpace(req.PrimaryMobile),
 		PrimaryEmail:  strings.TrimSpace(req.PrimaryEmail),
 		Status:        enums.StatusOk,
@@ -62,22 +57,17 @@ func (s *customerService) UpdateCustomer(req request.UpdateCustomerRequest, oper
 		return errorsx.InvalidParam("客户名称不能为空")
 	}
 
-	companyName := ""
 	if req.CompanyID > 0 {
 		company := CompanyService.Get(req.CompanyID)
 		if company == nil {
 			return errorsx.InvalidParam("所属公司不存在")
 		}
-		companyName = company.Name
 	}
 
 	return s.Updates(req.ID, map[string]any{
 		"name":             name,
 		"gender":           req.Gender,
 		"company_id":       req.CompanyID,
-		"company_name":     companyName,
-		"province":         strings.TrimSpace(req.Province),
-		"city":             strings.TrimSpace(req.City),
 		"primary_mobile":   strings.TrimSpace(req.PrimaryMobile),
 		"primary_email":    strings.TrimSpace(req.PrimaryEmail),
 		"remark":           strings.TrimSpace(req.Remark),

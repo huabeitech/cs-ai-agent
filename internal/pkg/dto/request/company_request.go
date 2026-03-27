@@ -1,14 +1,9 @@
 package request
 
 type CreateCompanyRequest struct {
-	Name     string `json:"name"`
-	Code     string `json:"code"`
-	Industry string `json:"industry"`
-	Website  string `json:"website"`
-	Province string `json:"province"`
-	City     string `json:"city"`
-	Address  string `json:"address"`
-	Remark   string `json:"remark"`
+	Name   string `json:"name"`
+	Code   string `json:"code"`
+	Remark string `json:"remark"`
 }
 
 type UpdateCompanyRequest struct {

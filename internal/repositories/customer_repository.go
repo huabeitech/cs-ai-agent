@@ -17,13 +17,6 @@ func newCustomerRepository() *customerRepository {
 type customerRepository struct {
 }
 
-func (r *customerRepository) UpdateCompanyNameByCompanyID(db *gorm.DB, companyID int64, companyName string) (err error) {
-	err = db.Model(&models.Customer{}).Where("company_id = ?", companyID).Updates(map[string]any{
-		"company_name": companyName,
-	}).Error
-	return
-}
-
 func (r *customerRepository) Get(db *gorm.DB, id int64) *models.Customer {
 	ret := &models.Customer{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {

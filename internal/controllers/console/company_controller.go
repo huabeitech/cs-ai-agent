@@ -23,7 +23,6 @@ func (c *CompanyController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "code", Op: params.Like},
-		params.QueryFilter{ParamName: "industry", Op: params.Like},
 	).Desc("id"))
 	return web.JsonData(&web.PageResult{Results: builders.BuildCompanyList(list), Page: paging})
 }

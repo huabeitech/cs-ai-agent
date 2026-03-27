@@ -4,8 +4,6 @@ type CreateCustomerRequest struct {
 	Name          string `json:"name"`
 	Gender        int    `json:"gender"`
 	CompanyID     int64  `json:"companyId"`
-	Province      string `json:"province"`
-	City          string `json:"city"`
 	PrimaryMobile string `json:"primaryMobile"`
 	PrimaryEmail  string `json:"primaryEmail"`
 	Remark        string `json:"remark"`

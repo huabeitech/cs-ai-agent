@@ -7,7 +7,6 @@ import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
-	"cs-agent/internal/repositories"
 	"strings"
 	"time"
 
@@ -26,11 +25,6 @@ func (s *companyService) CreateCompany(req request.CreateCompanyRequest, operato
 	item := &models.Company{
 		Name:        name,
 		Code:        strings.TrimSpace(req.Code),
-		Industry:    strings.TrimSpace(req.Industry),
-		Website:     strings.TrimSpace(req.Website),
-		Province:    strings.TrimSpace(req.Province),
-		City:        strings.TrimSpace(req.City),
-		Address:     strings.TrimSpace(req.Address),
 		Status:      enums.StatusOk,
 		Remark:      strings.TrimSpace(req.Remark),
 		AuditFields: utils.BuildAuditFields(operator),
@@ -58,11 +52,6 @@ func (s *companyService) UpdateCompany(req request.UpdateCompanyRequest, operato
 	if err := s.Updates(req.ID, map[string]any{
 		"name":             name,
 		"code":             strings.TrimSpace(req.Code),
-		"industry":         strings.TrimSpace(req.Industry),
-		"website":          strings.TrimSpace(req.Website),
-		"province":         strings.TrimSpace(req.Province),
-		"city":             strings.TrimSpace(req.City),
-		"address":          strings.TrimSpace(req.Address),
 		"remark":           strings.TrimSpace(req.Remark),
 		"update_user_id":   operator.UserID,
 		"update_user_name": operator.Username,
@@ -70,9 +59,7 @@ func (s *companyService) UpdateCompany(req request.UpdateCompanyRequest, operato
 	}); err != nil {
 		return err
 	}
-
-	// 同步客户表的公司名称快照
-	return repositories.CustomerRepository.UpdateCompanyNameByCompanyID(sqls.DB(), req.ID, name)
+	return nil
 }
 
 func (s *companyService) DeleteCompany(id int64) error {
