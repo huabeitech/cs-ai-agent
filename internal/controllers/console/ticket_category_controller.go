@@ -64,7 +64,8 @@ func (c *TicketCategoryController) GetTree() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostCreate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryCreate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryCreate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -72,7 +73,7 @@ func (c *TicketCategoryController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.TicketCategoryService.CreateCategory(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.TicketCategoryService.CreateCategory(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -89,7 +90,8 @@ func (c *TicketCategoryController) PostCreate() *web.JsonResult {
 }
 
 func (c *TicketCategoryController) PostUpdate() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketCategoryUpdate)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -97,7 +99,7 @@ func (c *TicketCategoryController) PostUpdate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.TicketCategoryService.UpdateCategory(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.TicketCategoryService.UpdateCategory(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
