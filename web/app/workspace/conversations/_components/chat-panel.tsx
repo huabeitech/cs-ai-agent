@@ -15,6 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   assignAgentConversation,
@@ -300,70 +305,76 @@ export function ChatPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <ScrollArea className="h-full min-h-0 flex-1">
-        <div ref={messagesContainerRef} className="p-4">
-          {loading ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              加载中...
-            </div>
-          ) : messages.length > 0 ? (
-            messages.map((message) => (
-              <MessageItem
-                key={message.id}
-                message={message}
-                onImageSettled={handleImageSettled}
-              />
-            ))
-          ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              暂无消息
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      <div className="shrink-0 border-t">
-        {isClosedConversation ? (
-          <div className="bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            当前会话已关闭
-          </div>
-        ) : isPendingConversation ? (
-          <div className="bg-blue-50 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setClaimDialogOpen(true)}
-                disabled={claiming || transferring}
-                size="sm"
-              >
-                {claiming ? "认领中..." : "认领"}
-              </Button>
-              {hasTransferPermission && (
-                <Button
-                  onClick={handleTransfer}
-                  disabled={claiming || transferring}
-                  variant="outline"
-                  size="sm"
-                >
-                  {transferring ? "转接中..." : "转接"}
-                </Button>
+      <ResizablePanelGroup orientation="vertical">
+        <ResizablePanel defaultSize="72%" minSize="35%" className="min-h-0">
+          <ScrollArea className="h-full min-h-0 flex-1">
+            <div ref={messagesContainerRef} className="p-4">
+              {loading ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  加载中...
+                </div>
+              ) : messages.length > 0 ? (
+                messages.map((message) => (
+                  <MessageItem
+                    key={message.id}
+                    message={message}
+                    onImageSettled={handleImageSettled}
+                  />
+                ))
+              ) : (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  暂无消息
+                </div>
               )}
             </div>
+          </ScrollArea>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize="28%" minSize="18%" maxSize="55%" className="min-h-0">
+          <div className="h-full overflow-auto border-t">
+            {isClosedConversation ? (
+              <div className="bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                当前会话已关闭
+              </div>
+            ) : isPendingConversation ? (
+              <div className="bg-blue-50 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setClaimDialogOpen(true)}
+                    disabled={claiming || transferring}
+                    size="sm"
+                  >
+                    {claiming ? "认领中..." : "认领"}
+                  </Button>
+                  {hasTransferPermission && (
+                    <Button
+                      onClick={handleTransfer}
+                      disabled={claiming || transferring}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {transferring ? "转接中..." : "转接"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <ImMessageEditor
+                disabled={!conversation || sending}
+                uploadingImage={uploadingImage}
+                onSend={handleSend}
+                onUploadImage={async (file) => {
+                  shouldStickToBottomRef.current = true;
+                  const uploaded = await uploadImage(file);
+                  return uploaded
+                    ? { url: uploaded.url, filename: uploaded.filename }
+                    : null;
+                }}
+              />
+            )}
           </div>
-        ) : (
-          <ImMessageEditor
-            disabled={!conversation || sending}
-            uploadingImage={uploadingImage}
-            onSend={handleSend}
-            onUploadImage={async (file) => {
-              shouldStickToBottomRef.current = true;
-              const uploaded = await uploadImage(file);
-              return uploaded
-                ? { url: uploaded.url, filename: uploaded.filename }
-                : null;
-            }}
-          />
-        )}
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
       <Dialog
         open={claimDialogOpen}
         onOpenChange={(open) => {
