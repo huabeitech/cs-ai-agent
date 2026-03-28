@@ -1,6 +1,6 @@
 const EXTERNAL_ID_KEY = "cs-agent:external-id";
 
-export function getOrCreateExternalID() {
+export function getOrCreateExternalId() {
   if (typeof window === "undefined") {
     return "";
   }

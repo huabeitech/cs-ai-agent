@@ -1,5 +1,5 @@
 import { readWidgetConfig } from "@/lib/widget/config";
-import { getOrCreateExternalID } from "@/lib/widget/visitor";
+import { getOrCreateExternalId } from "@/lib/widget/visitor";
 
 export type RealtimeEnvelope = {
   type: string;
@@ -19,7 +19,7 @@ export function createRealtimeConnection(onEvent: (event: RealtimeEnvelope) => v
   const baseUrl = (config.apiBaseUrl || config.baseUrl)
     .replace(/^http/, "ws")
     .replace(/\/$/, "");
-  const externalId = encodeURIComponent(getOrCreateExternalID());
+  const externalId = encodeURIComponent(getOrCreateExternalId());
   const externalSource = encodeURIComponent(
     (config.externalSource ?? "web_chat").trim() || "web_chat",
   );

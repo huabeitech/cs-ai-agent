@@ -295,7 +295,7 @@ function WidgetTestPageInner() {
                 };
                 setConfig(nextConfig);
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextConfig));
-                window.localStorage.removeItem("cs-agent:visitor-id");
+                window.localStorage.removeItem("cs-agent:external-id");
                 removeMountedWidget();
                 setStatus("已重置");
               }}
