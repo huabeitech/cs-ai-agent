@@ -274,7 +274,6 @@ type Conversation struct {
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
 	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ExternalSource 为外部身份来源。
 	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalID 为外部访客ID。
-	SourceUserID        int64                           `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为发起会话的站内用户ID。 // TODO 不应该有站内用户
 	Subject             string                          `gorm:"type:varchar(255);not null;default:''"`       // Subject 为会话标题或摘要。
 	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`           // Status 为会话状态，如待接入、处理中、已关闭。
 	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。

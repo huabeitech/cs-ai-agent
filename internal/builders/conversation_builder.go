@@ -17,7 +17,6 @@ func BuildConversationResponse(item *models.Conversation) response.ConversationR
 		AIAgentID:                 item.AIAgentID,
 		CustomerID:                item.CustomerID,
 		ExternalSource:            item.ExternalSource,
-		SourceUserID:              item.SourceUserID,
 		ExternalID:                item.ExternalID,
 		Subject:                   item.Subject,
 		Status:                    item.Status,

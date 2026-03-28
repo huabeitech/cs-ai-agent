@@ -119,7 +119,6 @@ func (s *conversationService) Create(externalInfo request.ExternalInfo, aiAgentI
 		Status:            enums.IMConversationStatusPending,
 		ServiceMode:       aiAgent.ServiceMode,
 		Priority:          0,
-		SourceUserID:      operator.UserID,
 		ExternalID:        externalInfo.ExternalID,
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
