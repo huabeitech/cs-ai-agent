@@ -69,6 +69,41 @@ function cursorFromLoadedMessages(messages: AgentMessage[]): string {
   return String(Math.min(...messages.map((m) => m.id)))
 }
 
+function minMessageId(messages: AgentMessage[]): number | null {
+  if (messages.length === 0) {
+    return null
+  }
+  return Math.min(...messages.map((m) => m.id))
+}
+
+/**
+ * 拉「最新一页」做增量合并后，是否仍显示「还有更旧」。
+ * 若本地已确认没有更旧，且合并后最早一条 id 没有变小，则不能用接口对「最新一页」的 hasMore 再次打开（满页会误报）。
+ */
+function hasMoreAfterLatestSyncMerge(args: {
+  previousMessages: AgentMessage[]
+  previousHasMore: boolean
+  merged: AgentMessage[]
+  apiHasMore: boolean
+}): boolean {
+  const prevMin = minMessageId(args.previousMessages)
+  const mergedMin = minMessageId(args.merged)
+
+  if (mergedMin === null) {
+    return Boolean(args.apiHasMore)
+  }
+
+  if (
+    !args.previousHasMore &&
+    prevMin !== null &&
+    mergedMin >= prevMin
+  ) {
+    return false
+  }
+
+  return args.previousHasMore || Boolean(args.apiHasMore)
+}
+
 type AgentConversationsStore = {
   searchKeyword: string
   conversationFilter: AgentConversationFilterKey
@@ -316,9 +351,12 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
           messagesCursor:
             cursorFromLoadedMessages(merged) ||
             (data.cursor ?? state.messagesCursor),
-          // 接口 hasMore 只反映「最新一页」以下是否还有；已 prepend 的历史要保留「还能往上翻」
-          messagesHasMore:
-            state.messagesHasMore || Boolean(data.hasMore),
+          messagesHasMore: hasMoreAfterLatestSyncMerge({
+            previousMessages: state.messages,
+            previousHasMore: state.messagesHasMore,
+            merged,
+            apiHasMore: Boolean(data.hasMore),
+          }),
         }
       })
     } catch {

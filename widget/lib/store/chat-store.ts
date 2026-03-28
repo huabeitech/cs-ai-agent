@@ -52,6 +52,37 @@ function cursorFromLoadedMessages(messages: WidgetMessage[]): string {
   return String(Math.min(...messages.map((m) => m.id)));
 }
 
+function minWidgetMessageId(messages: WidgetMessage[]): number | null {
+  if (messages.length === 0) {
+    return null;
+  }
+  return Math.min(...messages.map((m) => m.id));
+}
+
+function hasMoreAfterLatestSyncMerge(args: {
+  previousMessages: WidgetMessage[];
+  previousHasMore: boolean;
+  merged: WidgetMessage[];
+  apiHasMore: boolean;
+}): boolean {
+  const prevMin = minWidgetMessageId(args.previousMessages);
+  const mergedMin = minWidgetMessageId(args.merged);
+
+  if (mergedMin === null) {
+    return Boolean(args.apiHasMore);
+  }
+
+  if (
+    !args.previousHasMore &&
+    prevMin !== null &&
+    mergedMin >= prevMin
+  ) {
+    return false;
+  }
+
+  return args.previousHasMore || Boolean(args.apiHasMore);
+}
+
 export interface ChatStore {
   title: string;
   welcomeText: string;
@@ -283,8 +314,12 @@ export const useChatStore = create<ChatStore>((set, get) => {
             messages: merged,
             messagesCursor:
               cursorFromLoadedMessages(merged) || page.cursor,
-            messagesHasMore:
-              state.messagesHasMore || Boolean(page.hasMore),
+            messagesHasMore: hasMoreAfterLatestSyncMerge({
+              previousMessages: state.messages,
+              previousHasMore: state.messagesHasMore,
+              merged,
+              apiHasMore: Boolean(page.hasMore),
+            }),
             conversation: currentConversation,
           };
         });
