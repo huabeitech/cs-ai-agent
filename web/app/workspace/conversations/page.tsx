@@ -44,6 +44,7 @@ import {
   useAgentConversationsStore,
 } from "@/lib/stores/agent-conversations";
 import { ChatPanel } from "./_components/chat-panel";
+import { CustomerInfoPanel } from "./_components/customer-info-panel";
 import { ConversationList } from "./_components/conversation-list";
 
 export default function ConversationsPage() {
@@ -69,10 +70,12 @@ export default function ConversationsPage() {
     (state) => state.loadMessages,
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [infoPanelCollapsed, setInfoPanelCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const infoPanelRef = useRef<PanelImperativeHandle | null>(null);
   const currentFilterLabel =
     agentConversationFilterOptions.find((opt) => opt.value === conversationFilter)
       ?.label ?? "筛选";
@@ -108,6 +111,23 @@ export default function ConversationsPage() {
 
     panel.collapse();
     setSidebarCollapsed(true);
+  };
+
+  const handleInfoPanelToggle = () => {
+    const panel = infoPanelRef.current;
+    if (!panel) {
+      setInfoPanelCollapsed((current) => !current);
+      return;
+    }
+
+    if (panel.isCollapsed()) {
+      panel.expand();
+      setInfoPanelCollapsed(false);
+      return;
+    }
+
+    panel.collapse();
+    setInfoPanelCollapsed(true);
   };
 
   const sidebarContent = (
@@ -189,7 +209,8 @@ export default function ConversationsPage() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{conversation.subject}</p>
                 <p className="truncate text-sm text-muted-foreground">
-                  <span>{conversation.externalSource}</span> / <span>{conversation.externalId}</span>
+                  <span>{conversation.externalSource}</span> /{" "}
+                  <span>{conversation.externalId}</span>
                 </p>
               </div>
             </>
@@ -206,11 +227,7 @@ export default function ConversationsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={!conversation}
-                />
+                <Button variant="ghost" size="icon" disabled={!conversation} />
               }
             >
               <MoreHorizontalIcon className="size-4" />
@@ -232,6 +249,19 @@ export default function ConversationsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden lg:flex"
+            onClick={handleInfoPanelToggle}
+            aria-label={infoPanelCollapsed ? "展开客户信息" : "收起客户信息"}
+          >
+            {infoPanelCollapsed ? (
+              <ChevronLeft className="size-4" />
+            ) : (
+              <ChevronRight className="size-4" />
+            )}
+          </Button>
         </div>
       </div>
       <div className="flex min-h-0 w-full flex-1 overflow-hidden">
@@ -264,8 +294,9 @@ export default function ConversationsPage() {
         <ResizablePanelGroup orientation="horizontal">
           <ResizablePanel
             panelRef={sidebarPanelRef}
-            defaultSize="28%"
-            minSize="20%"
+            defaultSize="20%"
+            minSize="10%"
+            maxSize="40%"
             collapsedSize="0%"
             collapsible
             onResize={(panelSize: { asPercentage: number }) => {
@@ -278,10 +309,25 @@ export default function ConversationsPage() {
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize="72%" minSize="40%" className="min-h-0">
+          <ResizablePanel defaultSize="50%" minSize="32%" className="min-h-0">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               {workspaceContent}
             </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel
+            panelRef={infoPanelRef}
+            defaultSize="20%"
+            minSize="20%"
+            maxSize="40%"
+            collapsedSize="0%"
+            collapsible
+            onResize={(panelSize: { asPercentage: number }) => {
+              setInfoPanelCollapsed(panelSize.asPercentage <= 1);
+            }}
+            className="min-h-0"
+          >
+            <CustomerInfoPanel conversation={conversation} className="h-full" />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
