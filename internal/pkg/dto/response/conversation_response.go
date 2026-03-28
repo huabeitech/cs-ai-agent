@@ -21,13 +21,13 @@ type ConversationResponse struct {
 	ID                        int64                           `json:"id"`
 	AIAgentID                 int64                           `json:"aiAgentId"`
 	CustomerID                int64                           `json:"customerId"`
-	ChannelType               enums.ExternalSource    `json:"channelType"`
+	ExternalSource            enums.ExternalSource            `json:"externalSource"`
+	SourceUserID              int64                           `json:"sourceUserId"`
+	ExternalUserID            string                          `json:"externalUserId"`
 	Subject                   string                          `json:"subject"`
 	Status                    enums.IMConversationStatus      `json:"status"`
 	ServiceMode               enums.IMConversationServiceMode `json:"serviceMode"`
 	Priority                  int                             `json:"priority"`
-	SourceUserID              int64                           `json:"sourceUserId"`
-	ExternalUserID            string                          `json:"externalUserId"`
 	CurrentAssigneeID         int64                           `json:"currentAssigneeId"`
 	CurrentAssigneeName       string                          `json:"currentAssigneeName,omitempty"`
 	LastMessageID             int64                           `json:"lastMessageId"`

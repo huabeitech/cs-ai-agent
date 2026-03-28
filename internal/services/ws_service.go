@@ -356,8 +356,8 @@ func (s *wsService) routeConversationTopics(conversation *models.Conversation) [
 	if conversation.SourceUserID > 0 {
 		topics = append(topics, s.userTopic(conversation.SourceUserID))
 	}
-	if strings.TrimSpace(conversation.ExternalUserID) != "" {
-		topics = append(topics, s.visitorTopic(conversation.ExternalUserID))
+	if strings.TrimSpace(conversation.ExternalID) != "" {
+		topics = append(topics, s.visitorTopic(conversation.ExternalID))
 	}
 	if conversation.CurrentAssigneeID > 0 {
 		topics = append(topics, s.adminTopic(conversation.CurrentAssigneeID))

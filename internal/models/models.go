@@ -282,13 +282,13 @@ type Conversation struct {
 	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为会话主键。
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
-	ChannelType         enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为外部身份来源，与 CustomerIdentity.SourceType 对齐。
+	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为外部身份来源，与 CustomerIdentity.SourceType 对齐。
+	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalUserID 为外部访客ID。
+	SourceUserID        int64                           `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为发起会话的站内用户ID。 // TODO 不应该有站内用户
 	Subject             string                          `gorm:"type:varchar(255);not null;default:''"`       // Subject 为会话标题或摘要。
 	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`           // Status 为会话状态，如待接入、处理中、已关闭。
 	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
 	Priority            int                             `gorm:"type:int;not null;default:0;index"`           // Priority 为会话优先级。
-	SourceUserID        int64                           `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为发起会话的站内用户ID。
-	ExternalUserID      string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalUserID 为外部访客ID。
 	CurrentAssigneeID   int64                           `gorm:"type:bigint;not null;default:0;index"`        // CurrentAssigneeID 为当前接待客服ID。
 	CurrentTeamID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // CurrentTeamID 为当前处理客服组ID。
 	LastMessageID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // LastMessageID 为最后一条消息ID。

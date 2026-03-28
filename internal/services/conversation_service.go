@@ -87,14 +87,14 @@ func (s *conversationService) Updates(id int64, columns map[string]interface{}) 
 	return repositories.ConversationRepository.Updates(sqls.DB(), id, columns)
 }
 
-func (s *conversationService) getLatestNotFinished(channelType enums.IMConversationChannel, user *dto.AuthPrincipal) *models.Conversation {
+func (s *conversationService) getLatestNotFinished(externalSource enums.ExternalSource, user *dto.AuthPrincipal) *models.Conversation {
 	cnd := sqls.NewCnd()
 	if user.IsVisitor {
 		cnd.Eq("external_user_id", user.VisitorID)
 	} else {
 		cnd.Eq("source_user_id", user.UserID)
 	}
-	cnd.Eq("channel_type", channelType)
+	cnd.Eq("external_source", externalSource)
 	cnd.In("status", []enums.IMConversationStatus{
 		enums.IMConversationStatusPending,
 		enums.IMConversationStatusActive,
@@ -103,17 +103,17 @@ func (s *conversationService) getLatestNotFinished(channelType enums.IMConversat
 	return s.FindOne(cnd)
 }
 
-func (s *conversationService) Create(channelType enums.IMConversationChannel, subject string, aiAgentID int64, operator *dto.AuthPrincipal) (*models.Conversation, error) {
+func (s *conversationService) Create(externalSource enums.ExternalSource, subject string, aiAgentID int64, operator *dto.AuthPrincipal) (*models.Conversation, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
 	}
-	if strs.IsBlank(string(channelType)) {
-		channelType = enums.IMConversationChannelWebChat
+	if strs.IsBlank(string(externalSource)) {
+		return nil, errorsx.InvalidParam("invalid external source")
 	}
 	subject = strs.DefaultIfBlank(strings.TrimSpace(subject), s.buildDefaultSubject(operator))
 
 	// 会话存在，直接返回
-	if conversation := s.getLatestNotFinished(channelType, operator); conversation != nil {
+	if conversation := s.getLatestNotFinished(externalSource, operator); conversation != nil {
 		return conversation, nil
 	}
 
@@ -122,33 +122,29 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		return nil, errorsx.InvalidParam("AI Agent not found")
 	}
 
-	now := time.Now()
-	auditFields := utils.BuildAuditFields(operator)
-	auditFields.CreatedAt = now
-	auditFields.UpdatedAt = now
 	conversation := &models.Conversation{
 		AIAgentID:         aiAgentID,
-		ChannelType:       channelType,
+		ExternalSource:    externalSource,
 		Subject:           subject,
 		Status:            enums.IMConversationStatusPending,
 		ServiceMode:       aiAgent.ServiceMode,
 		Priority:          0,
 		SourceUserID:      operator.UserID,
-		ExternalUserID:    "",
+		ExternalID:        "",
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
-		LastMessageAt:     now,
-		LastActiveAt:      now,
-		AuditFields:       auditFields,
+		LastMessageAt:     time.Now(),
+		LastActiveAt:      time.Now(),
+		AuditFields:       utils.BuildAuditFields(operator),
 	}
+	// TODO operator不应该有站内用户
 	if operator.IsVisitor {
 		conversation.SourceUserID = 0
-		conversation.ExternalUserID = operator.VisitorID
-		if cid := s.resolveCustomerIDForVisitor(channelType, operator.VisitorID); cid > 0 {
+		conversation.ExternalID = operator.VisitorID
+		if cid := s.resolveCustomerIDForVisitor(externalSource, operator.VisitorID); cid > 0 {
 			conversation.CustomerID = cid
 		}
 	}
-	now = conversation.CreatedAt
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
@@ -179,12 +175,12 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 }
 
 // TODO 这个方法想办法重构下
-func (s *conversationService) resolveCustomerIDForVisitor(channelType enums.IMConversationChannel, visitorID string) int64 {
+func (s *conversationService) resolveCustomerIDForVisitor(externalSource enums.ExternalSource, visitorID string) int64 {
 	visitorID = strings.TrimSpace(visitorID)
 	if visitorID == "" {
 		return 0
 	}
-	identity := repositories.CustomerIdentityRepository.Take(sqls.DB(), "sourse_type = ? AND source_id = ?", channelType, visitorID)
+	identity := repositories.CustomerIdentityRepository.Take(sqls.DB(), "external_source = ? AND source_id = ?", externalSource, visitorID)
 	if identity == nil {
 		return 0
 	}
@@ -611,7 +607,7 @@ func (s *conversationService) IsCustomerConversationOwner(conversation *models.C
 		return false
 	}
 	if operator.IsVisitor {
-		return strings.TrimSpace(conversation.ExternalUserID) != "" && conversation.ExternalUserID == operator.VisitorID
+		return strings.TrimSpace(conversation.ExternalID) != "" && conversation.ExternalID == operator.VisitorID
 	}
 	return conversation.SourceUserID > 0 && conversation.SourceUserID == operator.UserID
 }
