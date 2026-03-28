@@ -58,7 +58,7 @@ export function ChatPanel() {
     (state) => state.setConversationFilter,
   );
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const scrollFrameRef = useRef<number | null>(null);
+  const resizeScrollRafRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const [claiming, setClaiming] = useState(false);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
@@ -97,40 +97,20 @@ export function ChatPanel() {
     viewport.scrollTop = viewport.scrollHeight;
   }, [getViewport]);
 
-  const scheduleScrollToBottom = useCallback(
-    (attempts = 4) => {
-      if (scrollFrameRef.current !== null) {
-        cancelAnimationFrame(scrollFrameRef.current);
-      }
-
-      const run = (remaining: number, previousHeight = -1) => {
-        scrollFrameRef.current = requestAnimationFrame(() => {
-          const viewport = getViewport();
-          if (!viewport) {
-            scrollFrameRef.current = null;
-            return;
-          }
-
-          const currentHeight = viewport.scrollHeight;
-          scrollToBottom();
-          if (remaining > 1 && currentHeight !== previousHeight) {
-            run(remaining - 1, currentHeight);
-            return;
-          }
-          scrollFrameRef.current = null;
-        });
-      };
-
-      run(attempts);
-    },
-    [getViewport, scrollToBottom],
-  );
+  /** 图片等异步撑高后补一次滚底；避免多段 rAF 链与 ResizeObserver 互相 cancel 导致滚动条闪烁 */
+  const nudgeScrollToBottom = useCallback(() => {
+    if (!shouldStickToBottomRef.current) {
+      return;
+    }
+    scrollToBottom();
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+  }, [scrollToBottom]);
 
   const handleImageSettled = useCallback(() => {
-    if (shouldStickToBottomRef.current) {
-      scheduleScrollToBottom();
-    }
-  }, [scheduleScrollToBottom]);
+    nudgeScrollToBottom();
+  }, [nudgeScrollToBottom]);
 
   const maybeMarkConversationRead = useCallback(() => {
     const viewport = getViewport();
@@ -179,15 +159,12 @@ export function ChatPanel() {
 
   useLayoutEffect(() => {
     shouldStickToBottomRef.current = true;
-    scheduleScrollToBottom();
-
-    return () => {
-      if (scrollFrameRef.current !== null) {
-        cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
-    };
-  }, [conversation?.id, messages.length, scheduleScrollToBottom]);
+    scrollToBottom();
+    const followUpId = requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+    return () => cancelAnimationFrame(followUpId);
+  }, [conversation?.id, messages.length, scrollToBottom]);
 
   useEffect(() => {
     const content = messagesContainerRef.current;
@@ -196,14 +173,27 @@ export function ChatPanel() {
     }
 
     const observer = new ResizeObserver(() => {
-      if (shouldStickToBottomRef.current) {
-        scheduleScrollToBottom();
+      if (!shouldStickToBottomRef.current) {
+        return;
       }
+      if (resizeScrollRafRef.current !== null) {
+        return;
+      }
+      resizeScrollRafRef.current = requestAnimationFrame(() => {
+        resizeScrollRafRef.current = null;
+        scrollToBottom();
+      });
     });
 
     observer.observe(content);
-    return () => observer.disconnect();
-  }, [conversation?.id, scheduleScrollToBottom]);
+    return () => {
+      observer.disconnect();
+      if (resizeScrollRafRef.current !== null) {
+        cancelAnimationFrame(resizeScrollRafRef.current);
+        resizeScrollRafRef.current = null;
+      }
+    };
+  }, [conversation?.id, scrollToBottom]);
 
   useEffect(() => {
     maybeMarkConversationRead();
@@ -308,7 +298,7 @@ export function ChatPanel() {
   }
 
   const messagesScroll = (
-    <ScrollArea className="h-full min-h-0 flex-1">
+    <ScrollArea className="h-full min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:[scrollbar-gutter:stable]">
       <div ref={messagesContainerRef} className="p-4">
         {loading ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
