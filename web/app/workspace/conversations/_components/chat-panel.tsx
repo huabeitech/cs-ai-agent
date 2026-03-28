@@ -21,7 +21,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   assignAgentConversation,
   transferAgentConversation,
@@ -36,12 +35,15 @@ import {
 import { useIsLgUp } from "@/hooks/use-lg-media";
 import { formatDateTime } from "@/lib/utils";
 
+const EMPTY_AGENT_MESSAGES: AgentMessage[] = [];
+
 export function ChatPanel() {
   const conversation = useAgentConversationsStore(
     agentConversationSelectors.selectedConversation,
   );
   const messages =
-    useAgentConversationsStore((state) => state.messages) ?? [];
+    useAgentConversationsStore((state) => state.messages) ??
+    EMPTY_AGENT_MESSAGES;
   const loading = useAgentConversationsStore((state) => state.messagesLoading);
   const sending = useAgentConversationsStore((state) => state.sending);
   const uploadingImage = useAgentConversationsStore(
@@ -68,7 +70,8 @@ export function ChatPanel() {
     (state) => state.setConversationFilter,
   );
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const resizeScrollRafRef = useRef<number | null>(null);
+  const messagesContentRef = useRef<HTMLDivElement>(null);
+  const scrollBottomRafRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const prependScrollAnchorRef = useRef<{ height: number; top: number } | null>(
     null,
@@ -91,7 +94,7 @@ export function ChatPanel() {
   };
 
   const getViewport = useCallback(
-    () => messagesContainerRef.current?.parentElement ?? null,
+    () => messagesContainerRef.current,
     [],
   );
 
@@ -110,20 +113,42 @@ export function ChatPanel() {
     viewport.scrollTop = viewport.scrollHeight;
   }, [getViewport]);
 
-  /** 图片等异步撑高后补一次滚底；避免多段 rAF 链与 ResizeObserver 互相 cancel 导致滚动条闪烁 */
-  const nudgeScrollToBottom = useCallback(() => {
+  /**
+   * 与 widget 消息列表一致：在单条调度链内多帧滚底直到 scrollHeight 稳定，
+   * 避免多段滚底叠加导致滚动条抖动。
+   */
+  const scheduleScrollToBottom = useCallback(
+    (attempts = 4) => {
+      if (scrollBottomRafRef.current !== null) {
+        cancelAnimationFrame(scrollBottomRafRef.current);
+      }
+      const run = (remaining: number, previousHeight = -1) => {
+        scrollBottomRafRef.current = requestAnimationFrame(() => {
+          const viewport = getViewport();
+          if (!viewport) {
+            scrollBottomRafRef.current = null;
+            return;
+          }
+          const currentHeight = viewport.scrollHeight;
+          scrollToBottom();
+          if (remaining > 1 && currentHeight !== previousHeight) {
+            run(remaining - 1, currentHeight);
+            return;
+          }
+          scrollBottomRafRef.current = null;
+        });
+      };
+      run(attempts);
+    },
+    [getViewport, scrollToBottom],
+  );
+
+  const handleImageSettled = useCallback(() => {
     if (!shouldStickToBottomRef.current) {
       return;
     }
-    scrollToBottom();
-    requestAnimationFrame(() => {
-      scrollToBottom();
-    });
-  }, [scrollToBottom]);
-
-  const handleImageSettled = useCallback(() => {
-    nudgeScrollToBottom();
-  }, [nudgeScrollToBottom]);
+    scheduleScrollToBottom();
+  }, [scheduleScrollToBottom]);
 
   const maybeMarkConversationRead = useCallback(() => {
     const viewport = getViewport();
@@ -172,12 +197,14 @@ export function ChatPanel() {
 
   useLayoutEffect(() => {
     shouldStickToBottomRef.current = true;
-    scrollToBottom();
-    const followUpId = requestAnimationFrame(() => {
-      scrollToBottom();
-    });
-    return () => cancelAnimationFrame(followUpId);
-  }, [conversation?.id, scrollToBottom]);
+    scheduleScrollToBottom();
+    return () => {
+      if (scrollBottomRafRef.current !== null) {
+        cancelAnimationFrame(scrollBottomRafRef.current);
+        scrollBottomRafRef.current = null;
+      }
+    };
+  }, [conversation?.id, scheduleScrollToBottom]);
 
   useLayoutEffect(() => {
     const viewport = getViewport();
@@ -192,15 +219,12 @@ export function ChatPanel() {
       return;
     }
     if (shouldStickToBottomRef.current) {
-      scrollToBottom();
-      requestAnimationFrame(() => {
-        scrollToBottom();
-      });
+      scheduleScrollToBottom();
     }
-  }, [messages, getViewport, scrollToBottom]);
+  }, [messages, getViewport, scheduleScrollToBottom]);
 
   useEffect(() => {
-    const content = messagesContainerRef.current;
+    const content = messagesContentRef.current;
     if (!content) {
       return;
     }
@@ -209,24 +233,14 @@ export function ChatPanel() {
       if (!shouldStickToBottomRef.current) {
         return;
       }
-      if (resizeScrollRafRef.current !== null) {
-        return;
-      }
-      resizeScrollRafRef.current = requestAnimationFrame(() => {
-        resizeScrollRafRef.current = null;
-        scrollToBottom();
-      });
+      scheduleScrollToBottom();
     });
 
     observer.observe(content);
     return () => {
       observer.disconnect();
-      if (resizeScrollRafRef.current !== null) {
-        cancelAnimationFrame(resizeScrollRafRef.current);
-        resizeScrollRafRef.current = null;
-      }
     };
-  }, [conversation?.id, scrollToBottom]);
+  }, [conversation?.id, scheduleScrollToBottom]);
 
   useEffect(() => {
     maybeMarkConversationRead();
@@ -348,8 +362,11 @@ export function ChatPanel() {
   }
 
   const messagesScroll = (
-    <ScrollArea className="h-full min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:[scrollbar-gutter:stable]">
-      <div ref={messagesContainerRef} className="p-4">
+    <div
+      ref={messagesContainerRef}
+      className="h-full min-h-0 flex-1 overflow-y-auto p-4 cs-agent-scrollbar"
+    >
+      <div ref={messagesContentRef} className="flex flex-col">
         {!loading && messages.length > 0 && messagesHasMore ? (
           <div className="mb-4 flex justify-center">
             <Button
@@ -381,7 +398,7 @@ export function ChatPanel() {
           </div>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 
   const bottomPanel = (
