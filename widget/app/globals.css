@@ -150,3 +150,8 @@ textarea.cs-agent-scrollbar::-webkit-scrollbar-thumb:hover {
     transform: scale(1.08);
   }
 }
+
+/* 图片预览：遮罩在 dialog 内部绘制，避免与原生 ::backdrop 叠色 */
+.cs-agent-image-lightbox::backdrop {
+  background: transparent;
+}

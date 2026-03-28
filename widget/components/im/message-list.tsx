@@ -10,6 +10,7 @@ import {
   useRef,
 } from "react";
 
+import { useImageLightbox } from "@/components/image-lightbox";
 import { MessageHTML } from "@/components/im/message-html";
 import type { WidgetMessage } from "@/lib/services/types";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -250,6 +251,7 @@ const MessageItem = memo(
     showTimeline,
     onImageSettled,
   }: MessageItemProps) {
+    const { open: openImageLightbox } = useImageLightbox();
     const isCustomer = message.senderType === "customer";
     const senderName = isCustomer ? "我" : "客服";
     const htmlContent = buildMessageHTML(message);
@@ -290,10 +292,11 @@ const MessageItem = memo(
                 html={htmlContent}
                 className={cn(
                   isCustomer
-                    ? "[&_p]:text-white [&_a]:text-white [&_a]:underline"
-                    : "[&_a]:text-slate-900 [&_a]:underline",
+                    ? "[&_p]:text-white [&_a]:text-white [&_a]:underline [&_img]:cursor-zoom-in"
+                    : "[&_a]:text-slate-900 [&_a]:underline [&_img]:cursor-zoom-in",
                 )}
                 onImageSettled={onImageSettled}
+                onImageClick={openImageLightbox}
               />
             </div>
           </div>

@@ -6,24 +6,30 @@ type MessageHTMLProps = {
   html: string;
   className?: string;
   onImageSettled?: () => void;
+  onImageClick?: (src: string, alt?: string) => void;
 };
 
 function MessageHTMLComponent({
   html,
   className = "",
   onImageSettled,
+  onImageClick,
 }: MessageHTMLProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onImageSettledRef = useRef(onImageSettled);
+  const onImageClickRef = useRef(onImageClick);
 
   useEffect(() => {
     onImageSettledRef.current = onImageSettled;
   }, [onImageSettled]);
 
   useEffect(() => {
+    onImageClickRef.current = onImageClick;
+  }, [onImageClick]);
+
+  useEffect(() => {
     const container = containerRef.current;
-    const handleSettled = onImageSettledRef.current;
-    if (!container || !handleSettled) {
+    if (!container) {
       return;
     }
     const images = Array.from(container.querySelectorAll("img"));
@@ -31,26 +37,36 @@ function MessageHTMLComponent({
       return;
     }
     const cleanups = images.map((image) => {
-      const handler = () => onImageSettledRef.current?.();
-      image.addEventListener("load", handler);
-      image.addEventListener("error", handler);
+      const handleSettled = () => onImageSettledRef.current?.();
+      const handleClick = () => {
+        const src = image.getAttribute("src");
+        if (src) {
+          const alt = image.getAttribute("alt") ?? undefined;
+          onImageClickRef.current?.(src, alt);
+        }
+      };
+      image.addEventListener("load", handleSettled);
+      image.addEventListener("error", handleSettled);
+      image.addEventListener("click", handleClick);
       if (image.complete) {
-        handleSettled();
+        onImageSettledRef.current?.();
       }
+      image.classList.add("cursor-zoom-in");
       return () => {
-        image.removeEventListener("load", handler);
-        image.removeEventListener("error", handler);
+        image.removeEventListener("load", handleSettled);
+        image.removeEventListener("error", handleSettled);
+        image.removeEventListener("click", handleClick);
       };
     });
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [html, onImageSettled]);
+  }, [html, onImageSettled, onImageClick]);
 
   return (
     <div
       ref={containerRef}
-      className={`break-words [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-xl [&_img]:object-contain ${className}`}
+      className={`break-words [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-xl [&_img]:object-contain [&_img]:max-w-full ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -60,5 +76,7 @@ export const MessageHTML = memo(
   MessageHTMLComponent,
   (prevProps, nextProps) =>
     prevProps.html === nextProps.html &&
-    prevProps.className === nextProps.className,
+    prevProps.className === nextProps.className &&
+    prevProps.onImageSettled === nextProps.onImageSettled &&
+    prevProps.onImageClick === nextProps.onImageClick,
 );
