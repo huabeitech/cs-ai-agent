@@ -522,11 +522,13 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		if readerType == enums.IMSenderTypeCustomer && currentConversation.CustomerUnreadCount == customerUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
 			return nil
 		}
-		updateUserID := operator.UserID
-		updateUserName := operator.Username
+		var updateUserID int64
+		var updateUserName string
 		if readerType == enums.IMSenderTypeCustomer {
-			updateUserID = 0
 			updateUserName = displayExternalName(external)
+		} else {
+			updateUserID = operator.UserID
+			updateUserName = operator.Username
 		}
 		return repositories.ConversationRepository.Updates(ctx.Tx, currentConversation.ID, map[string]any{
 			"agent_unread_count":    agentUnreadCount,

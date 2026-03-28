@@ -49,15 +49,16 @@ func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	// TODO 这里不需要post body
+	// TODO 这里不需要 post body；保留解析以兼容旧客户端
 	req := request.CreateOrMatchConversationRequest{}
 	if c.Ctx.GetContentLength() > 0 {
 		if err := params.ReadJSON(c.Ctx, &req); err != nil {
 			return web.JsonError(err)
 		}
 	}
+	_ = req
 
-	item, err := services.ConversationService.Create(*externalSourceID, req.Subject, site.AIAgentID)
+	item, err := services.ConversationService.Create(*externalSourceID, site.AIAgentID)
 	if err != nil {
 		return web.JsonError(err)
 	}

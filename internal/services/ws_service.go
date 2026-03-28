@@ -372,9 +372,6 @@ func (s *wsService) routeConversationTopics(conversation *models.Conversation) [
 	}
 
 	topics := []string{s.conversationTopic(conversation.ID)}
-	if conversation.SourceUserID > 0 {
-		topics = append(topics, s.userTopic(conversation.SourceUserID))
-	}
 	if strings.TrimSpace(conversation.ExternalID) != "" {
 		topics = append(topics, s.visitorTopic(conversation.ExternalID))
 	}
@@ -453,9 +450,6 @@ func (s *wsService) canSubscribeConversation(session *ClientSession, conversatio
 	}
 	if session.External != nil {
 		return ConversationService.IsCustomerConversationOwner(conversation, *session.External)
-	}
-	if session.Principal != nil && conversation.SourceUserID > 0 && conversation.SourceUserID == session.Principal.UserID {
-		return true
 	}
 	return false
 }
