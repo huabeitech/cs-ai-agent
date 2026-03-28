@@ -6,7 +6,7 @@ type ImMessageHTMLProps = {
   html: string
   className?: string
   onImageSettled?: () => void
-  onImageClick?: (src: string) => void
+  onImageClick?: (src: string, alt?: string) => void
 }
 
 function ImMessageHTMLComponent({
@@ -41,7 +41,8 @@ function ImMessageHTMLComponent({
       const handleClick = () => {
         const src = image.getAttribute("src")
         if (src) {
-          onImageClickRef.current?.(src)
+          const alt = image.getAttribute("alt") ?? undefined
+          onImageClickRef.current?.(src, alt)
         }
       }
 

@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { useImageLightbox } from "@/components/image-lightbox";
 import { ImMessageEditor } from "@/components/im-message-editor";
 import { ImMessageHTML } from "@/components/im-message-html";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -510,6 +511,7 @@ type MessageItemProps = {
 
 const MessageItem = memo(
   function MessageItem({ message, onImageSettled }: MessageItemProps) {
+    const { open: openImageLightbox } = useImageLightbox();
     const isCustomer = message.senderType === "customer";
     const isAi = message.senderType === "ai";
     const isAgentSide = message.senderType === "agent" || isAi;
@@ -553,6 +555,7 @@ const MessageItem = memo(
                   html={htmlContent}
                   className={htmlClassName}
                   onImageSettled={onImageSettled}
+                  onImageClick={openImageLightbox}
                 />
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -586,6 +589,7 @@ const MessageItem = memo(
                   html={htmlContent}
                   className={htmlClassName}
                   onImageSettled={onImageSettled}
+                  onImageClick={openImageLightbox}
                 />
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">

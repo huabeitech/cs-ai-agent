@@ -7,14 +7,13 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState,
 } from "react";
 
 import { ImMessageHTML } from "@/components/im-message-html";
+import { useImageLightbox } from "@/components/image-lightbox";
 import { ProjectDialog } from "@/components/project-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -173,7 +172,8 @@ export function ConversationDetailDialog({
     scrollTop: number;
   } | null>(null);
   const prevLoadingMoreRef = useRef(false);
-  const [previewImage, setPreviewImage] = useState("");
+  const { open: openImageLightbox, close: closeImageLightbox } =
+    useImageLightbox();
 
   const getMessagesViewport = useCallback((): HTMLElement | null => {
     return (
@@ -185,7 +185,7 @@ export function ConversationDetailDialog({
 
   useEffect(() => {
     if (!open) {
-      setPreviewImage("");
+      closeImageLightbox();
       return;
     }
     if (loading) {
@@ -196,7 +196,7 @@ export function ConversationDetailDialog({
       return;
     }
     bottom.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [open, loading]);
+  }, [open, loading, closeImageLightbox]);
 
   useLayoutEffect(() => {
     const wasLoading = prevLoadingMoreRef.current;
@@ -462,13 +462,13 @@ export function ConversationDetailDialog({
                                 <ImMessageHTML
                                   html={message.content || "-"}
                                   className="[&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in"
-                                  onImageClick={setPreviewImage}
+                                  onImageClick={openImageLightbox}
                                 />
                               ) : isImageMessage ? (
                                 <MessageImage
                                   src={getImageMessageUrl(message)}
                                   alt={getMessageContent(message)}
-                                  onPreview={setPreviewImage}
+                                  onPreview={openImageLightbox}
                                 />
                               ) : (
                                 <div className="whitespace-pre-wrap break-words">
@@ -502,28 +502,6 @@ export function ConversationDetailDialog({
           暂无可展示的会话详情
         </div>
       )}
-      <Dialog
-        open={Boolean(previewImage)}
-        onOpenChange={(nextOpen) => !nextOpen && setPreviewImage("")}
-      >
-        <DialogContent
-          className="max-w-[calc(100vw-2rem)] border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-[calc(100vw-4rem)]"
-          showCloseButton
-        >
-          {previewImage ? (
-            <div className="flex max-h-[85vh] items-center justify-center">
-              <Image
-                src={previewImage}
-                alt="消息图片预览"
-                width={1600}
-                height={1200}
-                className="max-h-[85vh] w-auto rounded-lg object-contain"
-                unoptimized
-              />
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </ProjectDialog>
   );
 }
@@ -546,7 +524,7 @@ function InfoItem({ label, value, fullWidth = false }: InfoItemProps) {
 type MessageImageProps = {
   src: string;
   alt: string;
-  onPreview: (src: string) => void;
+  onPreview: (src: string, alt?: string) => void;
 };
 
 function MessageImage({ src, alt, onPreview }: MessageImageProps) {
@@ -562,7 +540,7 @@ function MessageImage({ src, alt, onPreview }: MessageImageProps) {
     <button
       type="button"
       className="block cursor-zoom-in"
-      onClick={() => onPreview(src)}
+      onClick={() => onPreview(src, alt)}
     >
       <Image
         src={src}
