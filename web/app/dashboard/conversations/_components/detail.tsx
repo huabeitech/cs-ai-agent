@@ -257,7 +257,7 @@ export function ConversationDetailDialog({
       // allowFullscreen
       defaultFullscreen
       bodyScrollable={false}
-      bodyClassName="h-full overflow-hidden p-0"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       contentClassName="h-[calc(100vh-40px)] max-h-[calc(100vh-40px)]"
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3">
@@ -315,11 +315,11 @@ export function ConversationDetailDialog({
       }
     >
       {loading ? (
-        <div className="flex h-full min-h-[60vh] items-center justify-center text-sm text-muted-foreground">
+        <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
           正在加载会话详情...
         </div>
       ) : currentConversation ? (
-        <div className="flex h-[calc(100vh)] min-h-[60vh] overflow-hidden flex-row border-t">
+        <div className="flex min-h-0 flex-1 flex-row overflow-hidden border-t">
           <aside className="flex w-90 h-full shrink-0 flex-col overflow-hidden bg-muted/20 border-r border-b-0">
             <div className="space-y-4 p-6">
               <div className="flex items-start justify-between gap-3">
@@ -493,7 +493,7 @@ export function ConversationDetailDialog({
           </section>
         </div>
       ) : (
-        <div className="flex h-full min-h-[60vh] items-center justify-center text-sm text-muted-foreground">
+        <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
           暂无可展示的会话详情
         </div>
       )}

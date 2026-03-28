@@ -142,7 +142,7 @@ function ProjectDialog({
             ) : null}
           </div>
         )}
-        <DialogHeader className={cn("shrink-0 px-6 pt-6", headerClassName)}>
+        <DialogHeader className={cn("shrink-0 px-6 py-3", headerClassName)}>
           <DialogTitle>{title}</DialogTitle>
           {description ? (
             <DialogDescription>{description}</DialogDescription>
