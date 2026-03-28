@@ -181,10 +181,10 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 			return errorsx.InvalidParam("只有待接入会话允许分配")
 		}
 		now := time.Now()
-		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
+		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignmentTx(ctx, conversationID, conversation.CurrentAssigneeID, assigneeID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, assigneeID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
 			return err
 		}
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
@@ -270,10 +270,10 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 			return errorsx.InvalidParam("目标客服不能与当前指派人相同")
 		}
 		now := time.Now()
-		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
+		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignmentTx(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, operator, now); err != nil {
 			return err
 		}
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
@@ -353,7 +353,7 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 			operatorID = operator.UserID
 			operatorName = operator.Nickname
 		}
-		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
+		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{

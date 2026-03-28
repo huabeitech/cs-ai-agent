@@ -49,27 +49,7 @@ func (s *conversationAssignmentService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.ConversationAssignmentRepository.Count(sqls.DB(), cnd)
 }
 
-func (s *conversationAssignmentService) Create(t *models.ConversationAssignment) error {
-	return repositories.ConversationAssignmentRepository.Create(sqls.DB(), t)
-}
-
-func (s *conversationAssignmentService) Update(t *models.ConversationAssignment) error {
-	return repositories.ConversationAssignmentRepository.Update(sqls.DB(), t)
-}
-
-func (s *conversationAssignmentService) Updates(id int64, columns map[string]interface{}) error {
-	return repositories.ConversationAssignmentRepository.Updates(sqls.DB(), id, columns)
-}
-
-func (s *conversationAssignmentService) UpdateColumn(id int64, name string, value interface{}) error {
-	return repositories.ConversationAssignmentRepository.UpdateColumn(sqls.DB(), id, name, value)
-}
-
-func (s *conversationAssignmentService) Delete(id int64) {
-	repositories.ConversationAssignmentRepository.Delete(sqls.DB(), id)
-}
-
-func (s *conversationAssignmentService) FinishActiveAssignmentsTx(ctx *sqls.TxContext, conversationID int64, finishedAt time.Time) error {
+func (s *conversationAssignmentService) FinishActiveAssignments(ctx *sqls.TxContext, conversationID int64, finishedAt time.Time) error {
 	return ctx.Tx.Model(&models.ConversationAssignment{}).
 		Where("conversation_id = ? AND status = ?", conversationID, enums.IMAssignmentStatusActive).
 		Updates(map[string]any{
@@ -78,7 +58,7 @@ func (s *conversationAssignmentService) FinishActiveAssignmentsTx(ctx *sqls.TxCo
 		}).Error
 }
 
-func (s *conversationAssignmentService) CreateAssignmentTx(ctx *sqls.TxContext, conversationID, fromUserID, toUserID int64, assignType enums.IMAssignmentType, reason string, operator *dto.AuthPrincipal, now time.Time) error {
+func (s *conversationAssignmentService) CreateAssignment(ctx *sqls.TxContext, conversationID, fromUserID, toUserID int64, assignType enums.IMAssignmentType, reason string, operator *dto.AuthPrincipal, now time.Time) error {
 	assignment := &models.ConversationAssignment{
 		ConversationID: conversationID,
 		FromUserID:     fromUserID,

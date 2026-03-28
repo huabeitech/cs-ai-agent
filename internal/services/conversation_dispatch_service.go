@@ -399,10 +399,10 @@ func (s *conversationDispatchService) tryAssignConversation(conversationID int64
 			return errConversationDispatchConflict
 		}
 
-		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
+		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignmentTx(ctx, conversationID, conversation.CurrentAssigneeID, candidate.UserID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, candidate.UserID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
 			return err
 		}
 
