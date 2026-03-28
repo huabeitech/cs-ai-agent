@@ -270,7 +270,7 @@ export function ConversationDetailDialog({
                 />
                 <InfoItem
                   label="渠道类型"
-                  value={currentConversation.channelType || "-"}
+                  value={currentConversation.externalSource || "-"}
                 />
                 <InfoItem
                   label="客服未读"

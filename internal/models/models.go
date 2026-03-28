@@ -141,7 +141,7 @@ type Customer struct {
 type CustomerIdentity struct {
 	ID             int64                `gorm:"primaryKey;autoIncrement"`
 	CustomerID     int64                `gorm:"type:bigint;not null;uniqueIndex:uk_customer_external"`                    // 为所属客户ID。
-	ExternalSource enums.ExternalSource `gorm:"type:varchar(30);uniqueIndex:uk_customer_external"`                        // 为外部身份来源，与 Conversation.ChannelType 对齐。
+	ExternalSource enums.ExternalSource `gorm:"type:varchar(30);uniqueIndex:uk_customer_external"`                        // 为外部身份来源
 	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalUserID 对齐。
 	RawProfile     string               `gorm:"type:text"`                                                                // 为第三方原始资料JSON。
 	Status         enums.Status         `gorm:"type:int;not null;default:0;index"`                                        // 为映射状态。
@@ -279,7 +279,7 @@ type Conversation struct {
 	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为会话主键。
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
-	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为外部身份来源，与 CustomerIdentity.SourceType 对齐。
+	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ExternalSource 为外部身份来源。
 	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalUserID 为外部访客ID。
 	SourceUserID        int64                           `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为发起会话的站内用户ID。 // TODO 不应该有站内用户
 	Subject             string                          `gorm:"type:varchar(255);not null;default:''"`       // Subject 为会话标题或摘要。

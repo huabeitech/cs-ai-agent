@@ -189,7 +189,7 @@ export default function ConversationsPage() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{conversation.subject}</p>
                 <p className="truncate text-sm text-muted-foreground">
-                  <span>{conversation.channelType}</span> / <span>{conversation.externalUserId}</span>
+                  <span>{conversation.externalSource}</span> / <span>{conversation.externalUserId}</span>
                 </p>
               </div>
             </>

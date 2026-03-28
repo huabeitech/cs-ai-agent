@@ -80,13 +80,13 @@ export type ConversationParticipant = {
 
 export type AdminConversation = {
   id: number
-  channelType: string
+  externalSource: string
+  sourceUserId: number
+  externalUserId: string
   subject: string
   status: number
   serviceMode: number
   priority: number
-  sourceUserId: number
-  externalUserId: string
   currentAssigneeId: number
   currentAssigneeName?: string
   lastMessageId: number

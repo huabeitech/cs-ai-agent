@@ -2,8 +2,7 @@ package enums
 
 // ExternalSource 外部身份来源。
 //
-// 会话侧 Conversation.ChannelType 与 CRM 侧 CustomerIdentity.SourceType 共用同一套取值，
-// 与 ExternalUserID / SourceID 组合即可唯一标识某渠道下的访客身份。
+// 与 ExternalUserID 组合即可唯一标识某渠道下的访客身份。
 type ExternalSource string
 
 const (

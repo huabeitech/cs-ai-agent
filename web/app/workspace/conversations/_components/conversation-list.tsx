@@ -88,10 +88,10 @@ export function ConversationList() {
                     >
                       {getEnumLabel(IMConversationStatusLabels, conversation.status)}
                     </span>
-                    {conversation.channelType ? (
+                    {conversation.externalSource ? (
                       <>
                         <span className="opacity-40">·</span>
-                        <span className="truncate">{conversation.channelType}</span>
+                        <span className="truncate">{conversation.externalSource}</span>
                       </>
                     ) : null}
                   </div>

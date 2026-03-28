@@ -26,7 +26,7 @@ func (c *ImConversationController) AnyList() *web.JsonResult {
 
 	cnd := params.NewPagedSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
-		params.QueryFilter{ParamName: "channelType"},
+		params.QueryFilter{ParamName: "externalSource"},
 		params.QueryFilter{ParamName: "serviceMode"},
 	).Desc("last_message_at").Desc("id")
 	if principal.IsVisitor {
@@ -84,7 +84,7 @@ func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
 		}
 	}
 
-	item, err := services.ConversationService.Create(req.ChannelType, req.Subject, site.AIAgentID, principal)
+	item, err := services.ConversationService.Create(req.ExternalSource, req.Subject, site.AIAgentID, principal)
 	if err != nil {
 		return web.JsonError(err)
 	}

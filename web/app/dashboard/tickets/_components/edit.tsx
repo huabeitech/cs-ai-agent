@@ -158,6 +158,7 @@ function EditDialogBody({
   useEffect(() => {
     reset(buildForm())
     let ignore = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingCategories(true)
     fetchTicketCategories({ limit: 100 })
       .then((data) => {

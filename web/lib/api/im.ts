@@ -29,13 +29,13 @@ export type ImConversationParticipant = {
 
 export type ImConversation = {
   id: number
-  channelType: string
+  externalSource: string
+  sourceUserId: number
+  externalUserId: string
   subject: string
   status: number
   serviceMode: number
   priority: number
-  sourceUserId: number
-  externalUserId: string
   currentAssigneeId: number
   currentAssigneeName?: string
   lastMessageId: number
@@ -181,7 +181,7 @@ export function fetchImMessages(
 }
 
 export function createOrMatchImConversation(payload?: {
-  channelType?: string
+  externalSource?: string
   subject?: string
 }) {
   return request<ImConversation>("/api/open/im/conversation/create_or_match", {

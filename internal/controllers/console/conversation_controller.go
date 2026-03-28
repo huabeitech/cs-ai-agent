@@ -29,7 +29,7 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 
 	cnd := params.NewPagedSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
-		params.QueryFilter{ParamName: "channelType"},
+		params.QueryFilter{ParamName: "externalSource"},
 		params.QueryFilter{ParamName: "serviceMode"},
 		params.QueryFilter{ParamName: "currentAssigneeId"},
 		params.QueryFilter{ParamName: "sourceUserId"},

@@ -7,7 +7,7 @@ export async function createOrMatchConversation(subject?: string) {
     {
       method: "POST",
       body: JSON.stringify({
-        channelType: "web_chat",
+        externalSource: "web_chat",
         subject: subject,
       }),
     },

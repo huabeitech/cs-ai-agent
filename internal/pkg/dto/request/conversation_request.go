@@ -13,7 +13,7 @@ const (
 
 type ConversationListRequest struct {
 	Status            int    `json:"status"`
-	ChannelType       string `json:"channelType"`
+	ExternalSource    string `json:"externalSource"`
 	ServiceMode       int    `json:"serviceMode"`
 	CurrentAssigneeID int64  `json:"currentAssigneeId"`
 	SourceUserID      int64  `json:"sourceUserId"`
@@ -48,8 +48,8 @@ type ReadConversationRequest struct {
 }
 
 type CreateOrMatchConversationRequest struct {
-	ChannelType enums.ExternalSource `json:"channelType"`
-	Subject     string                       `json:"subject"`
+	ExternalSource enums.ExternalSource `json:"externalSource"`
+	Subject        string               `json:"subject"`
 }
 
 type AddConversationTagRequest struct {
