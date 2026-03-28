@@ -1,12 +1,14 @@
 "use client";
 
-import {
-  CheckCheckIcon,
-  EyeIcon,
-  MessageCircleMoreIcon,
-} from "lucide-react";
+import { CheckCheckIcon, EyeIcon, MessageCircleMoreIcon } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { ImMessageHTML } from "@/components/im-message-html";
 import { ProjectDialog } from "@/components/project-dialog";
@@ -252,7 +254,17 @@ export function ConversationDetailDialog({
     <ProjectDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={currentConversation?.subject || "会话详情"}
+      title={
+        <div className="flex items-center gap-3">
+          <span>{currentConversation?.subject || "会话详情"}</span>
+
+          <div>
+            {statusMeta ? (
+              <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+            ) : null}
+          </div>
+        </div>
+      }
       size="xl"
       // allowFullscreen
       defaultFullscreen
@@ -278,7 +290,9 @@ export function ConversationDetailDialog({
             <Button
               variant="outline"
               onClick={() => void onDispatch()}
-              disabled={saving || !currentConversation || !isPendingConversation}
+              disabled={
+                saving || !currentConversation || !isPendingConversation
+              }
             >
               <MessageCircleMoreIcon />
               {saving ? "处理中..." : "重试分配"}
@@ -322,12 +336,6 @@ export function ConversationDetailDialog({
         <div className="flex min-h-0 flex-1 flex-row overflow-hidden border-t">
           <aside className="flex w-90 h-full shrink-0 flex-col overflow-hidden bg-muted/20 border-r border-b-0">
             <div className="space-y-4 p-6">
-              <div className="flex items-start justify-between gap-3">
-                {statusMeta ? (
-                  <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                ) : null}
-              </div>
-
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <InfoItem
                   label="接待模式"
@@ -405,7 +413,7 @@ export function ConversationDetailDialog({
           </aside>
 
           <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
-            <div className="flex items-center justify-between border-b px-6 py-4">
+            {/* <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
                 <p className="text-sm font-medium">聊天记录</p>
               </div>
@@ -413,81 +421,78 @@ export function ConversationDetailDialog({
                 消息数：{messages.length}
                 {messagesHasMore ? " · 向上滑可加载更早" : ""}
               </div>
-            </div>
+            </div> */}
 
             <div ref={messagesScrollRootRef} className="min-h-0 flex-1">
               <ScrollArea className="h-full min-h-0 bg-muted/10">
-              <div className="space-y-4 px-6 py-5">
-                {messagesHasMore ? (
-                  <div
-                    ref={loadMoreSentinelRef}
-                    className="flex min-h-8 flex-col items-center justify-center py-2 text-xs text-muted-foreground"
-                  >
-                    {loadingMoreMessages ? "正在加载更早的消息…" : "继续上滑加载更早消息"}
-                  </div>
-                ) : null}
-                {isClosedConversation ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    当前会话已关闭。后台不可继续发送消息；如用户再次咨询，应创建新会话。
-                  </div>
-                ) : null}
-                {messages.length ? (
-                  messages.map((message) => {
-                    const layout = getMessageLayout(message);
-                    const isHtmlMessage = message.messageType === "html";
-                    const isImageMessage = message.messageType === "image";
+                <div className="space-y-4 px-6 py-5">
+                  {messagesHasMore ? (
+                    <div
+                      ref={loadMoreSentinelRef}
+                      className="flex min-h-8 flex-col items-center justify-center py-2 text-xs text-muted-foreground"
+                    >
+                      {loadingMoreMessages
+                        ? "正在加载更早的消息…"
+                        : "继续上滑加载更早消息"}
+                    </div>
+                  ) : null}
+                  {messages.length ? (
+                    messages.map((message) => {
+                      const layout = getMessageLayout(message);
+                      const isHtmlMessage = message.messageType === "html";
+                      const isImageMessage = message.messageType === "image";
 
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${layout.rowClassName}`}
-                      >
-                        <div className="max-w-[85%] space-y-2">
-                          <div
-                            className={`text-xs text-muted-foreground ${layout.metaClassName}`}
-                          >
-                            <span>{getSenderLabel(message)}</span>
-                            <span className="mx-2">·</span>
-                            <span>{formatDateTime(message.sentAt)}</span>
-                          </div>
-                          <div
-                            className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${layout.bubbleClassName}`}
-                          >
-                            {isHtmlMessage ? (
-                              <ImMessageHTML
-                                html={message.content || "-"}
-                                className="[&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in"
-                                onImageClick={setPreviewImage}
-                              />
-                            ) : isImageMessage ? (
-                              <MessageImage
-                                src={getImageMessageUrl(message)}
-                                alt={getMessageContent(message)}
-                                onPreview={setPreviewImage}
-                              />
-                            ) : (
-                              <div className="whitespace-pre-wrap break-words">
-                                {getMessageContent(message)}
-                              </div>
-                            )}
-                          </div>
-                          <div
-                            className={`text-xs text-muted-foreground ${layout.metaClassName}`}
-                          >
-                            客服 {message.agentRead ? "已读" : "未读"} / 用户{" "}
-                            {message.customerRead ? "已读" : "未读"}
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${layout.rowClassName}`}
+                        >
+                          <div className="max-w-[85%] space-y-2">
+                            <div
+                              className={`text-xs text-muted-foreground ${layout.metaClassName}`}
+                            >
+                              <span>{getSenderLabel(message)}</span>
+                              <span className="mx-2">·</span>
+                              <span>{formatDateTime(message.sentAt)}</span>
+                            </div>
+                            <div
+                              className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${layout.bubbleClassName}`}
+                            >
+                              {isHtmlMessage ? (
+                                <ImMessageHTML
+                                  html={message.content || "-"}
+                                  className="[&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in"
+                                  onImageClick={setPreviewImage}
+                                />
+                              ) : isImageMessage ? (
+                                <MessageImage
+                                  src={getImageMessageUrl(message)}
+                                  alt={getMessageContent(message)}
+                                  onPreview={setPreviewImage}
+                                />
+                              ) : (
+                                <div className="whitespace-pre-wrap break-words">
+                                  {getMessageContent(message)}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              className={`text-xs text-muted-foreground ${layout.metaClassName}`}
+                            >
+                              客服 {message.agentRead ? "已读" : "未读"} / 用户{" "}
+                              {message.customerRead ? "已读" : "未读"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="flex h-full min-h-80 items-center justify-center rounded-xl border border-dashed bg-background text-sm text-muted-foreground">
-                    暂无消息记录
-                  </div>
-                )}
-                <div ref={messageBottomRef} />
-              </div>
+                      );
+                    })
+                  ) : (
+                    <div className="flex h-full min-h-80 items-center justify-center rounded-xl border border-dashed bg-background text-sm text-muted-foreground">
+                      暂无消息记录
+                    </div>
+                  )}
+                  <div ref={messageBottomRef} />
+                </div>
               </ScrollArea>
             </div>
           </section>
@@ -497,7 +502,10 @@ export function ConversationDetailDialog({
           暂无可展示的会话详情
         </div>
       )}
-      <Dialog open={Boolean(previewImage)} onOpenChange={(nextOpen) => !nextOpen && setPreviewImage("")}>
+      <Dialog
+        open={Boolean(previewImage)}
+        onOpenChange={(nextOpen) => !nextOpen && setPreviewImage("")}
+      >
         <DialogContent
           className="max-w-[calc(100vw-2rem)] border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-[calc(100vw-4rem)]"
           showCloseButton
@@ -543,7 +551,11 @@ type MessageImageProps = {
 
 function MessageImage({ src, alt, onPreview }: MessageImageProps) {
   if (!src) {
-    return <div className="text-sm whitespace-pre-wrap break-words">{alt || "[图片]"}</div>;
+    return (
+      <div className="text-sm whitespace-pre-wrap break-words">
+        {alt || "[图片]"}
+      </div>
+    );
   }
 
   return (
