@@ -3,6 +3,7 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
 	"encoding/json"
@@ -37,15 +38,15 @@ func newWsService() *wsService {
 	}
 }
 
-func (s *wsService) UpgradeUserConnection(ctx iris.Context, principal *dto.AuthPrincipal) error {
-	return s.upgradeConnection(ctx, principal, realtimeRoleUser)
+func (s *wsService) UpgradeUserConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *request.ExternalInfo) error {
+	return s.upgradeConnection(ctx, principal, external, realtimeRoleUser)
 }
 
 func (s *wsService) UpgradeAdminConnection(ctx iris.Context, principal *dto.AuthPrincipal) error {
-	return s.upgradeConnection(ctx, principal, realtimeRoleAdmin)
+	return s.upgradeConnection(ctx, principal, nil, realtimeRoleAdmin)
 }
 
-func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, role string) error {
+func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *request.ExternalInfo, role string) error {
 	conn, err := s.upgrader.Upgrade(ctx.ResponseWriter().Naive(), ctx.Request(), nil)
 	if err != nil {
 		return err
@@ -55,6 +56,7 @@ func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrinc
 		ID:           s.nextID("conn"),
 		Conn:         conn,
 		Principal:    principal,
+		External:     external,
 		Role:         role,
 		TerminalType: s.resolveTerminalType(ctx, role),
 		Topics:       make(map[string]struct{}),
@@ -69,12 +71,21 @@ func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrinc
 		return conn.SetReadDeadline(time.Now().Add(realtimePongWait))
 	})
 
+	var logUserID int64
+	var logExternalID string
+	if principal != nil {
+		logUserID = principal.UserID
+	}
+	if external != nil {
+		logExternalID = strings.TrimSpace(external.ExternalID)
+	}
+
 	sessionCount := s.manager.Register(session, s.defaultTopics(session))
 	slog.Info("realtime client connected",
 		"connId", session.ID,
 		"role", session.Role,
-		"userId", session.Principal.UserID,
-		"visitorId", session.Principal.VisitorID,
+		"userId", logUserID,
+		"externalId", logExternalID,
 		"terminalType", session.TerminalType,
 		"topicCount", len(session.Topics),
 		"sessionCount", sessionCount,
@@ -86,8 +97,8 @@ func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrinc
 	session.enqueueEvent(s.newEvent("", RealtimeConnectedEvent{
 		Payload: RealtimeConnectedPayload{
 			ConnID:       session.ID,
-			UserID:       principal.UserID,
-			VisitorID:    principal.VisitorID,
+			UserID:       logUserID,
+			VisitorID:    logExternalID,
 			Role:         role,
 			TerminalType: session.TerminalType,
 			Topics:       session.topicList(),
@@ -186,11 +197,19 @@ func (s *wsService) closeSession(session *ClientSession) {
 		close(session.Send)
 		_ = session.Conn.Close()
 
+		var discUserID int64
+		var discExternalID string
+		if session.Principal != nil {
+			discUserID = session.Principal.UserID
+		}
+		if session.External != nil {
+			discExternalID = strings.TrimSpace(session.External.ExternalID)
+		}
 		slog.Info("realtime client disconnected",
 			"connId", session.ID,
 			"role", session.Role,
-			"userId", session.Principal.UserID,
-			"visitorId", session.Principal.VisitorID,
+			"userId", discUserID,
+			"externalId", discExternalID,
 			"terminalType", session.TerminalType,
 			"sessionCount", remaining,
 		)
@@ -374,15 +393,15 @@ func (s *wsService) defaultTopics(session *ClientSession) []string {
 
 	switch session.Role {
 	case realtimeRoleAdmin:
-		if session.Principal.UserID <= 0 {
+		if session.Principal == nil || session.Principal.UserID <= 0 {
 			return []string{realtimeTopicAdminAll}
 		}
 		return []string{s.adminTopic(session.Principal.UserID), realtimeTopicAdminAll}
 	default:
-		if strings.TrimSpace(session.Principal.VisitorID) != "" {
-			return []string{s.visitorTopic(session.Principal.VisitorID)}
+		if session.External != nil && strings.TrimSpace(session.External.ExternalID) != "" {
+			return []string{s.visitorTopic(session.External.ExternalID)}
 		}
-		if session.Principal.UserID > 0 {
+		if session.Principal != nil && session.Principal.UserID > 0 {
 			return []string{s.userTopic(session.Principal.UserID)}
 		}
 		return nil
@@ -391,8 +410,20 @@ func (s *wsService) defaultTopics(session *ClientSession) []string {
 
 func (s *wsService) filterAllowedTopics(session *ClientSession, topics []string) []string {
 	normalized := normalizeRealtimeTopics(topics)
-	if len(normalized) == 0 || session == nil || session.Principal == nil {
+	if len(normalized) == 0 || session == nil {
 		return nil
+	}
+	switch session.Role {
+	case realtimeRoleAdmin:
+		if session.Principal == nil {
+			return nil
+		}
+	default:
+		hasUser := session.Principal != nil && session.Principal.UserID > 0
+		hasExternal := session.External != nil && strings.TrimSpace(session.External.ExternalID) != ""
+		if !hasUser && !hasExternal {
+			return nil
+		}
 	}
 
 	defaultTopics := sliceToSet(s.defaultTopics(session))
@@ -410,18 +441,23 @@ func (s *wsService) filterAllowedTopics(session *ClientSession, topics []string)
 }
 
 func (s *wsService) canSubscribeConversation(session *ClientSession, conversationID int64) bool {
-	if session == nil || session.Principal == nil || conversationID <= 0 {
-		return false
-	}
-
-	conversation := ConversationService.Get(conversationID)
-	if conversation == nil {
+	if session == nil || conversationID <= 0 {
 		return false
 	}
 	if session.Role == realtimeRoleAdmin {
 		return true
 	}
-	return ConversationService.IsCustomerConversationOwner(conversation, session.Principal)
+	conversation := ConversationService.Get(conversationID)
+	if conversation == nil {
+		return false
+	}
+	if session.External != nil {
+		return ConversationService.IsCustomerConversationOwner(conversation, *session.External)
+	}
+	if session.Principal != nil && conversation.SourceUserID > 0 && conversation.SourceUserID == session.Principal.UserID {
+		return true
+	}
+	return false
 }
 
 func (s *wsService) resolveTerminalType(ctx iris.Context, role string) string {

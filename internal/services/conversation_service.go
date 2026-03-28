@@ -393,7 +393,7 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 	return nil
 }
 
-func (s *conversationService) MarkConversationReadToMessage(conversationID, messageID int64, operatorType enums.IMSenderType, operator *dto.AuthPrincipal) error {
+func (s *conversationService) MarkConversationReadToMessage(conversationID, messageID int64, operatorType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo) error {
 	conversation := s.Get(conversationID)
 	if conversation == nil {
 		return errorsx.InvalidParam("会话不存在")
@@ -405,18 +405,18 @@ func (s *conversationService) MarkConversationReadToMessage(conversationID, mess
 		if operator == nil {
 			return errorsx.Unauthorized("未登录或登录已过期")
 		}
-		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeAgent, operator, messageID)
+		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeAgent, operator, nil, messageID)
 		if err != nil {
 			return err
 		}
 	case enums.IMSenderTypeCustomer:
-		if operator == nil {
-			return errorsx.Unauthorized("未登录或登录已过期")
+		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
+			return errorsx.Unauthorized("外部用户标识不能为空")
 		}
-		if !s.IsCustomerConversationOwner(conversation, operator) {
+		if !s.IsCustomerConversationOwner(conversation, *external) {
 			return errorsx.Forbidden("无权访问该会话")
 		}
-		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeCustomer, operator, messageID)
+		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeCustomer, nil, external, messageID)
 		if err != nil {
 			return err
 		}
@@ -431,9 +431,25 @@ func (s *conversationService) MarkConversationReadToMessage(conversationID, mess
 	return nil
 }
 
-func (s *conversationService) markConversationRead(conversation *models.Conversation, readerType enums.IMSenderType, operator *dto.AuthPrincipal, messageID int64) (bool, error) {
+func displayExternalName(ext *request.ExternalInfo) string {
+	if ext == nil {
+		return ""
+	}
+	if n := strings.TrimSpace(ext.ExternalName); n != "" {
+		return n
+	}
+	return strings.TrimSpace(ext.ExternalID)
+}
+
+func (s *conversationService) markConversationRead(conversation *models.Conversation, readerType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo, messageID int64) (bool, error) {
 	if conversation == nil {
 		return false, errorsx.InvalidParam("会话不存在")
+	}
+	if readerType == enums.IMSenderTypeAgent && operator == nil {
+		return false, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if readerType == enums.IMSenderTypeCustomer && (external == nil || strings.TrimSpace(external.ExternalID) == "") {
+		return false, errorsx.Unauthorized("外部用户标识不能为空")
 	}
 	targetMessage, err := MessageService.GetConversationReadTarget(conversation.ID, messageID)
 	if err != nil {
@@ -447,9 +463,18 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 			return false, nil
 		}
 		now := time.Now()
+		updateUserID := int64(0)
+		updateUserName := ""
+		if readerType == enums.IMSenderTypeAgent {
+			updateUserID = operator.UserID
+			updateUserName = operator.Username
+		} else {
+			updateUserID = 0
+			updateUserName = displayExternalName(external)
+		}
 		updates := map[string]any{
-			"update_user_id":   operator.UserID,
-			"update_user_name": operator.Username,
+			"update_user_id":   updateUserID,
+			"update_user_name": updateUserName,
 			"updated_at":       now,
 		}
 		if readerType == enums.IMSenderTypeAgent {
@@ -460,7 +485,7 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		return true, s.Updates(conversation.ID, updates)
 	}
 
-	currentReadState := ConversationReadStateService.GetByReader(conversation.ID, string(readerType), operator)
+	currentReadState := ConversationReadStateService.GetByReader(conversation.ID, readerType, operator, external)
 	if currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
 		if readerType == enums.IMSenderTypeAgent && conversation.AgentUnreadCount == 0 {
 			return false, nil
@@ -476,7 +501,7 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 			return errorsx.InvalidParam("会话不存在")
 		}
 		now := time.Now()
-		if _, err := ConversationReadStateService.MarkReadTx(ctx, currentConversation, readerType, operator, targetMessage, now); err != nil {
+		if _, err := ConversationReadStateService.MarkReadTx(ctx, currentConversation, readerType, operator, external, targetMessage, now); err != nil {
 			return err
 		}
 		agentReadState, customerReadState, err := ConversationReadStateService.GetConversationReadStatesTx(ctx, currentConversation.ID)
@@ -497,14 +522,16 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		if readerType == enums.IMSenderTypeCustomer && currentConversation.CustomerUnreadCount == customerUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
 			return nil
 		}
+		updateUserID := operator.UserID
 		updateUserName := operator.Username
-		if readerType == enums.IMSenderTypeCustomer && operator.IsVisitor {
-			updateUserName = operator.Nickname
+		if readerType == enums.IMSenderTypeCustomer {
+			updateUserID = 0
+			updateUserName = displayExternalName(external)
 		}
 		return repositories.ConversationRepository.Updates(ctx.Tx, currentConversation.ID, map[string]any{
 			"agent_unread_count":    agentUnreadCount,
 			"customer_unread_count": customerUnreadCount,
-			"update_user_id":        operator.UserID,
+			"update_user_id":        updateUserID,
 			"update_user_name":      updateUserName,
 			"updated_at":            now,
 		})
@@ -532,7 +559,17 @@ func (s *conversationService) IsCustomerConversationOwner(conversation *models.C
 	if conversation == nil {
 		return false
 	}
-	return strings.TrimSpace(conversation.ExternalID) != "" && conversation.ExternalID == externalInfo.ExternalID
+	extID := strings.TrimSpace(externalInfo.ExternalID)
+	if extID == "" || strings.TrimSpace(conversation.ExternalID) == "" {
+		return false
+	}
+	if conversation.ExternalID != extID {
+		return false
+	}
+	if conversation.ExternalSource != "" && externalInfo.ExternalSource != "" && conversation.ExternalSource != externalInfo.ExternalSource {
+		return false
+	}
+	return true
 }
 
 func (s *conversationService) BuildConversationSummary(conversation *models.Conversation) string {

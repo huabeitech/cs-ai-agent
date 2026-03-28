@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
@@ -131,6 +132,78 @@ func (s *assetService) UploadFile(cfg *config.Config, file *multipart.FileHeader
 	item.MimeType = storedFile.MimeType
 	item.Status = enums.AssetStatusSuccess
 	_ = repositories.AssetRepository.Update(sqls.DB(), item) // 这个更新很简单，默认认为他一定能成功
+
+	return item, nil
+}
+
+// UploadFileForExternal IM 访客上传：审计字段使用外部展示名，用户 ID 记 0。
+func (s *assetService) UploadFileForExternal(cfg *config.Config, file *multipart.FileHeader, prefix string, external request.ExternalInfo) (*models.Asset, error) {
+	if strings.TrimSpace(external.ExternalID) == "" {
+		return nil, errorsx.Unauthorized("外部用户标识不能为空")
+	}
+	if cfg == nil {
+		return nil, errorsx.InvalidParam("系统配置不存在")
+	}
+	if file == nil {
+		return nil, errorsx.InvalidParam("请选择上传文件")
+	}
+	if file.Size > cfg.Storage.MaxUploadSizeBytes() {
+		return nil, errorsx.InvalidParam("上传文件超过大小限制")
+	}
+	prefix = normalizeAssetPrefix(prefix)
+	if prefix == "" {
+		return nil, errorsx.InvalidParam("上传前缀不能为空")
+	}
+
+	provider, err := storage.NewProvider(cfg.Storage)
+	if err != nil {
+		return nil, err
+	}
+
+	displayName := strings.TrimSpace(external.ExternalName)
+	if displayName == "" {
+		displayName = strings.TrimSpace(external.ExternalID)
+	}
+	now := time.Now()
+	audit := models.AuditFields{
+		CreatedAt:      now,
+		CreateUserID:   0,
+		CreateUserName: displayName,
+		UpdatedAt:      now,
+		UpdateUserID:   0,
+		UpdateUserName: displayName,
+	}
+
+	assetID, key := s.generateStorageKey(prefix, file.Filename)
+	item := &models.Asset{
+		AssetID:     assetID,
+		Provider:    cfg.Storage.Default,
+		StorageKey:  key,
+		Filename:    file.Filename,
+		FileSize:    file.Size,
+		MimeType:    file.Header.Get("Content-Type"),
+		Status:      enums.AssetStatusPending,
+		AuditFields: audit,
+	}
+	if strs.IsBlank(string(item.Provider)) {
+		item.Provider = enums.AssetProviderLocal
+	}
+	if err := repositories.AssetRepository.Create(sqls.DB(), item); err != nil {
+		return nil, err
+	}
+
+	storedFile, err := provider.Upload(file, key)
+	if err != nil {
+		_ = s.markAssetStatus(item.ID, enums.AssetStatusFailed, nil)
+		return nil, err
+	}
+
+	item.Provider = storedFile.Provider
+	item.Filename = storedFile.Filename
+	item.FileSize = storedFile.FileSize
+	item.MimeType = storedFile.MimeType
+	item.Status = enums.AssetStatusSuccess
+	_ = repositories.AssetRepository.Update(sqls.DB(), item)
 
 	return item, nil
 }

@@ -5,6 +5,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
 	"strings"
@@ -23,7 +24,7 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
 		return rsp
 	}
-	principal, err := services.AuthService.GetImPrincipal(c.Ctx)
+	externalInfo, err := request.GetExternalInfo(c.Ctx)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -36,7 +37,7 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 	if conversation == nil {
 		return web.JsonErrorMsg("会话不存在")
 	}
-	if !services.ConversationService.IsCustomerConversationOwner(conversation, principal) {
+	if !services.ConversationService.IsCustomerConversationOwner(conversation, *externalInfo) {
 		return web.JsonErrorMsg("无权访问该会话")
 	}
 
@@ -57,7 +58,7 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
 		return rsp
 	}
-	principal, err := services.AuthService.GetImPrincipal(c.Ctx)
+	externalInfo, err := request.GetExternalInfo(c.Ctx)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -67,7 +68,7 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	item, err := services.MessageService.SendCustomerMessage(req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, principal)
+	item, err := services.MessageService.SendCustomerMessage(req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, *externalInfo)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -79,7 +80,7 @@ func (c *ImMessageController) PostRead() *web.JsonResult {
 	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
 		return rsp
 	}
-	principal, err := services.AuthService.GetImPrincipal(c.Ctx)
+	externalInfo, err := request.GetExternalInfo(c.Ctx)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -88,7 +89,7 @@ func (c *ImMessageController) PostRead() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.MarkConversationReadToMessage(req.ConversationID, req.MessageID, "customer", principal); err != nil {
+	if err := services.ConversationService.MarkConversationReadToMessage(req.ConversationID, req.MessageID, enums.IMSenderTypeCustomer, nil, externalInfo); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
@@ -98,7 +99,7 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
 		return rsp
 	}
-	principal, err := services.AuthService.GetImPrincipal(c.Ctx)
+	externalInfo, err := request.GetExternalInfo(c.Ctx)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -113,7 +114,7 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 		return web.JsonErrorMsg("仅支持上传图片文件")
 	}
 
-	item, err := services.AssetService.UploadFile(c.Cfg, header, "im-images", principal)
+	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, "im-images", *externalInfo)
 	if err != nil {
 		return web.JsonError(err)
 	}

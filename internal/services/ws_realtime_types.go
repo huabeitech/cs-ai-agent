@@ -2,6 +2,7 @@ package services
 
 import (
 	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"encoding/json"
 	"sync"
@@ -203,6 +204,7 @@ type ClientSession struct {
 	ID           string
 	Conn         *websocket.Conn
 	Principal    *dto.AuthPrincipal
+	External     *request.ExternalInfo
 	Role         string
 	TerminalType string
 	Topics       map[string]struct{}

@@ -2,6 +2,7 @@ package open
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/services"
 	"log/slog"
@@ -19,16 +20,18 @@ func HandleImWebsocket(ctx iris.Context) {
 	}
 
 	principal := services.AuthService.GetAuthPrincipal(ctx)
+	var external *request.ExternalInfo
 	if principal == nil {
-		if _, err := services.AuthService.GetImPrincipal(ctx); err != nil {
+		ext, err := request.GetExternalInfo(ctx)
+		if err != nil {
 			_ = ctx.StopWithJSON(iris.StatusUnauthorized, map[string]any{
 				"message": err.Error(),
 			})
 			return
 		}
-		principal = services.AuthService.GetAuthPrincipal(ctx)
+		external = ext
 	}
-	if err := services.WsService.UpgradeUserConnection(ctx, principal); err != nil {
+	if err := services.WsService.UpgradeUserConnection(ctx, principal, external); err != nil {
 		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "appId", site.AppID)
 		ctx.StopExecution()
 		return
