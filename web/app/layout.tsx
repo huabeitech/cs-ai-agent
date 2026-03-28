@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 
 import "./globals.css"
+import "@/styles/cs-agent-scrollbar.scss"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
