@@ -8,12 +8,10 @@ import (
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
-	"slices"
 	"strings"
 
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/common/strs"
-	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 	"github.com/spf13/cast"
@@ -113,36 +111,10 @@ func (c *ConversationController) AnyMessage_list() *web.JsonResult {
 	if conversation := services.ConversationService.Get(conversationID); conversation == nil {
 		return web.JsonErrorMsg("会话不存在")
 	}
-	if limit > 100 {
-		limit = 100
-	} else if limit <= 0 {
-		limit = 20
-	}
 
-	cnd := sqls.NewCnd().Eq("conversation_id", conversationID).Limit(limit).Desc("id")
-	if cursor > 0 {
-		cnd.Lt("id", cursor)
-	}
-	if strs.IsNotBlank(senderType) {
-		cnd.Eq("sender_type", senderType)
-	}
-	if strs.IsNotBlank(messageType) {
-		cnd.Eq("message_type", messageType)
-	}
-
-	list := services.MessageService.Find(cnd)
-	var (
-		hasMore    = false
-		nextCursor = cursor
+	list, nextCursor, hasMore := services.MessageService.FindByConversationIDCursor(
+		conversationID, cursor, limit, senderType, messageType,
 	)
-	if len(list) > 0 {
-		hasMore = true
-		nextCursor = list[len(list)-1].ID
-	}
-
-	// 最新的排在最下面
-	slices.Reverse(list)
-	// 构建数据
 	results := builders.BuildMessageResponses(list)
 
 	return web.JsonCursorData(results, cast.ToString(nextCursor), hasMore)

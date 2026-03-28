@@ -17,6 +17,9 @@ import { cn, formatDateTime } from "@/lib/utils";
 type MessageListProps = {
   messages: WidgetMessage[];
   onNearBottomVisible?: () => void;
+  hasMoreOlder?: boolean;
+  loadingOlder?: boolean;
+  onLoadOlder?: () => Promise<void>;
 };
 
 export type MessageListHandle = {
@@ -55,7 +58,16 @@ function getTimelineLabel(value?: string) {
 }
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(
-function MessageList({ messages, onNearBottomVisible }, ref) {
+function MessageList(
+  {
+    messages,
+    onNearBottomVisible,
+    hasMoreOlder = false,
+    loadingOlder = false,
+    onLoadOlder,
+  },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
@@ -122,7 +134,7 @@ function MessageList({ messages, onNearBottomVisible }, ref) {
         frameRef.current = null;
       }
     };
-  }, [lastMessageId, messages.length, scheduleScrollToBottom]);
+  }, [lastMessageId, scheduleScrollToBottom]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -155,12 +167,49 @@ function MessageList({ messages, onNearBottomVisible }, ref) {
     };
   }, [isNearBottom, onNearBottomVisible, scheduleScrollToBottom, scrollToBottom]);
 
+  const handleLoadOlder = useCallback(async () => {
+    if (!onLoadOlder || loadingOlder || !hasMoreOlder) {
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const anchor = { height: container.scrollHeight, top: container.scrollTop };
+    try {
+      await onLoadOlder();
+    } catch {
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const c = containerRef.current;
+        if (!c) {
+          return;
+        }
+        c.scrollTop = c.scrollHeight - anchor.height + anchor.top;
+      });
+    });
+  }, [hasMoreOlder, loadingOlder, onLoadOlder]);
+
   return (
     <div
       ref={containerRef}
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 cs-agent-scrollbar"
     >
       <div ref={contentRef} className="flex flex-col gap-4">
+      {hasMoreOlder && onLoadOlder ? (
+        <div className="flex justify-center py-1">
+          <button
+            type="button"
+            disabled={loadingOlder}
+            onClick={() => void handleLoadOlder()}
+            className="rounded-full border border-white/70 bg-white/75 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.04)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-700 disabled:translate-y-0 disabled:opacity-60"
+          >
+            {loadingOlder ? "加载中…" : "加载更早的消息"}
+          </button>
+        </div>
+      ) : null}
       {/* <WelcomePanel title={title} welcomeText={welcomeText} /> */}
 
       {/* {messages.length === 0 ? (

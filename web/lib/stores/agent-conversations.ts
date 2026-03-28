@@ -42,6 +42,25 @@ function ensureArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
 }
 
+function mergeMessagesByIdAsc(
+  a: AgentMessage[],
+  b: AgentMessage[]
+): AgentMessage[] {
+  const byId = new Map<number, AgentMessage>()
+  for (const m of a) {
+    byId.set(m.id, m)
+  }
+  for (const m of b) {
+    byId.set(m.id, m)
+  }
+  return Array.from(byId.values()).sort((x, y) => x.id - y.id)
+}
+
+function parseCursorId(cursor: string): number {
+  const n = Number.parseInt(cursor, 10)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
 type AgentConversationsStore = {
   searchKeyword: string
   conversationFilter: AgentConversationFilterKey
@@ -51,6 +70,9 @@ type AgentConversationsStore = {
   selectedConversationId: number | null
   messages: AgentMessage[]
   messagesLoading: boolean
+  messagesLoadingMore: boolean
+  messagesCursor: string
+  messagesHasMore: boolean
   messagesLoadedConversationId: number | null
   sending: boolean
   uploadingImage: boolean
@@ -60,6 +82,8 @@ type AgentConversationsStore = {
   loadConversations: () => Promise<void>
   selectConversation: (conversationId: number) => Promise<void>
   loadMessages: (conversationId: number, options?: LoadMessagesOptions) => Promise<void>
+  loadOlderMessages: () => Promise<void>
+  syncLatestMessages: (conversationId: number) => Promise<void>
   markSelectedConversationRead: () => Promise<void>
   sendMessage: (html: string) => Promise<AgentMessage | null>
   uploadImage: (file: File) => Promise<AgentAsset | null>
@@ -77,6 +101,9 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
   selectedConversationId: null,
   messages: [],
   messagesLoading: false,
+  messagesLoadingMore: false,
+  messagesCursor: "",
+  messagesHasMore: false,
   messagesLoadedConversationId: null,
   sending: false,
   uploadingImage: false,
@@ -125,6 +152,9 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         set({
           messages: [],
           messagesLoading: false,
+          messagesLoadingMore: false,
+          messagesCursor: "",
+          messagesHasMore: false,
           messagesLoadedConversationId: null,
         })
         return
@@ -153,6 +183,9 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       selectedConversationId: conversationId,
       messages: [],
       messagesLoading: true,
+      messagesLoadingMore: false,
+      messagesCursor: "",
+      messagesHasMore: false,
       messagesLoadedConversationId: null,
     })
 
@@ -171,14 +204,20 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
     if (shouldShowLoading) {
       set({
         messagesLoading: true,
-        ...(options.reset ? { messages: [] } : {}),
+        ...(options.reset
+          ? {
+              messages: [],
+              messagesCursor: "",
+              messagesHasMore: false,
+            }
+          : {}),
       })
     }
 
     try {
       const data = await fetchAgentMessages({
         conversationId,
-        limit: 100,
+        limit: 50,
       })
 
       if (requestSeq !== messagesRequestSeq) {
@@ -193,12 +232,78 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         messages: ensureArray(data.results),
         messagesLoading: false,
         messagesLoadedConversationId: conversationId,
+        messagesCursor: data.cursor ?? "",
+        messagesHasMore: Boolean(data.hasMore),
       })
     } catch (error) {
       if (requestSeq === messagesRequestSeq) {
         set({ messagesLoading: false })
       }
       throw error
+    }
+  },
+
+  loadOlderMessages: async () => {
+    const conversationId = get().selectedConversationId
+    if (!conversationId || get().messagesLoadingMore || !get().messagesHasMore) {
+      return
+    }
+    const cursorId = parseCursorId(get().messagesCursor)
+    if (cursorId <= 0) {
+      return
+    }
+
+    set({ messagesLoadingMore: true })
+    try {
+      const data = await fetchAgentMessages({
+        conversationId,
+        cursor: cursorId,
+        limit: 50,
+      })
+      if (get().selectedConversationId !== conversationId) {
+        return
+      }
+      const incoming = ensureArray(data.results)
+      set((state) => ({
+        messages: mergeMessagesByIdAsc(incoming, state.messages),
+        messagesCursor: data.cursor ?? state.messagesCursor,
+        messagesHasMore: Boolean(data.hasMore),
+        messagesLoadingMore: false,
+      }))
+    } catch (error) {
+      set({ messagesLoadingMore: false })
+      throw error
+    }
+  },
+
+  syncLatestMessages: async (conversationId) => {
+    if (conversationId <= 0) {
+      return
+    }
+    try {
+      const data = await fetchAgentMessages({
+        conversationId,
+        limit: 50,
+      })
+      if (get().selectedConversationId !== conversationId) {
+        return
+      }
+      const batch = ensureArray(data.results)
+      if (batch.length === 0) {
+        return
+      }
+      const firstId = batch[0]!.id
+      set((state) => {
+        const preserved = state.messages.filter((m) => m.id < firstId)
+        const merged = mergeMessagesByIdAsc(preserved, batch)
+        return {
+          messages: merged,
+          messagesCursor: data.cursor ?? state.messagesCursor,
+          messagesHasMore: Boolean(data.hasMore),
+        }
+      })
+    } catch {
+      // 实时同步失败不抛给 WS 回调
     }
   },
 
@@ -273,7 +378,9 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
 
       if (get().selectedConversationId === selectedConversationId) {
         set((current) => ({
-          messages: [...current.messages, message],
+          messages: current.messages.some((m) => m.id === message.id)
+            ? current.messages.map((m) => (m.id === message.id ? message : m))
+            : [...current.messages, message],
           conversations: current.conversations.map((item) =>
             item.id === selectedConversationId
               ? {

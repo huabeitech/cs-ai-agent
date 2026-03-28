@@ -7,6 +7,7 @@ import (
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/repositories"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,6 +37,35 @@ func (s *messageService) Take(where ...interface{}) *models.Message {
 
 func (s *messageService) Find(cnd *sqls.Cnd) []models.Message {
 	return repositories.MessageRepository.Find(sqls.DB(), cnd)
+}
+
+// FindByConversationIDCursor 按 id 游标分页：cursor=0 取最新 limit 条；cursor>0 取 id<cursor 的更旧消息。
+// 返回的 list 已按 id 升序（时间正序）。nextCursor 为下一页请求传入的游标（本批最小 id）；hasMore 表示可能还有更旧消息。
+func (s *messageService) FindByConversationIDCursor(conversationID int64, cursor int64, limit int, senderType, messageType string) (list []models.Message, nextCursor int64, hasMore bool) {
+	if limit > 100 {
+		limit = 100
+	} else if limit <= 0 {
+		limit = 20
+	}
+	cnd := sqls.NewCnd().Eq("conversation_id", conversationID).Limit(limit).Desc("id")
+	if cursor > 0 {
+		cnd.Lt("id", cursor)
+	}
+	if strs.IsNotBlank(senderType) {
+		cnd.Eq("sender_type", senderType)
+	}
+	if strs.IsNotBlank(messageType) {
+		cnd.Eq("message_type", messageType)
+	}
+	list = s.Find(cnd)
+	nextCursor = cursor
+	hasMore = false
+	if len(list) > 0 {
+		nextCursor = list[len(list)-1].ID
+		hasMore = len(list) == limit
+	}
+	slices.Reverse(list)
+	return list, nextCursor, hasMore
 }
 
 func (s *messageService) FindOne(cnd *sqls.Cnd) *models.Message {

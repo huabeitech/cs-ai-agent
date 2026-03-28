@@ -53,6 +53,15 @@ export function ChatPanel() {
   );
   const loadConversations = useAgentConversationsStore((state) => state.loadConversations);
   const loadMessages = useAgentConversationsStore((state) => state.loadMessages);
+  const loadOlderMessages = useAgentConversationsStore(
+    (state) => state.loadOlderMessages,
+  );
+  const messagesHasMore = useAgentConversationsStore(
+    (state) => state.messagesHasMore,
+  );
+  const messagesLoadingMore = useAgentConversationsStore(
+    (state) => state.messagesLoadingMore,
+  );
   const conversationFilter = useAgentConversationsStore((state) => state.conversationFilter);
   const setConversationFilter = useAgentConversationsStore(
     (state) => state.setConversationFilter,
@@ -60,6 +69,9 @@ export function ChatPanel() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const resizeScrollRafRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  const prependScrollAnchorRef = useRef<{ height: number; top: number } | null>(
+    null,
+  );
   const [claiming, setClaiming] = useState(false);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [transferring, setTransferring] = useState(false);
@@ -164,7 +176,27 @@ export function ChatPanel() {
       scrollToBottom();
     });
     return () => cancelAnimationFrame(followUpId);
-  }, [conversation?.id, messages.length, scrollToBottom]);
+  }, [conversation?.id, scrollToBottom]);
+
+  useLayoutEffect(() => {
+    const viewport = getViewport();
+    if (!viewport) {
+      return;
+    }
+    const anchor = prependScrollAnchorRef.current;
+    if (anchor) {
+      prependScrollAnchorRef.current = null;
+      const nextHeight = viewport.scrollHeight;
+      viewport.scrollTop = nextHeight - anchor.height + anchor.top;
+      return;
+    }
+    if (shouldStickToBottomRef.current) {
+      scrollToBottom();
+      requestAnimationFrame(() => {
+        scrollToBottom();
+      });
+    }
+  }, [messages, getViewport, scrollToBottom]);
 
   useEffect(() => {
     const content = messagesContainerRef.current;
@@ -216,6 +248,23 @@ export function ChatPanel() {
       window.removeEventListener("focus", handleFocus);
     };
   }, [maybeMarkConversationRead]);
+
+  const handleLoadOlder = async () => {
+    const viewport = getViewport();
+    if (!viewport || messagesLoadingMore || !messagesHasMore) {
+      return;
+    }
+    prependScrollAnchorRef.current = {
+      height: viewport.scrollHeight,
+      top: viewport.scrollTop,
+    };
+    try {
+      await loadOlderMessages();
+    } catch (error) {
+      prependScrollAnchorRef.current = null;
+      toast.error(error instanceof Error ? error.message : "加载历史消息失败");
+    }
+  };
 
   const handleSend = async (html: string) => {
     if (!conversation || sending || isClosedConversation) return;
@@ -300,6 +349,19 @@ export function ChatPanel() {
   const messagesScroll = (
     <ScrollArea className="h-full min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:[scrollbar-gutter:stable]">
       <div ref={messagesContainerRef} className="p-4">
+        {!loading && messages.length > 0 && messagesHasMore ? (
+          <div className="mb-4 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={messagesLoadingMore}
+              onClick={() => void handleLoadOlder()}
+            >
+              {messagesLoadingMore ? "加载中…" : "加载更早的消息"}
+            </Button>
+          </div>
+        ) : null}
         {loading ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
             加载中...

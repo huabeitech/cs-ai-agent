@@ -12,6 +12,12 @@ export type PageResult<T> = {
   page: Paging
 }
 
+export type CursorResult<T> = {
+  results: T[]
+  cursor: string
+  hasMore: boolean
+}
+
 export type AgentConversationTag = {
   id: number
   name: string
@@ -132,7 +138,7 @@ export function fetchAgentConversationDetail(id: number) {
 export function fetchAgentMessages(
   query?: Record<string, string | number | undefined>
 ) {
-  return request<PageResult<AgentMessage>>(
+  return request<CursorResult<AgentMessage>>(
     `/api/console/conversation/message_list${toQueryString(query)}`
   )
 }

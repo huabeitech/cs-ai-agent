@@ -37,6 +37,9 @@ export function ChatShell() {
     themeColor,
     conversation,
     messages,
+    messagesHasMore,
+    messagesLoadingMore,
+    loadOlderMessages,
     status,
     error,
     isOpen,
@@ -55,6 +58,9 @@ export function ChatShell() {
       themeColor: state.themeColor,
       conversation: state.conversation,
       messages: state.messages,
+      messagesHasMore: state.messagesHasMore,
+      messagesLoadingMore: state.messagesLoadingMore,
+      loadOlderMessages: state.loadOlderMessages,
       status: state.status,
       error: state.error,
       isOpen: state.isOpen,
@@ -106,10 +112,6 @@ export function ChatShell() {
       }
     };
   }, [isOpen, bootstrap, disconnectSocket]);
-
-  useEffect(() => {
-    messageListRef.current?.scrollToBottom();
-  }, [messages]);
 
   useEffect(() => {
     maybeMarkConversationRead();
@@ -254,6 +256,9 @@ export function ChatShell() {
             ref={messageListRef}
             messages={messages}
             onNearBottomVisible={maybeMarkConversationRead}
+            hasMoreOlder={messagesHasMore}
+            loadingOlder={messagesLoadingMore}
+            onLoadOlder={loadOlderMessages}
           />
           <MessageEditor
             disabled={!conversation}

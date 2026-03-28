@@ -1,14 +1,54 @@
 import { requestJson } from "@/lib/services/http";
 import type {
+  CursorResult,
   JsonResult,
-  PageResult,
   WidgetAsset,
   WidgetMessage,
 } from "@/lib/services/types";
 
+const DEFAULT_PAGE_LIMIT = 50;
+
+function buildListQuery(
+  conversationId: number,
+  options?: { cursor?: number; limit?: number },
+) {
+  const params = new URLSearchParams({
+    conversationId: String(conversationId),
+  });
+  const cursor = options?.cursor;
+  if (cursor !== undefined && cursor > 0) {
+    params.set("cursor", String(cursor));
+  }
+  const limit = options?.limit ?? DEFAULT_PAGE_LIMIT;
+  if (limit > 0) {
+    params.set("limit", String(limit));
+  }
+  return params.toString();
+}
+
+export async function fetchMessagesPage(
+  conversationId: number,
+  options?: { cursor?: number; limit?: number },
+): Promise<CursorResult<WidgetMessage>> {
+  const qs = buildListQuery(conversationId, options);
+  const result = await requestJson<
+    JsonResult<CursorResult<WidgetMessage>>
+  >(`/api/open/im/message/list?${qs}`);
+  if (result.success === false) {
+    throw new Error(result.message || "加载消息失败");
+  }
+  const data = result.data;
+  return {
+    results: data?.results ?? [],
+    cursor: data?.cursor ?? "",
+    hasMore: Boolean(data?.hasMore),
+  };
+}
+
+/** @deprecated 使用 fetchMessagesPage；保留别名供渐进迁移 */
 export async function fetchMessages(conversationId: number) {
-  const result = await requestJson<JsonResult<PageResult<WidgetMessage>>>(`/api/open/im/message/list?conversationId=${conversationId}`);
-  return result.data?.results ?? [];
+  const page = await fetchMessagesPage(conversationId);
+  return page.results;
 }
 
 export async function sendMessage(conversationId: number, content: string) {

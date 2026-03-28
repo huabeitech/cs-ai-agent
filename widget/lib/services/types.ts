@@ -7,8 +7,15 @@ export type PageResult<T> = {
   };
 };
 
+export type CursorResult<T> = {
+  results: T[];
+  cursor: string;
+  hasMore: boolean;
+};
+
 export type JsonResult<T> = {
   success?: boolean;
+  errorCode?: number;
   code?: number;
   message?: string;
   data?: T;

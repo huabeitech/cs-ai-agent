@@ -12,6 +12,12 @@ export type PageResult<T> = {
   page: Paging
 }
 
+export type CursorResult<T> = {
+  results: T[]
+  cursor: string
+  hasMore: boolean
+}
+
 export type AdminUser = {
   id: number
   username: string
@@ -604,7 +610,7 @@ export function fetchConversationDetail(id: number) {
 export function fetchConversationMessages(
   query?: Record<string, string | number | undefined>
 ) {
-  return request<PageResult<AdminMessage>>(
+  return request<CursorResult<AdminMessage>>(
     `/api/console/conversation/message_list${toQueryString(query)}`
   )
 }

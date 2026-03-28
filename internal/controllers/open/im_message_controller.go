@@ -12,6 +12,7 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
+	"github.com/spf13/cast"
 )
 
 type ImMessageController struct {
@@ -40,13 +41,17 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 		return web.JsonErrorMsg("无权访问该会话")
 	}
 
-	cnd := params.NewPagedSqlCnd(c.Ctx,
-		params.QueryFilter{ParamName: "conversationId"},
-		params.QueryFilter{ParamName: "senderType"},
-		params.QueryFilter{ParamName: "messageType"},
-	).Desc("seq_no")
-	list, paging := services.MessageService.FindPageByCndForImListAscending(cnd)
-	return web.JsonData(&web.PageResult{Results: builders.BuildMessageResponses(list), Page: paging})
+	var (
+		senderType, _  = params.Get(c.Ctx, "senderType")
+		messageType, _ = params.Get(c.Ctx, "messageType")
+		cursor, _      = params.GetInt64(c.Ctx, "cursor")
+		limit, _       = params.GetInt(c.Ctx, "limit")
+	)
+	list, nextCursor, hasMore := services.MessageService.FindByConversationIDCursor(
+		conversationID, cursor, limit, senderType, messageType,
+	)
+	results := builders.BuildMessageResponses(list)
+	return web.JsonCursorData(results, cast.ToString(nextCursor), hasMore)
 }
 
 func (c *ImMessageController) PostSend() *web.JsonResult {

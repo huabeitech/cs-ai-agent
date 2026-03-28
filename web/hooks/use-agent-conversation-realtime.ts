@@ -14,7 +14,9 @@ const RECONNECT_MAX_DELAY = 30000
 export function useAgentConversationRealtime() {
   const selectedConversationId = useAgentConversationsStore((state) => state.selectedConversationId)
   const loadConversations = useAgentConversationsStore((state) => state.loadConversations)
-  const loadMessages = useAgentConversationsStore((state) => state.loadMessages)
+  const syncLatestMessages = useAgentConversationsStore(
+    (state) => state.syncLatestMessages,
+  )
   const websocketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const pingTimerRef = useRef<number | null>(null)
@@ -171,9 +173,7 @@ export function useAgentConversationRealtime() {
           }
 
           if (conversationId > 0 && selectedConversationIdRef.current === conversationId) {
-            void loadMessages(conversationId).catch((error) => {
-              toast.error(error instanceof Error ? error.message : "加载消息失败")
-            })
+            void syncLatestMessages(conversationId)
           }
         } catch {
           // ignore invalid ws payload
@@ -210,7 +210,7 @@ export function useAgentConversationRealtime() {
       }
       subscribedConversationIdRef.current = null
     }
-  }, [loadConversations, loadMessages])
+  }, [loadConversations, syncLatestMessages])
 
   useEffect(() => {
     const socket = websocketRef.current

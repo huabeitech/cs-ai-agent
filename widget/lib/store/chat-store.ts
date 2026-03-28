@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 import { createOrMatchConversation } from "@/lib/services/conversation";
 import {
-  fetchMessages,
+  fetchMessagesPage,
   markMessageRead,
   sendMessage,
   uploadImage,
@@ -26,12 +26,34 @@ type ChatStatus = "connecting" | "connected" | "disconnected";
 const RECONNECT_BASE_DELAY = 2000;
 const RECONNECT_MAX_DELAY = 30000;
 
+function mergeMessagesByIdAsc(
+  a: WidgetMessage[],
+  b: WidgetMessage[],
+): WidgetMessage[] {
+  const byId = new Map<number, WidgetMessage>();
+  for (const m of a) {
+    byId.set(m.id, m);
+  }
+  for (const m of b) {
+    byId.set(m.id, m);
+  }
+  return Array.from(byId.values()).sort((x, y) => x.id - y.id);
+}
+
+function parseCursorId(cursor: string): number {
+  const n = Number.parseInt(cursor, 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 export interface ChatStore {
   title: string;
   welcomeText: string;
   themeColor: string;
   conversation: WidgetConversation | null;
   messages: WidgetMessage[];
+  messagesCursor: string;
+  messagesHasMore: boolean;
+  messagesLoadingMore: boolean;
   status: ChatStatus;
   error: string;
   isOpen: boolean;
@@ -48,6 +70,8 @@ export interface ChatStore {
   retry: () => void;
   disconnectSocket: () => void;
   refreshMessages: () => Promise<void>;
+  syncLatestMessages: () => Promise<void>;
+  loadOlderMessages: () => Promise<void>;
   markConversationRead: () => Promise<void>;
 }
 
@@ -124,7 +148,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         event.type?.startsWith("conversation.");
 
       if (needsRefresh && payload?.conversationId === conversationId) {
-        void get().refreshMessages().then(() => {
+        void get().syncLatestMessages().then(() => {
           if (event.type === "message.created") {
             const state = get();
             const lastMessage = state.messages.at(-1);
@@ -189,6 +213,9 @@ export const useChatStore = create<ChatStore>((set, get) => {
     themeColor: "#2563eb",
     conversation: null,
     messages: [],
+    messagesCursor: "",
+    messagesHasMore: false,
+    messagesLoadingMore: false,
     status: "connecting",
     error: "",
     isOpen:
@@ -216,14 +243,76 @@ export const useChatStore = create<ChatStore>((set, get) => {
       if (!conversationId) return;
 
       try {
-        const history = await fetchMessages(conversationId);
+        const page = await fetchMessagesPage(conversationId);
         const currentConversation = get().conversation;
         set({
-          messages: history,
+          messages: page.results,
+          messagesCursor: page.cursor,
+          messagesHasMore: page.hasMore,
           conversation: currentConversation,
         });
       } catch (e) {
         console.error("Failed to refresh messages", e);
+      }
+    },
+
+    syncLatestMessages: async () => {
+      const conversationId = get().conversation?.id;
+      if (!conversationId) return;
+
+      try {
+        const page = await fetchMessagesPage(conversationId);
+        const batch = page.results;
+        if (batch.length === 0) {
+          return;
+        }
+        const firstId = batch[0]!.id;
+        const currentConversation = get().conversation;
+        set((state) => {
+          const preserved = state.messages.filter((m) => m.id < firstId);
+          const merged = mergeMessagesByIdAsc(preserved, batch);
+          return {
+            messages: merged,
+            messagesCursor: page.cursor,
+            messagesHasMore: page.hasMore,
+            conversation: currentConversation,
+          };
+        });
+      } catch (e) {
+        console.error("Failed to sync messages", e);
+      }
+    },
+
+    loadOlderMessages: async () => {
+      const conversationId = get().conversation?.id;
+      if (
+        !conversationId ||
+        get().messagesLoadingMore ||
+        !get().messagesHasMore
+      ) {
+        return;
+      }
+      const cursorId = parseCursorId(get().messagesCursor);
+      if (cursorId <= 0) {
+        return;
+      }
+
+      set({ messagesLoadingMore: true });
+      try {
+        const page = await fetchMessagesPage(conversationId, {
+          cursor: cursorId,
+        });
+        const currentConversation = get().conversation;
+        set((state) => ({
+          messages: mergeMessagesByIdAsc(page.results, state.messages),
+          messagesCursor: page.cursor,
+          messagesHasMore: page.hasMore,
+          messagesLoadingMore: false,
+          conversation: currentConversation,
+        }));
+      } catch (e) {
+        set({ messagesLoadingMore: false });
+        console.error("Failed to load older messages", e);
       }
     },
 
@@ -326,7 +415,11 @@ export const useChatStore = create<ChatStore>((set, get) => {
       try {
         const nextMessage = await sendMessage(conversationId, content);
         set((state) => ({
-          messages: [...state.messages, nextMessage],
+          messages: state.messages.some((m) => m.id === nextMessage.id)
+            ? state.messages.map((m) =>
+                m.id === nextMessage.id ? nextMessage : m,
+              )
+            : [...state.messages, nextMessage],
           conversation: state.conversation
             ? {
                 ...state.conversation,
