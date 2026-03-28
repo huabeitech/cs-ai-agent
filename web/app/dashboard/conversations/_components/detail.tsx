@@ -331,9 +331,6 @@ export function ConversationDetailDialog({
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
                 <p className="text-sm font-medium">聊天记录</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  展示最近 20 条消息
-                </p>
               </div>
               <div className="text-xs text-muted-foreground">
                 消息数：{messages.length}
