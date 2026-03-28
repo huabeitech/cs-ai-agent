@@ -63,7 +63,7 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 
 	if strs.IsNotBlank(keyword) {
 		keyword = strings.TrimSpace(keyword)
-		cnd.Where("subject LIKE ? OR external_user_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+		cnd.Where("subject LIKE ? OR external_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 
 	switch filter {
@@ -90,7 +90,7 @@ func (s *conversationService) Updates(id int64, columns map[string]interface{}) 
 func (s *conversationService) getLatestNotFinished(externalSource enums.ExternalSource, user *dto.AuthPrincipal) *models.Conversation {
 	cnd := sqls.NewCnd()
 	if user.IsVisitor {
-		cnd.Eq("external_user_id", user.VisitorID)
+		cnd.Eq("external_id", user.VisitorID)
 	} else {
 		cnd.Eq("source_user_id", user.UserID)
 	}

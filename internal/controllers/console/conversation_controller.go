@@ -36,7 +36,7 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 	).Desc("last_message_at").Desc("id")
 
 	if keyword, _ := params.Get(c.Ctx, "keyword"); strs.IsNotBlank(keyword) {
-		cnd.Where("subject LIKE ? OR external_user_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+		cnd.Where("subject LIKE ? OR external_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 	if tagID, _ := params.GetInt64(c.Ctx, "tagId"); tagID > 0 {
 		cnd.Where("id IN (SELECT conversation_id FROM conversation_tag_rels WHERE tag_id = ?)", tagID)

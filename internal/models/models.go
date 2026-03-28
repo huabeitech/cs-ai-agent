@@ -142,7 +142,7 @@ type CustomerIdentity struct {
 	ID             int64                `gorm:"primaryKey;autoIncrement"`
 	CustomerID     int64                `gorm:"type:bigint;not null;uniqueIndex:uk_customer_external"`                    // 为所属客户ID。
 	ExternalSource enums.ExternalSource `gorm:"type:varchar(30);uniqueIndex:uk_customer_external"`                        // 为外部身份来源
-	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalUserID 对齐。
+	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalID 对齐。
 	RawProfile     string               `gorm:"type:text"`                                                                // 为第三方原始资料JSON。
 	Status         enums.Status         `gorm:"type:int;not null;default:0;index"`                                        // 为映射状态。
 	AuditFields
@@ -280,7 +280,7 @@ type Conversation struct {
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
 	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ExternalSource 为外部身份来源。
-	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalUserID 为外部访客ID。
+	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalID 为外部访客ID。
 	SourceUserID        int64                           `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为发起会话的站内用户ID。 // TODO 不应该有站内用户
 	Subject             string                          `gorm:"type:varchar(255);not null;default:''"`       // Subject 为会话标题或摘要。
 	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`           // Status 为会话状态，如待接入、处理中、已关闭。
@@ -508,33 +508,33 @@ type TicketCategory struct {
 
 // Ticket 工单。
 type Ticket struct {
-	ID                 int64      `gorm:"primaryKey;autoIncrement"`                    // ID 为工单主键。
-	TicketNo           string     `gorm:"type:varchar(64);not null;uniqueIndex"`       // TicketNo 为工单编号，系统生成。
-	Title              string     `gorm:"type:varchar(255);not null;default:''"`       // Title 为工单标题。
-	Content            string     `gorm:"type:text"`                                   // Content 为工单内容。
-	ChannelType        string     `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为来源渠道：conversation客服会话, self_service自助, admin后台创建, api接口。
-	ChannelID          string     `gorm:"type:varchar(128);not null;default:'';index"` // ChannelID 为来源渠道ID，如会话ID。
-	CategoryID         int64      `gorm:"type:bigint;not null;default:0;index"`        // CategoryID 为工单分类ID。
-	Priority           int        `gorm:"type:int;not null;default:0;index"`           // Priority 为优先级：0普通 1低 2中 3高 4紧急。
-	Status             int        `gorm:"type:int;not null;default:1;index"`           // Status 为工单状态：1待处理 2处理中 3待确认 4已解决 5已关闭 6已取消。
-	SourceUserID       int64      `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为提交人用户ID。
-	ExternalUserID     string     `gorm:"type:varchar(128);not null;default:'';index"` // ExternalUserID 为外部用户ID（访客）。
-	ExternalUserName   string     `gorm:"type:varchar(100);not null;default:''"`       // ExternalUserName 为外部用户名称。
-	ExternalUserEmail  string     `gorm:"type:varchar(100);not null;default:''"`       // ExternalUserEmail 为外部用户邮箱。
-	ExternalUserMobile string     `gorm:"type:varchar(32);not null;default:''"`        // ExternalUserMobile 为外部用户手机。
-	CurrentAssigneeID  int64      `gorm:"type:bigint;not null;default:0;index"`        // CurrentAssigneeID 为当前处理人ID。
-	CurrentTeamID      int64      `gorm:"type:bigint;not null;default:0;index"`        // CurrentTeamID 为当前处理组ID。
-	ConversationID     int64      `gorm:"type:bigint;not null;default:0;index"`        // ConversationID 为关联的会话ID。
-	ReplyCount         int        `gorm:"type:int;not null;default:0"`                 // ReplyCount 为回复次数。
-	LastReplyAt        *time.Time `gorm:"type:datetime;index"`                         // LastReplyAt 为最后回复时间。
-	LastReplyUserID    int64      `gorm:"type:bigint;not null;default:0"`              // LastReplyUserID 为最后回复人ID。
-	Satisfied          *int       `gorm:"type:int;index"`                              // Satisfied 为满意度评价：1满意 2不满意 3未评价。
-	SatisfiedRemark    string     `gorm:"type:varchar(255);not null;default:''"`       // SatisfiedRemark 为满意度备注。
-	EvaluatedAt        *time.Time `gorm:"type:datetime"`                               // EvaluatedAt 为评价时间。
-	ResolvedAt         *time.Time `gorm:"type:datetime;index"`                         // ResolvedAt 为解决时间。
-	ClosedAt           *time.Time `gorm:"type:datetime;index"`                         // ClosedAt 为关闭时间。
-	Tags               string     `gorm:"type:varchar(500);not null;default:''"`       // Tags 为标签，多个逗号分隔。
-	Remark             string     `gorm:"type:text"`                                   // Remark 为内部备注。
+	ID                 int64                `gorm:"primaryKey;autoIncrement"`                    // ID 为工单主键。
+	TicketNo           string               `gorm:"type:varchar(64);not null;uniqueIndex"`       // TicketNo 为工单编号，系统生成。
+	Title              string               `gorm:"type:varchar(255);not null;default:''"`       // Title 为工单标题。
+	Content            string               `gorm:"type:text"`                                   // Content 为工单内容。
+	CategoryID         int64                `gorm:"type:bigint;not null;default:0;index"`        // CategoryID 为工单分类ID。
+	Priority           int                  `gorm:"type:int;not null;default:0;index"`           // Priority 为优先级：0普通 1低 2中 3高 4紧急。
+	Status             int                  `gorm:"type:int;not null;default:1;index"`           // Status 为工单状态：1待处理 2处理中 3待确认 4已解决 5已关闭 6已取消。
+	ExternalSource     enums.ExternalSource `gorm:"type:varchar(50);not null;default:'';index"`  // ExternalSource 为来源渠道。
+	ChannelID          string               `gorm:"type:varchar(128);not null;default:'';index"` // ChannelID 为来源渠道ID，如会话ID。
+	SourceUserID       int64                `gorm:"type:bigint;not null;default:0;index"`        // SourceUserID 为提交人用户ID。
+	ExternalID         string               `gorm:"type:varchar(128);not null;default:'';index"` // ExternalID 为外部用户ID（访客）。
+	ExternalUserName   string               `gorm:"type:varchar(100);not null;default:''"`       // ExternalUserName 为外部用户名称。
+	ExternalUserEmail  string               `gorm:"type:varchar(100);not null;default:''"`       // ExternalUserEmail 为外部用户邮箱。
+	ExternalUserMobile string               `gorm:"type:varchar(32);not null;default:''"`        // ExternalUserMobile 为外部用户手机。
+	CurrentAssigneeID  int64                `gorm:"type:bigint;not null;default:0;index"`        // CurrentAssigneeID 为当前处理人ID。
+	CurrentTeamID      int64                `gorm:"type:bigint;not null;default:0;index"`        // CurrentTeamID 为当前处理组ID。
+	ConversationID     int64                `gorm:"type:bigint;not null;default:0;index"`        // ConversationID 为关联的会话ID。
+	ReplyCount         int                  `gorm:"type:int;not null;default:0"`                 // ReplyCount 为回复次数。
+	LastReplyAt        *time.Time           `gorm:"type:datetime;index"`                         // LastReplyAt 为最后回复时间。
+	LastReplyUserID    int64                `gorm:"type:bigint;not null;default:0"`              // LastReplyUserID 为最后回复人ID。
+	Satisfied          *int                 `gorm:"type:int;index"`                              // Satisfied 为满意度评价：1满意 2不满意 3未评价。
+	SatisfiedRemark    string               `gorm:"type:varchar(255);not null;default:''"`       // SatisfiedRemark 为满意度备注。
+	EvaluatedAt        *time.Time           `gorm:"type:datetime"`                               // EvaluatedAt 为评价时间。
+	ResolvedAt         *time.Time           `gorm:"type:datetime;index"`                         // ResolvedAt 为解决时间。
+	ClosedAt           *time.Time           `gorm:"type:datetime;index"`                         // ClosedAt 为关闭时间。
+	Tags               string               `gorm:"type:varchar(500);not null;default:''"`       // Tags 为标签，多个逗号分隔。
+	Remark             string               `gorm:"type:text"`                                   // Remark 为内部备注。
 	AuditFields
 }
 

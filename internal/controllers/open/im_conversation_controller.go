@@ -30,7 +30,7 @@ func (c *ImConversationController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "serviceMode"},
 	).Desc("last_message_at").Desc("id")
 	if principal.IsVisitor {
-		cnd = cnd.Eq("external_user_id", principal.VisitorID)
+		cnd = cnd.Eq("external_id", principal.VisitorID)
 	} else {
 		cnd = cnd.Eq("source_user_id", principal.UserID)
 	}

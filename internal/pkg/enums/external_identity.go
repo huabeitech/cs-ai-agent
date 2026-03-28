@@ -2,7 +2,7 @@ package enums
 
 // ExternalSource 外部身份来源。
 //
-// 与 ExternalUserID 组合即可唯一标识某渠道下的访客身份。
+// 与 ExternalID 组合即可唯一标识某渠道下的访客身份。
 type ExternalSource string
 
 const (
