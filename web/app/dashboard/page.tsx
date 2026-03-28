@@ -117,13 +117,6 @@ export default function DashboardPage() {
             distribution={data.conversationStats.statusDistribution}
           />
 
-          <TrendPanel
-            title="工单趋势"
-            description="跟踪工单创建与关闭变化，识别工单积压和处理效率"
-            trend={data.ticketStats.trend}
-            distribution={data.ticketStats.statusDistribution}
-          />
-
           <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <TeamLoadPanel agentStats={data.agentStats} />
 

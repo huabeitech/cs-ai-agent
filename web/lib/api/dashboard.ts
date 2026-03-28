@@ -50,15 +50,10 @@ export type DashboardOverview = {
     todayNewConversations: number
     processingConversations: number
     pendingDispatchConversations: number
-    todayNewTickets: number
     onlineAgents: number
     aiServiceRate: number
   }
   conversationStats: {
-    statusDistribution: DashboardStatusDistributionItem[]
-    trend: DashboardTrendItem[]
-  }
-  ticketStats: {
     statusDistribution: DashboardStatusDistributionItem[]
     trend: DashboardTrendItem[]
   }

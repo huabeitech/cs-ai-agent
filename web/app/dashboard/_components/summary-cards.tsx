@@ -6,7 +6,6 @@ import {
   CircleDashedIcon,
   HeadsetIcon,
   SparklesIcon,
-  TicketIcon,
   WavesIcon,
 } from "lucide-react"
 
@@ -53,13 +52,6 @@ const cards: SummaryCardItem[] = [
     description: "仍在待接入池中等待分配",
     link: "/dashboard/conversations",
     icon: CircleDashedIcon,
-  },
-  {
-    key: "todayNewTickets",
-    title: "今日新增工单",
-    description: "今天创建的工单总数",
-    link: "/dashboard/tickets",
-    icon: TicketIcon,
   },
   {
     key: "onlineAgents",

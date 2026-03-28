@@ -358,7 +358,6 @@ func flattenTrendMap(series map[string]*response.DashboardTrendItem) []response.
 func buildDashboardQuickLinks() []response.DashboardQuickLinkResponse {
 	return []response.DashboardQuickLinkResponse{
 		{Title: "会话管理", Description: "查看待接入与处理中会话", Link: "/dashboard/conversations"},
-		{Title: "工单列表", Description: "处理待办工单与状态流转", Link: "/dashboard/tickets"},
 		{Title: "客服档案", Description: "查看客服状态与分组配置", Link: "/dashboard/agents"},
 		{Title: "知识库", Description: "维护文档与查看检索日志", Link: "/dashboard/knowledge"},
 		{Title: "AI Agent", Description: "配置 AI 接待策略与知识绑定", Link: "/dashboard/ai-agents"},

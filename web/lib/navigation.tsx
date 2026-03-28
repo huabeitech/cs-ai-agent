@@ -3,7 +3,6 @@ import {
   BrainCircuitIcon,
   Building2Icon,
   CalendarClockIcon,
-  ClipboardListIcon,
   FileTextIcon,
   GlobeIcon,
   KeyRoundIcon,
@@ -14,7 +13,6 @@ import {
   Settings2Icon,
   ShieldCheckIcon,
   TagsIcon,
-  TicketIcon,
   UserCogIcon,
   UsersIcon
 } from "lucide-react";
@@ -42,16 +40,6 @@ export const dashboardNavSections = [
         title: "会话标签",
         url: "/dashboard/tags",
         icon: <TagsIcon />,
-      },
-      {
-        title: "工单列表",
-        url: "/dashboard/tickets",
-        icon: <TicketIcon />,
-      },
-      {
-        title: "工单分类",
-        url: "/dashboard/ticket-categories",
-        icon: <ClipboardListIcon />,
       },
       {
         title: "公司管理",
