@@ -4,7 +4,6 @@ import type { ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-import { ImageLightboxProvider } from "@/components/image-lightbox"
 import { WorkspaceHeader } from "@/components/workspace-header"
 import { WorkspaceSidebar } from "@/components/workspace-sidebar"
 import { useAuth } from "@/components/auth-provider"
@@ -43,16 +42,12 @@ export default function AgentWorkbenchLayout({
   }
 
   return (
-    <ImageLightboxProvider>
-      <div className="flex h-svh min-h-0 flex-col">
-        <WorkspaceHeader />
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <WorkspaceSidebar />
-          <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-            {children}
-          </main>
-        </div>
+    <div className="flex h-svh min-h-0 flex-col">
+      <WorkspaceHeader />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <WorkspaceSidebar />
+        <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
       </div>
-    </ImageLightboxProvider>
+    </div>
   )
 }
