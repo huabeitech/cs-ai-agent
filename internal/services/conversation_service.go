@@ -33,6 +33,9 @@ type conversationService struct {
 }
 
 func (s *conversationService) Get(id int64) *models.Conversation {
+	if id <= 0 {
+		return nil
+	}
 	return repositories.ConversationRepository.Get(sqls.DB(), id)
 }
 

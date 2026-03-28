@@ -2,19 +2,21 @@ package console
 
 import (
 	"cs-agent/internal/builders"
-	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
+	"slices"
 	"strings"
 
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/common/strs"
+	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
+	"github.com/spf13/cast"
 )
 
 type ConversationController struct {
@@ -101,25 +103,49 @@ func (c *ConversationController) AnyMessage_list() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	conversationID, _ := params.GetInt64(c.Ctx, "conversationId")
-	if conversationID <= 0 {
-		return web.JsonErrorMsg("conversationId不能为空")
-	}
-	if services.ConversationService.Get(conversationID) == nil {
+	var (
+		conversationID, _ = params.GetInt64(c.Ctx, "conversationId")
+		senderType, _     = params.Get(c.Ctx, "senderType")
+		messageType, _    = params.Get(c.Ctx, "messageType")
+		cursor, _         = params.GetInt64(c.Ctx, "cursor")
+		limit, _          = params.GetInt(c.Ctx, "limit")
+	)
+	if conversation := services.ConversationService.Get(conversationID); conversation == nil {
 		return web.JsonErrorMsg("会话不存在")
 	}
-
-	cnd := params.NewPagedSqlCnd(c.Ctx,
-		params.QueryFilter{ParamName: "conversationId"},
-		params.QueryFilter{ParamName: "senderType"},
-		params.QueryFilter{ParamName: "messageType"},
-	).Desc("seq_no")
-	list, paging := services.MessageService.FindPageByCnd(cnd)
-	results := make([]models.Message, 0, len(list))
-	for i := len(list) - 1; i >= 0; i-- {
-		results = append(results, list[i])
+	if limit > 100 {
+		limit = 100
+	} else if limit <= 0 {
+		limit = 20
 	}
-	return web.JsonData(&web.PageResult{Results: builders.BuildMessageResponses(results), Page: paging})
+
+	cnd := sqls.NewCnd().Eq("conversation_id", conversationID).Limit(limit).Desc("id")
+	if cursor > 0 {
+		cnd.Lt("id", cursor)
+	}
+	if strs.IsNotBlank(senderType) {
+		cnd.Eq("sender_type", senderType)
+	}
+	if strs.IsNotBlank(messageType) {
+		cnd.Eq("message_type", messageType)
+	}
+
+	list := services.MessageService.Find(cnd)
+	var (
+		hasMore    = false
+		nextCursor = cursor
+	)
+	if len(list) > 0 {
+		hasMore = true
+		nextCursor = list[len(list)-1].ID
+	}
+
+	// 最新的排在最下面
+	slices.Reverse(list)
+	// 构建数据
+	results := builders.BuildMessageResponses(list)
+
+	return web.JsonCursorData(results, cast.ToString(nextCursor), hasMore)
 }
 
 func (c *ConversationController) PostAssign() *web.JsonResult {
