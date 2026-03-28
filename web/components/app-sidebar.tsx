@@ -40,7 +40,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
               render={<Link href="/dashboard" />}
             >
               <BotMessageSquareIcon className="size-5!" />
-              <span className="text-base font-semibold">CS Agent</span>
+              <span className="text-base font-semibold">贝壳AGENT</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
