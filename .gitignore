@@ -1,6 +1,7 @@
 .DS_Store
 .worktrees
 .idea
+.pnpm-store
 
 data/
 config/config.yaml

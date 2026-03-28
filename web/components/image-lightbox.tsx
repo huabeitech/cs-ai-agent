@@ -1,15 +1,30 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { ExternalLinkIcon, XIcon } from "lucide-react";
+import {
+  ExternalLinkIcon,
+  RefreshCwIcon,
+  RotateCcwIcon,
+  RotateCwIcon,
+  XIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "lucide-react";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import type { ReactZoomPanPinchContentRef } from "react-zoom-pan-pinch";
+import {
+  TransformComponent,
+  TransformWrapper,
+} from "react-zoom-pan-pinch";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -77,19 +92,29 @@ function canOpenInNewTab(url: string): boolean {
 function LightboxImageBody({
   src,
   alt,
+  pinchRef,
+  rotationDeg,
 }: {
   src: string;
   alt?: string;
+  pinchRef: React.RefObject<ReactZoomPanPinchContentRef | null>;
+  rotationDeg: number;
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const showOpenTab = canOpenInNewTab(src);
 
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      pinchRef.current?.centerView(1, 0);
+    });
+  }, [rotationDeg, pinchRef]);
+
   return (
-    <>
+    <div className="relative h-full min-h-0 w-full min-w-0 flex-1">
       {loading && !error ? (
         <div
-          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
           aria-hidden
         >
           <div className="size-10 animate-pulse rounded-full bg-white/25" />
@@ -110,25 +135,184 @@ function LightboxImageBody({
           ) : null}
         </div>
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element -- 外链与任意尺寸大图预览
-        <img
-          src={src}
-          alt={alt || "预览图片"}
-          className={cn(
-            "mx-auto block max-h-[min(85vh,calc(100dvh-3rem))] w-auto max-w-full object-contain p-4 sm:p-6",
-            loading ? "opacity-0" : "opacity-100",
-          )}
-          onLoad={() => {
-            setLoading(false);
-            setError(false);
-          }}
-          onError={() => {
-            setLoading(false);
-            setError(true);
-          }}
-        />
+        <TransformWrapper
+          ref={pinchRef}
+          initialScale={1}
+          minScale={0.35}
+          maxScale={8}
+          centerOnInit
+          centerZoomedOut
+          limitToBounds
+          wheel={{ step: 0.12 }}
+          pinch={{ step: 5 }}
+          panning={{ velocityDisabled: false }}
+          doubleClick={{ mode: "reset", step: 0.7 }}
+        >
+          <TransformComponent
+            wrapperClass="!h-full !w-full !max-h-full !max-w-full"
+            contentClass="!flex !h-full !min-h-0 !w-full !min-w-0 !items-center !justify-center !p-4 sm:!p-6"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- 外链与任意尺寸大图预览 */}
+            <img
+              src={src}
+              alt={alt || "预览图片"}
+              draggable={false}
+              style={{ transform: `rotate(${rotationDeg}deg)` }}
+              className={cn(
+                "max-h-[min(85vh,calc(100dvh-3rem))] max-w-full origin-center object-contain transition-transform duration-200 ease-out select-none",
+                loading ? "opacity-0" : "opacity-100",
+              )}
+              onLoad={() => {
+                setLoading(false);
+                setError(false);
+                requestAnimationFrame(() => {
+                  pinchRef.current?.centerView(1, 0);
+                });
+              }}
+              onError={() => {
+                setLoading(false);
+                setError(true);
+              }}
+            />
+          </TransformComponent>
+        </TransformWrapper>
       )}
-    </>
+    </div>
+  );
+}
+
+/** 按 src 作为 key 挂载，切换图片时旋转角自动回到 0 */
+function ImageLightboxDialogContent({
+  src,
+  alt,
+}: {
+  src: string;
+  alt?: string;
+}) {
+  const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null);
+  const [rotationDeg, setRotationDeg] = useState(0);
+  const showOpenTab = canOpenInNewTab(src);
+  const titleText = alt?.trim() || "图片预览";
+
+  const rotateLeft = useCallback(() => {
+    setRotationDeg((d) => (d - 90 + 360) % 360);
+  }, []);
+
+  const rotateRight = useCallback(() => {
+    setRotationDeg((d) => (d + 90) % 360);
+  }, []);
+
+  return (
+    <DialogPortal>
+      <DialogOverlay className="z-100 bg-black/85 supports-backdrop-filter:backdrop-blur-xs" />
+      <DialogPrimitive.Popup
+        data-slot="image-lightbox-popup"
+        className={cn(
+          "fixed inset-0 z-100 flex max-h-dvh min-h-0 flex-col outline-none",
+          "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 duration-100",
+        )}
+      >
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-white/10 bg-black/55 px-2 py-2 text-white sm:gap-3 sm:px-4">
+          <DialogTitle className="min-w-0 flex-1 truncate text-left text-sm font-medium leading-snug text-white">
+            {titleText}
+          </DialogTitle>
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              aria-label="放大"
+              onClick={() => pinchRef.current?.zoomIn(0.25)}
+            >
+              <ZoomInIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              aria-label="缩小"
+              onClick={() => pinchRef.current?.zoomOut(0.25)}
+            >
+              <ZoomOutIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              aria-label="向左旋转"
+              onClick={rotateLeft}
+            >
+              <RotateCcwIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              aria-label="向右旋转"
+              onClick={rotateRight}
+            >
+              <RotateCwIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              aria-label="重置缩放、位置与旋转"
+              onClick={() => {
+                setRotationDeg(0);
+                pinchRef.current?.resetTransform(200);
+              }}
+            >
+              <RefreshCwIcon className="size-4" />
+            </Button>
+            {showOpenTab ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-white hover:bg-white/10"
+                aria-label="在新标签页打开"
+                onClick={() => {
+                  window.open(src, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <ExternalLinkIcon className="size-4" />
+              </Button>
+            ) : null}
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-white hover:bg-white/10"
+                  aria-label="关闭"
+                />
+              }
+            >
+              <XIcon className="size-4" />
+              <span className="sr-only">关闭</span>
+            </DialogClose>
+          </div>
+        </div>
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <LightboxImageBody
+            pinchRef={pinchRef}
+            rotationDeg={rotationDeg}
+            src={src}
+            alt={alt}
+          />
+        </div>
+        <p className="sr-only">
+          使用滚轮或双指缩放，按住拖拽可平移图片；工具栏可向左或向右旋转。
+        </p>
+      </DialogPrimitive.Popup>
+    </DialogPortal>
   );
 }
 
@@ -138,63 +322,10 @@ export function ImageLightboxView({
   src,
   alt,
 }: ImageLightboxProps) {
-  const showOpenTab = src ? canOpenInNewTab(src) : false;
-  const titleText = alt?.trim() || "图片预览";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {src ? (
-        <DialogPortal>
-          <DialogOverlay className="z-100 bg-black/85 supports-backdrop-filter:backdrop-blur-xs" />
-          <DialogPrimitive.Popup
-            data-slot="image-lightbox-popup"
-            className={cn(
-              "fixed inset-0 z-100 flex max-h-dvh flex-col outline-none",
-              "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 duration-100",
-            )}
-          >
-            <div className="flex h-12 shrink-0 items-center gap-3 border-b border-white/10 bg-black/55 px-3 py-2 text-white sm:px-4">
-              <DialogTitle className="min-w-0 flex-1 truncate text-left text-sm font-medium leading-snug text-white">
-                {titleText}
-              </DialogTitle>
-              <div className="flex shrink-0 items-center gap-1">
-                {showOpenTab ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-white hover:bg-white/10"
-                    aria-label="在新标签页打开"
-                    onClick={() => {
-                      if (src) {
-                        window.open(src, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                  >
-                    <ExternalLinkIcon className="size-4" />
-                  </Button>
-                ) : null}
-                <DialogClose
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-white hover:bg-white/10"
-                      aria-label="关闭"
-                    />
-                  }
-                >
-                  <XIcon className="size-4" />
-                  <span className="sr-only">关闭</span>
-                </DialogClose>
-              </div>
-            </div>
-            <div className="relative min-h-0 flex-1 overflow-auto">
-              <LightboxImageBody key={src} src={src} alt={alt} />
-            </div>
-          </DialogPrimitive.Popup>
-        </DialogPortal>
+        <ImageLightboxDialogContent key={src} src={src} alt={alt} />
       ) : null}
     </Dialog>
   );
