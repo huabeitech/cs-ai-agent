@@ -386,7 +386,7 @@ func (s *wsService) routeConversationTopics(conversation *models.Conversation) [
 }
 
 func (s *wsService) defaultTopics(session *ClientSession) []string {
-	if session == nil || session.Principal == nil {
+	if session == nil {
 		return nil
 	}
 
@@ -397,6 +397,7 @@ func (s *wsService) defaultTopics(session *ClientSession) []string {
 		}
 		return []string{s.adminTopic(session.Principal.UserID), realtimeTopicAdminAll}
 	default:
+		// 开放 IM：仅 External、无 AuthPrincipal 的访客连接必须仍能订阅 visitor:{externalId}，否则收不到推送。
 		if session.External != nil && strings.TrimSpace(session.External.ExternalID) != "" {
 			return []string{s.visitorTopic(session.External.ExternalID)}
 		}
