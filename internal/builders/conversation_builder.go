@@ -99,24 +99,24 @@ func BuildParticipantResponses(conversationID int64) []response.ConversationPart
 	return ret
 }
 
-func BuildMessageResponses(list []models.Message) []response.MessageResponse {
+func BuildMessages(list []models.Message) []response.MessageResponse {
 	if len(list) == 0 {
 		return nil
 	}
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(list[0].ConversationID)
 	ret := make([]response.MessageResponse, 0, len(list))
 	for i := range list {
-		ret = append(ret, BuildMessageResponseWithReadStates(&list[i], agentReadState, customerReadState))
+		ret = append(ret, BuildMessageWithReadStates(&list[i], agentReadState, customerReadState))
 	}
 	return ret
 }
 
-func BuildMessageResponse(item *models.Message) response.MessageResponse {
+func BuildMessage(item *models.Message) response.MessageResponse {
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(item.ConversationID)
-	return BuildMessageResponseWithReadStates(item, agentReadState, customerReadState)
+	return BuildMessageWithReadStates(item, agentReadState, customerReadState)
 }
 
-func BuildMessageResponseWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState) response.MessageResponse {
+func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState) response.MessageResponse {
 	ret := response.MessageResponse{
 		ID:              item.ID,
 		ConversationID:  item.ConversationID,

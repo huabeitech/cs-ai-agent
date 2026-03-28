@@ -115,7 +115,7 @@ func (c *ConversationController) AnyMessage_list() *web.JsonResult {
 	list, nextCursor, hasMore := services.MessageService.FindByConversationIDCursor(
 		conversationID, cursor, limit, senderType, messageType,
 	)
-	results := builders.BuildMessageResponses(list)
+	results := builders.BuildMessages(list)
 
 	return web.JsonCursorData(results, cast.ToString(nextCursor), hasMore)
 }
@@ -198,7 +198,7 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildMessageResponse(item))
+	return web.JsonData(builders.BuildMessage(item))
 }
 
 func (c *ConversationController) PostRead() *web.JsonResult {

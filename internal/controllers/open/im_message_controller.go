@@ -50,7 +50,7 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 	list, nextCursor, hasMore := services.MessageService.FindByConversationIDCursor(
 		conversationID, cursor, limit, senderType, messageType,
 	)
-	results := builders.BuildMessageResponses(list)
+	results := builders.BuildMessages(list)
 	return web.JsonCursorData(results, cast.ToString(nextCursor), hasMore)
 }
 
@@ -72,7 +72,7 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildMessageResponse(item))
+	return web.JsonData(builders.BuildMessage(item))
 }
 
 func (c *ImMessageController) PostRead() *web.JsonResult {
