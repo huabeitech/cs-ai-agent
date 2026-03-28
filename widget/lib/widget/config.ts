@@ -8,6 +8,7 @@ export type WidgetHostConfig = {
   position?: "left" | "right";
   themeColor?: string;
   width?: string;
+  /** 访客展示名，随请求以 X-External-Name / WS query externalName 传给后端作 ExternalName */
   subject?: string;
 };
 
@@ -36,6 +37,7 @@ export function readWidgetConfig(): WidgetHostConfig {
     position: (query.get("position") as "left" | "right" | null) ?? undefined,
     themeColor: query.get("themeColor") ?? undefined,
     width: query.get("width") ?? undefined,
+    subject: query.get("subject") ?? undefined,
   };
   return window.__CS_AGENT_WIDGET_CONFIG__ ?? window.CSAgentConfig ?? fallback;
 }

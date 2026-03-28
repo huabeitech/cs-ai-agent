@@ -1,5 +1,5 @@
 import { readWidgetConfig } from "@/lib/widget/config";
-import { getOrCreateVisitorId } from "@/lib/widget/visitor";
+import { getOrCreateExternalID } from "@/lib/widget/visitor";
 
 export type RealtimeEnvelope = {
   type: string;
@@ -19,12 +19,17 @@ export function createRealtimeConnection(onEvent: (event: RealtimeEnvelope) => v
   const baseUrl = (config.apiBaseUrl || config.baseUrl)
     .replace(/^http/, "ws")
     .replace(/\/$/, "");
-  const externalId = encodeURIComponent(getOrCreateVisitorId());
+  const externalId = encodeURIComponent(getOrCreateExternalID());
   const externalSource = encodeURIComponent(
     (config.externalSource ?? "web_chat").trim() || "web_chat",
   );
+  const externalName = (config.subject ?? "").trim();
+  const nameQuery =
+    externalName !== ""
+      ? `&externalName=${encodeURIComponent(externalName)}`
+      : "";
   const socket = new WebSocket(
-    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&appId=${encodeURIComponent(config.appId)}`,
+    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&appId=${encodeURIComponent(config.appId)}${nameQuery}`,
   );
   socket.addEventListener("message", (event) => {
     try {

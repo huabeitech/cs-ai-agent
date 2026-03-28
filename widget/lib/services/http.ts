@@ -1,10 +1,10 @@
 import { readWidgetConfig } from "@/lib/widget/config";
-import { getOrCreateVisitorId } from "@/lib/widget/visitor";
+import { getOrCreateExternalID } from "@/lib/widget/visitor";
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const config = readWidgetConfig();
   const baseUrl = (config.apiBaseUrl || config.baseUrl).replace(/\/$/, "");
-  const visitorId = getOrCreateVisitorId();
+  const visitorId = getOrCreateExternalID();
   const externalSource = (config.externalSource ?? "web_chat").trim() || "web_chat";
   const headers = new Headers(init?.headers ?? {});
   if (
@@ -16,6 +16,10 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   }
   headers.set("X-External-Source", externalSource);
   headers.set("X-External-Id", visitorId);
+  const externalName = (config.subject ?? "").trim();
+  if (externalName) {
+    headers.set("X-External-Name", externalName);
+  }
   headers.set("X-Widget-App-Id", config.appId);
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
