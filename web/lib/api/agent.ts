@@ -32,7 +32,7 @@ export type AgentConversation = {
   id: number
   externalSource: string
   sourceUserId: number
-  externalUserId: string
+  externalId: string
   subject: string
   status: number
   serviceMode: number

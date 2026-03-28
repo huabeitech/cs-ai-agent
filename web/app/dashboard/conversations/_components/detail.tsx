@@ -249,7 +249,7 @@ export function ConversationDetailDialog({
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     来源用户：
-                    {currentConversation.externalUserId ||
+                    {currentConversation.externalId ||
                       currentConversation.sourceUserId ||
                       "-"}
                   </p>

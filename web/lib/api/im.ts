@@ -31,7 +31,7 @@ export type ImConversation = {
   id: number
   externalSource: string
   sourceUserId: number
-  externalUserId: string
+  externalId: string
   subject: string
   status: number
   serviceMode: number

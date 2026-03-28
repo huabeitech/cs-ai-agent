@@ -23,7 +23,7 @@ type ConversationResponse struct {
 	CustomerID                int64                           `json:"customerId"`
 	ExternalSource            enums.ExternalSource            `json:"externalSource"`
 	SourceUserID              int64                           `json:"sourceUserId"`
-	ExternalID            string                          `json:"externalUserId"`
+	ExternalID                string                          `json:"externalId"`
 	Subject                   string                          `json:"subject"`
 	Status                    enums.IMConversationStatus      `json:"status"`
 	ServiceMode               enums.IMConversationServiceMode `json:"serviceMode"`
