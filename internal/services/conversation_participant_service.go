@@ -2,7 +2,7 @@ package services
 
 import (
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
@@ -69,22 +69,14 @@ func (s *conversationParticipantService) Delete(id int64) {
 	repositories.ConversationParticipantRepository.Delete(sqls.DB(), id)
 }
 
-func (s *conversationParticipantService) EnsureCustomerParticipantTx(ctx *sqls.TxContext, conversationID int64, operator *dto.AuthPrincipal) error {
-	if operator == nil {
-		return nil
-	}
-	now := time.Now()
-	participant := &models.ConversationParticipant{
-		ConversationID:  conversationID,
-		ParticipantType: string(enums.IMParticipantTypeCustomer),
-		ParticipantID:   operator.UserID,
-		JoinedAt:        &now,
-		Status:          enums.StatusOk,
-		AuditFields:     utils.BuildAuditFields(operator),
-	}
-	if operator.IsVisitor {
-		participant.ParticipantID = 0
-		participant.ExternalParticipantID = operator.VisitorID
-	}
-	return ctx.Tx.Create(participant).Error
+func (s *conversationParticipantService) EnsureCustomerParticipantTx(ctx *sqls.TxContext, conversationID int64, externalInfo request.ExternalInfo) error {
+	return repositories.ConversationParticipantRepository.Create(ctx.Tx, &models.ConversationParticipant{
+		ConversationID:        conversationID,
+		ParticipantType:       string(enums.IMParticipantTypeCustomer),
+		ParticipantID:         0,
+		ExternalParticipantID: externalInfo.ExternalID,
+		JoinedAt:              new(time.Now()),
+		Status:                enums.StatusOk,
+		AuditFields:           utils.BuildAuditFields(nil),
+	})
 }

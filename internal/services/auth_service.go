@@ -48,31 +48,6 @@ func (s *authService) GetAuthPrincipal(ctx iris.Context) *dto.AuthPrincipal {
 	return nil
 }
 
-func (s *authService) GetImPrincipal(ctx iris.Context) (*dto.AuthPrincipal, error) {
-	if principal := s.GetAuthPrincipal(ctx); principal != nil {
-		return principal, nil
-	}
-	if token := s.extractBearerToken(ctx.GetHeader("Authorization")); token != "" {
-		return s.Authenticate(ctx)
-	}
-	visitorID := strings.TrimSpace(ctx.GetHeader("X-Visitor-Id"))
-	if visitorID == "" {
-		visitorID = strings.TrimSpace(ctx.URLParam("visitorId"))
-	}
-	if visitorID == "" {
-		return nil, errorsx.Unauthorized("访客标识不能为空")
-	}
-	principal := &dto.AuthPrincipal{
-		Username:  "访客",
-		Nickname:  "访客",
-		Status:    enums.StatusOk,
-		IsVisitor: true,
-		VisitorID: visitorID,
-	}
-	ctx.Values().Set(authPrincipalContextKey, principal)
-	return principal, nil
-}
-
 func (s *authService) setAuthPrincipal(ctx iris.Context, user *models.User, roles, permissions []string) *dto.AuthPrincipal {
 	principal := &dto.AuthPrincipal{
 		UserID:      user.ID,

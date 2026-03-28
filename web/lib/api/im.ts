@@ -156,15 +156,6 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
   return output ? `?${output}` : ""
 }
 
-export function fetchImConversations(
-  query?: Record<string, string | number | undefined>
-) {
-  return request<PageResult<ImConversation>>(
-    `/api/open/im/conversation/list${toQueryString(query)}`,
-    { headers: createImHeaders() }
-  )
-}
-
 export function fetchImConversationDetail(id: number) {
   return request<ImConversationDetail>(`/api/open/im/conversation/${id}`, {
     headers: createImHeaders(),

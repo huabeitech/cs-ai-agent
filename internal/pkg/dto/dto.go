@@ -8,8 +8,6 @@ type AuthPrincipal struct {
 	Nickname    string
 	Avatar      string
 	Status      enums.Status
-	IsVisitor   bool
-	VisitorID   string
 	Roles       []string
 	Permissions []string
 }

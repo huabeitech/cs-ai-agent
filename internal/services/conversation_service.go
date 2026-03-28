@@ -87,14 +87,10 @@ func (s *conversationService) Updates(id int64, columns map[string]interface{}) 
 	return repositories.ConversationRepository.Updates(sqls.DB(), id, columns)
 }
 
-func (s *conversationService) getLatestNotFinished(externalSource enums.ExternalSource, user *dto.AuthPrincipal) *models.Conversation {
+func (s *conversationService) getLatestNotFinished(externalInfo request.ExternalInfo) *models.Conversation {
 	cnd := sqls.NewCnd()
-	if user.IsVisitor {
-		cnd.Eq("external_id", user.VisitorID)
-	} else {
-		cnd.Eq("source_user_id", user.UserID)
-	}
-	cnd.Eq("external_source", externalSource)
+	cnd.Eq("external_id", externalInfo.ExternalID)
+	cnd.Eq("external_source", externalInfo.ExternalSource)
 	cnd.In("status", []enums.IMConversationStatus{
 		enums.IMConversationStatusPending,
 		enums.IMConversationStatusActive,
@@ -103,17 +99,11 @@ func (s *conversationService) getLatestNotFinished(externalSource enums.External
 	return s.FindOne(cnd)
 }
 
-func (s *conversationService) Create(externalSource enums.ExternalSource, subject string, aiAgentID int64, operator *dto.AuthPrincipal) (*models.Conversation, error) {
-	if operator == nil {
-		return nil, errorsx.Unauthorized("未登录或登录已过期")
-	}
-	if strs.IsBlank(string(externalSource)) {
-		return nil, errorsx.InvalidParam("invalid external source")
-	}
-	subject = strs.DefaultIfBlank(strings.TrimSpace(subject), s.buildDefaultSubject(operator))
+func (s *conversationService) Create(externalInfo request.ExternalInfo, aiAgentID int64) (*models.Conversation, error) {
+	subject := s.buildDefaultSubject(externalInfo)
 
 	// 会话存在，直接返回
-	if conversation := s.getLatestNotFinished(externalSource, operator); conversation != nil {
+	if conversation := s.getLatestNotFinished(externalInfo); conversation != nil {
 		return conversation, nil
 	}
 
@@ -124,35 +114,30 @@ func (s *conversationService) Create(externalSource enums.ExternalSource, subjec
 
 	conversation := &models.Conversation{
 		AIAgentID:         aiAgentID,
-		ExternalSource:    externalSource,
+		ExternalSource:    externalInfo.ExternalSource,
 		Subject:           subject,
 		Status:            enums.IMConversationStatusPending,
 		ServiceMode:       aiAgent.ServiceMode,
 		Priority:          0,
 		SourceUserID:      operator.UserID,
-		ExternalID:        "",
+		ExternalID:        externalInfo.ExternalID,
 		CurrentAssigneeID: 0,
 		CurrentTeamID:     0,
 		LastMessageAt:     time.Now(),
 		LastActiveAt:      time.Now(),
-		AuditFields:       utils.BuildAuditFields(operator),
+		AuditFields:       utils.BuildAuditFields(nil),
 	}
-	// TODO operator不应该有站内用户
-	if operator.IsVisitor {
-		conversation.SourceUserID = 0
-		conversation.ExternalID = operator.VisitorID
-		if cid := s.resolveCustomerIDForVisitor(externalSource, operator.VisitorID); cid > 0 {
-			conversation.CustomerID = cid
-		}
+	if customerID := s.resolveCustomerIDForVisitor(externalInfo.ExternalSource, externalInfo.ExternalID); customerID > 0 {
+		conversation.CustomerID = customerID
 	}
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
 		}
-		if err := ConversationParticipantService.EnsureCustomerParticipantTx(ctx, conversation.ID, operator); err != nil {
+		if err := ConversationParticipantService.EnsureCustomerParticipantTx(ctx, conversation.ID, externalInfo); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, operator.UserID, "用户创建会话", "", time.Now())
+		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "", time.Now())
 	}); err != nil {
 		return nil, err
 	}
@@ -175,12 +160,8 @@ func (s *conversationService) Create(externalSource enums.ExternalSource, subjec
 }
 
 // TODO 这个方法想办法重构下
-func (s *conversationService) resolveCustomerIDForVisitor(externalSource enums.ExternalSource, visitorID string) int64 {
-	visitorID = strings.TrimSpace(visitorID)
-	if visitorID == "" {
-		return 0
-	}
-	identity := repositories.CustomerIdentityRepository.Take(sqls.DB(), "external_source = ? AND source_id = ?", externalSource, visitorID)
+func (s *conversationService) resolveCustomerIDForVisitor(externalSource enums.ExternalSource, externalId string) int64 {
+	identity := repositories.CustomerIdentityRepository.Take(sqls.DB(), "external_source = ? AND external_id = ?", externalSource, externalId)
 	if identity == nil {
 		return 0
 	}
@@ -337,19 +318,16 @@ func (s *conversationService) CloseConversation(conversationID int64, closeReaso
 	return s.closeConversation(conversationID, enums.IMSenderTypeAgent, closeReason, operator)
 }
 
-func (s *conversationService) CloseCustomerConversation(conversationID int64, operator *dto.AuthPrincipal) error {
-	if operator == nil {
-		return errorsx.Unauthorized("未登录或登录已过期")
-	}
+func (s *conversationService) CloseCustomerConversation(conversationID int64, externalInfo request.ExternalInfo) error {
 	conversation := s.Get(conversationID)
 	if conversation == nil {
 		return errorsx.InvalidParam("会话不存在")
 	}
-	if !s.IsCustomerConversationOwner(conversation, operator) {
+	if !s.IsCustomerConversationOwner(conversation, externalInfo) {
 		// return errorsx.Forbidden("无权访问该会话")
 		return nil
 	}
-	return s.closeConversation(conversationID, enums.IMSenderTypeCustomer, "", operator)
+	return s.closeConversation(conversationID, enums.IMSenderTypeCustomer, "", nil)
 }
 
 func (s *conversationService) closeConversation(conversationID int64, senderType enums.IMSenderType, closeReason string, operator *dto.AuthPrincipal) error {
@@ -364,24 +342,27 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 		if conversation.Status != enums.IMConversationStatusPending && conversation.Status != enums.IMConversationStatusActive {
 			return errorsx.InvalidParam("当前状态不允许关闭会话")
 		}
-		now := time.Now()
-		updateUserName := operator.Username
-		eventDesc := "会话已关闭"
+		var (
+			now          = time.Now()
+			eventDesc    = "会话已关闭"
+			operatorID   int64
+			operatorName string
+		)
 		closeReason = strings.TrimSpace(closeReason)
 		if senderType == enums.IMSenderTypeCustomer {
-			if operator.IsVisitor {
-				updateUserName = operator.Nickname
-				eventDesc = "访客关闭会话"
-			} else {
-				eventDesc = "客户关闭会话"
-			}
+			eventDesc = "客户关闭会话"
 		} else {
+			if operator == nil {
+				return errorsx.InvalidParam("无权限操作")
+			}
 			if closeReason == "" {
 				return errorsx.InvalidParam("关闭原因不能为空")
 			}
 			if !s.canCloseConversation(conversation, operator) {
 				return errorsx.Forbidden("无权关闭该会话")
 			}
+			operatorID = operator.UserID
+			operatorName = operator.Nickname
 		}
 		if err := ConversationAssignmentService.FinishActiveAssignmentsTx(ctx, conversationID, now); err != nil {
 			return err
@@ -389,15 +370,15 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"status":           enums.IMConversationStatusClosed,
 			"closed_at":        now,
-			"closed_by":        operator.UserID,
+			"closed_by":        operatorID,
 			"close_reason":     closeReason,
-			"update_user_id":   operator.UserID,
-			"update_user_name": updateUserName,
+			"update_user_id":   operatorID,
+			"update_user_name": operatorName,
 			"updated_at":       now,
 		}); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeClose, senderType, operator.UserID, eventDesc, s.buildEventPayload(map[string]any{
+		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeClose, senderType, operatorID, eventDesc, s.buildEventPayload(map[string]any{
 			"fromStatus":     conversation.Status,
 			"toStatus":       enums.IMConversationStatusClosed,
 			"fromAssigneeId": conversation.CurrentAssigneeID,
@@ -411,60 +392,6 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 		WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationClosed)
 	}
 	return nil
-}
-
-func (s *conversationService) MarkAgentRead(conversationID int64, operator *dto.AuthPrincipal) error {
-	if operator == nil {
-		return errorsx.Unauthorized("未登录或登录已过期")
-	}
-	conversation := s.Get(conversationID)
-	if conversation == nil {
-		return errorsx.InvalidParam("会话不存在")
-	}
-	changed, err := s.markConversationRead(conversation, enums.IMSenderTypeAgent, operator, 0)
-	if err != nil {
-		return err
-	}
-	if changed {
-		if updated := s.Get(conversationID); updated != nil {
-			WsService.PublishConversationChanged(updated, enums.IMRealtimeEventConversationRead)
-		}
-	}
-	return nil
-}
-
-func (s *conversationService) MarkCustomerRead(conversationID int64, operator *dto.AuthPrincipal) error {
-	if operator == nil {
-		return errorsx.Unauthorized("未登录或登录已过期")
-	}
-	conversation := s.Get(conversationID)
-	if conversation == nil {
-		return errorsx.InvalidParam("会话不存在")
-	}
-	if !s.IsCustomerConversationOwner(conversation, operator) {
-		return errorsx.Forbidden("无权访问该会话")
-	}
-	changed, err := s.markConversationRead(conversation, enums.IMSenderTypeCustomer, operator, 0)
-	if err != nil {
-		return err
-	}
-	if changed {
-		if updated := s.Get(conversationID); updated != nil {
-			WsService.PublishConversationChanged(updated, enums.IMRealtimeEventConversationRead)
-		}
-	}
-	return nil
-}
-
-func (s *conversationService) MarkConversationRead(conversationID int64, operatorType string, operator *dto.AuthPrincipal) error {
-	switch strings.TrimSpace(operatorType) {
-	case string(enums.IMSenderTypeAgent):
-		return s.MarkAgentRead(conversationID, operator)
-	case string(enums.IMSenderTypeCustomer):
-		return s.MarkCustomerRead(conversationID, operator)
-	default:
-		return errorsx.InvalidParam("不支持的已读操作类型")
-	}
 }
 
 func (s *conversationService) MarkConversationReadToMessage(conversationID, messageID int64, operatorType enums.IMSenderType, operator *dto.AuthPrincipal) error {
@@ -602,14 +529,11 @@ func (s *conversationService) countUnreadByState(ctx *sqls.TxContext, conversati
 	return int(count), err
 }
 
-func (s *conversationService) IsCustomerConversationOwner(conversation *models.Conversation, operator *dto.AuthPrincipal) bool {
-	if conversation == nil || operator == nil {
+func (s *conversationService) IsCustomerConversationOwner(conversation *models.Conversation, externalInfo request.ExternalInfo) bool {
+	if conversation == nil {
 		return false
 	}
-	if operator.IsVisitor {
-		return strings.TrimSpace(conversation.ExternalID) != "" && conversation.ExternalID == operator.VisitorID
-	}
-	return conversation.SourceUserID > 0 && conversation.SourceUserID == operator.UserID
+	return strings.TrimSpace(conversation.ExternalID) != "" && conversation.ExternalID == externalInfo.ExternalID
 }
 
 func (s *conversationService) BuildConversationSummary(conversation *models.Conversation) string {
@@ -650,24 +574,11 @@ func (s *conversationService) buildEventPayload(payload map[string]any) string {
 	return string(data)
 }
 
-func (s *conversationService) buildDefaultSubject(operator *dto.AuthPrincipal) string {
-	if operator == nil {
-		return "访客unknown"
+func (s *conversationService) buildDefaultSubject(externalInfo request.ExternalInfo) string {
+	if strs.IsNotBlank(externalInfo.ExternalName) {
+		return externalInfo.ExternalName
 	}
-
-	if operator.IsVisitor {
-		visitorID := strings.TrimSpace(operator.VisitorID)
-		if visitorID == "" {
-			return "访客unknown"
-		}
-		return fmt.Sprintf("访客%s", hashUUID(visitorID))
-	}
-
-	if operator.Username != "" {
-		return operator.Username
-	}
-
-	return fmt.Sprintf("用户%d", operator.UserID)
+	return fmt.Sprintf("访客%s", hashUUID(externalInfo.ExternalID))
 }
 
 func hashUUID(uuid string) string {
