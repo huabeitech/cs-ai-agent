@@ -2,18 +2,17 @@
 
 import Link from "next/link"
 
-import { WorkspaceToggle } from "@/components/workspace-toggle"
+import { useAuth } from "@/components/auth-provider"
 import {
   Menubar,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
-  MenubarShortcut,
-  MenubarTrigger,
+  MenubarTrigger
 } from "@/components/ui/menubar"
-import { MessageSquareIcon, SettingsIcon, LogOutIcon } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
+import { WorkspaceToggle } from "@/components/workspace-toggle"
+import { LogOutIcon, SettingsIcon } from "lucide-react"
 
 export function WorkspaceHeader() {
   const { signOut } = useAuth()
@@ -23,7 +22,6 @@ export function WorkspaceHeader() {
       <div className="flex w-full items-center justify-between px-4">
         <div className="flex items-center gap-1">
           <Link href="/workspace" className="flex items-center gap-2 px-2">
-            <MessageSquareIcon className="size-4" />
             <span className="text-sm font-medium">客服工作台</span>
           </Link>
           <Menubar className="border-none bg-transparent shadow-none">
