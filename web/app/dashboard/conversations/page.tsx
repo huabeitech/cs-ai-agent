@@ -111,6 +111,9 @@ export default function DashboardConversationsPage() {
   const [detailItem, setDetailItem] = useState<AdminConversation | null>(null)
   const [detailData, setDetailData] = useState<AdminConversationDetail | null>(null)
   const [detailMessages, setDetailMessages] = useState<AdminMessage[]>([])
+  const [detailMessagesNextCursor, setDetailMessagesNextCursor] = useState("")
+  const [detailMessagesHasMore, setDetailMessagesHasMore] = useState(false)
+  const [detailMessagesLoadingMore, setDetailMessagesLoadingMore] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const [assignItem, setAssignItem] = useState<AdminConversation | null>(null)
   const [closeOpen, setCloseOpen] = useState(false)
@@ -352,6 +355,8 @@ export default function DashboardConversationsPage() {
 
   async function loadDetail(item: AdminConversation) {
     setDetailLoading(true)
+    setDetailMessagesNextCursor("")
+    setDetailMessagesHasMore(false)
     try {
       const [detail, messages] = await Promise.all([
         fetchConversationDetail(item.id),
@@ -359,6 +364,8 @@ export default function DashboardConversationsPage() {
       ])
       setDetailData(detail)
       setDetailMessages(messages.results)
+      setDetailMessagesNextCursor(messages.cursor ?? "")
+      setDetailMessagesHasMore(Boolean(messages.hasMore))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载会话详情失败")
     } finally {
@@ -366,10 +373,43 @@ export default function DashboardConversationsPage() {
     }
   }
 
+  const loadMoreDetailMessages = useCallback(async () => {
+    if (!detailItem || detailMessagesLoadingMore || !detailMessagesHasMore) {
+      return
+    }
+    const cursor = Number.parseInt(detailMessagesNextCursor, 10)
+    if (!detailMessagesNextCursor.trim() || !Number.isFinite(cursor) || cursor <= 0) {
+      return
+    }
+    setDetailMessagesLoadingMore(true)
+    try {
+      const page = await fetchConversationMessages({
+        conversationId: detailItem.id,
+        cursor,
+        limit: 20,
+      })
+      setDetailMessages((prev) => [...page.results, ...prev])
+      setDetailMessagesNextCursor(page.cursor ?? "")
+      setDetailMessagesHasMore(Boolean(page.hasMore))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "加载更多消息失败")
+    } finally {
+      setDetailMessagesLoadingMore(false)
+    }
+  }, [
+    detailItem,
+    detailMessagesHasMore,
+    detailMessagesLoadingMore,
+    detailMessagesNextCursor,
+  ])
+
   async function openDetail(item: AdminConversation) {
     setDetailItem(item)
     setDetailData(null)
     setDetailMessages([])
+    setDetailMessagesNextCursor("")
+    setDetailMessagesHasMore(false)
+    setDetailMessagesLoadingMore(false)
     setDetailOpen(true)
     await loadDetail(item)
   }
@@ -383,6 +423,9 @@ export default function DashboardConversationsPage() {
       setDetailItem(null)
       setDetailData(null)
       setDetailMessages([])
+      setDetailMessagesNextCursor("")
+      setDetailMessagesHasMore(false)
+      setDetailMessagesLoadingMore(false)
       return
     }
     setDetailOpen(true)
@@ -666,6 +709,9 @@ export default function DashboardConversationsPage() {
         item={detailItem}
         detail={detailData}
         messages={detailMessages}
+        messagesHasMore={detailMessagesHasMore}
+        loadingMoreMessages={detailMessagesLoadingMore}
+        onLoadMoreMessages={loadMoreDetailMessages}
         onOpenChange={handleDetailOpenChange}
         onOpenAssign={() => {
           if (!detailItem) {

@@ -6,7 +6,7 @@ import {
   MessageCircleMoreIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ImMessageHTML } from "@/components/im-message-html";
 import { ProjectDialog } from "@/components/project-dialog";
@@ -29,6 +29,10 @@ type ConversationDetailDialogProps = {
   item: AdminConversation | null;
   detail: AdminConversationDetail | null;
   messages: AdminMessage[];
+  /** 是否还有更早消息（cursor 分页） */
+  messagesHasMore?: boolean;
+  loadingMoreMessages?: boolean;
+  onLoadMoreMessages?: () => void | Promise<void>;
   onOpenChange: (open: boolean) => void;
   onOpenAssign: () => void;
   onDispatch: () => Promise<void>;
@@ -143,6 +147,9 @@ export function ConversationDetailDialog({
   item,
   detail,
   messages,
+  messagesHasMore = false,
+  loadingMoreMessages = false,
+  onLoadMoreMessages,
   onOpenChange,
   onOpenAssign,
   onDispatch,
@@ -157,11 +164,29 @@ export function ConversationDetailDialog({
     ? getStatusMeta(currentConversation.status)
     : null;
   const messageBottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesScrollRootRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollAnchorRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
+  const prevLoadingMoreRef = useRef(false);
   const [previewImage, setPreviewImage] = useState("");
+
+  const getMessagesViewport = useCallback((): HTMLElement | null => {
+    return (
+      messagesScrollRootRef.current?.querySelector(
+        '[data-slot="scroll-area-viewport"]',
+      ) ?? null
+    );
+  }, []);
 
   useEffect(() => {
     if (!open) {
       setPreviewImage("");
+      return;
+    }
+    if (loading) {
       return;
     }
     const bottom = messageBottomRef.current;
@@ -169,7 +194,59 @@ export function ConversationDetailDialog({
       return;
     }
     bottom.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [messages, open]);
+  }, [open, loading]);
+
+  useLayoutEffect(() => {
+    const wasLoading = prevLoadingMoreRef.current;
+    prevLoadingMoreRef.current = loadingMoreMessages;
+    if (wasLoading && !loadingMoreMessages && pendingScrollAnchorRef.current) {
+      const vp = getMessagesViewport();
+      const anchor = pendingScrollAnchorRef.current;
+      pendingScrollAnchorRef.current = null;
+      if (vp && anchor) {
+        const delta = vp.scrollHeight - anchor.scrollHeight;
+        vp.scrollTop = anchor.scrollTop + delta;
+      }
+    }
+  }, [loadingMoreMessages, messages, getMessagesViewport]);
+
+  useEffect(() => {
+    if (!open || loading || !messagesHasMore || !onLoadMoreMessages) {
+      return;
+    }
+    const root = getMessagesViewport();
+    const sentinel = loadMoreSentinelRef.current;
+    if (!root || !sentinel) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.some((e) => e.isIntersecting);
+        if (!hit || loadingMoreMessages) {
+          return;
+        }
+        const vp = getMessagesViewport();
+        if (vp) {
+          pendingScrollAnchorRef.current = {
+            scrollHeight: vp.scrollHeight,
+            scrollTop: vp.scrollTop,
+          };
+        }
+        void onLoadMoreMessages();
+      },
+      { root, rootMargin: "120px 0px 0px 0px", threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    open,
+    loading,
+    messagesHasMore,
+    loadingMoreMessages,
+    messages.length,
+    onLoadMoreMessages,
+    getMessagesViewport,
+  ]);
 
   return (
     <ProjectDialog
@@ -334,11 +411,21 @@ export function ConversationDetailDialog({
               </div>
               <div className="text-xs text-muted-foreground">
                 消息数：{messages.length}
+                {messagesHasMore ? " · 向上滑可加载更早" : ""}
               </div>
             </div>
 
-            <ScrollArea className="min-h-0 flex-1 bg-muted/10">
+            <div ref={messagesScrollRootRef} className="min-h-0 flex-1">
+              <ScrollArea className="h-full min-h-0 bg-muted/10">
               <div className="space-y-4 px-6 py-5">
+                {messagesHasMore ? (
+                  <div
+                    ref={loadMoreSentinelRef}
+                    className="flex min-h-8 flex-col items-center justify-center py-2 text-xs text-muted-foreground"
+                  >
+                    {loadingMoreMessages ? "正在加载更早的消息…" : "继续上滑加载更早消息"}
+                  </div>
+                ) : null}
                 {isClosedConversation ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     当前会话已关闭。后台不可继续发送消息；如用户再次咨询，应创建新会话。
@@ -401,7 +488,8 @@ export function ConversationDetailDialog({
                 )}
                 <div ref={messageBottomRef} />
               </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </section>
         </div>
       ) : (
