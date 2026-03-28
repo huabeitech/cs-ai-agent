@@ -87,7 +87,6 @@ export type ConversationParticipant = {
 export type AdminConversation = {
   id: number
   externalSource: string
-  sourceUserId: number
   externalId: string
   subject: string
   status: number

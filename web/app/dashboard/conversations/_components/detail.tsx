@@ -246,14 +246,6 @@ export function ConversationDetailDialog({
           <aside className="flex w-90 h-full shrink-0 flex-col overflow-hidden bg-muted/20 border-r border-b-0">
             <div className="space-y-4 p-6">
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    来源用户：
-                    {currentConversation.externalId ||
-                      currentConversation.sourceUserId ||
-                      "-"}
-                  </p>
-                </div>
                 {statusMeta ? (
                   <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                 ) : null}

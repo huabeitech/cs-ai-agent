@@ -14,7 +14,6 @@ type ConversationListRequest struct {
 	ExternalSource    string `json:"externalSource"`
 	ServiceMode       int    `json:"serviceMode"`
 	CurrentAssigneeID int64  `json:"currentAssigneeId"`
-	SourceUserID      int64  `json:"sourceUserId"`
 	Keyword           string `json:"keyword"`
 	TagID             int64  `json:"tagId"`
 }

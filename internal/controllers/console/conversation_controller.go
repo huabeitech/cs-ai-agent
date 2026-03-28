@@ -32,7 +32,6 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "externalSource"},
 		params.QueryFilter{ParamName: "serviceMode"},
 		params.QueryFilter{ParamName: "currentAssigneeId"},
-		params.QueryFilter{ParamName: "sourceUserId"},
 	).Desc("last_message_at").Desc("id")
 
 	if keyword, _ := params.Get(c.Ctx, "keyword"); strs.IsNotBlank(keyword) {

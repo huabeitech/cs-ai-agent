@@ -44,7 +44,6 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
         <InfoRow label="主题" value={conversation.subject} />
         <InfoRow label="外部来源" value={conversation.externalSource} />
         <InfoRow label="外部用户标识" value={conversation.externalId} />
-        <InfoRow label="来源用户 ID" value={String(conversation.sourceUserId)} />
       </section>
       <section>
         <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">

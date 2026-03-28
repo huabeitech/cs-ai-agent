@@ -30,7 +30,6 @@ export type ImConversationParticipant = {
 export type ImConversation = {
   id: number
   externalSource: string
-  sourceUserId: number
   externalId: string
   subject: string
   status: number
