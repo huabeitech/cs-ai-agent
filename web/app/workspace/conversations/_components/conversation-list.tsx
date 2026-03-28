@@ -15,13 +15,13 @@ import { getEnumLabel } from "@/lib/enums"
 function getStatusVariant(status: number) {
   switch (status) {
     case IMConversationStatus.Pending:
-      return "bg-blue-100 text-blue-700"
+      return "bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
     case IMConversationStatus.Active:
-      return "bg-green-100 text-green-700"
+      return "bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
     case IMConversationStatus.Closed:
-      return "bg-gray-100 text-gray-700"
+      return "bg-muted text-muted-foreground"
     default:
-      return "bg-gray-100 text-gray-700"
+      return "bg-muted text-muted-foreground"
   }
 }
 
@@ -36,8 +36,8 @@ export function ConversationList({ onAfterSelect }: ConversationListProps) {
   const selectConversation = useAgentConversationsStore((state) => state.selectConversation)
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="divide-y">
+    <ScrollArea className="flex-1 bg-transparent">
+      <div className="divide-y divide-border">
         {loading ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
             加载中...

@@ -29,14 +29,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="break-all text-sm">{value || "-"}</span>
+      <span className="break-all text-sm text-foreground">{value || "-"}</span>
     </div>
   );
 }
 
 function ConversationDetails({ conversation }: { conversation: AgentConversation }) {
   return (
-    <div className="divide-y">
+    <div className="divide-y divide-border">
       <section>
         <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           基本信息
@@ -84,11 +84,18 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
             {conversation.tags.map((tag) => (
               <li
                 key={tag.id}
-                className="rounded-md border px-2 py-0.5 text-xs"
-                style={{
-                  borderColor: tag.color || undefined,
-                  color: tag.color || undefined,
-                }}
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-xs",
+                  !tag.color && "border-border text-foreground",
+                )}
+                style={
+                  tag.color
+                    ? {
+                        borderColor: tag.color,
+                        color: tag.color,
+                      }
+                    : undefined
+                }
               >
                 {tag.name}
               </li>
@@ -105,9 +112,9 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
             {conversation.participants.map((p) => (
               <li
                 key={p.id}
-                className="rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
+                className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-xs text-foreground"
               >
-                <div className="font-medium">{p.participantType}</div>
+                <div className="font-medium text-foreground">{p.participantType}</div>
                 <div className="text-muted-foreground">
                   ID {p.participantId}
                   {p.externalParticipantId
@@ -145,12 +152,12 @@ export function CustomerInfoPanel({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
-        !embedded && "border-l bg-white",
+        "flex h-full min-h-0 flex-col overflow-hidden",
+        embedded ? "bg-background text-foreground" : "border-l border-border bg-card text-card-foreground",
         className,
       )}
     >
-      <div className="flex h-12.5 shrink-0 items-start border-b p-2">
+      <div className="flex h-12.5 shrink-0 items-start border-b border-border p-2">
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as InfoTabValue)}

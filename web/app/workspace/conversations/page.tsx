@@ -117,8 +117,8 @@ export default function ConversationsPage() {
   };
 
   const renderConversationSidebar = (opts?: { onListAfterSelect?: () => void }) => (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-start justify-between gap-2 border-b p-2 h-12.5">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-inherit">
+      <div className="flex h-12.5 shrink-0 items-start justify-between gap-2 border-b border-border p-2">
         <Tabs
           value={conversationFilter}
           onValueChange={(value) =>
@@ -154,8 +154,8 @@ export default function ConversationsPage() {
   );
 
   const workspaceContent = (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 flex items-center justify-between gap-3 border-b px-3 py-1 h-12.5">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex h-12.5 shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-1">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -275,7 +275,7 @@ export default function ConversationsPage() {
         />
       )}
       <div
-        className={`fixed top-12 bottom-0 left-0 z-40 flex w-[min(22rem,calc(100vw-0.75rem))] max-w-[min(22rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r bg-background shadow-lg transition-transform duration-300 ease-out will-change-transform touch-manipulation overscroll-contain supports-[padding:max(0px)]:pb-[env(safe-area-inset-bottom)] lg:hidden ${
+        className={`fixed top-12 bottom-0 left-0 z-40 flex w-[min(22rem,calc(100vw-0.75rem))] max-w-[min(22rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r border-border bg-card text-card-foreground shadow-lg transition-transform duration-300 ease-out will-change-transform touch-manipulation overscroll-contain supports-[padding:max(0px)]:pb-[env(safe-area-inset-bottom)] lg:hidden ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
         aria-hidden={!mobileMenuOpen}
@@ -302,7 +302,7 @@ export default function ConversationsPage() {
             }}
             className="min-h-0"
           >
-            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card text-card-foreground">
               {renderConversationSidebar()}
             </div>
           </ResizablePanel>
