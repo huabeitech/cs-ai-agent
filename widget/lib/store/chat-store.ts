@@ -45,6 +45,13 @@ function parseCursorId(cursor: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function cursorFromLoadedMessages(messages: WidgetMessage[]): string {
+  if (messages.length === 0) {
+    return "";
+  }
+  return String(Math.min(...messages.map((m) => m.id)));
+}
+
 export interface ChatStore {
   title: string;
   welcomeText: string;
@@ -247,7 +254,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
         const currentConversation = get().conversation;
         set({
           messages: page.results,
-          messagesCursor: page.cursor,
+          messagesCursor:
+            cursorFromLoadedMessages(page.results) || page.cursor,
           messagesHasMore: page.hasMore,
           conversation: currentConversation,
         });
@@ -273,8 +281,10 @@ export const useChatStore = create<ChatStore>((set, get) => {
           const merged = mergeMessagesByIdAsc(preserved, batch);
           return {
             messages: merged,
-            messagesCursor: page.cursor,
-            messagesHasMore: page.hasMore,
+            messagesCursor:
+              cursorFromLoadedMessages(merged) || page.cursor,
+            messagesHasMore:
+              state.messagesHasMore || Boolean(page.hasMore),
             conversation: currentConversation,
           };
         });
@@ -303,13 +313,17 @@ export const useChatStore = create<ChatStore>((set, get) => {
           cursor: cursorId,
         });
         const currentConversation = get().conversation;
-        set((state) => ({
-          messages: mergeMessagesByIdAsc(page.results, state.messages),
-          messagesCursor: page.cursor,
-          messagesHasMore: page.hasMore,
-          messagesLoadingMore: false,
-          conversation: currentConversation,
-        }));
+        set((state) => {
+          const merged = mergeMessagesByIdAsc(page.results, state.messages);
+          return {
+            messages: merged,
+            messagesCursor:
+              cursorFromLoadedMessages(merged) || page.cursor,
+            messagesHasMore: page.hasMore,
+            messagesLoadingMore: false,
+            conversation: currentConversation,
+          };
+        });
       } catch (e) {
         set({ messagesLoadingMore: false });
         console.error("Failed to load older messages", e);

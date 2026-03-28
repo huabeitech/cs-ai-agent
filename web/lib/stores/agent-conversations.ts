@@ -61,6 +61,14 @@ function parseCursorId(cursor: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
+/** 下一页「更旧」请求应传入的游标：当前已加载列表中的最小 message id（后端用 id < cursor） */
+function cursorFromLoadedMessages(messages: AgentMessage[]): string {
+  if (messages.length === 0) {
+    return ""
+  }
+  return String(Math.min(...messages.map((m) => m.id)))
+}
+
 type AgentConversationsStore = {
   searchKeyword: string
   conversationFilter: AgentConversationFilterKey
@@ -228,11 +236,13 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         return
       }
 
+      const list = ensureArray(data.results)
       set({
-        messages: ensureArray(data.results),
+        messages: list,
         messagesLoading: false,
         messagesLoadedConversationId: conversationId,
-        messagesCursor: data.cursor ?? "",
+        messagesCursor:
+          cursorFromLoadedMessages(list) || (data.cursor ?? ""),
         messagesHasMore: Boolean(data.hasMore),
       })
     } catch (error) {
@@ -264,12 +274,17 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         return
       }
       const incoming = ensureArray(data.results)
-      set((state) => ({
-        messages: mergeMessagesByIdAsc(incoming, state.messages),
-        messagesCursor: data.cursor ?? state.messagesCursor,
-        messagesHasMore: Boolean(data.hasMore),
-        messagesLoadingMore: false,
-      }))
+      set((state) => {
+        const merged = mergeMessagesByIdAsc(incoming, state.messages)
+        return {
+          messages: merged,
+          messagesCursor:
+            cursorFromLoadedMessages(merged) ||
+            (data.cursor ?? state.messagesCursor),
+          messagesHasMore: Boolean(data.hasMore),
+          messagesLoadingMore: false,
+        }
+      })
     } catch (error) {
       set({ messagesLoadingMore: false })
       throw error
@@ -298,8 +313,12 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         const merged = mergeMessagesByIdAsc(preserved, batch)
         return {
           messages: merged,
-          messagesCursor: data.cursor ?? state.messagesCursor,
-          messagesHasMore: Boolean(data.hasMore),
+          messagesCursor:
+            cursorFromLoadedMessages(merged) ||
+            (data.cursor ?? state.messagesCursor),
+          // 接口 hasMore 只反映「最新一页」以下是否还有；已 prepend 的历史要保留「还能往上翻」
+          messagesHasMore:
+            state.messagesHasMore || Boolean(data.hasMore),
         }
       })
     } catch {
