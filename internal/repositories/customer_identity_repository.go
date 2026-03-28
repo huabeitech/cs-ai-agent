@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
 
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 	"gorm.io/gorm"
@@ -31,6 +33,16 @@ func (r *customerIdentityRepository) Take(db *gorm.DB, where ...interface{}) *mo
 		return nil
 	}
 	return ret
+}
+
+// GetBy 按外部来源 + 外部用户标识查询身份映射（与 uk_customer_external 一致）。
+func (r *customerIdentityRepository) GetBy(db *gorm.DB, externalSource enums.ExternalSource, externalID string) *models.CustomerIdentity {
+	if strs.IsAnyBlank(string(externalSource), externalID) {
+		return nil
+	}
+	return r.FindOne(db, sqls.NewCnd().
+		Eq("external_source", externalSource).
+		Eq("external_id", externalID))
 }
 
 func (r *customerIdentityRepository) Find(db *gorm.DB, cnd *sqls.Cnd) (list []models.CustomerIdentity) {
@@ -62,12 +74,12 @@ func (r *customerIdentityRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (
 	return
 }
 
-func (r *customerIdentityRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.CustomerIdentity) {
+func (r *customerIdentityRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.CustomerIdentity) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *customerIdentityRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *customerIdentityRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -99,4 +111,3 @@ func (r *customerIdentityRepository) UpdateColumn(db *gorm.DB, id int64, name st
 func (r *customerIdentityRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.CustomerIdentity{}, "id = ?", id)
 }
-
