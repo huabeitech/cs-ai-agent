@@ -39,9 +39,6 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 	pendingConversationCount := repositories.DashboardRepository.CountConversations(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("status = ?", enums.IMConversationStatusPending)
 	})
-	ticketTodayCount := repositories.DashboardRepository.CountTickets(db, func(tx *gorm.DB) *gorm.DB {
-		return tx.Where("created_at >= ?", todayStart)
-	})
 
 	agentProfiles := repositories.DashboardRepository.ListEnabledAgentProfiles(db)
 	agentTeams := repositories.DashboardRepository.ListEnabledAgentTeams(db)
@@ -86,17 +83,12 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 			TodayNewConversations:        conversationTodayCount,
 			ProcessingConversations:      processingConversationCount,
 			PendingDispatchConversations: pendingConversationCount,
-			TodayNewTickets:              ticketTodayCount,
 			OnlineAgents:                 onlineAgents,
 			AIServiceRate:                calcAIServiceRate(activeConversations),
 		},
 		ConversationStats: response.DashboardSectionStatsResponse{
 			StatusDistribution: buildConversationStatusDistribution(db),
 			Trend:              buildConversationTrend(db, trendStart),
-		},
-		TicketStats: response.DashboardSectionStatsResponse{
-			StatusDistribution: buildTicketStatusDistribution(db),
-			Trend:              buildTicketTrend(db, trendStart),
 		},
 		AgentStats: response.DashboardAgentStatsResponse{
 			OnlineAgents:  onlineAgents,
@@ -312,28 +304,6 @@ func buildConversationStatusDistribution(db *gorm.DB) []response.DashboardStatus
 	return ret
 }
 
-func buildTicketStatusDistribution(db *gorm.DB) []response.DashboardStatusDistributionItem {
-	statuses := []enums.TicketStatus{
-		enums.TicketStatusPending,
-		enums.TicketStatusProcessing,
-		enums.TicketStatusWaiting,
-		enums.TicketStatusResolved,
-		enums.TicketStatusClosed,
-		enums.TicketStatusCancelled,
-	}
-	ret := make([]response.DashboardStatusDistributionItem, 0, len(statuses))
-	for _, status := range statuses {
-		ret = append(ret, response.DashboardStatusDistributionItem{
-			Status: int(status),
-			Label:  enums.GetTicketStatusLabel(status),
-			Count: repositories.DashboardRepository.CountTickets(db, func(tx *gorm.DB) *gorm.DB {
-				return tx.Where("status = ?", status)
-			}),
-		})
-	}
-	return ret
-}
-
 func buildConversationTrend(db *gorm.DB, start time.Time) []response.DashboardTrendItem {
 	created := repositories.DashboardRepository.ListConversations(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Select("created_at").Where("created_at >= ?", start)
@@ -348,16 +318,6 @@ func buildConversationTrend(db *gorm.DB, start time.Time) []response.DashboardTr
 	})
 }
 
-func buildTicketTrend(db *gorm.DB, start time.Time) []response.DashboardTrendItem {
-	created := repositories.DashboardRepository.ListTickets(db, func(tx *gorm.DB) *gorm.DB {
-		return tx.Select("created_at").Where("created_at >= ?", start)
-	})
-	closed := repositories.DashboardRepository.ListTickets(db, func(tx *gorm.DB) *gorm.DB {
-		return tx.Select("closed_at").Where("closed_at IS NOT NULL AND closed_at >= ?", start)
-	})
-	return buildTicketTrendItems(start, created, closed)
-}
-
 func buildTrendItems(start time.Time, created []models.Conversation, closed []models.Conversation, createdAt func(models.Conversation) *time.Time, closedAt func(models.Conversation) *time.Time) []response.DashboardTrendItem {
 	series := initTrendMap(start, time.Now())
 	for _, item := range created {
@@ -369,20 +329,6 @@ func buildTrendItems(start time.Time, created []models.Conversation, closed []mo
 		if ts := closedAt(item); ts != nil {
 			series[ts.Format("2006-01-02")].ClosedCount++
 		}
-	}
-	return flattenTrendMap(series)
-}
-
-func buildTicketTrendItems(start time.Time, created []models.Ticket, closed []models.Ticket) []response.DashboardTrendItem {
-	series := initTrendMap(start, time.Now())
-	for _, item := range created {
-		series[item.CreatedAt.Format("2006-01-02")].NewCount++
-	}
-	for _, item := range closed {
-		if item.ClosedAt == nil {
-			continue
-		}
-		series[item.ClosedAt.Format("2006-01-02")].ClosedCount++
 	}
 	return flattenTrendMap(series)
 }

@@ -37,26 +37,6 @@ func (r *dashboardRepository) ListConversations(db *gorm.DB, query func(tx *gorm
 	return list
 }
 
-func (r *dashboardRepository) CountTickets(db *gorm.DB, query func(tx *gorm.DB) *gorm.DB) int64 {
-	var count int64
-	tx := db.Model(&models.Ticket{})
-	if query != nil {
-		tx = query(tx)
-	}
-	tx.Count(&count)
-	return count
-}
-
-func (r *dashboardRepository) ListTickets(db *gorm.DB, query func(tx *gorm.DB) *gorm.DB) []models.Ticket {
-	var list []models.Ticket
-	tx := db.Model(&models.Ticket{})
-	if query != nil {
-		tx = query(tx)
-	}
-	tx.Find(&list)
-	return list
-}
-
 func (r *dashboardRepository) ListEnabledAgentProfiles(db *gorm.DB) []models.AgentProfile {
 	var list []models.AgentProfile
 	db.Model(&models.AgentProfile{}).Where("status = ?", enums.StatusOk).Find(&list)

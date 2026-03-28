@@ -21,7 +21,7 @@ type LoginUser struct {
 	CorpID         string                       `json:"corpId"`
 	UserID         string                       `json:"userId"`
 	OpenID         string                       `json:"openId,omitempty"`
-	ExternalID string                       `json:"externalUserId,omitempty"`
+	ExternalUserID string                       `json:"externalUserId,omitempty"`
 	UserTicket     string                       `json:"userTicket,omitempty"`
 	Name           string                       `json:"name,omitempty"`
 	Avatar         string                       `json:"avatar,omitempty"`
@@ -87,7 +87,7 @@ func GetLoginUser(code string) (*LoginUser, error) {
 		CorpID:         wxCfg.CorpID,
 		UserID:         strings.TrimSpace(userInfo.UserID),
 		OpenID:         strings.TrimSpace(userInfo.OpenID),
-		ExternalID: strings.TrimSpace(userInfo.ExternalID),
+		ExternalUserID: strings.TrimSpace(userInfo.ExternalUserID),
 		UserTicket:     strings.TrimSpace(userInfo.UserTicket),
 		UserInfo:       userInfo,
 	}

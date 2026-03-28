@@ -47,13 +47,6 @@ func main() {
 		codegen.GetGenerateStruct(&models.AgentTeam{}),
 		codegen.GetGenerateStruct(&models.AgentTeamSchedule{}),
 		codegen.GetGenerateStruct(&models.AIConfig{}),
-		codegen.GetGenerateStruct(&models.TicketCategory{}),
-		codegen.GetGenerateStruct(&models.Ticket{}),
-		codegen.GetGenerateStruct(&models.TicketAssignment{}),
-		codegen.GetGenerateStruct(&models.TicketReply{}),
-		codegen.GetGenerateStruct(&models.TicketComment{}),
-		codegen.GetGenerateStruct(&models.TicketAttachment{}),
-		codegen.GetGenerateStruct(&models.TicketEventLog{}),
 		codegen.GetGenerateStruct(&models.SkillDefinition{}),
 		codegen.GetGenerateStruct(&models.SkillRunLog{}),
 	)

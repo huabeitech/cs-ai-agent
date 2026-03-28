@@ -5,7 +5,6 @@ type DashboardOverviewResponse struct {
 	GeneratedAt       string                        `json:"generatedAt"`
 	Summary           DashboardSummaryResponse      `json:"summary"`
 	ConversationStats DashboardSectionStatsResponse `json:"conversationStats"`
-	TicketStats       DashboardSectionStatsResponse `json:"ticketStats"`
 	AgentStats        DashboardAgentStatsResponse   `json:"agentStats"`
 	AIStats           DashboardAIStatsResponse      `json:"aiStats"`
 	Alerts            []DashboardAlertResponse      `json:"alerts"`
@@ -16,7 +15,6 @@ type DashboardSummaryResponse struct {
 	TodayNewConversations        int64   `json:"todayNewConversations"`
 	ProcessingConversations      int64   `json:"processingConversations"`
 	PendingDispatchConversations int64   `json:"pendingDispatchConversations"`
-	TodayNewTickets              int64   `json:"todayNewTickets"`
 	OnlineAgents                 int64   `json:"onlineAgents"`
 	AIServiceRate                float64 `json:"aiServiceRate"`
 }

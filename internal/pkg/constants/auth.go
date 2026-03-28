@@ -117,27 +117,6 @@ var (
 	PermissionAgentTeamScheduleDelete        = Permission{Name: "删除客服组排班", Code: "agentTeamSchedule.delete", Type: "api", GroupName: "agentTeamSchedule", Method: "POST", APIPath: "/api/console/agent-team-schedule/delete", SortNo: 840}
 	PermissionAgentTeamScheduleBatchGenerate = Permission{Name: "批量生成客服组排班", Code: "agentTeamSchedule.batchGenerate", Type: "api", GroupName: "agentTeamSchedule", Method: "POST", APIPath: "/api/console/agent-team-schedule/batch_generate", SortNo: 850}
 
-	// 工单分类相关权限
-	PermissionTicketCategoryView   = Permission{Name: "查看工单分类", Code: "ticketCategory.view", Type: "api", GroupName: "ticketCategory", Method: "ANY", APIPath: "/api/console/ticket-category/list", SortNo: 910}
-	PermissionTicketCategoryCreate = Permission{Name: "创建工单分类", Code: "ticketCategory.create", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/create", SortNo: 920}
-	PermissionTicketCategoryUpdate = Permission{Name: "更新工单分类", Code: "ticketCategory.update", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/update", SortNo: 930}
-	PermissionTicketCategoryDelete = Permission{Name: "删除工单分类", Code: "ticketCategory.delete", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/delete", SortNo: 940}
-
-	// 工单相关权限
-	PermissionTicketView   = Permission{Name: "查看工单", Code: "ticket.view", Type: "api", GroupName: "ticket", Method: "ANY", APIPath: "/api/console/ticket/list", SortNo: 1010}
-	PermissionTicketCreate = Permission{Name: "创建工单", Code: "ticket.create", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/create", SortNo: 1020}
-	PermissionTicketUpdate = Permission{Name: "更新工单", Code: "ticket.update", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/update", SortNo: 1030}
-	PermissionTicketDelete = Permission{Name: "删除工单", Code: "ticket.delete", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/delete", SortNo: 1040}
-	PermissionTicketAssign = Permission{Name: "分配工单", Code: "ticket.assign", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/assign", SortNo: 1050}
-	PermissionTicketClose  = Permission{Name: "关闭工单", Code: "ticket.close", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/close", SortNo: 1060}
-	PermissionTicketReopen = Permission{Name: "重开工单", Code: "ticket.reopen", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reopen", SortNo: 1070}
-
-	// 工单回复相关权限
-	PermissionTicketReplyView   = Permission{Name: "查看工单回复", Code: "ticketReply.view", Type: "api", GroupName: "ticketReply", Method: "ANY", APIPath: "/api/console/ticket-reply/list", SortNo: 1110}
-	PermissionTicketReplyCreate = Permission{Name: "创建工单回复", Code: "ticketReply.create", Type: "api", GroupName: "ticketReply", Method: "POST", APIPath: "/api/console/ticket-reply/create", SortNo: 1120}
-	PermissionTicketReplyUpdate = Permission{Name: "更新工单回复", Code: "ticketReply.update", Type: "api", GroupName: "ticketReply", Method: "POST", APIPath: "/api/console/ticket-reply/update", SortNo: 1130}
-	PermissionTicketReplyDelete = Permission{Name: "删除工单回复", Code: "ticketReply.delete", Type: "api", GroupName: "ticketReply", Method: "POST", APIPath: "/api/console/ticket-reply/delete", SortNo: 1140}
-
 	// 文件资源相关权限
 	PermissionAssetView   = Permission{Name: "查看文件资源", Code: "asset.view", Type: "api", GroupName: "asset", Method: "ANY", APIPath: "/api/console/asset/list", SortNo: 1210}
 	PermissionAssetCreate = Permission{Name: "上传文件资源", Code: "asset.create", Type: "api", GroupName: "asset", Method: "POST", APIPath: "/api/console/asset/create", SortNo: 1220}
@@ -227,21 +206,6 @@ var Permissions = []Permission{
 	PermissionAgentTeamScheduleUpdate,
 	PermissionAgentTeamScheduleDelete,
 	PermissionAgentTeamScheduleBatchGenerate,
-	PermissionTicketCategoryView,
-	PermissionTicketCategoryCreate,
-	PermissionTicketCategoryUpdate,
-	PermissionTicketCategoryDelete,
-	PermissionTicketView,
-	PermissionTicketCreate,
-	PermissionTicketUpdate,
-	PermissionTicketDelete,
-	PermissionTicketAssign,
-	PermissionTicketClose,
-	PermissionTicketReopen,
-	PermissionTicketReplyView,
-	PermissionTicketReplyCreate,
-	PermissionTicketReplyUpdate,
-	PermissionTicketReplyDelete,
 	PermissionAssetView,
 	PermissionAssetCreate,
 	PermissionAssetDelete,
@@ -303,9 +267,6 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentView, PermissionAgentCreate, PermissionAgentUpdate, PermissionAgentDelete, PermissionAgentUpdateStatus, PermissionAgentConfig,
 		PermissionAgentTeamView, PermissionAgentTeamCreate, PermissionAgentTeamUpdate, PermissionAgentTeamDelete,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
-		PermissionTicketCategoryView, PermissionTicketCategoryCreate, PermissionTicketCategoryUpdate, PermissionTicketCategoryDelete,
-		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketDelete, PermissionTicketAssign, PermissionTicketClose, PermissionTicketReopen,
-		PermissionTicketReplyView, PermissionTicketReplyCreate, PermissionTicketReplyUpdate, PermissionTicketReplyDelete,
 		PermissionAssetView, PermissionAssetCreate, PermissionAssetDelete,
 		PermissionAIConfigView, PermissionAIConfigCreate, PermissionAIConfigUpdate, PermissionAIConfigDelete,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate, PermissionSkillDefinitionDelete,
@@ -323,9 +284,6 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentView, PermissionAgentUpdate,
 		PermissionAgentTeamView,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
-		PermissionTicketCategoryView, PermissionTicketCategoryCreate, PermissionTicketCategoryUpdate, PermissionTicketCategoryDelete,
-		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketDelete, PermissionTicketAssign, PermissionTicketClose, PermissionTicketReopen,
-		PermissionTicketReplyView, PermissionTicketReplyCreate, PermissionTicketReplyUpdate, PermissionTicketReplyDelete,
 		PermissionAssetView, PermissionAssetCreate, PermissionAssetDelete,
 		PermissionAIConfigView,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate,
@@ -343,9 +301,6 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentView,
 		PermissionAgentTeamView,
 		PermissionAgentTeamScheduleView,
-		PermissionTicketCategoryView,
-		PermissionTicketView,
-		PermissionTicketReplyView,
 		PermissionAIConfigView,
 		PermissionSkillDefinitionView,
 	},
