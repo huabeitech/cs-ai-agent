@@ -75,11 +75,11 @@ export const ContactTypeLabels: Record<ContactType, string> = {
   [ContactType.Other]: "其他",
 }
 
-export enum ExternalIdentitySource {
+export enum ExternalSource {
   WebChat = "web_chat",
 }
-export const ExternalIdentitySourceLabels: Record<ExternalIdentitySource, string> = {
-  [ExternalIdentitySource.WebChat]: "网页客服",
+export const ExternalSourceLabels: Record<ExternalSource, string> = {
+  [ExternalSource.WebChat]: "网页客服",
 }
 
 export enum Gender {
