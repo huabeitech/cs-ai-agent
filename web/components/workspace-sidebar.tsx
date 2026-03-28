@@ -37,7 +37,7 @@ export function WorkspaceSidebar() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex w-14 flex-col items-center border-r bg-background py-2">
+    <nav className="flex w-14 flex-col items-center border-r bg-background py-2 z-50">
       <div className="flex flex-col gap-1">
         {agentNavItems.map((item) => {
           const isActive = pathname === item.url || pathname.startsWith(item.url + "/")

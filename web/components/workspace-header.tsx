@@ -29,34 +29,6 @@ export function WorkspaceHeader() {
           <Menubar className="border-none bg-transparent shadow-none">
             <MenubarMenu>
               <MenubarTrigger className="text-sm">会话</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem>
-                  发起会话
-                  <MenubarShortcut>⌘N</MenubarShortcut>
-                </MenubarItem>
-                <MenubarItem>会话记录</MenubarItem>
-                <MenubarSeparator />
-                <MenubarItem>我的待跟进</MenubarItem>
-                <MenubarItem>全部会话</MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-            <MenubarMenu>
-              <MenubarTrigger className="text-sm">客户</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem>客户列表</MenubarItem>
-                <MenubarItem>客户详情</MenubarItem>
-                <MenubarSeparator />
-                <MenubarItem>客户标签</MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-            <MenubarMenu>
-              <MenubarTrigger className="text-sm">知识库</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem>快捷回复</MenubarItem>
-                <MenubarItem>知识搜索</MenubarItem>
-                <MenubarSeparator />
-                <MenubarItem>话术模板</MenubarItem>
-              </MenubarContent>
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger className="text-sm">设置</MenubarTrigger>
