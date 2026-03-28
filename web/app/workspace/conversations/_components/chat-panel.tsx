@@ -335,16 +335,16 @@ export function ChatPanel() {
     <div
       className={
         showMessageEditor
-          ? "h-full overflow-auto border-t"
-          : "shrink-0 overflow-auto border-t"
+          ? "h-full overflow-auto border-t border-border bg-background"
+          : "shrink-0 overflow-auto border-t border-border bg-background"
       }
     >
       {isClosedConversation ? (
-        <div className="bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:bg-amber-500/15 dark:text-amber-100">
           当前会话已关闭
         </div>
       ) : isPendingConversation ? (
-        <div className="bg-blue-50 px-4 py-3">
+        <div className="bg-blue-500/10 px-4 py-3 dark:bg-blue-500/15">
           <div className="flex items-center gap-2">
             <Button
               onClick={() => setClaimDialogOpen(true)}
