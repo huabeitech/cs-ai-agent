@@ -69,7 +69,7 @@ func (s *conversationParticipantService) Delete(id int64) {
 	repositories.ConversationParticipantRepository.Delete(sqls.DB(), id)
 }
 
-func (s *conversationParticipantService) EnsureCustomerParticipantTx(ctx *sqls.TxContext, conversationID int64, externalInfo openidentity.ExternalInfo) error {
+func (s *conversationParticipantService) CreateCustomerParticipant(ctx *sqls.TxContext, conversationID int64, externalInfo openidentity.ExternalInfo) error {
 	return repositories.ConversationParticipantRepository.Create(ctx.Tx, &models.ConversationParticipant{
 		ConversationID:        conversationID,
 		ParticipantType:       string(enums.IMParticipantTypeCustomer),

@@ -134,7 +134,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiA
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
 		}
-		if err := ConversationParticipantService.EnsureCustomerParticipantTx(ctx, conversation.ID, externalInfo); err != nil {
+		if err := ConversationParticipantService.CreateCustomerParticipant(ctx, conversation.ID, externalInfo); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "", time.Now())
