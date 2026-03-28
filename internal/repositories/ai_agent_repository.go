@@ -62,12 +62,12 @@ func (r *aIAgentRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []mo
 	return
 }
 
-func (r *aIAgentRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.AIAgent) {
+func (r *aIAgentRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.AIAgent) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *aIAgentRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *aIAgentRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -100,3 +100,11 @@ func (r *aIAgentRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.AIAgent{}, "id = ?", id)
 }
 
+func (r *aIAgentRepository) FindByIds(db *gorm.DB, ids []int64) []models.AIAgent {
+	if len(ids) == 0 {
+		return []models.AIAgent{}
+	}
+	var list []models.AIAgent
+	db.Where("id IN ?", ids).Find(&list)
+	return list
+}

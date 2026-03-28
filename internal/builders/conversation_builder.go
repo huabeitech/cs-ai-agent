@@ -104,19 +104,20 @@ func BuildMessages(list []models.Message) []response.MessageResponse {
 		return nil
 	}
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(list[0].ConversationID)
+	aiSenderNames, userSenderNames := collectMessageSenderNameMaps(list)
 	ret := make([]response.MessageResponse, 0, len(list))
 	for i := range list {
-		ret = append(ret, BuildMessageWithReadStates(&list[i], agentReadState, customerReadState))
+		ret = append(ret, BuildMessageWithReadStates(&list[i], agentReadState, customerReadState, aiSenderNames, userSenderNames))
 	}
 	return ret
 }
 
 func BuildMessage(item *models.Message) response.MessageResponse {
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(item.ConversationID)
-	return BuildMessageWithReadStates(item, agentReadState, customerReadState)
+	return BuildMessageWithReadStates(item, agentReadState, customerReadState, nil, nil)
 }
 
-func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState) response.MessageResponse {
+func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState, aiSenderNames, userSenderNames map[int64]string) response.MessageResponse {
 	ret := response.MessageResponse{
 		ID:              item.ID,
 		ConversationID:  item.ConversationID,
@@ -140,9 +141,13 @@ func BuildMessageWithReadStates(item *models.Message, agentReadState, customerRe
 	}
 	if item.SenderID > 0 {
 		if item.SenderType == enums.IMSenderTypeAI {
-			if aiAgent := services.AIAgentService.Get(item.SenderID); aiAgent != nil {
+			if aiSenderNames != nil {
+				ret.SenderName = aiSenderNames[item.SenderID]
+			} else if aiAgent := services.AIAgentService.Get(item.SenderID); aiAgent != nil {
 				ret.SenderName = aiAgent.Name
 			}
+		} else if userSenderNames != nil {
+			ret.SenderName = userSenderNames[item.SenderID]
 		} else if user := services.UserService.Get(item.SenderID); user != nil {
 			ret.SenderName = user.Nickname
 			if ret.SenderName == "" {
@@ -151,6 +156,44 @@ func BuildMessageWithReadStates(item *models.Message, agentReadState, customerRe
 		}
 	}
 	return ret
+}
+
+func collectMessageSenderNameMaps(list []models.Message) (aiNames map[int64]string, userNames map[int64]string) {
+	aiNames = make(map[int64]string)
+	userNames = make(map[int64]string)
+	var aiIDs, userIDs []int64
+	seenAI := make(map[int64]struct{})
+	seenUser := make(map[int64]struct{})
+	for i := range list {
+		m := &list[i]
+		if m.SenderID <= 0 {
+			continue
+		}
+		if m.SenderType == enums.IMSenderTypeAI {
+			if _, ok := seenAI[m.SenderID]; ok {
+				continue
+			}
+			seenAI[m.SenderID] = struct{}{}
+			aiIDs = append(aiIDs, m.SenderID)
+			continue
+		}
+		if _, ok := seenUser[m.SenderID]; ok {
+			continue
+		}
+		seenUser[m.SenderID] = struct{}{}
+		userIDs = append(userIDs, m.SenderID)
+	}
+	for _, a := range services.AIAgentService.FindByIds(aiIDs) {
+		aiNames[a.ID] = a.Name
+	}
+	for _, u := range services.UserService.FindByIds(userIDs) {
+		name := u.Nickname
+		if name == "" {
+			name = u.Username
+		}
+		userNames[u.ID] = name
+	}
+	return aiNames, userNames
 }
 
 func isMessageRead(item *models.Message, state *models.ConversationReadState) bool {

@@ -54,6 +54,10 @@ func (s *aIAgentService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.AIAgentRepository.Count(sqls.DB(), cnd)
 }
 
+func (s *aIAgentService) FindByIds(ids []int64) []models.AIAgent {
+	return repositories.AIAgentRepository.FindByIds(sqls.DB(), ids)
+}
+
 func (s *aIAgentService) CreateAIAgent(req request.CreateAIAgentRequest, operator *dto.AuthPrincipal) (*models.AIAgent, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
