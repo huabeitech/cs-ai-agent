@@ -8,7 +8,6 @@ import {
   CircleXIcon,
   Menu,
   MoreHorizontalIcon,
-  SearchIcon,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -25,19 +24,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -49,6 +41,7 @@ import { useAgentConversationRealtime } from "@/hooks/use-agent-conversation-rea
 import {
   agentConversationFilterOptions,
   agentConversationSelectors,
+  type AgentConversationFilterKey,
   useAgentConversationsStore,
 } from "@/lib/stores/agent-conversations";
 import { ChatPanel } from "./_components/chat-panel";
@@ -58,12 +51,6 @@ import { ConversationList } from "./_components/conversation-list";
 export default function ConversationsPage() {
   const conversation = useAgentConversationsStore(
     agentConversationSelectors.selectedConversation,
-  );
-  const searchKeyword = useAgentConversationsStore(
-    (state) => state.searchKeyword,
-  );
-  const setSearchKeyword = useAgentConversationsStore(
-    (state) => state.setSearchKeyword,
   );
   const conversationFilter = useAgentConversationsStore(
     (state) => state.conversationFilter,
@@ -85,15 +72,11 @@ export default function ConversationsPage() {
   const [closeOpen, setCloseOpen] = useState(false);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const infoPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const currentFilterLabel =
-    agentConversationFilterOptions.find((opt) => opt.value === conversationFilter)
-      ?.label ?? "筛选";
-
   useEffect(() => {
     void loadConversations().catch((error) => {
       toast.error(error instanceof Error ? error.message : "加载会话列表失败");
     });
-  }, [loadConversations, searchKeyword, conversationFilter]);
+  }, [loadConversations, conversationFilter]);
 
   async function handleConversationChanged(conversationId: number) {
     await loadConversations();
@@ -141,41 +124,32 @@ export default function ConversationsPage() {
 
   const renderConversationSidebar = (opts?: { onListAfterSelect?: () => void }) => (
     <div className="flex h-full min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b p-2.5">
-        <div className="flex min-w-0 flex-1 gap-2">
-          <div className="relative min-w-0 flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="搜索会话..."
-              className="pl-9"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-            />
-          </div>
-          <div className="shrink-0">
-            <Select
-              value={conversationFilter}
-              onValueChange={(value) =>
-                setConversationFilter(value as typeof conversationFilter)
-              }
-            >
-              <SelectTrigger className="w-[100px] sm:w-[116px]">
-                <SelectValue>{currentFilterLabel}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {agentConversationFilterOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+      <div className="flex shrink-0 items-start justify-between gap-2 border-b p-2 h-12.5">
+        <Tabs
+          value={conversationFilter}
+          onValueChange={(value) =>
+            setConversationFilter(value as AgentConversationFilterKey)
+          }
+          className="min-w-0 flex-1 gap-0"
+        >
+          <TabsList
+            className="w-full min-w-0 justify-start "
+          >
+            {agentConversationFilterOptions.map((opt) => (
+              <TabsTrigger
+                key={opt.value}
+                value={opt.value}
+                className="shrink-0 px-2.5 text-xs sm:text-sm"
+              >
+                {opt.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <Button
           variant="ghost"
           size="icon"
-          className="ml-1 shrink-0 lg:hidden"
+          className="mt-0.5 shrink-0 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         >
           <X className="size-4" />
@@ -187,7 +161,7 @@ export default function ConversationsPage() {
 
   const workspaceContent = (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 flex items-center justify-between gap-3 border-b px-3 py-1">
+      <div className="shrink-0 flex items-center justify-between gap-3 border-b px-3 py-1 h-12.5">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -216,7 +190,9 @@ export default function ConversationsPage() {
                 <AvatarFallback>客</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate font-medium leading-tight">{conversation.subject}</p>
+                <p className="truncate font-medium leading-tight">
+                  {conversation.subject}
+                </p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
                   <span>{conversation.externalSource}</span>
                   <span className="text-muted-foreground/60"> / </span>

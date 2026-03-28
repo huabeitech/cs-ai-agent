@@ -47,9 +47,11 @@ export function CustomerInfoPanel({
       )}
     >
       {!embedded ? (
-        <div className="shrink-0 border-b px-3 py-2.5">
+        <div className="shrink-0 border-b px-3 py-2 h-12.5">
           <h2 className="text-sm font-semibold">客户信息</h2>
-          <p className="text-xs text-muted-foreground">当前会话关联的客户与会话属性</p>
+          <p className="text-xs text-muted-foreground">
+            当前会话关联的客户与会话属性
+          </p>
         </div>
       ) : null}
       <div
@@ -60,7 +62,9 @@ export function CustomerInfoPanel({
       >
         {!conversation ? (
           <p className="pt-4 text-sm text-muted-foreground">
-            {embedded ? "请选择会话以查看客户信息" : "请选择左侧会话以查看客户信息"}
+            {embedded
+              ? "请选择会话以查看客户信息"
+              : "请选择左侧会话以查看客户信息"}
           </p>
         ) : (
           <div className="divide-y">
@@ -71,7 +75,10 @@ export function CustomerInfoPanel({
               <InfoRow label="主题" value={conversation.subject} />
               <InfoRow label="外部来源" value={conversation.externalSource} />
               <InfoRow label="外部用户标识" value={conversation.externalId} />
-              <InfoRow label="来源用户 ID" value={String(conversation.sourceUserId)} />
+              <InfoRow
+                label="来源用户 ID"
+                value={String(conversation.sourceUserId)}
+              />
             </section>
             <section>
               <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -79,24 +86,40 @@ export function CustomerInfoPanel({
               </h3>
               <InfoRow
                 label="状态"
-                value={conversationStatusLabels[conversation.status] ?? String(conversation.status)}
+                value={
+                  conversationStatusLabels[conversation.status] ??
+                  String(conversation.status)
+                }
               />
               <InfoRow
                 label="服务模式"
                 value={
-                  serviceModeLabels[conversation.serviceMode] ?? String(conversation.serviceMode)
+                  serviceModeLabels[conversation.serviceMode] ??
+                  String(conversation.serviceMode)
                 }
               />
               <InfoRow label="优先级" value={String(conversation.priority)} />
-              <InfoRow label="当前客服" value={conversation.currentAssigneeName ?? "-"} />
+              <InfoRow
+                label="当前客服"
+                value={conversation.currentAssigneeName ?? "-"}
+              />
             </section>
             <section>
               <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 时间
               </h3>
-              <InfoRow label="最后活跃" value={formatDateTime(conversation.lastActiveAt)} />
-              <InfoRow label="最后消息" value={formatDateTime(conversation.lastMessageAt)} />
-              <InfoRow label="关闭时间" value={formatDateTime(conversation.closedAt)} />
+              <InfoRow
+                label="最后活跃"
+                value={formatDateTime(conversation.lastActiveAt)}
+              />
+              <InfoRow
+                label="最后消息"
+                value={formatDateTime(conversation.lastMessageAt)}
+              />
+              <InfoRow
+                label="关闭时间"
+                value={formatDateTime(conversation.closedAt)}
+              />
             </section>
             {conversation.tags && conversation.tags.length > 0 ? (
               <section>
@@ -119,7 +142,8 @@ export function CustomerInfoPanel({
                 </ul>
               </section>
             ) : null}
-            {conversation.participants && conversation.participants.length > 0 ? (
+            {conversation.participants &&
+            conversation.participants.length > 0 ? (
               <section>
                 <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   参与者

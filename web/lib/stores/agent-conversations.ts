@@ -17,7 +17,7 @@ export const agentConversationFilterOptions = [
   { value: "mine", label: "我的" },
   { value: "active", label: "处理中" },
   { value: "pending", label: "待接入" },
-  { value: "closed", label: "已关闭" },
+  // { value: "closed", label: "已关闭" },
 ] as const
 
 export type AgentConversationFilterKey =
