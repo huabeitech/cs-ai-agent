@@ -11,6 +11,7 @@ import {
   MenubarSeparator,
   MenubarTrigger
 } from "@/components/ui/menubar"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { WorkspaceToggle } from "@/components/workspace-toggle"
 import { LogOutIcon, SettingsIcon } from "lucide-react"
 
@@ -50,6 +51,7 @@ export function WorkspaceHeader() {
         </div>
         <div className="flex items-center gap-2">
           <WorkspaceToggle />
+          <ThemeToggle />
         </div>
       </div>
     </header>

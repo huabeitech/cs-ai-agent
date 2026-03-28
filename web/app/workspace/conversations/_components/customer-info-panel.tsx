@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
 import type { AgentConversation } from "@/lib/api/agent";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatDateTime } from "@/lib/utils";
 
 const conversationStatusLabels: Record<number, string> = {
@@ -15,11 +18,111 @@ const serviceModeLabels: Record<number, string> = {
   3: "AI优先",
 };
 
+const infoTabOptions = [
+  { value: "conversation", label: "会话" },
+  { value: "customer", label: "客户" },
+] as const;
+
+type InfoTabValue = (typeof infoTabOptions)[number]["value"];
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="break-all text-sm">{value || "-"}</span>
+    </div>
+  );
+}
+
+function ConversationDetails({ conversation }: { conversation: AgentConversation }) {
+  return (
+    <div className="divide-y">
+      <section>
+        <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          基本信息
+        </h3>
+        <InfoRow label="主题" value={conversation.subject} />
+        <InfoRow label="外部来源" value={conversation.externalSource} />
+        <InfoRow label="外部用户标识" value={conversation.externalId} />
+        <InfoRow label="来源用户 ID" value={String(conversation.sourceUserId)} />
+      </section>
+      <section>
+        <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          会话状态
+        </h3>
+        <InfoRow
+          label="状态"
+          value={
+            conversationStatusLabels[conversation.status] ??
+            String(conversation.status)
+          }
+        />
+        <InfoRow
+          label="服务模式"
+          value={
+            serviceModeLabels[conversation.serviceMode] ??
+            String(conversation.serviceMode)
+          }
+        />
+        <InfoRow label="优先级" value={String(conversation.priority)} />
+        <InfoRow label="当前客服" value={conversation.currentAssigneeName ?? "-"} />
+      </section>
+      <section>
+        <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          时间
+        </h3>
+        <InfoRow label="最后活跃" value={formatDateTime(conversation.lastActiveAt)} />
+        <InfoRow label="最后消息" value={formatDateTime(conversation.lastMessageAt)} />
+        <InfoRow label="关闭时间" value={formatDateTime(conversation.closedAt)} />
+      </section>
+      {conversation.tags && conversation.tags.length > 0 ? (
+        <section>
+          <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            标签
+          </h3>
+          <ul className="flex flex-wrap gap-1.5 py-2">
+            {conversation.tags.map((tag) => (
+              <li
+                key={tag.id}
+                className="rounded-md border px-2 py-0.5 text-xs"
+                style={{
+                  borderColor: tag.color || undefined,
+                  color: tag.color || undefined,
+                }}
+              >
+                {tag.name}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {conversation.participants && conversation.participants.length > 0 ? (
+        <section>
+          <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            参与者
+          </h3>
+          <ul className="space-y-2 py-2">
+            {conversation.participants.map((p) => (
+              <li
+                key={p.id}
+                className="rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
+              >
+                <div className="font-medium">{p.participantType}</div>
+                <div className="text-muted-foreground">
+                  ID {p.participantId}
+                  {p.externalParticipantId
+                    ? ` · 外部 ${p.externalParticipantId}`
+                    : ""}
+                </div>
+                <div className="text-muted-foreground">
+                  加入 {formatDateTime(p.joinedAt)}
+                  {p.leftAt ? ` · 离开 ${formatDateTime(p.leftAt)}` : ""}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -37,6 +140,7 @@ export function CustomerInfoPanel({
   variant = "default",
 }: CustomerInfoPanelProps) {
   const embedded = variant === "embedded";
+  const [activeTab, setActiveTab] = useState<InfoTabValue>("conversation");
 
   return (
     <div
@@ -46,131 +150,44 @@ export function CustomerInfoPanel({
         className,
       )}
     >
-      {!embedded ? (
-        <div className="shrink-0 border-b px-3 py-2 h-12.5">
-          <h2 className="text-sm font-semibold">客户信息</h2>
-          <p className="text-xs text-muted-foreground">
-            当前会话关联的客户与会话属性
-          </p>
-        </div>
-      ) : null}
+      <div className="flex h-12.5 shrink-0 items-start border-b p-2">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as InfoTabValue)}
+          className="min-w-0 flex-1 gap-0"
+        >
+          <TabsList className="h-full min-h-8 w-full min-w-0 justify-start">
+            {infoTabOptions.map((opt) => (
+              <TabsTrigger
+                key={opt.value}
+                value={opt.value}
+                className="shrink-0 px-2.5 text-xs sm:text-sm"
+              >
+                {opt.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div
         className={cn(
           "min-h-0 flex-1 overflow-y-auto px-3 pb-4",
           embedded && "pb-[max(1rem,env(safe-area-inset-bottom))] pt-1",
         )}
       >
-        {!conversation ? (
-          <p className="pt-4 text-sm text-muted-foreground">
-            {embedded
-              ? "请选择会话以查看客户信息"
-              : "请选择左侧会话以查看客户信息"}
-          </p>
+        {activeTab === "conversation" ? (
+          !conversation ? (
+            <p className="pt-4 text-sm text-muted-foreground">
+              {embedded
+                ? "请选择会话以查看会话信息"
+                : "请选择左侧会话以查看会话信息"}
+            </p>
+          ) : (
+            <ConversationDetails conversation={conversation} />
+          )
         ) : (
-          <div className="divide-y">
-            <section>
-              <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                基本信息
-              </h3>
-              <InfoRow label="主题" value={conversation.subject} />
-              <InfoRow label="外部来源" value={conversation.externalSource} />
-              <InfoRow label="外部用户标识" value={conversation.externalId} />
-              <InfoRow
-                label="来源用户 ID"
-                value={String(conversation.sourceUserId)}
-              />
-            </section>
-            <section>
-              <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                会话状态
-              </h3>
-              <InfoRow
-                label="状态"
-                value={
-                  conversationStatusLabels[conversation.status] ??
-                  String(conversation.status)
-                }
-              />
-              <InfoRow
-                label="服务模式"
-                value={
-                  serviceModeLabels[conversation.serviceMode] ??
-                  String(conversation.serviceMode)
-                }
-              />
-              <InfoRow label="优先级" value={String(conversation.priority)} />
-              <InfoRow
-                label="当前客服"
-                value={conversation.currentAssigneeName ?? "-"}
-              />
-            </section>
-            <section>
-              <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                时间
-              </h3>
-              <InfoRow
-                label="最后活跃"
-                value={formatDateTime(conversation.lastActiveAt)}
-              />
-              <InfoRow
-                label="最后消息"
-                value={formatDateTime(conversation.lastMessageAt)}
-              />
-              <InfoRow
-                label="关闭时间"
-                value={formatDateTime(conversation.closedAt)}
-              />
-            </section>
-            {conversation.tags && conversation.tags.length > 0 ? (
-              <section>
-                <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  标签
-                </h3>
-                <ul className="flex flex-wrap gap-1.5 py-2">
-                  {conversation.tags.map((tag) => (
-                    <li
-                      key={tag.id}
-                      className="rounded-md border px-2 py-0.5 text-xs"
-                      style={{
-                        borderColor: tag.color || undefined,
-                        color: tag.color || undefined,
-                      }}
-                    >
-                      {tag.name}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-            {conversation.participants &&
-            conversation.participants.length > 0 ? (
-              <section>
-                <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  参与者
-                </h3>
-                <ul className="space-y-2 py-2">
-                  {conversation.participants.map((p) => (
-                    <li
-                      key={p.id}
-                      className="rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
-                    >
-                      <div className="font-medium">{p.participantType}</div>
-                      <div className="text-muted-foreground">
-                        ID {p.participantId}
-                        {p.externalParticipantId
-                          ? ` · 外部 ${p.externalParticipantId}`
-                          : ""}
-                      </div>
-                      <div className="text-muted-foreground">
-                        加入 {formatDateTime(p.joinedAt)}
-                        {p.leftAt ? ` · 离开 ${formatDateTime(p.leftAt)}` : ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-          </div>
+          <p className="pt-4 text-sm text-muted-foreground">客户信息即将上线，敬请期待。</p>
         )}
       </div>
     </div>

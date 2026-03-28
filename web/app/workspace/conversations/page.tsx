@@ -30,13 +30,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAgentConversationRealtime } from "@/hooks/use-agent-conversation-realtime";
 import {
   agentConversationFilterOptions,
@@ -365,10 +359,6 @@ export default function ConversationsPage() {
           className="flex w-full flex-col gap-0 border-l p-0 sm:max-w-md"
           showCloseButton
         >
-          <SheetHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left">
-            <SheetTitle>客户信息</SheetTitle>
-            <SheetDescription>当前会话关联的客户与会话属性</SheetDescription>
-          </SheetHeader>
           <CustomerInfoPanel
             conversation={conversation}
             variant="embedded"
