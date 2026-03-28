@@ -175,7 +175,7 @@ export function ImMessageEditor({
       />
       <div className="flex h-full min-h-0 flex-col rounded-sm border bg-background">
         <div className="min-h-0 flex-1 px-2 py-1">
-          <EditorContent editor={editor} />
+          <EditorContent editor={editor} className="h-full" />
         </div>
         <div className="flex items-center justify-between border-t px-2 pb-2 pt-1">
           <div className="flex items-center gap-1">

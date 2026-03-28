@@ -337,7 +337,7 @@ export function ChatPanel() {
                 当前会话已关闭
               </div>
             ) : isPendingConversation ? (
-              <div className="bg-blue-50 px-4 py-3">
+              <div className="bg-blue-50 px-4 py-3 h-full">
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => setClaimDialogOpen(true)}
