@@ -4,6 +4,7 @@ import {
   ArrowRightLeftIcon,
   ChevronLeft,
   ChevronRight,
+  CircleUserRoundIcon,
   CircleXIcon,
   Menu,
   MoreHorizontalIcon,
@@ -37,6 +38,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useAgentConversationRealtime } from "@/hooks/use-agent-conversation-realtime";
 import {
   agentConversationFilterOptions,
@@ -72,6 +80,7 @@ export default function ConversationsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [infoPanelCollapsed, setInfoPanelCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCustomerSheetOpen, setMobileCustomerSheetOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
@@ -130,11 +139,11 @@ export default function ConversationsPage() {
     setInfoPanelCollapsed(true);
   };
 
-  const sidebarContent = (
-    <div className="flex h-full flex-col border-r lg:border-r-0">
-      <div className="flex items-center justify-between gap-2 border-b p-2.5">
-        <div className="flex flex-1 gap-2">
-          <div className="relative flex-1">
+  const renderConversationSidebar = (opts?: { onListAfterSelect?: () => void }) => (
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b p-2.5">
+        <div className="flex min-w-0 flex-1 gap-2">
+          <div className="relative min-w-0 flex-1">
             <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="搜索会话..."
@@ -143,14 +152,14 @@ export default function ConversationsPage() {
               onChange={(e) => setSearchKeyword(e.target.value)}
             />
           </div>
-          <div>
+          <div className="shrink-0">
             <Select
               value={conversationFilter}
               onValueChange={(value) =>
                 setConversationFilter(value as typeof conversationFilter)
               }
             >
-              <SelectTrigger className="w-[116px]">
+              <SelectTrigger className="w-[100px] sm:w-[116px]">
                 <SelectValue>{currentFilterLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -166,13 +175,13 @@ export default function ConversationsPage() {
         <Button
           variant="ghost"
           size="icon"
-          className="ml-2 lg:hidden"
+          className="ml-1 shrink-0 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         >
           <X className="size-4" />
         </Button>
       </div>
-      <ConversationList />
+      <ConversationList onAfterSelect={opts?.onListAfterSelect} />
     </div>
   );
 
@@ -202,28 +211,42 @@ export default function ConversationsPage() {
           </Button>
           {conversation ? (
             <>
-              <Avatar className="size-9 shrink-0">
+              <Avatar className="size-8 shrink-0 lg:size-9">
                 <AvatarImage src="" />
                 <AvatarFallback>客</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate font-medium">{conversation.subject}</p>
-                <p className="truncate text-sm text-muted-foreground">
-                  <span>{conversation.externalSource}</span> /{" "}
+                <p className="truncate font-medium leading-tight">{conversation.subject}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
+                  <span>{conversation.externalSource}</span>
+                  <span className="text-muted-foreground/60"> / </span>
                   <span>{conversation.externalId}</span>
                 </p>
               </div>
             </>
           ) : (
             <div className="min-w-0">
-              <p className="truncate font-medium">会话工作台</p>
-              <p className="truncate text-sm text-muted-foreground">
+              <p className="truncate font-medium leading-tight">会话工作台</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm lg:hidden">
+                打开菜单选择会话
+              </p>
+              <p className="mt-0.5 hidden truncate text-sm text-muted-foreground lg:block">
                 请选择左侧会话开始处理消息
               </p>
             </div>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            disabled={!conversation}
+            aria-label="客户信息"
+            onClick={() => setMobileCustomerSheetOpen(true)}
+          >
+            <CircleUserRoundIcon className="size-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -271,23 +294,28 @@ export default function ConversationsPage() {
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden">
-      <div
-        className={`fixed inset-y-0 left-0 z-50 flex w-80 transform bg-white transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {sidebarContent}
-      </div>
-
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+      {/* 与 layout 对齐：顶栏 h-12、左侧导航 w-14；抽屉仅占据列表宽度，避免整块主区域挡在遮罩上方 */}
       {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+        <button
+          type="button"
+          aria-label="关闭会话列表"
+          className="fixed top-12 right-0 bottom-0 left-14 z-30 bg-black/50 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+      <div
+        className={`fixed top-12 bottom-0 left-14 z-40 flex w-[min(22rem,calc(100vw-3.5rem-0.5rem))] max-w-[calc(100vw-3.5rem-0.5rem)] flex-col overflow-hidden border-r bg-background shadow-lg transition-transform duration-300 ease-out will-change-transform touch-manipulation overscroll-contain supports-[padding:max(0px)]:pb-[env(safe-area-inset-bottom)] lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+        }`}
+        aria-hidden={!mobileMenuOpen}
+      >
+        {renderConversationSidebar({
+          onListAfterSelect: () => setMobileMenuOpen(false),
+        })}
+      </div>
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden lg:hidden">
+      <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden lg:hidden">
         {workspaceContent}
       </div>
       <div className="hidden min-h-0 w-full flex-1 overflow-hidden lg:flex">
@@ -305,7 +333,7 @@ export default function ConversationsPage() {
             className="min-h-0"
           >
             <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
-              {sidebarContent}
+              {renderConversationSidebar()}
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
@@ -354,6 +382,24 @@ export default function ConversationsPage() {
           }
         }}
       />
+
+      <Sheet open={mobileCustomerSheetOpen} onOpenChange={setMobileCustomerSheetOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 border-l p-0 sm:max-w-md"
+          showCloseButton
+        >
+          <SheetHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left">
+            <SheetTitle>客户信息</SheetTitle>
+            <SheetDescription>当前会话关联的客户与会话属性</SheetDescription>
+          </SheetHeader>
+          <CustomerInfoPanel
+            conversation={conversation}
+            variant="embedded"
+            className="min-h-0 flex-1"
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

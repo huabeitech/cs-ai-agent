@@ -42,11 +42,11 @@ export default function AgentWorkbenchLayout({
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-svh min-h-0 flex-col">
       <WorkspaceHeader />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <WorkspaceSidebar />
-        <main className="flex min-h-0 flex-1 overflow-hidden">{children}</main>
+        <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   )

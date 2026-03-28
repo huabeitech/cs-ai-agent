@@ -27,23 +27,41 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 type CustomerInfoPanelProps = {
   conversation: AgentConversation | null;
   className?: string;
+  /** 嵌入 Sheet 等容器时使用：去掉左侧栏样式与顶部标题区 */
+  variant?: "default" | "embedded";
 };
 
-export function CustomerInfoPanel({ conversation, className }: CustomerInfoPanelProps) {
+export function CustomerInfoPanel({
+  conversation,
+  className,
+  variant = "default",
+}: CustomerInfoPanelProps) {
+  const embedded = variant === "embedded";
+
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden border-l bg-white",
+        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
+        !embedded && "border-l bg-white",
         className,
       )}
     >
-      <div className="shrink-0 border-b px-3 py-2.5">
-        <h2 className="text-sm font-semibold">客户信息</h2>
-        <p className="text-xs text-muted-foreground">当前会话关联的客户与会话属性</p>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      {!embedded ? (
+        <div className="shrink-0 border-b px-3 py-2.5">
+          <h2 className="text-sm font-semibold">客户信息</h2>
+          <p className="text-xs text-muted-foreground">当前会话关联的客户与会话属性</p>
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto px-3 pb-4",
+          embedded && "pb-[max(1rem,env(safe-area-inset-bottom))] pt-1",
+        )}
+      >
         {!conversation ? (
-          <p className="pt-4 text-sm text-muted-foreground">请选择左侧会话以查看客户信息</p>
+          <p className="pt-4 text-sm text-muted-foreground">
+            {embedded ? "请选择会话以查看客户信息" : "请选择左侧会话以查看客户信息"}
+          </p>
         ) : (
           <div className="divide-y">
             <section>

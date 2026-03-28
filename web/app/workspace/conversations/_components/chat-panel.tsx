@@ -32,6 +32,7 @@ import {
   agentConversationSelectors,
   useAgentConversationsStore,
 } from "@/lib/stores/agent-conversations";
+import { useIsLgUp } from "@/hooks/use-lg-media";
 import { formatDateTime } from "@/lib/utils";
 
 export function ChatPanel() {
@@ -62,6 +63,7 @@ export function ChatPanel() {
   const [claiming, setClaiming] = useState(false);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const isLgUp = useIsLgUp();
   const isClosedConversation = conversation?.status === 3;
   const isPendingConversation = conversation?.status === 1;
   const showMessageEditor = !isClosedConversation && !isPendingConversation;
@@ -295,10 +297,11 @@ export function ChatPanel() {
 
   if (!conversation) {
     return (
-      <div className="flex flex-1 items-center justify-center mt-10">
+      <div className="mt-10 flex flex-1 items-center justify-center px-4">
         <div className="text-center text-muted-foreground">
           <p className="text-lg">暂无会话</p>
-          <p className="mt-1 text-sm">请从左侧选择会话开始聊天</p>
+          <p className="mt-1 text-sm lg:hidden">点击左上角菜单打开列表并选择会话</p>
+          <p className="mt-1 hidden text-sm lg:block">请从左侧选择会话开始聊天</p>
         </div>
       </div>
     );
@@ -382,19 +385,29 @@ export function ChatPanel() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {showMessageEditor ? (
-        <ResizablePanelGroup orientation="vertical">
-          <ResizablePanel defaultSize="72%" minSize="35%" className="min-h-0">
-            {messagesScroll}
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize="28%" minSize="18%" maxSize="55%" className="min-h-0">
-            {bottomPanel}
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        isLgUp ? (
+          <ResizablePanelGroup
+            orientation="vertical"
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <ResizablePanel defaultSize="72%" minSize="35%" className="min-h-0">
+              {messagesScroll}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize="28%" minSize="18%" maxSize="55%" className="min-h-0">
+              {bottomPanel}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="min-h-0 flex-1">{messagesScroll}</div>
+            <div className="shrink-0 pb-[env(safe-area-inset-bottom)]">{bottomPanel}</div>
+          </div>
+        )
       ) : (
         <>
           <div className="min-h-0 flex-1">{messagesScroll}</div>
-          {bottomPanel}
+          <div className="shrink-0 pb-[env(safe-area-inset-bottom)] lg:pb-0">{bottomPanel}</div>
         </>
       )}
       <Dialog

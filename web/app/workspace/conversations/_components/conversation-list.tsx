@@ -25,7 +25,11 @@ function getStatusVariant(status: number) {
   }
 }
 
-export function ConversationList() {
+type ConversationListProps = {
+  onAfterSelect?: () => void
+}
+
+export function ConversationList({ onAfterSelect }: ConversationListProps) {
   const conversations = useAgentConversationsStore((state) => state.conversations)
   const loading = useAgentConversationsStore((state) => state.conversationsLoading)
   const selectedId = useAgentConversationsStore((state) => state.selectedConversationId)
@@ -47,7 +51,14 @@ export function ConversationList() {
                 className={`cursor-pointer px-2.5 py-1.5 transition-colors hover:bg-muted/50 ${
                   isSelected ? "bg-muted/80" : ""
                 }`}
-                onClick={() => void selectConversation(conversation.id)}
+                onClick={() => {
+                  void selectConversation(conversation.id).then(
+                    () => {
+                      onAfterSelect?.()
+                    },
+                    () => {},
+                  )
+                }}
               >
                 <div className="overflow-hidden">
                   <div className="flex items-center gap-2">
