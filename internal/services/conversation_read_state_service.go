@@ -25,6 +25,46 @@ func newConversationReadStateService() *conversationReadStateService {
 type conversationReadStateService struct {
 }
 
+// readerCursor 已读游标行的身份键（包内私有，供客服 / 客户两条路径共用）。
+type readerCursor struct {
+	readerType       enums.IMSenderType
+	readerID         int64
+	externalReaderID string
+	auditUserID      int64
+	auditUserName    string
+}
+
+func agentReaderCursor(operator *dto.AuthPrincipal) (readerCursor, error) {
+	if operator == nil {
+		return readerCursor{}, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	return readerCursor{
+		readerType:       enums.IMSenderTypeAgent,
+		readerID:         operator.UserID,
+		externalReaderID: "",
+		auditUserID:      operator.UserID,
+		auditUserName:    operator.Username,
+	}, nil
+}
+
+func customerReaderCursor(external *request.ExternalInfo) (readerCursor, error) {
+	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
+		return readerCursor{}, errorsx.Unauthorized("外部用户标识不能为空")
+	}
+	extID := strings.TrimSpace(external.ExternalID)
+	name := strings.TrimSpace(external.ExternalName)
+	if name == "" {
+		name = extID
+	}
+	return readerCursor{
+		readerType:       enums.IMSenderTypeCustomer,
+		readerID:         0,
+		externalReaderID: extID,
+		auditUserID:      0,
+		auditUserName:    name,
+	}, nil
+}
+
 func (s *conversationReadStateService) Get(id int64) *models.ConversationReadState {
 	return repositories.ConversationReadStateRepository.Get(sqls.DB(), id)
 }
@@ -73,27 +113,36 @@ func (s *conversationReadStateService) Delete(id int64) {
 	repositories.ConversationReadStateRepository.Delete(sqls.DB(), id)
 }
 
-// GetByReader 查询某会话下指定读者类型的已读游标。
-// 客服侧传 operator；IM 客户侧传 external（按 ExternalID 匹配 external_reader_id）。
-func (s *conversationReadStateService) GetByReader(conversationID int64, readerType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo) *models.ConversationReadState {
-	cnd := sqls.NewCnd().
-		Eq("conversation_id", conversationID).
-		Eq("reader_type", readerType)
-	switch readerType {
-	case enums.IMSenderTypeCustomer:
-		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
-			return nil
-		}
-		cnd = cnd.Eq("external_reader_id", strings.TrimSpace(external.ExternalID)).Eq("reader_id", int64(0))
-	case enums.IMSenderTypeAgent:
-		if operator == nil {
-			return nil
-		}
-		cnd = cnd.Eq("reader_id", operator.UserID).Eq("external_reader_id", "")
-	default:
+// GetByAgentReader 查询客服侧已读游标。
+func (s *conversationReadStateService) GetByAgentReader(conversationID int64, operator *dto.AuthPrincipal) *models.ConversationReadState {
+	if operator == nil {
 		return nil
 	}
-	return s.FindOne(cnd)
+	return s.getByCursor(conversationID, readerCursor{
+		readerType:       enums.IMSenderTypeAgent,
+		readerID:         operator.UserID,
+		externalReaderID: "",
+	})
+}
+
+// GetByCustomerReader 查询 IM 客户侧已读游标（按 ExternalID）。
+func (s *conversationReadStateService) GetByCustomerReader(conversationID int64, external *request.ExternalInfo) *models.ConversationReadState {
+	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
+		return nil
+	}
+	return s.getByCursor(conversationID, readerCursor{
+		readerType:       enums.IMSenderTypeCustomer,
+		readerID:         0,
+		externalReaderID: strings.TrimSpace(external.ExternalID),
+	})
+}
+
+func (s *conversationReadStateService) getByCursor(conversationID int64, c readerCursor) *models.ConversationReadState {
+	return s.FindOne(sqls.NewCnd().
+		Eq("conversation_id", conversationID).
+		Eq("reader_type", c.readerType).
+		Eq("reader_id", c.readerID).
+		Eq("external_reader_id", c.externalReaderID))
 }
 
 func (s *conversationReadStateService) GetConversationReadStates(conversationID int64) (agentState, customerState *models.ConversationReadState) {
@@ -128,45 +177,35 @@ func (s *conversationReadStateService) pickConversationReadStates(list []models.
 	return agentState, customerState
 }
 
-// MarkReadTx 更新或创建已读游标。客服传 operator；IM 客户传 external（operator 可为 nil）。
-func (s *conversationReadStateService) MarkReadTx(ctx *sqls.TxContext, conversation *models.Conversation, readerType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+// MarkAgentReadTx 在事务内更新/创建客服已读游标。
+func (s *conversationReadStateService) MarkAgentReadTx(ctx *sqls.TxContext, conversation *models.Conversation, operator *dto.AuthPrincipal, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+	c, err := agentReaderCursor(operator)
+	if err != nil {
+		return nil, err
+	}
+	return s.markReadTxWithCursor(ctx, conversation, c, message, now)
+}
+
+// MarkCustomerReadTx 在事务内更新/创建 IM 客户已读游标。
+func (s *conversationReadStateService) MarkCustomerReadTx(ctx *sqls.TxContext, conversation *models.Conversation, external *request.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+	c, err := customerReaderCursor(external)
+	if err != nil {
+		return nil, err
+	}
+	return s.markReadTxWithCursor(ctx, conversation, c, message, now)
+}
+
+func (s *conversationReadStateService) markReadTxWithCursor(ctx *sqls.TxContext, conversation *models.Conversation, c readerCursor, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
 	if ctx == nil || conversation == nil || message == nil {
 		return nil, nil
 	}
-	if readerType != enums.IMSenderTypeAgent && readerType != enums.IMSenderTypeCustomer {
+	if c.readerType != enums.IMSenderTypeAgent && c.readerType != enums.IMSenderTypeCustomer {
 		return nil, errorsx.InvalidParam("不支持的已读操作类型")
-	}
-
-	var readerID int64
-	var externalReaderID string
-	var auditUserID int64
-	var auditUserName string
-
-	switch readerType {
-	case enums.IMSenderTypeAgent:
-		if operator == nil {
-			return nil, errorsx.Unauthorized("未登录或登录已过期")
-		}
-		readerID = operator.UserID
-		externalReaderID = ""
-		auditUserID = operator.UserID
-		auditUserName = operator.Username
-	case enums.IMSenderTypeCustomer:
-		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
-			return nil, errorsx.Unauthorized("外部用户标识不能为空")
-		}
-		readerID = 0
-		externalReaderID = strings.TrimSpace(external.ExternalID)
-		auditUserID = 0
-		auditUserName = strings.TrimSpace(external.ExternalName)
-		if auditUserName == "" {
-			auditUserName = externalReaderID
-		}
 	}
 
 	item := &models.ConversationReadState{}
 	err := ctx.Tx.Where("conversation_id = ? AND reader_type = ? AND reader_id = ? AND external_reader_id = ?",
-		conversation.ID, readerType, readerID, externalReaderID,
+		conversation.ID, c.readerType, c.readerID, c.externalReaderID,
 	).First(item).Error
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
@@ -174,19 +213,19 @@ func (s *conversationReadStateService) MarkReadTx(ctx *sqls.TxContext, conversat
 		}
 		item = &models.ConversationReadState{
 			ConversationID:    conversation.ID,
-			ReaderType:        readerType,
-			ReaderID:          readerID,
-			ExternalReaderID:  externalReaderID,
+			ReaderType:        c.readerType,
+			ReaderID:          c.readerID,
+			ExternalReaderID:  c.externalReaderID,
 			LastReadMessageID: message.ID,
 			LastReadSeqNo:     message.SeqNo,
 			LastReadAt:        &now,
 			AuditFields: models.AuditFields{
 				CreatedAt:      now,
-				CreateUserID:   auditUserID,
-				CreateUserName: auditUserName,
+				CreateUserID:   c.auditUserID,
+				CreateUserName: c.auditUserName,
 				UpdatedAt:      now,
-				UpdateUserID:   auditUserID,
-				UpdateUserName: auditUserName,
+				UpdateUserID:   c.auditUserID,
+				UpdateUserName: c.auditUserName,
 			},
 		}
 		if err := ctx.Tx.Create(item).Error; err != nil {
@@ -203,8 +242,8 @@ func (s *conversationReadStateService) MarkReadTx(ctx *sqls.TxContext, conversat
 		"last_read_message_id": message.ID,
 		"last_read_seq_no":     message.SeqNo,
 		"last_read_at":         now,
-		"update_user_id":       auditUserID,
-		"update_user_name":     auditUserName,
+		"update_user_id":       c.auditUserID,
+		"update_user_name":     c.auditUserName,
 		"updated_at":           now,
 	}
 	if err := repositories.ConversationReadStateRepository.Updates(ctx.Tx, item.ID, updates); err != nil {
@@ -215,8 +254,8 @@ func (s *conversationReadStateService) MarkReadTx(ctx *sqls.TxContext, conversat
 	item.LastReadSeqNo = message.SeqNo
 	item.LastReadAt = &now
 	item.UpdatedAt = now
-	item.UpdateUserID = auditUserID
-	item.UpdateUserName = auditUserName
+	item.UpdateUserID = c.auditUserID
+	item.UpdateUserName = c.auditUserName
 	return item, nil
 }
 

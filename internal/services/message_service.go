@@ -235,15 +235,14 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		if senderType == enums.IMSenderTypeAI {
 			readStateType = enums.IMSenderTypeAgent
 		}
-		var markOperator *dto.AuthPrincipal
-		var markExternal *request.ExternalInfo
 		if readStateType == enums.IMSenderTypeAgent {
-			markOperator = operator
+			if _, err := ConversationReadStateService.MarkAgentReadTx(ctx, conversation, operator, message, now); err != nil {
+				return err
+			}
 		} else {
-			markExternal = external
-		}
-		if _, err := ConversationReadStateService.MarkReadTx(ctx, conversation, readStateType, markOperator, markExternal, message, now); err != nil {
-			return err
+			if _, err := ConversationReadStateService.MarkCustomerReadTx(ctx, conversation, external, message, now); err != nil {
+				return err
+			}
 		}
 		agentReadState, customerReadState, err := ConversationReadStateService.GetConversationReadStatesTx(ctx, conversationID)
 		if err != nil {

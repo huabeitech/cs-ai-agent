@@ -5,7 +5,6 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto/request"
-	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
 	"strings"
@@ -89,7 +88,7 @@ func (c *ImMessageController) PostRead() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.MarkConversationReadToMessage(req.ConversationID, req.MessageID, enums.IMSenderTypeCustomer, nil, externalInfo); err != nil {
+	if err := services.ConversationService.MarkCustomerConversationReadToMessage(req.ConversationID, req.MessageID, externalInfo); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

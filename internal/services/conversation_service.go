@@ -393,35 +393,42 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 	return nil
 }
 
-func (s *conversationService) MarkConversationReadToMessage(conversationID, messageID int64, operatorType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo) error {
+// MarkAgentConversationReadToMessage 控制台客服将会话已读推进到指定消息。
+func (s *conversationService) MarkAgentConversationReadToMessage(conversationID, messageID int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
 	conversation := s.Get(conversationID)
 	if conversation == nil {
 		return errorsx.InvalidParam("会话不存在")
 	}
-	changed := false
-	var err error
-	switch operatorType {
-	case enums.IMSenderTypeAgent:
-		if operator == nil {
-			return errorsx.Unauthorized("未登录或登录已过期")
+	changed, err := s.markConversationReadWithActor(conversation, messageID, agentConversationReadActor{operator: operator})
+	if err != nil {
+		return err
+	}
+	if changed {
+		if updated := s.Get(conversationID); updated != nil {
+			WsService.PublishConversationChanged(updated, enums.IMRealtimeEventConversationRead)
 		}
-		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeAgent, operator, nil, messageID)
-		if err != nil {
-			return err
-		}
-	case enums.IMSenderTypeCustomer:
-		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
-			return errorsx.Unauthorized("外部用户标识不能为空")
-		}
-		if !s.IsCustomerConversationOwner(conversation, *external) {
-			return errorsx.Forbidden("无权访问该会话")
-		}
-		changed, err = s.markConversationRead(conversation, enums.IMSenderTypeCustomer, nil, external, messageID)
-		if err != nil {
-			return err
-		}
-	default:
-		return errorsx.InvalidParam("不支持的已读操作类型")
+	}
+	return nil
+}
+
+// MarkCustomerConversationReadToMessage IM 客户将会话已读推进到指定消息（需为会话归属外部身份）。
+func (s *conversationService) MarkCustomerConversationReadToMessage(conversationID, messageID int64, external *request.ExternalInfo) error {
+	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
+		return errorsx.Unauthorized("外部用户标识不能为空")
+	}
+	conversation := s.Get(conversationID)
+	if conversation == nil {
+		return errorsx.InvalidParam("会话不存在")
+	}
+	if !s.IsCustomerConversationOwner(conversation, *external) {
+		return errorsx.Forbidden("无权访问该会话")
+	}
+	changed, err := s.markConversationReadWithActor(conversation, messageID, customerConversationReadActor{external: external})
+	if err != nil {
+		return err
 	}
 	if changed {
 		if updated := s.Get(conversationID); updated != nil {
@@ -441,43 +448,78 @@ func displayExternalName(ext *request.ExternalInfo) string {
 	return strings.TrimSpace(ext.ExternalID)
 }
 
-func (s *conversationService) markConversationRead(conversation *models.Conversation, readerType enums.IMSenderType, operator *dto.AuthPrincipal, external *request.ExternalInfo, messageID int64) (bool, error) {
+// conversationReadActor 抽象「读者身份」，供 markConversationReadWithActor 共用（包内私有）。
+type conversationReadActor interface {
+	isAgentSide() bool
+	getReadState(conversationID int64) *models.ConversationReadState
+	markReadTx(ctx *sqls.TxContext, conversation *models.Conversation, targetMessage *models.Message, now time.Time) error
+	conversationUpdateAudit() (userID int64, userName string)
+}
+
+type agentConversationReadActor struct {
+	operator *dto.AuthPrincipal
+}
+
+func (a agentConversationReadActor) isAgentSide() bool { return true }
+
+func (a agentConversationReadActor) getReadState(conversationID int64) *models.ConversationReadState {
+	return ConversationReadStateService.GetByAgentReader(conversationID, a.operator)
+}
+
+func (a agentConversationReadActor) markReadTx(ctx *sqls.TxContext, conversation *models.Conversation, targetMessage *models.Message, now time.Time) error {
+	_, err := ConversationReadStateService.MarkAgentReadTx(ctx, conversation, a.operator, targetMessage, now)
+	return err
+}
+
+func (a agentConversationReadActor) conversationUpdateAudit() (int64, string) {
+	if a.operator == nil {
+		return 0, ""
+	}
+	return a.operator.UserID, a.operator.Username
+}
+
+type customerConversationReadActor struct {
+	external *request.ExternalInfo
+}
+
+func (a customerConversationReadActor) isAgentSide() bool { return false }
+
+func (a customerConversationReadActor) getReadState(conversationID int64) *models.ConversationReadState {
+	return ConversationReadStateService.GetByCustomerReader(conversationID, a.external)
+}
+
+func (a customerConversationReadActor) markReadTx(ctx *sqls.TxContext, conversation *models.Conversation, targetMessage *models.Message, now time.Time) error {
+	_, err := ConversationReadStateService.MarkCustomerReadTx(ctx, conversation, a.external, targetMessage, now)
+	return err
+}
+
+func (a customerConversationReadActor) conversationUpdateAudit() (int64, string) {
+	return 0, displayExternalName(a.external)
+}
+
+func (s *conversationService) markConversationReadWithActor(conversation *models.Conversation, messageID int64, actor conversationReadActor) (bool, error) {
 	if conversation == nil {
 		return false, errorsx.InvalidParam("会话不存在")
-	}
-	if readerType == enums.IMSenderTypeAgent && operator == nil {
-		return false, errorsx.Unauthorized("未登录或登录已过期")
-	}
-	if readerType == enums.IMSenderTypeCustomer && (external == nil || strings.TrimSpace(external.ExternalID) == "") {
-		return false, errorsx.Unauthorized("外部用户标识不能为空")
 	}
 	targetMessage, err := MessageService.GetConversationReadTarget(conversation.ID, messageID)
 	if err != nil {
 		return false, err
 	}
 	if targetMessage == nil {
-		if readerType == enums.IMSenderTypeAgent && conversation.AgentUnreadCount == 0 {
+		if actor.isAgentSide() && conversation.AgentUnreadCount == 0 {
 			return false, nil
 		}
-		if readerType == enums.IMSenderTypeCustomer && conversation.CustomerUnreadCount == 0 {
+		if !actor.isAgentSide() && conversation.CustomerUnreadCount == 0 {
 			return false, nil
 		}
 		now := time.Now()
-		updateUserID := int64(0)
-		updateUserName := ""
-		if readerType == enums.IMSenderTypeAgent {
-			updateUserID = operator.UserID
-			updateUserName = operator.Username
-		} else {
-			updateUserID = 0
-			updateUserName = displayExternalName(external)
-		}
+		updateUserID, updateUserName := actor.conversationUpdateAudit()
 		updates := map[string]any{
 			"update_user_id":   updateUserID,
 			"update_user_name": updateUserName,
 			"updated_at":       now,
 		}
-		if readerType == enums.IMSenderTypeAgent {
+		if actor.isAgentSide() {
 			updates["agent_unread_count"] = 0
 		} else {
 			updates["customer_unread_count"] = 0
@@ -485,12 +527,12 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		return true, s.Updates(conversation.ID, updates)
 	}
 
-	currentReadState := ConversationReadStateService.GetByReader(conversation.ID, readerType, operator, external)
+	currentReadState := actor.getReadState(conversation.ID)
 	if currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
-		if readerType == enums.IMSenderTypeAgent && conversation.AgentUnreadCount == 0 {
+		if actor.isAgentSide() && conversation.AgentUnreadCount == 0 {
 			return false, nil
 		}
-		if readerType == enums.IMSenderTypeCustomer && conversation.CustomerUnreadCount == 0 {
+		if !actor.isAgentSide() && conversation.CustomerUnreadCount == 0 {
 			return false, nil
 		}
 	}
@@ -501,7 +543,7 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 			return errorsx.InvalidParam("会话不存在")
 		}
 		now := time.Now()
-		if _, err := ConversationReadStateService.MarkReadTx(ctx, currentConversation, readerType, operator, external, targetMessage, now); err != nil {
+		if err := actor.markReadTx(ctx, currentConversation, targetMessage, now); err != nil {
 			return err
 		}
 		agentReadState, customerReadState, err := ConversationReadStateService.GetConversationReadStatesTx(ctx, currentConversation.ID)
@@ -516,20 +558,13 @@ func (s *conversationService) markConversationRead(conversation *models.Conversa
 		if err != nil {
 			return err
 		}
-		if readerType == enums.IMSenderTypeAgent && currentConversation.AgentUnreadCount == agentUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
+		if actor.isAgentSide() && currentConversation.AgentUnreadCount == agentUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
 			return nil
 		}
-		if readerType == enums.IMSenderTypeCustomer && currentConversation.CustomerUnreadCount == customerUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
+		if !actor.isAgentSide() && currentConversation.CustomerUnreadCount == customerUnreadCount && currentReadState != nil && currentReadState.LastReadSeqNo >= targetMessage.SeqNo {
 			return nil
 		}
-		var updateUserID int64
-		var updateUserName string
-		if readerType == enums.IMSenderTypeCustomer {
-			updateUserName = displayExternalName(external)
-		} else {
-			updateUserID = operator.UserID
-			updateUserName = operator.Username
-		}
+		updateUserID, updateUserName := actor.conversationUpdateAudit()
 		return repositories.ConversationRepository.Updates(ctx.Tx, currentConversation.ID, map[string]any{
 			"agent_unread_count":    agentUnreadCount,
 			"customer_unread_count": customerUnreadCount,
