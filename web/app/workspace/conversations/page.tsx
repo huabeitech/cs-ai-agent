@@ -295,17 +295,17 @@ export default function ConversationsPage() {
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
-      {/* 与 layout 对齐：顶栏 h-12、左侧导航 w-14；抽屉仅占据列表宽度，避免整块主区域挡在遮罩上方 */}
+      {/* H5 无左侧导航：顶栏 h-12、left-0；lg 起有 w-14 侧栏，与 layout 一致 */}
       {mobileMenuOpen && (
         <button
           type="button"
           aria-label="关闭会话列表"
-          className="fixed top-12 right-0 bottom-0 left-14 z-30 bg-black/50 lg:hidden"
+          className="fixed top-12 right-0 bottom-0 left-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
       <div
-        className={`fixed top-12 bottom-0 left-14 z-40 flex w-[min(22rem,calc(100vw-3.5rem-0.5rem))] max-w-[calc(100vw-3.5rem-0.5rem)] flex-col overflow-hidden border-r bg-background shadow-lg transition-transform duration-300 ease-out will-change-transform touch-manipulation overscroll-contain supports-[padding:max(0px)]:pb-[env(safe-area-inset-bottom)] lg:hidden ${
+        className={`fixed top-12 bottom-0 left-0 z-40 flex w-[min(22rem,calc(100vw-0.75rem))] max-w-[min(22rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r bg-background shadow-lg transition-transform duration-300 ease-out will-change-transform touch-manipulation overscroll-contain supports-[padding:max(0px)]:pb-[env(safe-area-inset-bottom)] lg:hidden ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
         aria-hidden={!mobileMenuOpen}
