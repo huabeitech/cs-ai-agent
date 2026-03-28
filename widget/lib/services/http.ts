@@ -5,6 +5,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   const config = readWidgetConfig();
   const baseUrl = (config.apiBaseUrl || config.baseUrl).replace(/\/$/, "");
   const visitorId = getOrCreateVisitorId();
+  const externalSource = (config.externalSource ?? "web_chat").trim() || "web_chat";
   const headers = new Headers(init?.headers ?? {});
   if (
     !headers.has("Content-Type") &&
@@ -13,7 +14,8 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   ) {
     headers.set("Content-Type", "application/json");
   }
-  headers.set("X-Visitor-Id", visitorId);
+  headers.set("X-External-Source", externalSource);
+  headers.set("X-External-Id", visitorId);
   headers.set("X-Widget-App-Id", config.appId);
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,

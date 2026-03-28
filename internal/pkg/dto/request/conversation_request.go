@@ -55,11 +55,6 @@ type ReadConversationRequest struct {
 	MessageID      int64 `json:"messageId"`
 }
 
-type CreateOrMatchConversationRequest struct {
-	ExternalSource enums.ExternalSource `json:"externalSource"`
-	Subject        string               `json:"subject"`
-}
-
 type AddConversationTagRequest struct {
 	ConversationID int64 `json:"conversationId"`
 	TagID          int64 `json:"tagId"`

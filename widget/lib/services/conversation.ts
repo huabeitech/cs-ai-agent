@@ -1,15 +1,12 @@
 import { requestJson } from "@/lib/services/http";
 import type { JsonResult, WidgetConversation } from "@/lib/services/types";
 
-export async function createOrMatchConversation(subject?: string) {
+/** 身份由请求头 X-External-Source / X-External-Id（及可选 X-External-Name）提供，与 GetExternalInfo 一致 */
+export async function createOrMatchConversation() {
   const result = await requestJson<JsonResult<WidgetConversation>>(
     "/api/open/im/conversation/create_or_match",
     {
       method: "POST",
-      body: JSON.stringify({
-        externalSource: "web_chat",
-        subject: subject,
-      }),
     },
   );
   if (!result.data) {

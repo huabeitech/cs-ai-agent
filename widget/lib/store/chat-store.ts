@@ -295,7 +295,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
           let currentConversation = get().conversation;
           if (!get().initialized || !currentConversation) {
             const widgetConfig = readWidgetConfig();
-            currentConversation = await createOrMatchConversation(widgetConfig.subject);
+            currentConversation = await createOrMatchConversation();
             if (bootstrapToken !== token || !get().isOpen) return;
             set({ initialized: true, conversation: currentConversation });
           }

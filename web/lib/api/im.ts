@@ -103,6 +103,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
 const OPEN_IM_APP_ID =
   process.env.NEXT_PUBLIC_OPEN_IM_APP_ID?.trim() || ""
+const OPEN_IM_EXTERNAL_SOURCE =
+  process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() || "web_chat"
 
 function buildVisitorId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -127,7 +129,8 @@ export function getImVisitorId() {
 export function createImWebSocketUrl() {
   const baseUrl = API_BASE_URL.replace(/^http/, "ws")
   const params = new URLSearchParams({
-    visitorId: getImVisitorId(),
+    externalId: getImVisitorId(),
+    externalSource: OPEN_IM_EXTERNAL_SOURCE,
     appId: OPEN_IM_APP_ID,
   })
   return `${baseUrl}/api/open/im/ws?${params.toString()}`
@@ -135,7 +138,8 @@ export function createImWebSocketUrl() {
 
 function createImHeaders() {
   return {
-    "X-Visitor-Id": getImVisitorId(),
+    "X-External-Source": OPEN_IM_EXTERNAL_SOURCE,
+    "X-External-Id": getImVisitorId(),
     "X-Widget-App-Id": OPEN_IM_APP_ID,
   }
 }
@@ -171,14 +175,11 @@ export function fetchImMessages(
   )
 }
 
-export function createOrMatchImConversation(payload?: {
-  externalSource?: string
-  subject?: string
-}) {
+/** 外部身份仅通过 createImHeaders()（X-External-*）传递，无 JSON body */
+export function createOrMatchImConversation() {
   return request<ImConversation>("/api/open/im/conversation/create_or_match", {
     method: "POST",
     headers: createImHeaders(),
-    body: JSON.stringify(payload ?? {}),
   })
 }
 
