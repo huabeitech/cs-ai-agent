@@ -48,8 +48,8 @@ type ReadConversationRequest struct {
 }
 
 type CreateOrMatchConversationRequest struct {
-	ChannelType enums.IMConversationChannel `json:"channelType"`
-	Subject     string                      `json:"subject"`
+	ChannelType enums.ExternalSource `json:"channelType"`
+	Subject     string                       `json:"subject"`
 }
 
 type AddConversationTagRequest struct {

@@ -139,14 +139,15 @@ type Customer struct {
 
 // CustomerIdentity 客户第三方身份映射表。
 //
-//	用于维护客户与外部平台账号的映射关系，如 wxwork/openid 等。
+//	(SourceType, SourceID) 与 Conversation.(ChannelType, ExternalUserID) 在相同来源下语义一致；
+//	数据库列名历史为 sourse_type，通过 column 标签映射。
 type CustomerIdentity struct {
-	ID         int64                    `gorm:"primaryKey;autoIncrement"`
-	CustomerID int64                    `gorm:"type:bigint;not null;index;uniqueIndex:uk_customer_source_user"`                 // CustomerID 为所属客户ID。
-	SourseType enums.CustomerSourceType `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_customer_source_user"` // SourseType 为来源平台类型，如 wxwork。
-	SourceID   string                   `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_customer_source_user"`      // SourceID 为平台侧用户唯一ID。
-	RawProfile string                   `gorm:"type:text"`                                                                      // RawProfile 为第三方原始资料JSON。
-	Status     enums.Status             `gorm:"type:int;not null;default:0;index"`                                              // Status 为映射状态。
+	ID             int64                `gorm:"primaryKey;autoIncrement"`
+	CustomerID     int64                `gorm:"type:bigint;not null;uniqueIndex:uk_customer_external"`                    // 为所属客户ID。
+	ExternalSource enums.ExternalSource `gorm:"column:sourse_type;type:varchar(30);uniqueIndex:uk_customer_external"`     // 为外部身份来源，与 Conversation.ChannelType 对齐。
+	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalUserID 对齐。
+	RawProfile     string               `gorm:"type:text"`                                                                // 为第三方原始资料JSON。
+	Status         enums.Status         `gorm:"type:int;not null;default:0;index"`                                        // 为映射状态。
 	AuditFields
 }
 
@@ -280,7 +281,8 @@ type Tag struct {
 type Conversation struct {
 	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为会话主键。
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
-	ChannelType         enums.IMConversationChannel     `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为会话来源渠道，如 web_chat。
+	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
+	ChannelType         enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ChannelType 为外部身份来源，与 CustomerIdentity.SourceType 对齐。
 	Subject             string                          `gorm:"type:varchar(255);not null;default:''"`       // Subject 为会话标题或摘要。
 	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`           // Status 为会话状态，如待接入、处理中、已关闭。
 	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。

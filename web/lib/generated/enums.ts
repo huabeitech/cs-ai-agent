@@ -75,11 +75,11 @@ export const ContactTypeLabels: Record<ContactType, string> = {
   [ContactType.Other]: "其他",
 }
 
-export enum CustomerSourceType {
+export enum ExternalIdentitySource {
   WebChat = "web_chat",
 }
-export const CustomerSourceTypeLabels: Record<CustomerSourceType, string> = {
-  [CustomerSourceType.WebChat]: "网页客服",
+export const ExternalIdentitySourceLabels: Record<ExternalIdentitySource, string> = {
+  [ExternalIdentitySource.WebChat]: "网页客服",
 }
 
 export enum Gender {
@@ -109,13 +109,6 @@ export enum IMAssignmentType {
 export const IMAssignmentTypeLabels: Record<IMAssignmentType, string> = {
   [IMAssignmentType.Assign]: "分配",
   [IMAssignmentType.Transfer]: "转接",
-}
-
-export enum IMConversationChannel {
-  WebChat = "web_chat",
-}
-export const IMConversationChannelLabels: Record<IMConversationChannel, string> = {
-  [IMConversationChannel.WebChat]: "网页客服",
 }
 
 export enum IMConversationServiceMode {

@@ -15,6 +15,7 @@ func BuildConversationResponse(item *models.Conversation) response.ConversationR
 	ret := response.ConversationResponse{
 		ID:                        item.ID,
 		AIAgentID:                 item.AIAgentID,
+		CustomerID:                item.CustomerID,
 		ChannelType:               item.ChannelType,
 		Subject:                   item.Subject,
 		Status:                    item.Status,

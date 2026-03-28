@@ -183,6 +183,7 @@ func TestCreateOrMatchConversationWithAIAgentFillsExistingConversationAIAgentID(
 		t.Fatalf("expected initial ai agent id 0, got %d", item.AIAgentID)
 	}
 
+	seedEnabledAIAgent(t, 302, "补齐AI")
 	matched, err := ConversationService.Create(
 		enums.IMConversationChannelWebChat,
 		"AI接待补齐测试",

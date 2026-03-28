@@ -144,6 +144,9 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 	if operator.IsVisitor {
 		conversation.SourceUserID = 0
 		conversation.ExternalUserID = operator.VisitorID
+		if cid := s.resolveCustomerIDForVisitor(channelType, operator.VisitorID); cid > 0 {
+			conversation.CustomerID = cid
+		}
 	}
 	now = conversation.CreatedAt
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
@@ -162,7 +165,8 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 	WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationCreated)
 
 	// AI Agent仅人工模式，且有值班客服，尝试自动分配会话
-	if conversation.Status == enums.IMConversationStatusPending &&
+	if aiAgent != nil &&
+		conversation.Status == enums.IMConversationStatusPending &&
 		aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly &&
 		len(utils.SplitInt64s(aiAgent.TeamIDs)) > 0 {
 		if dispatched, err := ConversationDispatchService.DispatchPendingConversation(conversation, aiAgent); err != nil {
@@ -172,6 +176,19 @@ func (s *conversationService) Create(channelType enums.IMConversationChannel, su
 		}
 	}
 	return s.Get(conversation.ID), nil
+}
+
+// TODO 这个方法想办法重构下
+func (s *conversationService) resolveCustomerIDForVisitor(channelType enums.IMConversationChannel, visitorID string) int64 {
+	visitorID = strings.TrimSpace(visitorID)
+	if visitorID == "" {
+		return 0
+	}
+	identity := repositories.CustomerIdentityRepository.Take(sqls.DB(), "sourse_type = ? AND source_id = ?", channelType, visitorID)
+	if identity == nil {
+		return 0
+	}
+	return identity.CustomerID
 }
 
 func (s *conversationService) AssignConversation(conversationID, assigneeID int64, reason string, operator *dto.AuthPrincipal) error {

@@ -48,18 +48,13 @@ func GetIMConversationServiceModeLabel(mode IMConversationServiceMode) string {
 	return imConversationServiceModeLabelMap[mode]
 }
 
-type IMConversationChannel string
+// IMConversationChannel 已合并为 ExternalIdentitySource，保留类型别名以兼容旧代码。
+type IMConversationChannel = ExternalSource
 
-const (
-	IMConversationChannelWebChat IMConversationChannel = "web_chat"
-)
-
-var imConversationChannelLabelMap = map[IMConversationChannel]string{
-	IMConversationChannelWebChat: "网页客服",
-}
+const IMConversationChannelWebChat = ExternalSourceWebChat
 
 func GetIMConversationChannelLabel(channelType IMConversationChannel) string {
-	return imConversationChannelLabelMap[channelType]
+	return GetExternalSourceLabel(ExternalSource(channelType))
 }
 
 type IMSenderType string
