@@ -2,10 +2,11 @@
 
 import type { ComponentProps } from "react"
 import Link from "next/link"
+import { useMemo } from "react"
 
 import {
-  dashboardNavSections,
-  dashboardSecondaryNav,
+  filterDashboardNavForSession,
+  filterDashboardSecondaryNavForSession,
 } from "@/lib/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { NavMain } from "@/components/nav-main"
@@ -24,6 +25,14 @@ import { BotMessageSquareIcon } from "lucide-react"
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { session } = useAuth()
+  const navSections = useMemo(
+    () => filterDashboardNavForSession(session?.permissions, session?.roles),
+    [session?.permissions, session?.roles]
+  )
+  const secondaryNavItems = useMemo(
+    () => filterDashboardSecondaryNavForSession(session?.permissions, session?.roles),
+    [session?.permissions, session?.roles]
+  )
   const user = {
     name: session?.user.nickname || session?.user.username || "未登录",
     email: session?.user.username || "guest",
@@ -46,10 +55,12 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {dashboardNavSections.map((section) => (
+        {navSections.map((section) => (
           <NavMain key={section.title} title={section.title} items={section.items} />
         ))}
-        <NavSecondary items={dashboardSecondaryNav} className="mt-auto" />
+        {secondaryNavItems.length > 0 ? (
+          <NavSecondary items={secondaryNavItems} className="mt-auto" />
+        ) : null}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

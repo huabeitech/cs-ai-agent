@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import {
   BotMessageSquareIcon,
   BrainCircuitIcon,
@@ -14,10 +15,73 @@ import {
   ShieldCheckIcon,
   TagsIcon,
   UserCogIcon,
-  UsersIcon
-} from "lucide-react";
+  UsersIcon,
+} from "lucide-react"
 
-export const dashboardNavSections = [
+/** 与后端 internal/pkg/constants/auth.go RoleCodeSuperAdmin 一致 */
+export const DASHBOARD_ROLE_SUPER_ADMIN = "super_admin"
+
+export type DashboardNavMenuItem = {
+  title: string
+  url: string
+  icon: ReactNode
+}
+
+export type DashboardNavItemConfig = DashboardNavMenuItem & {
+  /**
+   * 与后端 Permission.Code 一致；缺省表示任意已登录管理员可见
+   * （对应控制台接口尚未 RequirePermission 的模块，如接入站点、AI Agent）
+   */
+  requiredPermission?: string
+}
+
+export type DashboardNavSectionConfig = {
+  title: string
+  items: DashboardNavItemConfig[]
+}
+
+function navItemVisible(
+  item: DashboardNavItemConfig,
+  superAdmin: boolean,
+  permissionSet: Set<string>
+): boolean {
+  if (superAdmin) {
+    return true
+  }
+  if (!item.requiredPermission) {
+    return true
+  }
+  return permissionSet.has(item.requiredPermission)
+}
+
+export function filterDashboardNavForSession(
+  permissions: readonly string[] | undefined,
+  roles: readonly string[] | undefined
+): { title: string; items: DashboardNavMenuItem[] }[] {
+  const superAdmin = roles?.includes(DASHBOARD_ROLE_SUPER_ADMIN) ?? false
+  const permissionSet = new Set(permissions ?? [])
+  return dashboardNavSections
+    .map((section) => ({
+      title: section.title,
+      items: section.items
+        .filter((item) => navItemVisible(item, superAdmin, permissionSet))
+        .map(({ title, url, icon }) => ({ title, url, icon })),
+    }))
+    .filter((section) => section.items.length > 0)
+}
+
+export function filterDashboardSecondaryNavForSession(
+  permissions: readonly string[] | undefined,
+  roles: readonly string[] | undefined
+): DashboardNavMenuItem[] {
+  const superAdmin = roles?.includes(DASHBOARD_ROLE_SUPER_ADMIN) ?? false
+  const permissionSet = new Set(permissions ?? [])
+  return dashboardSecondaryNav
+    .filter((item) => navItemVisible(item, superAdmin, permissionSet))
+    .map(({ title, url, icon }) => ({ title, url, icon }))
+}
+
+export const dashboardNavSections: DashboardNavSectionConfig[] = [
   {
     title: "工作台",
     items: [
@@ -30,26 +94,31 @@ export const dashboardNavSections = [
         title: "会话管理",
         url: "/dashboard/conversations",
         icon: <BotMessageSquareIcon />,
+        requiredPermission: "conversation.view",
       },
       {
         title: "快捷回复",
         url: "/dashboard/quick-replies",
         icon: <MessageSquareMoreIcon />,
+        requiredPermission: "quickReply.view",
       },
       {
         title: "会话标签",
         url: "/dashboard/tags",
         icon: <TagsIcon />,
+        requiredPermission: "tag.view",
       },
       {
         title: "公司管理",
         url: "/dashboard/companies",
         icon: <Building2Icon />,
+        requiredPermission: "company.view",
       },
       {
         title: "客户管理",
         url: "/dashboard/customers",
         icon: <UsersIcon />,
+        requiredPermission: "customer.view",
       },
     ],
   },
@@ -60,11 +129,13 @@ export const dashboardNavSections = [
         title: "客服档案",
         url: "/dashboard/agents",
         icon: <UserCogIcon />,
+        requiredPermission: "agent.view",
       },
       {
         title: "客服组排班",
         url: "/dashboard/agent-team-schedules",
         icon: <CalendarClockIcon />,
+        requiredPermission: "agentTeamSchedule.view",
       },
       {
         title: "接入站点",
@@ -80,11 +151,13 @@ export const dashboardNavSections = [
         title: "知识库",
         url: "/dashboard/knowledge",
         icon: <FileTextIcon />,
+        requiredPermission: "knowledgeBase.view",
       },
       {
         title: "AI配置",
         url: "/dashboard/ai-configs",
         icon: <BrainCircuitIcon />,
+        requiredPermission: "aiConfig.view",
       },
       {
         title: "AI Agent",
@@ -95,11 +168,13 @@ export const dashboardNavSections = [
         title: "Skills",
         url: "/dashboard/skill-definition",
         icon: <MessageSquareCodeIcon />,
+        requiredPermission: "skillDefinition.view",
       },
       {
         title: "MCP调试",
         url: "/dashboard/mcp",
         icon: <MessageSquareCodeIcon />,
+        requiredPermission: "mcp.view",
       },
     ],
   },
@@ -110,22 +185,25 @@ export const dashboardNavSections = [
         title: "用户管理",
         url: "/dashboard/users",
         icon: <UsersIcon />,
+        requiredPermission: "user.view",
       },
       {
         title: "角色管理",
         url: "/dashboard/roles",
         icon: <ShieldCheckIcon />,
+        requiredPermission: "role.view",
       },
       {
         title: "权限管理",
         url: "/dashboard/permissions",
         icon: <KeyRoundIcon />,
+        requiredPermission: "permission.view",
       },
     ],
   },
-] as const;
+]
 
-export const dashboardSecondaryNav = [
+export const dashboardSecondaryNav: DashboardNavItemConfig[] = [
   {
     title: "系统设置",
     url: "/dashboard/settings",
@@ -136,7 +214,7 @@ export const dashboardSecondaryNav = [
     url: "/dashboard/help",
     icon: <LifeBuoyIcon />,
   },
-] as const;
+]
 
 export const dashboardQuickActions = [
   {
@@ -151,19 +229,19 @@ export const dashboardQuickActions = [
     title: "接入机器人",
     icon: <MessageSquareCodeIcon />,
   },
-] as const;
+] as const
 
 export function getPageTitle(pathname: string): string {
-  let matchedTitle = "后台总览";
-  let longestMatch = 0;
+  let matchedTitle = "后台总览"
+  let longestMatch = 0
 
   for (const section of dashboardNavSections) {
     for (const item of section.items) {
       if (pathname === item.url || pathname.startsWith(item.url + "/")) {
-        const matchLength = item.url.length;
+        const matchLength = item.url.length
         if (matchLength > longestMatch) {
-          longestMatch = matchLength;
-          matchedTitle = item.title;
+          longestMatch = matchLength
+          matchedTitle = item.title
         }
       }
     }
@@ -171,13 +249,13 @@ export function getPageTitle(pathname: string): string {
 
   for (const item of dashboardSecondaryNav) {
     if (pathname === item.url || pathname.startsWith(item.url + "/")) {
-      const matchLength = item.url.length;
+      const matchLength = item.url.length
       if (matchLength > longestMatch) {
-        longestMatch = matchLength;
-        matchedTitle = item.title;
+        longestMatch = matchLength
+        matchedTitle = item.title
       }
     }
   }
 
-  return matchedTitle;
+  return matchedTitle
 }

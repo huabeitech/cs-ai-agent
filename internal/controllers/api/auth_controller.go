@@ -30,7 +30,7 @@ func (c *AuthController) PostLogin() *web.JsonResult {
 	return web.JsonData(ret)
 }
 
-func (c *AuthController) PostRefreshToken() *web.JsonResult {
+func (c *AuthController) PostRefresh_token() *web.JsonResult {
 	req := request.RefreshTokenRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
