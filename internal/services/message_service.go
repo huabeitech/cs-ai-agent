@@ -3,9 +3,9 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/repositories"
 	"strings"
 	"time"
@@ -50,6 +50,18 @@ func (s *messageService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Message, pa
 	return repositories.MessageRepository.FindPageByCnd(sqls.DB(), cnd)
 }
 
+// FindPageByCndForImListAscending 与 FindPageByCnd 相同分页条件，将结果按 seq 升序排列（开放 IM 时间正序展示）。
+func (s *messageService) FindPageByCndForImListAscending(cnd *sqls.Cnd) (list []models.Message, paging *sqls.Paging) {
+	list, paging = s.FindPageByCnd(cnd)
+	if len(list) <= 1 {
+		return list, paging
+	}
+	for i, j := 0, len(list)-1; i < j; i, j = i+1, j-1 {
+		list[i], list[j] = list[j], list[i]
+	}
+	return list, paging
+}
+
 func (s *messageService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.MessageRepository.Count(sqls.DB(), cnd)
 }
@@ -85,7 +97,7 @@ func (s *messageService) GetConversationReadTarget(conversationID, messageID int
 	return s.FindOne(sqls.NewCnd().Eq("conversation_id", conversationID).Desc("seq_no").Desc("id")), nil
 }
 
-func (s *messageService) SendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *request.ExternalInfo) (*models.Message, error) {
+func (s *messageService) SendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
 	switch senderType {
 	case enums.IMSenderTypeAgent:
 		return s.sendMessage(conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
@@ -106,12 +118,12 @@ func (s *messageService) SendAIMessage(conversationID int64, aiAgentID int64, cl
 	return s.sendMessage(conversationID, enums.IMSenderTypeAI, aiAgentID, clientMsgID, messageType, content, payload, operator, nil)
 }
 
-func (s *messageService) SendCustomerMessage(conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external request.ExternalInfo) (*models.Message, error) {
+func (s *messageService) SendCustomerMessage(conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external openidentity.ExternalInfo) (*models.Message, error) {
 	ext := external
 	return s.sendMessage(conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, &ext)
 }
 
-func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *request.ExternalInfo) (*models.Message, error) {
+func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
 	if senderType == enums.IMSenderTypeCustomer {
 		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
 			return nil, errorsx.Unauthorized("外部用户标识不能为空")
@@ -296,6 +308,9 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		if conversation := ConversationService.Get(conversationID); conversation != nil {
 			WsService.PublishMessageCreated(conversation, ret)
 			WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationUpdated)
+		}
+		if senderType == enums.IMSenderTypeCustomer && ret != nil {
+			AIReplyService.TriggerReplyAsync(ret.ID)
 		}
 	}
 	return ret, err

@@ -3,8 +3,8 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"encoding/json"
 	"fmt"
@@ -38,7 +38,9 @@ func newWsService() *wsService {
 	}
 }
 
-func (s *wsService) UpgradeUserConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *request.ExternalInfo) error {
+// UpgradeUserConnection 开放 IM 用户侧 WebSocket。
+// principal 非空时表示站内用户；否则应传入 external（IM 访客）。二者勿混用为同一业务身份。
+func (s *wsService) UpgradeUserConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalInfo) error {
 	return s.upgradeConnection(ctx, principal, external, realtimeRoleUser)
 }
 
@@ -46,7 +48,7 @@ func (s *wsService) UpgradeAdminConnection(ctx iris.Context, principal *dto.Auth
 	return s.upgradeConnection(ctx, principal, nil, realtimeRoleAdmin)
 }
 
-func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *request.ExternalInfo, role string) error {
+func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalInfo, role string) error {
 	conn, err := s.upgrader.Upgrade(ctx.ResponseWriter().Naive(), ctx.Request(), nil)
 	if err != nil {
 		return err

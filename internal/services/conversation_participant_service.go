@@ -2,8 +2,8 @@ package services
 
 import (
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"time"
@@ -69,7 +69,7 @@ func (s *conversationParticipantService) Delete(id int64) {
 	repositories.ConversationParticipantRepository.Delete(sqls.DB(), id)
 }
 
-func (s *conversationParticipantService) EnsureCustomerParticipantTx(ctx *sqls.TxContext, conversationID int64, externalInfo request.ExternalInfo) error {
+func (s *conversationParticipantService) EnsureCustomerParticipantTx(ctx *sqls.TxContext, conversationID int64, externalInfo openidentity.ExternalInfo) error {
 	return repositories.ConversationParticipantRepository.Create(ctx.Tx, &models.ConversationParticipant{
 		ConversationID:        conversationID,
 		ParticipantType:       string(enums.IMParticipantTypeCustomer),

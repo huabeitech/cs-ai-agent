@@ -16,19 +16,19 @@ type ImConversationController struct {
 }
 
 func (c *ImConversationController) GetBy(id int64) *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalSourceID, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
 	item := services.ConversationService.Get(id)
 	if item == nil {
 		return web.JsonErrorMsg("会话不存在")
 	}
-	if !services.ConversationService.IsCustomerConversationOwner(item, *externalSourceID) {
+	if !services.ConversationService.IsCustomerConversationOwner(item, *external) {
 		return web.JsonErrorMsg("无权访问该会话")
 	}
 
@@ -40,16 +40,16 @@ func (c *ImConversationController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
-	site, rsp := requireEnabledWidgetSite(c.Ctx)
-	if rsp != nil {
-		return rsp
+	site := WidgetSiteFromCtx(c.Ctx)
+	if site == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalInfo, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
-	item, err := services.ConversationService.Create(*externalInfo, site.AIAgentID)
+	item, err := services.ConversationService.Create(*external, site.AIAgentID)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -57,19 +57,19 @@ func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
 }
 
 func (c *ImConversationController) PostClose() *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalSourceID, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
 	req := request.CloseConversationRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.CloseCustomerConversation(req.ConversationID, *externalSourceID); err != nil {
+	if err := services.ConversationService.CloseCustomerConversation(req.ConversationID, *external); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

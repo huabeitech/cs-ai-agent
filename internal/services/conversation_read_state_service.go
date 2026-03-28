@@ -3,9 +3,9 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/repositories"
 	"strings"
 	"time"
@@ -47,7 +47,7 @@ func agentReaderCursor(operator *dto.AuthPrincipal) (readerCursor, error) {
 	}, nil
 }
 
-func customerReaderCursor(external *request.ExternalInfo) (readerCursor, error) {
+func customerReaderCursor(external *openidentity.ExternalInfo) (readerCursor, error) {
 	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
 		return readerCursor{}, errorsx.Unauthorized("外部用户标识不能为空")
 	}
@@ -126,7 +126,7 @@ func (s *conversationReadStateService) GetByAgentReader(conversationID int64, op
 }
 
 // GetByCustomerReader 查询 IM 客户侧已读游标（按 ExternalID）。
-func (s *conversationReadStateService) GetByCustomerReader(conversationID int64, external *request.ExternalInfo) *models.ConversationReadState {
+func (s *conversationReadStateService) GetByCustomerReader(conversationID int64, external *openidentity.ExternalInfo) *models.ConversationReadState {
 	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
 		return nil
 	}
@@ -187,7 +187,7 @@ func (s *conversationReadStateService) MarkAgentReadTx(ctx *sqls.TxContext, conv
 }
 
 // MarkCustomerReadTx 在事务内更新/创建 IM 客户已读游标。
-func (s *conversationReadStateService) MarkCustomerReadTx(ctx *sqls.TxContext, conversation *models.Conversation, external *request.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+func (s *conversationReadStateService) MarkCustomerReadTx(ctx *sqls.TxContext, conversation *models.Conversation, external *openidentity.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
 	c, err := customerReaderCursor(external)
 	if err != nil {
 		return nil, err

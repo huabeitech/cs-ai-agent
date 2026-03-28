@@ -35,8 +35,9 @@ export async function markMessageRead(conversationId: number, messageId = 0) {
   });
 }
 
-export async function uploadImage(file: File) {
+export async function uploadImage(conversationId: number, file: File) {
   const formData = new FormData();
+  formData.set("conversationId", String(conversationId));
   formData.set("file", file);
   const result = await requestJson<JsonResult<WidgetAsset>>(
     "/api/open/im/message/upload_image",

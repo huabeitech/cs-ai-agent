@@ -4,9 +4,9 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/services/storage"
@@ -137,7 +137,7 @@ func (s *assetService) UploadFile(cfg *config.Config, file *multipart.FileHeader
 }
 
 // UploadFileForExternal IM 访客上传：审计字段使用外部展示名，用户 ID 记 0。
-func (s *assetService) UploadFileForExternal(cfg *config.Config, file *multipart.FileHeader, prefix string, external request.ExternalInfo) (*models.Asset, error) {
+func (s *assetService) UploadFileForExternal(cfg *config.Config, file *multipart.FileHeader, prefix string, external openidentity.ExternalInfo) (*models.Asset, error) {
 	if strings.TrimSpace(external.ExternalID) == "" {
 		return nil, errorsx.Unauthorized("外部用户标识不能为空")
 	}

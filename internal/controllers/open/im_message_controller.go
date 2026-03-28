@@ -2,11 +2,11 @@ package open
 
 import (
 	"cs-agent/internal/builders"
-	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
+	"strconv"
 	"strings"
 
 	"github.com/kataras/iris/v12"
@@ -20,12 +20,12 @@ type ImMessageController struct {
 }
 
 func (c *ImMessageController) AnyList() *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalInfo, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
 	conversationID, _ := params.GetInt64(c.Ctx, "conversationId")
@@ -36,7 +36,7 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 	if conversation == nil {
 		return web.JsonErrorMsg("会话不存在")
 	}
-	if !services.ConversationService.IsCustomerConversationOwner(conversation, *externalInfo) {
+	if !services.ConversationService.IsCustomerConversationOwner(conversation, *external) {
 		return web.JsonErrorMsg("无权访问该会话")
 	}
 
@@ -45,21 +45,17 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "senderType"},
 		params.QueryFilter{ParamName: "messageType"},
 	).Desc("seq_no")
-	list, paging := services.MessageService.FindPageByCnd(cnd)
-	results := make([]models.Message, 0, len(list))
-	for i := len(list) - 1; i >= 0; i-- {
-		results = append(results, list[i])
-	}
-	return web.JsonData(&web.PageResult{Results: builders.BuildMessageResponses(results), Page: paging})
+	list, paging := services.MessageService.FindPageByCndForImListAscending(cnd)
+	return web.JsonData(&web.PageResult{Results: builders.BuildMessageResponses(list), Page: paging})
 }
 
 func (c *ImMessageController) PostSend() *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalInfo, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
 	req := request.SendConversationMessageRequest{}
@@ -67,40 +63,55 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	item, err := services.MessageService.SendCustomerMessage(req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, *externalInfo)
+	item, err := services.MessageService.SendCustomerMessage(req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, *external)
 	if err != nil {
 		return web.JsonError(err)
 	}
-	services.AIReplyService.TriggerReplyAsync(item.ID)
 	return web.JsonData(builders.BuildMessageResponse(item))
 }
 
 func (c *ImMessageController) PostRead() *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalInfo, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
 	req := request.ReadConversationRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.MarkCustomerConversationReadToMessage(req.ConversationID, req.MessageID, externalInfo); err != nil {
+	if err := services.ConversationService.MarkCustomerConversationReadToMessage(req.ConversationID, req.MessageID, external); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *ImMessageController) PostUpload_image() *web.JsonResult {
-	if _, rsp := requireEnabledWidgetSite(c.Ctx); rsp != nil {
-		return rsp
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
 	}
-	externalInfo, err := request.GetExternalInfo(c.Ctx)
-	if err != nil {
-		return web.JsonError(err)
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
+	}
+
+	rawConv := strings.TrimSpace(c.Ctx.FormValue("conversationId"))
+	if rawConv == "" {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	conversationID, err := strconv.ParseInt(rawConv, 10, 64)
+	if err != nil || conversationID <= 0 {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	conversation := services.ConversationService.Get(conversationID)
+	if conversation == nil {
+		return web.JsonErrorMsg("会话不存在")
+	}
+	if !services.ConversationService.IsCustomerConversationOwner(conversation, *external) {
+		return web.JsonErrorMsg("无权访问该会话")
 	}
 
 	f, header, err := c.Ctx.FormFile("file")
@@ -113,7 +124,7 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 		return web.JsonErrorMsg("仅支持上传图片文件")
 	}
 
-	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, "im-images", *externalInfo)
+	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, "im-images", *external)
 	if err != nil {
 		return web.JsonError(err)
 	}

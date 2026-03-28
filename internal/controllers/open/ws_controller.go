@@ -2,8 +2,8 @@ package open
 
 import (
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/services"
 	"log/slog"
 
@@ -19,10 +19,12 @@ func HandleImWebsocket(ctx iris.Context) {
 		return
 	}
 
+	// 与 Open IM HTTP 一致：优先站内 AuthPrincipal；否则使用外部访客身份（Header/query，见 openidentity）。
+	// 二者不应在业务上同时作为「客户身份」使用；本入口在 principal 非空时不再解析 external，避免语义冲突。
 	principal := services.AuthService.GetAuthPrincipal(ctx)
-	var external *request.ExternalInfo
+	var external *openidentity.ExternalInfo
 	if principal == nil {
-		ext, err := request.GetExternalInfo(ctx)
+		ext, err := openidentity.GetExternalInfo(ctx)
 		if err != nil {
 			_ = ctx.StopWithJSON(iris.StatusUnauthorized, map[string]any{
 				"message": err.Error(),

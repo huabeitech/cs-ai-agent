@@ -157,7 +157,9 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Party("/mcp").Handle(new(console.MCPController))
 	})
 
-	mvc.Configure(app.Party("/api/open/im"), func(m *mvc.Application) {
+	imParty := app.Party("/api/open/im")
+	imParty.Use(open.OpenImContextMiddleware)
+	mvc.Configure(imParty, func(m *mvc.Application) {
 		m.Register(cfg)
 		m.Party("/widget").Handle(new(open.ImWidgetController))
 		m.Party("/conversation").Handle(new(open.ImConversationController))

@@ -205,8 +205,9 @@ export function markImMessageRead(conversationId: number, messageId = 0) {
   })
 }
 
-export function uploadImImage(file: File) {
+export function uploadImImage(conversationId: number, file: File) {
   const formData = new FormData()
+  formData.set("conversationId", String(conversationId))
   formData.set("file", file)
   return request<ImAsset>("/api/open/im/message/upload_image", {
     method: "POST",

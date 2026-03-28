@@ -346,7 +346,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       if (!conversationId) return null;
       set({ error: "" });
       try {
-        const asset = await uploadImage(file);
+        const asset = await uploadImage(conversationId, file);
         return { url: asset.url, filename: asset.filename };
       } catch (e) {
         set({ error: e instanceof Error ? e.message : "发送图片失败" });
