@@ -138,13 +138,10 @@ type Customer struct {
 }
 
 // CustomerIdentity 客户第三方身份映射表。
-//
-//	(SourceType, SourceID) 与 Conversation.(ChannelType, ExternalUserID) 在相同来源下语义一致；
-//	数据库列名历史为 sourse_type，通过 column 标签映射。
 type CustomerIdentity struct {
 	ID             int64                `gorm:"primaryKey;autoIncrement"`
 	CustomerID     int64                `gorm:"type:bigint;not null;uniqueIndex:uk_customer_external"`                    // 为所属客户ID。
-	ExternalSource enums.ExternalSource `gorm:"column:sourse_type;type:varchar(30);uniqueIndex:uk_customer_external"`     // 为外部身份来源，与 Conversation.ChannelType 对齐。
+	ExternalSource enums.ExternalSource `gorm:"type:varchar(30);uniqueIndex:uk_customer_external"`                        // 为外部身份来源，与 Conversation.ChannelType 对齐。
 	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalUserID 对齐。
 	RawProfile     string               `gorm:"type:text"`                                                                // 为第三方原始资料JSON。
 	Status         enums.Status         `gorm:"type:int;not null;default:0;index"`                                        // 为映射状态。
@@ -190,7 +187,7 @@ type Permission struct {
 	ParentID  int64        `gorm:"type:bigint;not null;default:0;index"`
 	Path      string       `gorm:"type:varchar(255);not null;default:''"`
 	Method    string       `gorm:"type:varchar(20);not null;default:''"`
-	APIPath   string       `gorm:"column:api_path;type:varchar(255);not null;default:''"`
+	APIPath   string       `gorm:"type:varchar(255);not null;default:''"`
 	SortNo    int          `gorm:"type:int;not null;default:0;index"`
 	Status    enums.Status `gorm:"type:int;not null;default:0;index"`
 	IsBuiltin bool         `gorm:"not null;default:true;index"`
