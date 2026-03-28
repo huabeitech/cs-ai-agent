@@ -4,6 +4,7 @@ package openidentity
 import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"net/url"
 	"strings"
 
 	"github.com/kataras/iris/v12"
@@ -65,5 +66,19 @@ func parseExternalName(ctx iris.Context) string {
 	if strs.IsBlank(externalName) {
 		externalName, _ = params.Get(ctx, "externalName")
 	}
-	return strings.TrimSpace(externalName)
+	return decodeExternalDisplayName(externalName)
+}
+
+// decodeExternalDisplayName 将客户端对 X-External-Name / externalName 做的 encodeURIComponent 还原为 UTF-8。
+// 无百分号编码时 QueryUnescape 原样返回，解码失败则保留原串（兼容异常或旧客户端明文）。
+func decodeExternalDisplayName(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	dec, err := url.QueryUnescape(s)
+	if err != nil {
+		return s
+	}
+	return strings.TrimSpace(dec)
 }

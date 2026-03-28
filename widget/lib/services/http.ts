@@ -18,7 +18,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   headers.set("X-External-Id", visitorId);
   const externalName = (config.subject ?? "").trim();
   if (externalName) {
-    headers.set("X-External-Name", externalName);
+    headers.set("X-External-Name", encodeURIComponent(externalName));
   }
   headers.set("X-Widget-App-Id", config.appId);
   const response = await fetch(`${baseUrl}${path}`, {
