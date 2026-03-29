@@ -369,13 +369,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
                       {company.code}
                     </p>
                   ) : null}
-                  <Badge
-                    variant={customerStatusBadgeVariant(company.status)}
-                    className="mt-1 font-normal"
-                  >
-                    {StatusLabels[company.status as Status] ??
-                      String(company.status)}
-                  </Badge>
                 </div>
               </div>
               <div className="space-y-2 pt-1">
