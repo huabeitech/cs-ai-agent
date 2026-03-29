@@ -1,6 +1,14 @@
 "use client";
 
-import { Link2Icon, PencilIcon, UserRoundIcon } from "lucide-react";
+import {
+  Building2Icon,
+  Link2Icon,
+  MailIcon,
+  MessageCircleIcon,
+  PencilIcon,
+  PhoneIcon,
+  UserRoundIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +20,7 @@ import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
 import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
 import { fetchCompany, updateCompany, type AdminCompany } from "@/lib/api/company";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,41 +36,76 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formatDateTime } from "@/lib/utils";
-
-const GENDER_LABELS: Record<number, string> = {
-  0: "未知",
-  1: "男",
-  2: "女",
-};
-
-const STATUS_LABELS: Record<number, string> = {
-  0: "启用",
-  1: "禁用",
-  2: "已删除",
-};
-
-const CONTACT_TYPE_LABELS: Record<string, string> = {
-  mobile: "手机号",
-  email: "邮箱",
-  wechat: "微信",
-  other: "其他",
-};
+import {
+  ContactType,
+  ContactTypeLabels,
+  Gender,
+  GenderLabels,
+  Status,
+  StatusLabels,
+} from "@/lib/generated/enums";
+import { cn, formatDateTime } from "@/lib/utils";
 
 function contactTypeLabel(contactType: string) {
-  return CONTACT_TYPE_LABELS[contactType] ?? contactType;
+  return ContactTypeLabels[contactType as ContactType] ?? contactType;
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function customerStatusBadgeVariant(status: number): "secondary" | "destructive" | "outline" {
+  if (status === Status.Disabled) {
+    return "destructive";
+  }
+  if (status === Status.Deleted) {
+    return "destructive";
+  }
+  return "secondary";
+}
+
+function ContactTypeIcon({ contactType }: { contactType: string }) {
+  const cls = "size-3.5 shrink-0 text-muted-foreground";
+  switch (contactType) {
+    case ContactType.Mobile:
+      return <PhoneIcon className={cls} aria-hidden />;
+    case ContactType.Email:
+      return <MailIcon className={cls} aria-hidden />;
+    case ContactType.WeChat:
+      return <MessageCircleIcon className={cls} aria-hidden />;
+    default:
+      return <Link2Icon className={cls} aria-hidden />;
+  }
+}
+
+/** 侧边栏窄屏：左标签右内容，便于扫读 */
+function DetailRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  const empty = !value.trim();
   return (
-    <div className="flex flex-col gap-0.5 py-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="break-all text-sm text-foreground">{value || "-"}</span>
+    <div className="flex gap-2.5 text-sm leading-snug">
+      <span className="w-17 shrink-0 pt-px text-xs text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "min-w-0 flex-1 break-all text-foreground",
+          empty && "text-muted-foreground",
+          valueClassName,
+        )}
+      >
+        {empty ? "—" : value}
+      </span>
     </div>
   );
 }
 
-function SectionTitle({
+function InlineMetaLine({ children }: { children: React.ReactNode }) {
+  return <p className="text-[11px] leading-relaxed text-muted-foreground">{children}</p>;
+}
+
+function SectionHeading({
   children,
   action,
 }: {
@@ -69,10 +113,8 @@ function SectionTitle({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 pt-3 pb-1">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {children}
-      </h3>
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-xs font-medium text-muted-foreground">{children}</h3>
       {action}
     </div>
   );
@@ -83,12 +125,12 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
   const loadConversations = useAgentConversationsStore((s) => s.loadConversations);
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
+    <div className="space-y-6 pt-2">
+      <div className="flex flex-col items-center justify-center rounded-xl bg-muted/35 px-4 py-8 text-center">
         <UserRoundIcon className="mb-2 size-10 text-muted-foreground" aria-hidden />
         <p className="text-sm font-medium text-foreground">尚未关联 CRM 客户</p>
         <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
-          当前会话未绑定客户主档（CustomerID 为 0）。访客仅通过外部身份接待；绑定后可在此维护公司与联系方式。
+          当前会话未绑定客户主档。绑定后可在此维护公司与联系方式。
         </p>
         <Button
           type="button"
@@ -99,12 +141,12 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
           关联或创建客户
         </Button>
       </div>
-      <div className="divide-y divide-border rounded-lg border border-border">
-        <section className="px-1">
-          <SectionTitle>会话侧访客标识</SectionTitle>
-          <InfoRow label="外部来源" value={conversation.externalSource} />
-          <InfoRow label="外部用户标识" value={conversation.externalId} />
-        </section>
+      <div className="space-y-2">
+        <SectionHeading>访客标识</SectionHeading>
+        <div className="space-y-2">
+          <DetailRow label="外部来源" value={conversation.externalSource} />
+          <DetailRow label="外部标识" value={conversation.externalId} />
+        </div>
       </div>
       <CustomerLinkOrCreateDialog
         open={linkDialogOpen}
@@ -201,63 +243,90 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
     );
   }
 
+  const displayName = customer.name.trim() || "未填写姓名";
+  const companyLine =
+    customer.companyId > 0 ? company?.name || `公司 ID ${customer.companyId}` : "";
+  const genderLabel =
+    customer.gender === Gender.Male || customer.gender === Gender.Female
+      ? GenderLabels[customer.gender as Gender] ?? String(customer.gender)
+      : null;
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-7 py-3">
       {isProfileEmpty ? (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
-          客户主档已关联，但基础信息尚未填写。请点击下方「编辑客户」补全资料。
+        <div className="rounded-lg bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:text-amber-100">
+          客户主档已关联，但基础信息尚未填写。请点击「编辑」补全资料。
         </div>
       ) : null}
 
-      <div className="divide-y divide-border">
-        <section>
-          <SectionTitle
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs"
-                onClick={() => setCustomerEditOpen(true)}
-              >
-                <PencilIcon className="size-3.5" />
-                编辑客户
-              </Button>
-            }
-          >
-            客户信息
-          </SectionTitle>
-          <InfoRow label="姓名" value={customer.name} />
-          <InfoRow label="性别" value={GENDER_LABELS[customer.gender] ?? String(customer.gender)} />
-          <InfoRow
-            label="所属公司"
-            value={
-              customer.companyId > 0
-                ? company?.name || `公司 ID ${customer.companyId}`
-                : "无"
-            }
-          />
-          <InfoRow
+      <section className="space-y-4">
+        <div className="space-y-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 flex-1 line-clamp-2 leading-snug">
+              <span className="text-base font-semibold text-foreground">{displayName}</span>
+              {genderLabel ? (
+                <span className="text-sm font-normal text-muted-foreground"> · {genderLabel}</span>
+              ) : null}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 gap-1 px-2 text-xs"
+              onClick={() => setCustomerEditOpen(true)}
+            >
+              <PencilIcon className="size-3.5" />
+              编辑
+            </Button>
+          </div>
+          {companyLine ? (
+            <p className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
+              <Building2Icon className="mt-0.5 size-3.5 shrink-0 opacity-80" aria-hidden />
+              <span className="min-w-0 break-all">{companyLine}</span>
+            </p>
+          ) : null}
+        </div>
+
+        {/* <div className="space-y-2 text-sm">
+          {customer.primaryMobile ? (
+            <div className="flex min-w-0 items-baseline gap-2">
+              <PhoneIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden />
+              <span className="min-w-0 break-all tabular-nums text-foreground">{customer.primaryMobile}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">主</span>
+            </div>
+          ) : null}
+          {customer.primaryEmail ? (
+            <div className="flex min-w-0 items-baseline gap-2">
+              <MailIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden />
+              <span className="min-w-0 break-all text-foreground">{customer.primaryEmail}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">主</span>
+            </div>
+          ) : null}
+        </div> */}
+
+        <div className="space-y-2">
+          <DetailRow
             label="最近活跃"
-            value={customer.lastActiveAt ? formatDateTime(customer.lastActiveAt) : "-"}
+            value={customer.lastActiveAt ? formatDateTime(customer.lastActiveAt) : ""}
           />
-          <InfoRow label="主手机号" value={customer.primaryMobile} />
-          <InfoRow label="主邮箱" value={customer.primaryEmail} />
-          <InfoRow label="状态" value={STATUS_LABELS[customer.status] ?? String(customer.status)} />
-          <InfoRow label="创建时间" value={formatDateTime(customer.createdAt)} />
-          <InfoRow label="更新时间" value={formatDateTime(customer.updatedAt)} />
-          <div className="flex flex-col gap-0.5 py-2">
-            <span className="text-xs text-muted-foreground">备注</span>
-            <p className="whitespace-pre-wrap break-all text-sm text-foreground">
-              {customer.remark || "-"}
+          <div className="flex gap-2.5 text-sm leading-snug">
+            <span className="w-17 shrink-0 pt-px text-xs text-muted-foreground">备注</span>
+            <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-foreground">
+              {customer.remark.trim() ? customer.remark : "—"}
             </p>
           </div>
-        </section>
+        </div>
 
-        <section>
-          <SectionTitle
+        <InlineMetaLine>
+          创建 {formatDateTime(customer.createdAt)} · 更新 {formatDateTime(customer.updatedAt)}
+        </InlineMetaLine>
+      </section>
+
+      {customer.companyId > 0 ? (
+        <section className="space-y-2">
+          <SectionHeading
             action={
-              customer.companyId > 0 && company ? (
+              company ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -266,67 +335,85 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
                   onClick={() => setCompanyEditOpen(true)}
                 >
                   <PencilIcon className="size-3.5" />
-                  编辑公司
+                  编辑
                 </Button>
               ) : null
             }
           >
-            客户公司
-          </SectionTitle>
-          {customer.companyId <= 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
-              未关联公司
-            </p>
-          ) : company ? (
-            <>
-              <InfoRow label="公司名称" value={company.name} />
-              <InfoRow label="公司编码" value={company.code} />
-              <InfoRow label="状态" value={STATUS_LABELS[company.status] ?? String(company.status)} />
-              <InfoRow label="创建时间" value={formatDateTime(company.createdAt)} />
-              <InfoRow label="更新时间" value={formatDateTime(company.updatedAt)} />
-              <div className="flex flex-col gap-0.5 py-2">
-                <span className="text-xs text-muted-foreground">备注</span>
-                <p className="whitespace-pre-wrap break-all text-sm text-foreground">
-                  {company.remark || "-"}
+            公司
+          </SectionHeading>
+          {company ? (
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-sm">
+                <Building2Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="font-medium leading-snug text-foreground">{company.name}</p>
+                  {company.code ? (
+                    <p className="font-mono text-xs text-muted-foreground">{company.code}</p>
+                  ) : null}
+                  <Badge variant={customerStatusBadgeVariant(company.status)} className="mt-1 font-normal">
+                    {StatusLabels[company.status as Status] ?? String(company.status)}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-2 pt-1">
+                <DetailRow label="创建" value={formatDateTime(company.createdAt)} />
+                <DetailRow label="更新" value={formatDateTime(company.updatedAt)} />
+              </div>
+              <div className="flex gap-2.5 text-sm leading-snug">
+                <span className="w-17 shrink-0 pt-px text-xs text-muted-foreground">备注</span>
+                <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-foreground">
+                  {company.remark.trim() ? company.remark : "—"}
                 </p>
               </div>
-            </>
+            </div>
           ) : (
-            <p className="py-2 text-sm text-muted-foreground">公司信息加载失败或公司已删除。</p>
+            <p className="text-sm text-muted-foreground">公司信息加载失败或公司已删除。</p>
           )}
         </section>
+      ) : null}
 
-        <section>
-          <SectionTitle>联系方式</SectionTitle>
-          {contacts.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
-              暂无联系方式
-            </p>
-          ) : (
-            <ul className="divide-y divide-border rounded-md border border-border/80 bg-muted/5">
-              {contacts.map((row) => (
-                <li key={row.id} className="px-2.5 py-1.5">
-                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="min-w-0 flex-1 break-all text-sm font-medium leading-snug text-foreground">
-                      {row.contactValue}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {contactTypeLabel(row.contactType)}
-                      {row.isPrimary ? " · 主" : ""}
-                      {row.isVerified ? " · 已验证" : ""}
-                    </span>
+      <section className="space-y-2">
+        <SectionHeading>联系方式</SectionHeading>
+        {contacts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">暂无</p>
+        ) : (
+          <ul className="space-y-3">
+            {contacts.map((row) => {
+              const tags: string[] = [];
+              if (row.isPrimary) {
+                tags.push("主");
+              }
+              if (row.isVerified) {
+                tags.push("已验证");
+              }
+              return (
+                <li key={row.id} className="text-sm">
+                  <div className="flex gap-2 items-center">
+                    <ContactTypeIcon contactType={row.contactType} />
+                    <div className="min-w-0 flex-1">
+                      <p className="break-all font-medium leading-snug text-foreground">
+                        {row.contactValue}
+                        <span className="ml-2 font-normal text-xs text-muted-foreground">
+                          {contactTypeLabel(row.contactType)}
+                        </span>
+                        {tags.length > 0 ? (
+                          <span className="ml-2 text-xs text-muted-foreground">{tags.join(" · ")}</span>
+                        ) : null}
+                      </p>
+                      {row.remark ? (
+                        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground break-all">
+                          {row.remark}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
-                  {row.remark ? (
-                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground break-all">
-                      {row.remark}
-                    </p>
-                  ) : null}
                 </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <CustomerFormDialog
         open={customerEditOpen}
