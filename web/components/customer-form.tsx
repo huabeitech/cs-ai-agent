@@ -1,19 +1,237 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Controller, useForm, type Resolver, type UseFormReturn } from "react-hook-form"
+import { z } from "zod/v4"
 
+import { OptionCombobox, type ComboboxOption } from "@/components/option-combobox"
 import {
-  buildCustomerFormFromAdmin,
-  customerFormResolver,
-  CustomerFormFields,
-  customerFormToPayload,
-  emptyCustomerForm,
-  type CustomerFormValues,
-} from "@/components/customer-form-fields"
-import type { ComboboxOption } from "@/components/option-combobox"
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { fetchCompanies } from "@/lib/api/company"
-import { fetchCustomer, type CreateAdminCustomerPayload } from "@/lib/api/customer"
+import {
+  fetchCustomer,
+  type AdminCustomer,
+  type CreateAdminCustomerPayload,
+} from "@/lib/api/customer"
+import { getEnumLabel, getEnumOptions } from "@/lib/enums"
+import { Gender, GenderLabels } from "@/lib/generated/enums"
+
+const genderOptions = [
+  ...getEnumOptions(GenderLabels).map((item) => ({
+    value: String(item.value),
+    label: item.label,
+  })),
+] as const
+
+const genderValueOptions = [
+  String(Gender.Unknown),
+  String(Gender.Male),
+  String(Gender.Female),
+] as const
+
+const customerFormSchema = z.object({
+  name: z.string().trim().min(1, "客户名称不能为空"),
+  gender: z.enum(genderValueOptions, { message: "请选择性别" }),
+  companyId: z.string().trim().regex(/^\d+$/, "请选择所属公司"),
+  primaryMobile: z.string().trim(),
+  primaryEmail: z.string().trim(),
+  remark: z.string().trim(),
+})
+
+export type CustomerFormValues = z.infer<typeof customerFormSchema>
+
+const customerFormResolver = zodResolver(customerFormSchema as never) as Resolver<
+  z.input<typeof customerFormSchema>,
+  undefined,
+  z.output<typeof customerFormSchema>
+>
+
+const emptyCustomerForm: CustomerFormValues = {
+  name: "",
+  gender: "0",
+  companyId: "0",
+  primaryMobile: "",
+  primaryEmail: "",
+  remark: "",
+}
+
+function buildCustomerFormFromAdmin(item: AdminCustomer | null): CustomerFormValues {
+  if (!item) {
+    return emptyCustomerForm
+  }
+  return {
+    name: item.name,
+    gender: String(item.gender) as "0" | "1" | "2",
+    companyId: String(item.companyId ?? 0),
+    primaryMobile: item.primaryMobile ?? "",
+    primaryEmail: item.primaryEmail ?? "",
+    remark: item.remark ?? "",
+  }
+}
+
+function customerFormToPayload(values: CustomerFormValues): CreateAdminCustomerPayload {
+  return {
+    name: values.name.trim(),
+    gender: Number(values.gender),
+    companyId: Number(values.companyId),
+    primaryMobile: values.primaryMobile.trim(),
+    primaryEmail: values.primaryEmail.trim(),
+    remark: values.remark.trim(),
+  }
+}
+
+function getGenderLabel(value: string) {
+  return getEnumLabel(GenderLabels, Number(value) as Gender)
+}
+
+type CustomerFormFieldsProps = {
+  form: UseFormReturn<CustomerFormValues>
+  companyOptions: ComboboxOption[]
+  fieldIdPrefix?: string
+  remarkRows?: number
+}
+
+function CustomerFormFields({
+  form,
+  companyOptions,
+  fieldIdPrefix = "customer",
+  remarkRows = 4,
+}: CustomerFormFieldsProps) {
+  const {
+    control,
+    register,
+    formState: { errors },
+    watch,
+  } = form
+  const companyId = watch("companyId")
+  const selectedCompanyLabel = useMemo(() => {
+    return companyOptions.find((item) => item.value === companyId)?.label ?? "请选择公司"
+  }, [companyOptions, companyId])
+
+  const id = (suffix: string) => `${fieldIdPrefix}-${suffix}`
+
+  return (
+    <div className="space-y-4">
+      <Field data-invalid={!!errors.name}>
+        <FieldLabel htmlFor={id("name")}>客户名称</FieldLabel>
+        <FieldContent>
+          <Input
+            id={id("name")}
+            placeholder="请输入客户名称"
+            aria-invalid={!!errors.name}
+            autoComplete="off"
+            {...register("name")}
+          />
+          <FieldError errors={[errors.name]} />
+        </FieldContent>
+      </Field>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field data-invalid={!!errors.gender}>
+          <FieldLabel htmlFor={id("gender")}>性别</FieldLabel>
+          <FieldContent>
+            <Controller
+              control={control}
+              name="gender"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} modal={false}>
+                  <SelectTrigger id={id("gender")}>
+                    <SelectValue>{getGenderLabel(field.value)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {genderOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldError errors={[errors.gender]} />
+          </FieldContent>
+        </Field>
+
+        <Field data-invalid={!!errors.companyId}>
+          <FieldLabel htmlFor={id("company")}>所属公司</FieldLabel>
+          <FieldContent>
+            <Controller
+              control={control}
+              name="companyId"
+              render={({ field }) => (
+                <div className="w-full">
+                  <OptionCombobox
+                    value={field.value}
+                    options={companyOptions}
+                    placeholder={selectedCompanyLabel}
+                    searchPlaceholder="搜索公司名称"
+                    onChange={field.onChange}
+                  />
+                </div>
+              )}
+            />
+            <FieldError errors={[errors.companyId]} />
+          </FieldContent>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field data-invalid={!!errors.primaryMobile}>
+          <FieldLabel htmlFor={id("mobile")}>手机号</FieldLabel>
+          <FieldContent>
+            <Input
+              id={id("mobile")}
+              placeholder="可选"
+              aria-invalid={!!errors.primaryMobile}
+              {...register("primaryMobile")}
+            />
+            <FieldError errors={[errors.primaryMobile]} />
+          </FieldContent>
+        </Field>
+        <Field data-invalid={!!errors.primaryEmail}>
+          <FieldLabel htmlFor={id("email")}>邮箱</FieldLabel>
+          <FieldContent>
+            <Input
+              id={id("email")}
+              placeholder="可选"
+              aria-invalid={!!errors.primaryEmail}
+              {...register("primaryEmail")}
+            />
+            <FieldError errors={[errors.primaryEmail]} />
+          </FieldContent>
+        </Field>
+      </div>
+
+      <Field data-invalid={!!errors.remark}>
+        <FieldLabel htmlFor={id("remark")}>备注</FieldLabel>
+        <FieldContent>
+          <Textarea
+            id={id("remark")}
+            placeholder="可选"
+            rows={remarkRows}
+            aria-invalid={!!errors.remark}
+            {...register("remark")}
+          />
+          <FieldError errors={[errors.remark]} />
+        </FieldContent>
+      </Field>
+    </div>
+  )
+}
 
 /** 客户表单内公司列表请求参数（全项目统一） */
 export const CUSTOMER_FORM_COMPANY_LIST_QUERY = {
@@ -40,7 +258,7 @@ export type CustomerFormProps = {
 }
 
 /**
- * 客户档案完整表单：react-hook-form、校验、公司列表加载、编辑时拉取详情。
+ * 客户档案完整表单：校验、字段 UI、公司列表加载、编辑时拉取详情。
  * 弹窗或页面仅包一层壳子并挂提交按钮即可。
  */
 export function CustomerForm({
