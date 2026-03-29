@@ -52,7 +52,7 @@ func ensurePermissions(tx *gorm.DB) (map[string]*models.Permission, error) {
 				Method:    spec.Method,
 				APIPath:   spec.APIPath,
 				SortNo:    spec.SortNo,
-				Status:    1,
+				Status:    enums.StatusOk,
 				IsBuiltin: true,
 				AuditFields: models.AuditFields{
 					CreatedAt:      now,
@@ -75,7 +75,7 @@ func ensurePermissions(tx *gorm.DB) (map[string]*models.Permission, error) {
 				"method":           spec.Method,
 				"api_path":         spec.APIPath,
 				"sort_no":          spec.SortNo,
-				"status":           1,
+				"status":           enums.StatusOk,
 				"is_builtin":       true,
 				"update_user_id":   constants.SystemAuditUserID,
 				"update_user_name": constants.SystemAuditUserName,
@@ -121,7 +121,7 @@ func ensureRoles(tx *gorm.DB) (map[string]*models.Role, error) {
 			if err := repositories.RoleRepository.Updates(tx, role.ID, map[string]any{
 				"name":             spec.Name,
 				"sort_no":          spec.SortNo,
-				"status":           1,
+				"status":           enums.StatusOk,
 				"is_system":        true,
 				"update_user_id":   constants.SystemAuditUserID,
 				"update_user_name": constants.SystemAuditUserName,
@@ -223,7 +223,7 @@ func ensureBootstrapAdmin(tx *gorm.DB, superAdminRole *models.Role) error {
 	} else {
 		if err := repositories.UserRepository.Updates(tx, user.ID, map[string]any{
 			"nickname":         nickname,
-			"status":           1,
+			"status":           enums.StatusOk,
 			"is_system":        true,
 			"update_user_id":   constants.SystemAuditUserID,
 			"update_user_name": constants.SystemAuditUserName,
