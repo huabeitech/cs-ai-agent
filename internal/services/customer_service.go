@@ -75,7 +75,8 @@ func (s *customerService) newCustomerListQuery(req request.CustomerListRequest) 
 	deleted := int(enums.StatusDeleted)
 	tx := sqls.DB().
 		Table("t_customer AS c").
-		Joins("LEFT JOIN t_customer_contact AS cc ON cc.customer_id = c.id AND cc.status <> ?", deleted)
+		Joins("LEFT JOIN t_customer_contact AS cc ON cc.customer_id = c.id AND cc.status <> ?", deleted).
+		Joins("LEFT JOIN t_company AS co ON co.id = c.company_id")
 
 	tx.Where("c.status <> ?", enums.StatusDeleted)
 
@@ -88,16 +89,15 @@ func (s *customerService) newCustomerListQuery(req request.CustomerListRequest) 
 	if req.CompanyID != nil && *req.CompanyID > 0 {
 		tx.Where("c.company_id = ?", *req.CompanyID)
 	}
-	if name := strings.TrimSpace(req.Name); strs.IsNotBlank(name) {
-		tx.Where("c.name LIKE ?", "%"+name+"%")
-	}
-	if strs.IsNotBlank(req.PrimaryMobile) {
-		pat := "%" + req.PrimaryMobile + "%"
-		tx.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
-	}
-	if strs.IsNotBlank(req.PrimaryEmail) {
-		pat := "%" + req.PrimaryEmail + "%"
-		tx.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	if kw := strings.TrimSpace(req.Keyword); strs.IsNotBlank(kw) {
+		pat := "%" + kw + "%"
+		tx.Where(`(
+c.name LIKE ? OR
+c.primary_mobile LIKE ? OR
+c.primary_email LIKE ? OR
+cc.contact_value LIKE ? OR
+co.name LIKE ?
+)`, pat, pat, pat, pat, pat)
 	}
 	return tx
 }

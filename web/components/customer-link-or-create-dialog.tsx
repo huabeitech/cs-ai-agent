@@ -19,21 +19,6 @@ export type CustomerLinkOrCreateDialogProps = {
   onSuccess?: () => void | Promise<void>
 }
 
-function buildCustomerSearchQuery(raw: string) {
-  const q = raw.trim()
-  if (!q) {
-    return {}
-  }
-  if (q.includes("@")) {
-    return { primaryEmail: q }
-  }
-  const digits = q.replace(/\s/g, "")
-  if (/^\d{5,}$/.test(digits)) {
-    return { primaryMobile: digits }
-  }
-  return { name: q }
-}
-
 const createFormId = "customer-link-or-create-form"
 
 export function CustomerLinkOrCreateDialog({
@@ -62,14 +47,13 @@ export function CustomerLinkOrCreateDialog({
   const runSearch = async () => {
     const q = searchText.trim()
     if (!q) {
-      toast.error("请输入姓名、手机或邮箱关键词")
+      toast.error("请输入关键词（姓名、手机、邮箱、公司、联系方式等）")
       return
     }
     setSearching(true)
     try {
-      const filters = buildCustomerSearchQuery(q)
       const data = await fetchCustomers({
-        ...filters,
+        keyword: q,
         page: 1,
         limit: 50,
         status: 0,
@@ -170,7 +154,7 @@ export function CustomerLinkOrCreateDialog({
       <div className="flex flex-col gap-4">
         <div className="flex gap-2">
           <Input
-            placeholder="姓名 / 手机 / 邮箱"
+            placeholder="姓名 / 手机 / 邮箱 / 公司 / 联系方式"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => {

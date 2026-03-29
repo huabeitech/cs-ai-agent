@@ -2,14 +2,13 @@ package request
 
 // CustomerListRequest 客户分页列表查询（POST /customer/list JSON Body）。
 type CustomerListRequest struct {
-	Page          int    `json:"page"`
-	Limit         int    `json:"limit"`
-	Status        *int   `json:"status,omitempty"`
-	Gender        *int   `json:"gender,omitempty"`
-	CompanyID     *int64 `json:"companyId,omitempty"`
-	Name          string `json:"name"`
-	PrimaryMobile string `json:"primaryMobile"`
-	PrimaryEmail  string `json:"primaryEmail"`
+	Page      int    `json:"page"`
+	Limit     int    `json:"limit"`
+	Status    *int   `json:"status,omitempty"`
+	Gender    *int   `json:"gender,omitempty"`
+	CompanyID *int64 `json:"companyId,omitempty"`
+	// Keyword 模糊匹配：客户姓名、主手机号、主邮箱、任意联系方式（t_customer_contact）、公司名称（t_company）。
+	Keyword string `json:"keyword"`
 }
 
 func (r CustomerListRequest) GetPage() int {

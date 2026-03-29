@@ -55,9 +55,8 @@ export type CustomerListRequest = {
   status?: number
   gender?: number
   companyId?: number
-  name?: string
-  primaryMobile?: string
-  primaryEmail?: string
+  /** 模糊匹配：客户名、主手机、主邮箱、联系方式、公司名称 */
+  keyword?: string
 }
 
 export function fetchCustomers(body: CustomerListRequest) {

@@ -79,16 +79,12 @@ function getLabel(
 }
 
 export default function DashboardCustomersPage() {
-  const [nameInput, setNameInput] = useState("")
-  const [mobileInput, setMobileInput] = useState("")
-  const [emailInput, setEmailInput] = useState("")
+  const [keywordInput, setKeywordInput] = useState("")
   const [statusFilterInput, setStatusFilterInput] = useState("all")
   const [genderFilterInput, setGenderFilterInput] = useState("all")
   const [companyFilterInput, setCompanyFilterInput] = useState("0")
 
-  const [name, setName] = useState("")
-  const [mobile, setMobile] = useState("")
-  const [email, setEmail] = useState("")
+  const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [genderFilter, setGenderFilter] = useState("all")
   const [companyFilter, setCompanyFilter] = useState("0")
@@ -139,9 +135,7 @@ export default function DashboardCustomersPage() {
     setLoading(true)
     try {
       const data = await fetchCustomers({
-        name: name.trim() || undefined,
-        primaryMobile: mobile.trim() || undefined,
-        primaryEmail: email.trim() || undefined,
+        keyword: keyword.trim() || undefined,
         status:
           statusFilter === "all" ? undefined : Number(statusFilter),
         gender:
@@ -157,7 +151,7 @@ export default function DashboardCustomersPage() {
     } finally {
       setLoading(false)
     }
-  }, [companyFilter, email, genderFilter, limit, mobile, name, page, statusFilter])
+  }, [companyFilter, genderFilter, keyword, limit, page, statusFilter])
 
   useEffect(() => {
     void loadData()
@@ -171,9 +165,7 @@ export default function DashboardCustomersPage() {
   }, [companyFilterInput, companyOptions])
 
   function applyFilters() {
-    setName(nameInput)
-    setMobile(mobileInput)
-    setEmail(emailInput)
+    setKeyword(keywordInput)
     setStatusFilter(statusFilterInput)
     setGenderFilter(genderFilterInput)
     setCompanyFilter(companyFilterInput)
@@ -263,27 +255,13 @@ export default function DashboardCustomersPage() {
           <div className="relative min-w-72">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={nameInput}
-              onChange={(event) => setNameInput(event.target.value)}
+              value={keywordInput}
+              onChange={(event) => setKeywordInput(event.target.value)}
               onKeyDown={handleFilterKeyDown}
-              placeholder="按客户名称筛选"
+              placeholder="姓名、手机、邮箱、公司、联系方式"
               className="pl-9"
             />
           </div>
-          <Input
-            value={mobileInput}
-            onChange={(event) => setMobileInput(event.target.value)}
-            onKeyDown={handleFilterKeyDown}
-            placeholder="按手机号筛选"
-            className="w-full xl:w-40"
-          />
-          <Input
-            value={emailInput}
-            onChange={(event) => setEmailInput(event.target.value)}
-            onKeyDown={handleFilterKeyDown}
-            placeholder="按邮箱筛选"
-            className="w-full xl:w-56"
-          />
 
           <Select value={genderFilterInput} onValueChange={(v) => setGenderFilterInput(v ?? "all")}>
             <SelectTrigger className="w-full xl:w-28">
@@ -324,10 +302,6 @@ export default function DashboardCustomersPage() {
           <Button variant="outline" onClick={applyFilters} disabled={loading}>
             <SearchIcon />
             查询
-          </Button>
-          <Button variant="outline" onClick={() => void loadData()} disabled={loading}>
-            <RefreshCwIcon className={loading ? "animate-spin" : ""} />
-            刷新列表
           </Button>
           <Button variant="outline" onClick={() => setLinkOrCreateOpen(true)}>
             <Link2Icon />
