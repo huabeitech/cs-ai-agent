@@ -316,6 +316,49 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         </div>
       </section>
 
+      <section className="space-y-2">
+        {contacts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">暂无联系方式</p>
+        ) : (
+          <ul className="space-y-3">
+            {contacts.map((row) => {
+              const tags: string[] = [];
+              if (row.isPrimary) {
+                tags.push("主");
+              }
+              if (row.isVerified) {
+                tags.push("已验证");
+              }
+              return (
+                <li key={row.id} className="text-sm">
+                  <div className="flex gap-2 items-center">
+                    <ContactTypeIcon contactType={row.contactType} />
+                    <div className="min-w-0 flex-1">
+                      <p className="break-all font-medium leading-snug text-foreground">
+                        {row.contactValue}
+                        <span className="ml-2 font-normal text-xs text-muted-foreground">
+                          {contactTypeLabel(row.contactType)}
+                        </span>
+                        {tags.length > 0 ? (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {tags.join(" · ")}
+                          </span>
+                        ) : null}
+                      </p>
+                      {row.remark ? (
+                        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground break-all">
+                          {row.remark}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       {customer.companyId > 0 ? (
         <section className="space-y-2 border-t">
           <SectionHeading
@@ -377,50 +420,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           )}
         </section>
       ) : null}
-
-      <section className="space-y-2">
-        <SectionHeading>联系方式</SectionHeading>
-        {contacts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无</p>
-        ) : (
-          <ul className="space-y-3">
-            {contacts.map((row) => {
-              const tags: string[] = [];
-              if (row.isPrimary) {
-                tags.push("主");
-              }
-              if (row.isVerified) {
-                tags.push("已验证");
-              }
-              return (
-                <li key={row.id} className="text-sm">
-                  <div className="flex gap-2 items-center">
-                    <ContactTypeIcon contactType={row.contactType} />
-                    <div className="min-w-0 flex-1">
-                      <p className="break-all font-medium leading-snug text-foreground">
-                        {row.contactValue}
-                        <span className="ml-2 font-normal text-xs text-muted-foreground">
-                          {contactTypeLabel(row.contactType)}
-                        </span>
-                        {tags.length > 0 ? (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {tags.join(" · ")}
-                          </span>
-                        ) : null}
-                      </p>
-                      {row.remark ? (
-                        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground break-all">
-                          {row.remark}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
 
       <CustomerFormDialog
         open={customerEditOpen}
