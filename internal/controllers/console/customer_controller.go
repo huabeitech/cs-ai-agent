@@ -35,8 +35,8 @@ func (c *CustomerController) GetBy(id int64) *web.JsonResult {
 		return web.JsonError(err)
 	}
 	item := services.CustomerService.Get(id)
-	if item == nil || item.Status != enums.StatusOk {
-		return web.JsonErrorMsg("客户不存在")
+	if item == nil || item.Status == enums.StatusDeleted {
+		return web.JsonData(nil)
 	}
 	ret := builders.BuildCustomer(item)
 	return web.JsonData(&ret)

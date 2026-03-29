@@ -67,7 +67,7 @@ export function fetchCustomers(body: CustomerListRequest) {
 }
 
 export function fetchCustomer(id: number) {
-  return request<AdminCustomer>(`/api/console/customer/${id}`)
+  return request<AdminCustomer | null>(`/api/console/customer/${id}`)
 }
 
 export function createCustomer(payload: CreateAdminCustomerPayload) {
@@ -105,4 +105,3 @@ export function deleteCustomer(id: number) {
     body: JSON.stringify({ id }),
   })
 }
-

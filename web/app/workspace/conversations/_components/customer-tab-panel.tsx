@@ -154,6 +154,44 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
   );
 }
 
+function MissingCustomerEmpty({ conversation }: { conversation: AgentConversation }) {
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const loadConversations = useAgentConversationsStore((s) => s.loadConversations);
+
+  return (
+    <div className="space-y-6 pt-2">
+      <div className="flex flex-col items-center justify-center rounded-xl bg-muted/35 px-4 py-8 text-center">
+        <UserRoundIcon className="mb-2 size-10 text-muted-foreground" aria-hidden />
+        <p className="text-sm font-medium text-foreground">客户已删除或不存在</p>
+        <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
+          当前会话绑定的客户主档已不可用。你可以重新关联已有客户，或直接新建一个客户并绑定到当前会话。
+        </p>
+        <Button
+          type="button"
+          className="mt-4 gap-2"
+          onClick={() => setLinkDialogOpen(true)}
+        >
+          <Link2Icon className="size-4" />
+          重新关联或创建客户
+        </Button>
+      </div>
+      <div className="space-y-2">
+        <SectionHeading>访客标识</SectionHeading>
+        <div className="space-y-2">
+          <DetailRow label="外部来源" value={conversation.externalSource} />
+          <DetailRow label="外部标识" value={conversation.externalId} />
+        </div>
+      </div>
+      <CustomerLinkOrCreateDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        conversationId={conversation.id}
+        onSuccess={() => void loadConversations()}
+      />
+    </div>
+  );
+}
+
 type CustomerTabPanelProps = {
   conversation: AgentConversation;
 };
@@ -187,6 +225,10 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
     try {
       const c = await fetchCustomer(customerId);
       setCustomer(c);
+      if (!c) {
+        setContacts([]);
+        return;
+      }
       const list = await fetchCustomerContacts(customerId);
       setContacts(Array.isArray(list) ? list : []);
     } catch (e) {
@@ -219,16 +261,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   }
 
   if (!customer) {
-    return (
-      <div className="space-y-3 pt-2">
-        <p className="text-sm text-muted-foreground">
-          无法加载客户（可能已被删除）。会话仍绑定客户 ID {customerId}。
-        </p>
-        <p className="text-xs text-muted-foreground">
-          外部来源 {conversation.externalSource} / {conversation.externalId}
-        </p>
-      </div>
-    );
+    return <MissingCustomerEmpty conversation={conversation} />;
   }
 
   const displayName = customer.name.trim() || "未填写姓名";
