@@ -186,7 +186,7 @@ function UserEditDrawerBody({
   }
 
   return (
-    <DrawerContent className="max-w-md">
+    <DrawerContent className="min-w-2xl">
       <DrawerHeader>
         <DrawerTitle>修改用户</DrawerTitle>
         <DrawerDescription>当前用户：{item?.username || "-"}</DrawerDescription>
@@ -266,5 +266,5 @@ function UserEditDrawerBody({
         </form>
       )}
     </DrawerContent>
-  )
+  );
 }

@@ -185,7 +185,7 @@ function CreateUserDrawerBody({
   }
 
   return (
-    <DrawerContent className="max-w-md">
+    <DrawerContent className="min-w-2xl">
       <DrawerHeader>
         <DrawerTitle>添加用户</DrawerTitle>
         <DrawerDescription>

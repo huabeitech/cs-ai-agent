@@ -313,10 +313,6 @@ export default function DashboardUsersPage() {
           <Button variant="outline" onClick={applyFilters} disabled={loading}>
             查询
           </Button>
-          <Button onClick={() => void loadUsers()} disabled={loading}>
-            <RefreshCwIcon className={loading ? "animate-spin" : ""} />
-            刷新列表
-          </Button>
         </div>
         <div className="space-y-4">
           <div className="overflow-hidden rounded-2xl border bg-background">
