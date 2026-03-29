@@ -5,6 +5,7 @@ import (
 	"cs-agent/cmd/testdata/aiagent"
 	"cs-agent/cmd/testdata/aiconfig"
 	"cs-agent/cmd/testdata/kb"
+	"cs-agent/cmd/testdata/tag"
 	"cs-agent/cmd/testdata/widgetsite"
 	"cs-agent/internal/bootstrap"
 	"cs-agent/internal/pkg/config"
@@ -95,6 +96,11 @@ func run() error {
 		return fmt.Errorf("init widget site failed: %w", err)
 	}
 	slog.Info("widget site init success", slog.Int("created", widgetSiteResult.Created), slog.Int("updated", widgetSiteResult.Updated))
+
+	if err := tag.Init(); err != nil {
+		slog.Error("init tag failed", "error", err)
+	}
+	slog.Info("tag init success")
 
 	slog.Info("testdata initialization completed")
 	return nil
