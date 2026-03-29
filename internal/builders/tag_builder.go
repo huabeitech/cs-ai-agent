@@ -44,13 +44,15 @@ func BuildTagTreeResponses(list []models.Tag) []*response.TagTreeResponse {
 	for i := range list {
 		item := &list[i]
 		nodeMap[item.ID] = &response.TagTreeResponse{
-			ID:       item.ID,
-			ParentID: item.ParentID,
-			Name:     item.Name,
-			Remark:   item.Remark,
-			SortNo:   item.SortNo,
-			Status:   item.Status,
-			Children: make([]*response.TagTreeResponse, 0),
+			ID:        item.ID,
+			ParentID:  item.ParentID,
+			Name:      item.Name,
+			Remark:    item.Remark,
+			SortNo:    item.SortNo,
+			Status:    item.Status,
+			CreatedAt: item.CreatedAt.Format(time.DateTime),
+			UpdatedAt: item.UpdatedAt.Format(time.DateTime),
+			Children:  make([]*response.TagTreeResponse, 0),
 		}
 	}
 

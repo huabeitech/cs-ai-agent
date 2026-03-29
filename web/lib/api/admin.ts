@@ -1419,6 +1419,8 @@ export type TagTree = {
   remark: string
   sortNo: number
   status: number
+  createdAt: string
+  updatedAt: string
   children: TagTree[]
 }
 

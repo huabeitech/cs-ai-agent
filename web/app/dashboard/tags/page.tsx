@@ -255,7 +255,7 @@ function SortableRow({
         </span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
-        {"-"}
+        {item.createdAt}
       </TableCell>
       <TableCell className="text-right">
         <ButtonGroup className="ml-auto">
