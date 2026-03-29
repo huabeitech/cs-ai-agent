@@ -1,6 +1,7 @@
 package services
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -140,6 +141,137 @@ func (s *customerContactService) syncCustomerPrimaryFromContacts(db *gorm.DB, cu
 		"primary_email":  pe,
 		"updated_at":     time.Now(),
 	})
+}
+
+// ReplaceAllForCustomerInTx 在事务内全量替换客户联系方式（软删未出现在 payload 中的记录），并同步客户主联系方式冗余字段。
+func (s *customerContactService) ReplaceAllForCustomerInTx(
+	ctx *sqls.TxContext,
+	customerID int64,
+	raw []request.CustomerProfileContactItem,
+	operator *dto.AuthPrincipal,
+) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	type line struct {
+		id      *int64
+		ct      enums.ContactType
+		val     string
+		remark  string
+		primary bool
+	}
+	var items []line
+	for _, r := range raw {
+		ct := strings.TrimSpace(r.ContactType)
+		val := strings.TrimSpace(r.ContactValue)
+		if val == "" {
+			continue
+		}
+		if !enums.IsValidContactType(ct) {
+			return errorsx.InvalidParam("联系方式类型不合法")
+		}
+		items = append(items, line{
+			id:      r.ID,
+			ct:      enums.ContactType(ct),
+			val:     val,
+			remark:  strings.TrimSpace(r.Remark),
+			primary: r.IsPrimary,
+		})
+	}
+	if len(items) > 0 {
+		primaryCount := 0
+		for i := range items {
+			if items[i].primary {
+				primaryCount++
+			}
+		}
+		if primaryCount == 0 {
+			items[0].primary = true
+		} else if primaryCount > 1 {
+			return errorsx.InvalidParam("仅能指定一条主联系方式")
+		}
+	}
+
+	existing := repositories.CustomerContactRepository.Find(ctx.Tx, sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("status <> ?", enums.StatusDeleted).
+		Asc("id"))
+
+	wantIDs := map[int64]struct{}{}
+	for i := range items {
+		if items[i].id != nil && *items[i].id > 0 {
+			wantIDs[*items[i].id] = struct{}{}
+		}
+	}
+	now := time.Now()
+	for _, ex := range existing {
+		if _, ok := wantIDs[ex.ID]; !ok {
+			if err := repositories.CustomerContactRepository.Updates(ctx.Tx, ex.ID, map[string]any{
+				"status":           enums.StatusDeleted,
+				"update_user_id":   operator.UserID,
+				"update_user_name": operator.Username,
+				"updated_at":       now,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return !items[i].primary && items[j].primary
+	})
+
+	for _, it := range items {
+		if it.id != nil && *it.id > 0 {
+			row := repositories.CustomerContactRepository.Get(ctx.Tx, *it.id)
+			if row == nil || row.CustomerID != customerID || row.Status == enums.StatusDeleted {
+				return errorsx.InvalidParam("联系方式不存在")
+			}
+			if s.hasDuplicateContact(ctx.Tx, customerID, it.ct, it.val, *it.id) {
+				return errorsx.InvalidParam("该联系方式已存在")
+			}
+			if it.primary {
+				if err := s.clearPrimaryExcept(ctx.Tx, customerID, *it.id); err != nil {
+					return err
+				}
+			}
+			if err := repositories.CustomerContactRepository.Updates(ctx.Tx, *it.id, map[string]any{
+				"contact_type":     it.ct,
+				"contact_value":    it.val,
+				"is_primary":       it.primary,
+				"remark":           it.remark,
+				"update_user_id":   operator.UserID,
+				"update_user_name": operator.Username,
+				"updated_at":       now,
+			}); err != nil {
+				return err
+			}
+			continue
+		}
+		if s.hasDuplicateContact(ctx.Tx, customerID, it.ct, it.val, 0) {
+			return errorsx.InvalidParam("该联系方式已存在")
+		}
+		if it.primary {
+			if err := s.clearPrimaryExcept(ctx.Tx, customerID, 0); err != nil {
+				return err
+			}
+		}
+		item := &models.CustomerContact{
+			CustomerID:   customerID,
+			ContactType:  it.ct,
+			ContactValue: it.val,
+			IsPrimary:    it.primary,
+			IsVerified:   false,
+			Source:       normalizeContactSource("manual"),
+			Status:       enums.StatusOk,
+			Remark:       it.remark,
+			AuditFields:  utils.BuildAuditFields(operator),
+		}
+		if err := repositories.CustomerContactRepository.Create(ctx.Tx, item); err != nil {
+			return err
+		}
+	}
+	return s.syncCustomerPrimaryFromContacts(ctx.Tx, customerID)
 }
 
 func (s *customerContactService) clearPrimaryExcept(db *gorm.DB, customerID int64, exceptID int64) error {

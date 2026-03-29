@@ -3,6 +3,7 @@ package console
 import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
+	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
@@ -42,6 +43,31 @@ func (c *CustomerController) GetBy(id int64) *web.JsonResult {
 	item := services.CustomerService.Get(id)
 	if item == nil {
 		return web.JsonErrorMsg("客户不存在")
+	}
+	ret := builders.BuildCustomerResponse(item)
+	return web.JsonData(&ret)
+}
+
+// PostSave_profile POST /save_profile — 客户主信息与联系方式在同一事务中保存。
+func (c *CustomerController) PostSave_profile() *web.JsonResult {
+	req := request.SaveCustomerProfileRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	createMode := req.ID == nil || *req.ID <= 0
+	var user *dto.AuthPrincipal
+	var err error
+	if createMode {
+		user, err = services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerCreate)
+	} else {
+		user, err = services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate)
+	}
+	if err != nil {
+		return web.JsonError(err)
+	}
+	item, err := services.CustomerService.SaveCustomerProfile(req, user)
+	if err != nil {
+		return web.JsonError(err)
 	}
 	ret := builders.BuildCustomerResponse(item)
 	return web.JsonData(&ret)

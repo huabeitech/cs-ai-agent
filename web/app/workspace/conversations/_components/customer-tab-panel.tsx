@@ -5,10 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CustomerFormDialog } from "@/components/customer-form-dialog";
-import {
-  persistCustomerContacts,
-  type CustomerFormSavePayload,
-} from "@/components/customer-form";
+import { type CustomerFormSavePayload } from "@/components/customer-form";
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog";
 import type { AgentConversation } from "@/lib/api/agent";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
@@ -18,7 +15,7 @@ import {
   updateCustomerContact,
   type AdminCustomerContact,
 } from "@/lib/api/customer-contact";
-import { fetchCustomer, updateCustomer, type AdminCustomer } from "@/lib/api/customer";
+import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
 import { fetchCompany, updateCompany, type AdminCompany } from "@/lib/api/company";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -398,12 +395,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           }
           setCustomerEditSaving(true);
           try {
-            await updateCustomer({ id: customer.id, ...payload.customerPayload });
-            await persistCustomerContacts(
-              customer.id,
-              payload.contacts,
-              payload.previousContactRecords
-            );
+            await saveCustomerProfile({ ...payload, id: customer.id });
             toast.success("已保存");
             void load();
             setCustomerEditOpen(false);

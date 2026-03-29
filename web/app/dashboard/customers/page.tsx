@@ -12,19 +12,15 @@ import {
 import { toast } from "sonner"
 
 import {
-  createCustomer,
   deleteCustomer,
   fetchCustomers,
-  updateCustomer,
+  saveCustomerProfile,
   updateCustomerStatus,
   type AdminCustomer,
 } from "@/lib/api/customer"
 import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
 import { type PageResult } from "@/lib/api/admin"
-import {
-  persistCustomerContacts,
-  type CustomerFormSavePayload,
-} from "@/components/customer-form"
+import { type CustomerFormSavePayload } from "@/components/customer-form"
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog"
 import { EditDialog } from "./_components/edit"
 import { Badge } from "@/components/ui/badge"
@@ -212,19 +208,10 @@ export default function DashboardCustomersPage() {
     if (saving) return
     setSaving(true)
     try {
-      if (editingItem) {
-        await updateCustomer({ id: editingItem.id, ...payload.customerPayload })
-        await persistCustomerContacts(
-          editingItem.id,
-          payload.contacts,
-          payload.previousContactRecords
-        )
-        toast.success(`已更新客户：${editingItem.name}`)
-      } else {
-        const created = await createCustomer(payload.customerPayload)
-        await persistCustomerContacts(created.id, payload.contacts, null)
-        toast.success(`已创建客户：${payload.customerPayload.name}`)
-      }
+      await saveCustomerProfile(payload)
+      toast.success(
+        editingItem ? `已更新客户：${editingItem.name}` : `已创建客户：${payload.name}`
+      )
       setDialogOpen(false)
       setEditingItem(null)
       await loadData()

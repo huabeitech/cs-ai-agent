@@ -29,22 +29,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  createCustomerContact,
-  deleteCustomerContact,
-  fetchCustomerContacts,
-  updateCustomerContact,
-  type AdminCustomerContact,
-} from "@/lib/api/customer-contact"
+import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact"
 import { fetchCompanies } from "@/lib/api/company"
 import {
   fetchCustomer,
   type AdminCustomer,
-  type CreateAdminCustomerPayload,
+  type SaveCustomerProfilePayload,
 } from "@/lib/api/customer"
 import { getEnumLabel, getEnumOptions } from "@/lib/enums"
 import { ContactType, ContactTypeLabels, Gender, GenderLabels } from "@/lib/generated/enums"
-import { cn } from "@/lib/utils"
 
 const genderOptions = [
   ...getEnumOptions(GenderLabels).map((item) => ({
@@ -161,73 +154,7 @@ export function normalizeContactsForSubmit(rows: CustomerContactFormRow[]): Cust
   }))
 }
 
-function derivePrimaryFromContacts(contacts: CustomerContactFormRow[]): {
-  primaryMobile: string
-  primaryEmail: string
-} {
-  const primary = contacts.find((c) => c.isPrimary)
-  if (!primary) {
-    return { primaryMobile: "", primaryEmail: "" }
-  }
-  const v = primary.contactValue.trim()
-  if (primary.contactType === ContactType.Email) {
-    return { primaryMobile: "", primaryEmail: v }
-  }
-  return { primaryMobile: v, primaryEmail: "" }
-}
-
-function buildCustomerPayload(values: CustomerFormValues, contacts: CustomerContactFormRow[]): CreateAdminCustomerPayload {
-  const { primaryMobile, primaryEmail } = derivePrimaryFromContacts(contacts)
-  return {
-    name: values.name.trim(),
-    gender: Number(values.gender),
-    companyId: Number(values.companyId),
-    primaryMobile,
-    primaryEmail,
-    remark: values.remark.trim(),
-  }
-}
-
-/**
- * 创建/更新联系方式记录（删除已移除、按「非主→主」顺序写入，便于后端主联系方式互斥逻辑）。
- */
-export async function persistCustomerContacts(
-  customerId: number,
-  contacts: CustomerContactFormRow[],
-  previous: AdminCustomerContact[] | null
-): Promise<void> {
-  const prevList = previous ?? []
-  const nextIds = new Set(contacts.filter((c) => c.id).map((c) => c.id!))
-  for (const p of prevList) {
-    if (!nextIds.has(p.id)) {
-      await deleteCustomerContact(p.id)
-    }
-  }
-  const sorted = [...contacts].sort((a, b) => Number(a.isPrimary) - Number(b.isPrimary))
-  for (const row of sorted) {
-    const base = {
-      contactType: row.contactType,
-      contactValue: row.contactValue.trim(),
-      isPrimary: row.isPrimary,
-      isVerified: false,
-      source: "manual",
-      status: 0,
-      remark: row.remark.trim(),
-    }
-    if (row.id) {
-      await updateCustomerContact({ id: row.id, ...base })
-    } else {
-      await createCustomerContact({ customerId, ...base })
-    }
-  }
-}
-
-export type CustomerFormSavePayload = {
-  customerPayload: CreateAdminCustomerPayload
-  customerIdForUpdate: number | null
-  contacts: CustomerContactFormRow[]
-  previousContactRecords: AdminCustomerContact[] | null
-}
+export type CustomerFormSavePayload = SaveCustomerProfilePayload
 
 function getGenderLabel(value: string) {
   return getEnumLabel(GenderLabels, Number(value) as Gender)
@@ -376,100 +303,100 @@ function CustomerFormFields({
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground">联系方式</h3>
-        <p className="text-xs text-muted-foreground">
-          类型与号码/邮箱；在右侧勾选主联系方式（与手机通讯录一致）。主联系方式会同步到列表检索字段。
-        </p>
+        <div className="hidden gap-2 border-b border-border pb-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[108px_minmax(0,1fr)_minmax(0,1fr)_5.5rem_2.25rem] sm:items-center sm:gap-x-2">
+          <span>类型</span>
+          <span>联系方式</span>
+          <span>备注</span>
+          <span className="text-center">主</span>
+          <span className="sr-only">操作</span>
+        </div>
 
-        <div className="space-y-4">
+        <div className="space-y-1">
           {fields.map((field, index) => {
             const err = errors.contacts?.[index]
             return (
               <div
                 key={field.id}
-                className={cn(
-                  "rounded-lg border border-border bg-muted/20 p-3",
-                  index > 0 && "mt-2"
-                )}
+                className="grid grid-cols-1 gap-2 border-b border-border py-2 last:border-b-0 sm:grid-cols-[108px_minmax(0,1fr)_minmax(0,1fr)_5.5rem_2.25rem] sm:items-center sm:gap-x-2"
               >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-                  <div className="min-w-0 space-y-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                      <Controller
-                        control={control}
-                        name={`contacts.${index}.contactType`}
-                        render={({ field: f }) => (
-                          <Select value={f.value} onValueChange={f.onChange} modal={false}>
-                            <SelectTrigger className="w-full sm:w-[120px]" id={id(`ct-${index}`)}>
-                              <SelectValue>{getContactTypeLabel(f.value)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {contactTypeValues.map((v) => (
-                                <SelectItem key={v} value={v}>
-                                  {getContactTypeLabel(v)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      <Field data-invalid={!!err?.contactValue} className="min-w-0 flex-1">
-                        <FieldContent>
-                          <Input
-                            className="w-full"
-                            placeholder={
-                              watch(`contacts.${index}.contactType`) === ContactType.Email
-                                ? "邮箱地址"
-                                : "号码 / 账号"
-                            }
-                            aria-invalid={!!err?.contactValue}
-                            {...register(`contacts.${index}.contactValue`)}
-                          />
-                          <FieldError errors={[err?.contactValue]} />
-                        </FieldContent>
-                      </Field>
-                    </div>
-                    <Field>
-                      <FieldLabel htmlFor={id(`tag-${index}`)} className="text-xs">
-                        标签（可选）
-                      </FieldLabel>
-                      <FieldContent>
-                        <Input
-                          id={id(`tag-${index}`)}
-                          placeholder="如：工作、备用"
-                          {...register(`contacts.${index}.remark`)}
-                        />
-                      </FieldContent>
-                    </Field>
-                  </div>
+                <div className="min-w-0 space-y-1 sm:space-y-0">
+                  <span className="text-xs text-muted-foreground sm:hidden">类型</span>
+                  <Controller
+                    control={control}
+                    name={`contacts.${index}.contactType`}
+                    render={({ field: f }) => (
+                      <Select value={f.value} onValueChange={f.onChange} modal={false}>
+                        <SelectTrigger className="w-full" id={id(`ct-${index}`)}>
+                          <SelectValue>{getContactTypeLabel(f.value)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contactTypeValues.map((v) => (
+                            <SelectItem key={v} value={v}>
+                              {getContactTypeLabel(v)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
 
-                  <div className="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-start sm:pt-7">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        className="size-4 accent-primary"
-                        name={id("primary-group")}
-                        checked={watch(`contacts.${index}.isPrimary`)}
-                        onChange={() => setPrimaryIndex(index)}
-                        id={id(`primary-${index}`)}
-                      />
-                      <label
-                        htmlFor={id(`primary-${index}`)}
-                        className="cursor-pointer text-sm font-normal"
-                      >
-                        主联系方式
-                      </label>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeContactRow(index)}
-                      aria-label="删除此条联系方式"
-                    >
-                      <Trash2Icon className="size-4" />
-                    </Button>
-                  </div>
+                <Field data-invalid={!!err?.contactValue} className="min-w-0 gap-1 sm:gap-0">
+                  <FieldLabel className="text-xs text-muted-foreground sm:sr-only">联系方式</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      placeholder={
+                        watch(`contacts.${index}.contactType`) === ContactType.Email
+                          ? "邮箱"
+                          : "号码 / 账号"
+                      }
+                      aria-invalid={!!err?.contactValue}
+                      {...register(`contacts.${index}.contactValue`)}
+                    />
+                    <FieldError errors={[err?.contactValue]} />
+                  </FieldContent>
+                </Field>
+
+                <Field className="min-w-0 gap-1 sm:gap-0">
+                  <FieldLabel htmlFor={id(`tag-${index}`)} className="text-xs text-muted-foreground sm:sr-only">
+                    备注
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id={id(`tag-${index}`)}
+                      placeholder="可选"
+                      {...register(`contacts.${index}.remark`)}
+                    />
+                  </FieldContent>
+                </Field>
+
+                <div className="flex items-center justify-start gap-2 sm:justify-center">
+                  <span className="text-xs text-muted-foreground sm:hidden">主联系方式</span>
+                  <input
+                    type="radio"
+                    className="size-4 shrink-0 accent-primary"
+                    name={id("primary-group")}
+                    checked={watch(`contacts.${index}.isPrimary`)}
+                    onChange={() => setPrimaryIndex(index)}
+                    id={id(`primary-${index}`)}
+                    aria-label="设为主联系方式"
+                  />
+                  <label htmlFor={id(`primary-${index}`)} className="hidden cursor-pointer text-sm sm:inline">
+                    主
+                  </label>
+                </div>
+
+                <div className="flex justify-end sm:justify-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => removeContactRow(index)}
+                    aria-label="删除此条联系方式"
+                  >
+                    <Trash2Icon className="size-4" />
+                  </Button>
                 </div>
               </div>
             )
@@ -517,7 +444,6 @@ export function CustomerForm({
 }: CustomerFormProps) {
   const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>(defaultCompanyOptions)
   const [loadingDetail, setLoadingDetail] = useState(() => Boolean(itemId))
-  const loadedContactsRef = useRef<AdminCustomerContact[] | null>(null)
 
   const form = useForm<CustomerFormValues>({
     resolver: customerFormResolver,
@@ -561,7 +487,6 @@ export function CustomerForm({
       if (!itemId) {
         setLoadingDetail(false)
         notify(false)
-        loadedContactsRef.current = null
         reset(emptyCustomerForm)
         return
       }
@@ -572,7 +497,6 @@ export function CustomerForm({
           fetchCustomer(itemId),
           fetchCustomerContacts(itemId),
         ])
-        loadedContactsRef.current = contacts
         reset({
           ...buildCustomerMainFromAdmin(customer),
           contacts: buildContactsFromApi(contacts),
@@ -587,13 +511,23 @@ export function CustomerForm({
 
   async function onFormSubmit(values: CustomerFormValues) {
     const contacts = normalizeContactsForSubmit(values.contacts as CustomerContactFormRow[])
-    const customerPayload = buildCustomerPayload(values, contacts)
-    await onSave({
-      customerPayload,
-      customerIdForUpdate: itemId ?? null,
-      contacts,
-      previousContactRecords: loadedContactsRef.current,
-    })
+    const body: SaveCustomerProfilePayload = {
+      name: values.name.trim(),
+      gender: Number(values.gender),
+      companyId: Number(values.companyId),
+      remark: values.remark.trim(),
+      contacts: contacts.map((c) => ({
+        id: c.id,
+        contactType: c.contactType,
+        contactValue: c.contactValue.trim(),
+        remark: c.remark.trim(),
+        isPrimary: c.isPrimary,
+      })),
+    }
+    if (itemId) {
+      body.id = itemId
+    }
+    await onSave(body)
   }
 
   if (loadingDetail) {

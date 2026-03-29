@@ -153,3 +153,66 @@ func (s *customerService) UpdateStatus(id int64, status int, operator *dto.AuthP
 		"updated_at":       time.Now(),
 	})
 }
+
+// SaveCustomerProfile 单事务保存客户主信息与联系方式全量（新建或更新）。
+func (s *customerService) SaveCustomerProfile(req request.SaveCustomerProfileRequest, operator *dto.AuthPrincipal) (*models.Customer, error) {
+	if operator == nil {
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, errorsx.InvalidParam("客户名称不能为空")
+	}
+	if req.CompanyID > 0 {
+		if CompanyService.Get(req.CompanyID) == nil {
+			return nil, errorsx.InvalidParam("所属公司不存在")
+		}
+	}
+	createMode := req.ID == nil || *req.ID <= 0
+
+	var out *models.Customer
+	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		var customerID int64
+		if createMode {
+			c := &models.Customer{
+				Name:          name,
+				Gender:        enums.Gender(req.Gender),
+				CompanyID:     req.CompanyID,
+				PrimaryMobile: "",
+				PrimaryEmail:  "",
+				Status:        enums.StatusOk,
+				Remark:        strings.TrimSpace(req.Remark),
+				AuditFields:   utils.BuildAuditFields(operator),
+			}
+			if err := repositories.CustomerRepository.Create(ctx.Tx, c); err != nil {
+				return err
+			}
+			customerID = c.ID
+			out = c
+		} else {
+			customerID = *req.ID
+			cur := repositories.CustomerRepository.Get(ctx.Tx, customerID)
+			if cur == nil {
+				return errorsx.InvalidParam("客户不存在")
+			}
+			now := time.Now()
+			if err := repositories.CustomerRepository.Updates(ctx.Tx, customerID, map[string]any{
+				"name":             name,
+				"gender":           req.Gender,
+				"company_id":       req.CompanyID,
+				"remark":           strings.TrimSpace(req.Remark),
+				"update_user_id":   operator.UserID,
+				"update_user_name": operator.Username,
+				"updated_at":       now,
+			}); err != nil {
+				return err
+			}
+			out = repositories.CustomerRepository.Get(ctx.Tx, customerID)
+		}
+		return CustomerContactService.ReplaceAllForCustomerInTx(ctx, customerID, req.Contacts, operator)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}

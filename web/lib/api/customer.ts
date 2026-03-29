@@ -28,6 +28,24 @@ export type UpdateAdminCustomerPayload = CreateAdminCustomerPayload & {
   id: number
 }
 
+/** 与 POST /customer/save/profile 请求体一致 */
+export type SaveCustomerProfileContactLine = {
+  id?: number
+  contactType: string
+  contactValue: string
+  remark: string
+  isPrimary: boolean
+}
+
+export type SaveCustomerProfilePayload = {
+  id?: number
+  name: string
+  gender: number
+  companyId: number
+  remark: string
+  contacts: SaveCustomerProfileContactLine[]
+}
+
 function toQueryString(query?: Record<string, string | number | undefined>) {
   if (!query) {
     return ""
@@ -55,6 +73,14 @@ export function fetchCustomer(id: number) {
 
 export function createCustomer(payload: CreateAdminCustomerPayload) {
   return request<AdminCustomer>("/api/console/customer/create", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+/** 单请求 + 单事务保存客户主信息与联系方式全量 */
+export function saveCustomerProfile(payload: SaveCustomerProfilePayload) {
+  return request<AdminCustomer>("/api/console/customer/save_profile", {
     method: "POST",
     body: JSON.stringify(payload),
   })

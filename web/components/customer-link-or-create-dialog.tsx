@@ -3,16 +3,12 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import {
-  CustomerForm,
-  persistCustomerContacts,
-  type CustomerFormSavePayload,
-} from "@/components/customer-form"
+import { CustomerForm, type CustomerFormSavePayload } from "@/components/customer-form"
 import { ProjectDialog } from "@/components/project-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { linkConversationToCustomer } from "@/lib/api/agent"
-import { createCustomer, fetchCustomers, type AdminCustomer } from "@/lib/api/customer"
+import { fetchCustomers, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer"
 
 export type CustomerLinkOrCreateDialogProps = {
   open: boolean
@@ -115,8 +111,7 @@ export function CustomerLinkOrCreateDialog({
   const onCreateSave = async (payload: CustomerFormSavePayload) => {
     setSaving(true)
     try {
-      const created = await createCustomer(payload.customerPayload)
-      await persistCustomerContacts(created.id, payload.contacts, null)
+      const created = await saveCustomerProfile(payload)
       if (conversationId) {
         await linkConversationToCustomer({
           conversationId,
