@@ -221,7 +221,6 @@ export function ConversationInfoPanel({
           </p>
         ) : (
           <div className="space-y-4 py-3">
-            <ConversationTagSection conversation={conversation} />
             <CustomerBody conversation={conversation} />
           </div>
         )}
@@ -270,7 +269,7 @@ function ConversationTagSection({
   }, []);
 
   return (
-    <section className="space-y-2 border-b border-border pb-4">
+    <section className="space-y-2 border-t pt-2">
       <SectionHeading
         action={
           <ConversationTagPicker
@@ -297,7 +296,12 @@ function CustomerBody({ conversation }: { conversation: AgentConversation }) {
   const customerId = conversation.customerId ?? 0;
 
   if (customerId <= 0) {
-    return <UnlinkedCustomerEmpty conversation={conversation} />;
+    return (
+      <div className="space-y-4">
+        <UnlinkedCustomerEmpty conversation={conversation} />
+        <ConversationTagSection conversation={conversation} />
+      </div>
+    );
   }
 
   return <CustomerLinkedBody conversation={conversation} customerId={customerId} />;
@@ -357,7 +361,12 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   }
 
   if (!customer) {
-    return <MissingCustomerEmpty conversation={conversation} />;
+    return (
+      <div className="space-y-4">
+        <MissingCustomerEmpty conversation={conversation} />
+        <ConversationTagSection conversation={conversation} />
+      </div>
+    );
   }
 
   const displayName = customer.name.trim() || "未填写姓名";
@@ -529,6 +538,8 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           )}
         </section>
       ) : null}
+
+      <ConversationTagSection conversation={conversation} />
 
       <CustomerFormDialog
         open={customerEditOpen}

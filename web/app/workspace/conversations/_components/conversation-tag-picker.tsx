@@ -153,13 +153,14 @@ export function ConversationTagPicker({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="size-6 shrink-0 text-muted-foreground"
+            size="sm"
+            className="h-7 shrink-0 gap-1 px-2 text-xs"
             aria-label="编辑会话标签"
           />
         }
       >
-        <TagIcon className="size-3.5" />
+        <TagIcon className="size-3.5 text-muted-foreground" />
+        编辑
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -181,7 +182,7 @@ export function ConversationTagPicker({
                   return (
                     <CommandItem
                       key={tag.id}
-                      value={`${tag.name} ${tag.remark}`}
+                      value={`${tag.id} ${tag.name} ${tag.remark}`}
                       disabled={pendingTagId !== null}
                       onSelect={() => void handleToggle(tag)}
                     >
@@ -223,9 +224,13 @@ export function ConversationTagBadges({ tags }: ConversationTagBadgesProps) {
   }
 
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => (
-        <Badge key={tag.id} variant="outline" className="max-w-full truncate px-1.5">
+        <Badge
+          key={tag.id}
+          variant="outline"
+          className="max-w-full truncate px-2 text-[11px] font-normal"
+        >
           {tag.name}
         </Badge>
       ))}
