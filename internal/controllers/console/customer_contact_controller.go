@@ -59,3 +59,18 @@ func (c *CustomerContactController) PostUpdate() *web.JsonResult {
 	}
 	return web.JsonSuccess()
 }
+
+func (c *CustomerContactController) PostDelete() *web.JsonResult {
+	user, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.DeleteCustomerContactRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.CustomerContactService.DeleteCustomerContact(req.ID, user); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}

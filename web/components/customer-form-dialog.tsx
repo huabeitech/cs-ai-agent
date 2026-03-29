@@ -2,17 +2,19 @@
 
 import { useState } from "react"
 
-import { CustomerForm } from "@/components/customer-form"
+import {
+  CustomerForm,
+  type CustomerFormSavePayload,
+} from "@/components/customer-form"
 import { ProjectDialog } from "@/components/project-dialog"
 import { Button } from "@/components/ui/button"
-import type { CreateAdminCustomerPayload } from "@/lib/api/customer"
 
 export type CustomerFormDialogProps = {
   open: boolean
   saving: boolean
   itemId: number | null
   onOpenChange: (open: boolean) => void
-  onSubmit: (payload: CreateAdminCustomerPayload) => Promise<void>
+  onSave: (payload: CustomerFormSavePayload) => Promise<void>
 }
 
 /** 客户新建/编辑表单弹窗（ProjectDialog + CustomerForm），供客户管理页与会话工作台等复用。 */
@@ -21,7 +23,7 @@ export function CustomerFormDialog({
   saving,
   itemId,
   onOpenChange,
-  onSubmit,
+  onSave,
 }: CustomerFormDialogProps) {
   if (!open) return null
   return (
@@ -30,7 +32,7 @@ export function CustomerFormDialog({
       saving={saving}
       itemId={itemId}
       onOpenChange={onOpenChange}
-      onSubmit={onSubmit}
+      onSave={onSave}
     />
   )
 }
@@ -41,7 +43,7 @@ function CustomerFormDialogBody({
   saving,
   itemId,
   onOpenChange,
-  onSubmit,
+  onSave,
 }: CustomerFormDialogBodyProps) {
   const formId = "customer-form-dialog"
   const [loadingDetail, setLoadingDetail] = useState(() => Boolean(itemId))
@@ -76,11 +78,11 @@ function CustomerFormDialogBody({
       <CustomerForm
         formId={formId}
         itemId={itemId}
-        onSubmit={onSubmit}
+        onSave={onSave}
         fieldIdPrefix="customer"
         className="space-y-4"
         onLoadingDetailChange={setLoadingDetail}
       />
     </ProjectDialog>
-  );
+  )
 }

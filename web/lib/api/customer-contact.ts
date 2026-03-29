@@ -69,3 +69,10 @@ export function updateCustomerContact(payload: UpdateCustomerContactPayload) {
     body: JSON.stringify(payload),
   })
 }
+
+export function deleteCustomerContact(id: number) {
+  return request<void>("/api/console/customer-contact/delete", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  })
+}

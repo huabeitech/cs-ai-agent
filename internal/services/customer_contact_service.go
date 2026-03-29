@@ -112,6 +112,36 @@ func (s *customerContactService) hasDuplicateContact(
 	return repositories.CustomerContactRepository.FindOne(db, cnd) != nil
 }
 
+// syncCustomerPrimaryFromContacts 根据当前主联系方式更新客户表冗余字段（列表检索用）。
+func (s *customerContactService) syncCustomerPrimaryFromContacts(db *gorm.DB, customerID int64) error {
+	if customerID <= 0 {
+		return nil
+	}
+	if repositories.CustomerRepository.Get(db, customerID) == nil {
+		return nil
+	}
+	cnd := sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("is_primary = ?", true).
+		Where("status <> ?", enums.StatusDeleted)
+	primary := repositories.CustomerContactRepository.FindOne(db, cnd)
+	pm, pe := "", ""
+	if primary != nil {
+		val := strings.TrimSpace(primary.ContactValue)
+		switch primary.ContactType {
+		case enums.ContactTypeEmail:
+			pe = val
+		default:
+			pm = val
+		}
+	}
+	return repositories.CustomerRepository.Updates(db, customerID, map[string]any{
+		"primary_mobile": pm,
+		"primary_email":  pe,
+		"updated_at":     time.Now(),
+	})
+}
+
 func (s *customerContactService) clearPrimaryExcept(db *gorm.DB, customerID int64, exceptID int64) error {
 	cnd := sqls.NewCnd().
 		Where("customer_id = ?", customerID).
@@ -196,6 +226,9 @@ func (s *customerContactService) CreateCustomerContact(req request.CreateCustome
 			return err
 		}
 		created = item
+		if err := s.syncCustomerPrimaryFromContacts(ctx.Tx, req.CustomerID); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -246,7 +279,7 @@ func (s *customerContactService) UpdateCustomerContact(req request.UpdateCustome
 		} else {
 			verifiedAt = nil
 		}
-		return repositories.CustomerContactRepository.Updates(ctx.Tx, req.ID, map[string]any{
+		if err := repositories.CustomerContactRepository.Updates(ctx.Tx, req.ID, map[string]any{
 			"contact_type":     enums.ContactType(ct),
 			"contact_value":    val,
 			"is_primary":       req.IsPrimary,
@@ -258,6 +291,35 @@ func (s *customerContactService) UpdateCustomerContact(req request.UpdateCustome
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       now,
-		})
+		}); err != nil {
+			return err
+		}
+		return s.syncCustomerPrimaryFromContacts(ctx.Tx, current.CustomerID)
+	})
+}
+
+// DeleteCustomerContact 软删除联系方式并同步客户主联系方式冗余字段。
+func (s *customerContactService) DeleteCustomerContact(id int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if id <= 0 {
+		return errorsx.InvalidParam("联系方式不存在")
+	}
+	current := s.Get(id)
+	if current == nil {
+		return errorsx.InvalidParam("联系方式不存在")
+	}
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		now := time.Now()
+		if err := repositories.CustomerContactRepository.Updates(ctx.Tx, id, map[string]any{
+			"status":           enums.StatusDeleted,
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+			"updated_at":       now,
+		}); err != nil {
+			return err
+		}
+		return s.syncCustomerPrimaryFromContacts(ctx.Tx, current.CustomerID)
 	})
 }

@@ -18,10 +18,13 @@ import {
   updateCustomer,
   updateCustomerStatus,
   type AdminCustomer,
-  type CreateAdminCustomerPayload,
 } from "@/lib/api/customer"
 import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
 import { type PageResult } from "@/lib/api/admin"
+import {
+  persistCustomerContacts,
+  type CustomerFormSavePayload,
+} from "@/components/customer-form"
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog"
 import { EditDialog } from "./_components/edit"
 import { Badge } from "@/components/ui/badge"
@@ -205,16 +208,22 @@ export default function DashboardCustomersPage() {
     setDialogOpen(open)
   }
 
-  async function handleSubmit(payload: CreateAdminCustomerPayload) {
+  async function handleSave(payload: CustomerFormSavePayload) {
     if (saving) return
     setSaving(true)
     try {
       if (editingItem) {
-        await updateCustomer({ id: editingItem.id, ...payload })
+        await updateCustomer({ id: editingItem.id, ...payload.customerPayload })
+        await persistCustomerContacts(
+          editingItem.id,
+          payload.contacts,
+          payload.previousContactRecords
+        )
         toast.success(`已更新客户：${editingItem.name}`)
       } else {
-        await createCustomer(payload)
-        toast.success(`已创建客户：${payload.name}`)
+        const created = await createCustomer(payload.customerPayload)
+        await persistCustomerContacts(created.id, payload.contacts, null)
+        toast.success(`已创建客户：${payload.customerPayload.name}`)
       }
       setDialogOpen(false)
       setEditingItem(null)
@@ -446,7 +455,7 @@ export default function DashboardCustomersPage() {
         saving={saving}
         itemId={editingItem?.id ?? null}
         onOpenChange={handleDialogOpenChange}
-        onSubmit={handleSubmit}
+        onSave={handleSave}
       />
     </>
   )

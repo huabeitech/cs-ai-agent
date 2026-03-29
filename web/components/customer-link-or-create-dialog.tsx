@@ -3,17 +3,16 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import { CustomerForm } from "@/components/customer-form"
+import {
+  CustomerForm,
+  persistCustomerContacts,
+  type CustomerFormSavePayload,
+} from "@/components/customer-form"
 import { ProjectDialog } from "@/components/project-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { linkConversationToCustomer } from "@/lib/api/agent"
-import {
-  createCustomer,
-  fetchCustomers,
-  type AdminCustomer,
-  type CreateAdminCustomerPayload,
-} from "@/lib/api/customer"
+import { createCustomer, fetchCustomers, type AdminCustomer } from "@/lib/api/customer"
 
 export type CustomerLinkOrCreateDialogProps = {
   open: boolean
@@ -113,10 +112,11 @@ export function CustomerLinkOrCreateDialog({
     }
   }
 
-  const onCreateSubmit = async (payload: CreateAdminCustomerPayload) => {
+  const onCreateSave = async (payload: CustomerFormSavePayload) => {
     setSaving(true)
     try {
-      const created = await createCustomer(payload)
+      const created = await createCustomer(payload.customerPayload)
+      await persistCustomerContacts(created.id, payload.contacts, null)
       if (conversationId) {
         await linkConversationToCustomer({
           conversationId,
@@ -150,6 +150,7 @@ export function CustomerLinkOrCreateDialog({
       title="关联或创建客户"
       description={description}
       allowFullscreen
+      defaultFullscreen
       size="xl"
       footer={
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
@@ -232,7 +233,7 @@ export function CustomerLinkOrCreateDialog({
         {showCreate ? (
           <CustomerForm
             formId={createFormId}
-            onSubmit={onCreateSubmit}
+            onSave={onCreateSave}
             fieldIdPrefix="link-or-create"
             remarkRows={2}
             className="flex flex-col gap-3 rounded-lg border border-border bg-muted/10 p-3"

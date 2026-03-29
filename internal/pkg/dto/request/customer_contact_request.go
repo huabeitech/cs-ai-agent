@@ -21,3 +21,7 @@ type UpdateCustomerContactRequest struct {
 	Status       int    `json:"status"`
 	Remark       string `json:"remark"`
 }
+
+type DeleteCustomerContactRequest struct {
+	ID int64 `json:"id"`
+}

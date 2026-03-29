@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>客户编辑 - 交互稿（线框）</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.125rem; margin: 0 0 4px; }
+    .sub { font-size: 0.8125rem; color: #71717a; margin-bottom: 16px; }
+    section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border: 1px solid #e4e4e7;
+    }
+    .sec-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+    .row { margin-bottom: 12px; }
+    .row:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 0.8125rem; color: #52525b; margin-bottom: 4px; }
+    .fake-input, select.fake-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px dashed #d4d4d8;
+      border-radius: 8px;
+      background: #fafafa;
+      font-size: 0.9375rem;
+      color: #a1a1aa;
+    }
+    .hint { font-size: 0.75rem; color: #a1a1aa; margin-top: 4px; }
+
+    .contact-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 12px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid #f4f4f5;
+    }
+    .contact-item:last-of-type { border-bottom: none; }
+    .contact-fields { min-width: 0; }
+    .type-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .type-row select { flex: 0 0 100px; }
+    .type-row .fake-input { flex: 1; }
+    .primary-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      padding-top: 22px;
+    }
+    .check-primary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+      color: #52525b;
+    }
+    .check-primary input { width: 16px; height: 16px; accent-color: #18181b; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      border: 1px dashed #a1a1aa;
+      border-radius: 8px;
+      background: #fff;
+      color: #52525b;
+      cursor: default;
+    }
+    .note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #fefce8;
+      border: 1px solid #fde047;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      color: #713f12;
+    }
+    .note strong { display: block; margin-bottom: 4px; }
+    footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      padding: 24px 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>编辑客户（线框）</h1>
+    <p class="sub">上：客户主信息 · 下：多条联系方式（类通讯录）· 主联系方式在行尾勾选</p>
+
+    <section aria-label="客户主要信息">
+      <div class="sec-title">客户信息</div>
+      <div class="row">
+        <label>客户名称</label>
+        <div class="fake-input">张三</div>
+      </div>
+      <div class="row">
+        <label>性别</label>
+        <select class="fake-input" disabled>
+          <option>男</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>所属公司</label>
+        <div class="fake-input">某某科技有限公司</div>
+      </div>
+      <div class="row">
+        <label>备注</label>
+        <div class="fake-input" style="min-height: 72px;"></div>
+      </div>
+      <p class="hint">此处不包含「主手机 / 主邮箱」输入框。</p>
+    </section>
+
+    <section aria-label="联系方式">
+      <div class="sec-title">联系方式</div>
+
+      <div class="contact-item">
+        <div class="contact-fields">
+          <div class="type-row">
+            <select class="fake-input" disabled><option>手机</option><option>邮箱</option></select>
+            <div class="fake-input">138 **** 8888</div>
+          </div>
+          <label style="margin-top:4px;">标签（可选）</label>
+          <div class="fake-input" style="padding:8px 12px;">工作</div>
+        </div>
+        <div class="primary-col">
+          <label class="check-primary">
+            <input type="radio" name="primary-contact" checked />
+            主联系方式
+          </label>
+        </div>
+      </div>
+
+      <div class="contact-item">
+        <div class="contact-fields">
+          <div class="type-row">
+            <select class="fake-input" disabled><option>邮箱</option></select>
+            <div class="fake-input">zhang@example.com</div>
+          </div>
+          <label style="margin-top:4px;">标签（可选）</label>
+          <div class="fake-input" style="padding:8px 12px;">备用</div>
+        </div>
+        <div class="primary-col">
+          <label class="check-primary">
+            <input type="radio" name="primary-contact" />
+            主联系方式
+          </label>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <span class="hint" style="margin:0;">+ 可继续添加多条</span>
+        <button type="button" class="btn-add" disabled aria-hidden="true">＋ 添加联系方式</button>
+      </div>
+    </section>
+
+    <div class="note">
+      <strong>交互说明（PRD 摘要）</strong>
+      主信息区仅维护客户主体字段；联系方式区为列表，每条含类型 + 值 + 可选标签；
+      「主联系方式」在对应行尾勾选（单选：同一客户仅一条为主，勾选一行则取消其他行）。
+      保存时一并提交主信息与联系方式列表。
+    </div>
+
+    <footer>线框稿 · 非最终视觉 · 用于评审布局与信息流</footer>
+  </div>
+</body>
+</html>
