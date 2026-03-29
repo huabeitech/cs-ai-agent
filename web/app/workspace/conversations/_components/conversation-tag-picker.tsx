@@ -43,6 +43,23 @@ function flattenTagTree(nodes: TagTree[], depth = 0): TagNode[] {
   return result
 }
 
+function buildTagPathMap(
+  nodes: TagTree[],
+  parentPath = ""
+): Map<number, string> {
+  const result = new Map<number, string>()
+  nodes.forEach((item) => {
+    const currentPath = parentPath ? `${parentPath} / ${item.name}` : item.name
+    result.set(item.id, currentPath)
+    if (item.children.length > 0) {
+      buildTagPathMap(item.children, currentPath).forEach((value, key) => {
+        result.set(key, value)
+      })
+    }
+  })
+  return result
+}
+
 type ConversationTagPickerProps = {
   conversation: AgentConversation
   availableTags: TagTree[]
@@ -59,10 +76,6 @@ export function ConversationTagPicker({
   const [pendingTagId, setPendingTagId] = useState<number | null>(null)
 
   const flattenedTags = useMemo(() => flattenTagTree(availableTags), [availableTags])
-  const activeTags = useMemo(
-    () => flattenedTags.filter((item) => item.status === 0),
-    [flattenedTags]
-  )
   const selectedTagIds = useMemo(
     () => new Set((conversation.tags ?? []).map((item) => item.id)),
     [conversation.tags]
@@ -171,12 +184,18 @@ export function ConversationTagPicker({
 
 type ConversationTagBadgesProps = {
   tags?: AgentConversationTag[]
+  availableTags?: TagTree[]
 }
 
-export function ConversationTagBadges({ tags }: ConversationTagBadgesProps) {
+export function ConversationTagBadges({
+  tags,
+  availableTags = [],
+}: ConversationTagBadgesProps) {
   if (!tags || tags.length === 0) {
     return null
   }
+
+  const tagPathMap = buildTagPathMap(availableTags)
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -184,9 +203,11 @@ export function ConversationTagBadges({ tags }: ConversationTagBadgesProps) {
         <Badge
           key={tag.id}
           variant="outline"
-          className="max-w-full truncate px-2 text-[11px] font-normal"
+          className="max-w-full px-2 text-[12px] font-normal"
         >
-          {tag.name}
+          <span className="break-all">
+            {tagPathMap.get(tag.id) ?? tag.name}
+          </span>
         </Badge>
       ))}
     </div>

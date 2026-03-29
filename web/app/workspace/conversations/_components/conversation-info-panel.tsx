@@ -284,7 +284,10 @@ function ConversationTagSection({
       >
         会话标签
       </SectionHeading>
-      <ConversationTagBadges tags={conversation.tags} />
+      <ConversationTagBadges
+        tags={conversation.tags}
+        availableTags={availableTags}
+      />
       {!conversation.tags || conversation.tags.length === 0 ? (
         <p className="text-sm text-muted-foreground">暂未设置会话标签</p>
       ) : null}
