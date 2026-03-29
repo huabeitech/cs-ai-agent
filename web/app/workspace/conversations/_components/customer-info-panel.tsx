@@ -29,8 +29,8 @@ type InfoTabValue = (typeof infoTabOptions)[number]["value"];
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5 py-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-center gap-0.5 py-2">
+      <span className="text-sm text-muted-foreground">{label}:&nbsp;</span>
       <span className="break-all text-sm text-foreground">{value || "-"}</span>
     </div>
   );
@@ -65,7 +65,6 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
             String(conversation.serviceMode)
           }
         />
-        <InfoRow label="优先级" value={String(conversation.priority)} />
         <InfoRow label="当前客服" value={conversation.currentAssigneeName ?? "-"} />
       </section>
       <section>
