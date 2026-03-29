@@ -1,11 +1,13 @@
 "use client"
 
 import {
+  BanIcon,
+  CheckCircle2Icon,
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
-  Trash2Icon
+  Trash2Icon,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -301,7 +303,19 @@ export default function DashboardCompaniesPage() {
                                 disabled={item.status === Status.Deleted}
                                 onClick={() => void handleToggleStatus(item)}
                               >
-                                {item.status === 0 ? "禁用" : "启用"}
+                                {actionLoading ? (
+                                  "处理中..."
+                                ) : item.status === Status.Ok ? (
+                                  <>
+                                    <BanIcon />
+                                    禁用
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2Icon />
+                                    启用
+                                  </>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 variant="destructive"

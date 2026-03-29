@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
@@ -23,7 +24,7 @@ func (c *CompanyController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "code", Op: params.Like},
-	).Desc("id"))
+	).Where("status <> ?", enums.StatusDeleted).Desc("id"))
 
 	results := builders.BuildCompanyList(list)
 	companyIDs := make([]int64, 0, len(results))
@@ -42,8 +43,8 @@ func (c *CompanyController) GetBy(id int64) *web.JsonResult {
 		return web.JsonError(err)
 	}
 	item := services.CompanyService.Get(id)
-	if item == nil {
-		return web.JsonErrorMsg("公司不存在")
+	if item == nil || item.Status == enums.StatusDeleted {
+		return web.JsonData(nil)
 	}
 	ret := builders.BuildCompany(item)
 	return web.JsonData(&ret)

@@ -17,7 +17,6 @@ type CustomerController struct {
 	Ctx iris.Context
 }
 
-// PostList POST /list — 客户分页列表，参数见 request.CustomerListRequest。
 func (c *CustomerController) PostList() *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
 		return web.JsonError(err)
