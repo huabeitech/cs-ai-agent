@@ -125,7 +125,6 @@ export type AdminConversation = {
   closedBy: number
   closedByName?: string
   closeReason?: string
-  tags?: ConversationTag[]
   participants?: ConversationParticipant[]
 }
 

@@ -40,7 +40,6 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 		ClosedAt:                  utils.FormatTimePtr(item.ClosedAt),
 		ClosedBy:                  item.ClosedBy,
 		CloseReason:               item.CloseReason,
-		Tags:                      buildConversationTags(item.ID),
 	}
 	if item.CurrentAssigneeID > 0 {
 		if user := services.UserService.Get(item.CurrentAssigneeID); user != nil {
@@ -57,26 +56,6 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 				ret.ClosedByName = user.Username
 			}
 		}
-	}
-	return ret
-}
-
-func buildConversationTags(conversationID int64) []response.ConversationTagResponse {
-	relations := services.ConversationTagService.Find(sqls.NewCnd().Eq("conversation_id", conversationID))
-	if len(relations) == 0 {
-		return nil
-	}
-	ret := make([]response.ConversationTagResponse, 0, len(relations))
-	for _, relation := range relations {
-		// TODO 循环查库
-		tag := services.TagService.Get(relation.TagID)
-		if tag == nil {
-			continue
-		}
-		ret = append(ret, response.ConversationTagResponse{
-			ID:   tag.ID,
-			Name: tag.Name,
-		})
 	}
 	return ret
 }

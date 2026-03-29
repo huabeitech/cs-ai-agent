@@ -45,7 +45,6 @@ type ConversationResponse struct {
 	ClosedBy                  int64                           `json:"closedBy"`
 	ClosedByName              string                          `json:"closedByName,omitempty"`
 	CloseReason               string                          `json:"closeReason,omitempty"`
-	Tags                      []ConversationTagResponse       `json:"tags,omitempty"`
 }
 
 type ConversationDetailResponse struct {
