@@ -101,10 +101,6 @@ function DetailRow({
   );
 }
 
-function InlineMetaLine({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] leading-relaxed text-muted-foreground">{children}</p>;
-}
-
 function SectionHeading({
   children,
   action,
@@ -263,9 +259,14 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         <div className="space-y-1.5">
           <div className="flex items-start justify-between gap-2">
             <p className="min-w-0 flex-1 line-clamp-2 leading-snug">
-              <span className="text-base font-semibold text-foreground">{displayName}</span>
+              <span className="text-base font-semibold text-foreground">
+                {displayName}
+              </span>
               {genderLabel ? (
-                <span className="text-sm font-normal text-muted-foreground"> · {genderLabel}</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {" "}
+                  · {genderLabel}
+                </span>
               ) : null}
             </p>
             <Button
@@ -281,7 +282,10 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           </div>
           {companyLine ? (
             <p className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
-              <Building2Icon className="mt-0.5 size-3.5 shrink-0 opacity-80" aria-hidden />
+              <Building2Icon
+                className="mt-0.5 size-3.5 shrink-0 opacity-80"
+                aria-hidden
+              />
               <span className="min-w-0 break-all">{companyLine}</span>
             </p>
           ) : null}
@@ -307,19 +311,26 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         <div className="space-y-2">
           <DetailRow
             label="最近活跃"
-            value={customer.lastActiveAt ? formatDateTime(customer.lastActiveAt) : ""}
+            value={
+              customer.lastActiveAt ? formatDateTime(customer.lastActiveAt) : ""
+            }
           />
-          <div className="flex gap-2.5 text-sm leading-snug">
-            <span className="w-17 shrink-0 pt-px text-xs text-muted-foreground">备注</span>
-            <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-foreground">
-              {customer.remark.trim() ? customer.remark : "—"}
-            </p>
-          </div>
+          <DetailRow
+            label="备注"
+            value={customer.remark.trim() ? customer.remark : ""}
+            valueClassName="whitespace-pre-wrap"
+          />
+          <DetailRow
+            label="创建时间"
+            value={formatDateTime(customer.createdAt)}
+            valueClassName="whitespace-pre-wrap"
+          />
+          <DetailRow
+            label="更新时间"
+            value={formatDateTime(customer.updatedAt)}
+            valueClassName="whitespace-pre-wrap"
+          />
         </div>
-
-        <InlineMetaLine>
-          创建 {formatDateTime(customer.createdAt)} · 更新 {formatDateTime(customer.updatedAt)}
-        </InlineMetaLine>
       </section>
 
       {customer.companyId > 0 ? (
@@ -345,30 +356,48 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           {company ? (
             <div className="space-y-2">
               <div className="flex items-start gap-2 text-sm">
-                <Building2Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <Building2Icon
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1 space-y-0.5">
-                  <p className="font-medium leading-snug text-foreground">{company.name}</p>
+                  <p className="font-medium leading-snug text-foreground">
+                    {company.name}
+                  </p>
                   {company.code ? (
-                    <p className="font-mono text-xs text-muted-foreground">{company.code}</p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {company.code}
+                    </p>
                   ) : null}
-                  <Badge variant={customerStatusBadgeVariant(company.status)} className="mt-1 font-normal">
-                    {StatusLabels[company.status as Status] ?? String(company.status)}
+                  <Badge
+                    variant={customerStatusBadgeVariant(company.status)}
+                    className="mt-1 font-normal"
+                  >
+                    {StatusLabels[company.status as Status] ??
+                      String(company.status)}
                   </Badge>
                 </div>
               </div>
               <div className="space-y-2 pt-1">
-                <DetailRow label="创建" value={formatDateTime(company.createdAt)} />
-                <DetailRow label="更新" value={formatDateTime(company.updatedAt)} />
+                <DetailRow
+                  label="创建"
+                  value={formatDateTime(company.createdAt)}
+                />
+                <DetailRow
+                  label="更新"
+                  value={formatDateTime(company.updatedAt)}
+                />
               </div>
-              <div className="flex gap-2.5 text-sm leading-snug">
-                <span className="w-17 shrink-0 pt-px text-xs text-muted-foreground">备注</span>
-                <p className="min-w-0 flex-1 whitespace-pre-wrap break-all text-foreground">
-                  {company.remark.trim() ? company.remark : "—"}
-                </p>
-              </div>
+              <DetailRow
+                label="备注"
+                value={company.remark.trim() ? company.remark : ""}
+                valueClassName="whitespace-pre-wrap"
+              />
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">公司信息加载失败或公司已删除。</p>
+            <p className="text-sm text-muted-foreground">
+              公司信息加载失败或公司已删除。
+            </p>
           )}
         </section>
       ) : null}
@@ -398,7 +427,9 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
                           {contactTypeLabel(row.contactType)}
                         </span>
                         {tags.length > 0 ? (
-                          <span className="ml-2 text-xs text-muted-foreground">{tags.join(" · ")}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {tags.join(" · ")}
+                          </span>
                         ) : null}
                       </p>
                       {row.remark ? (
