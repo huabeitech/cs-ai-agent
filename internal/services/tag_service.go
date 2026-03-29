@@ -198,6 +198,46 @@ func (s *tagService) FindAll() []models.Tag {
 	return s.Find(sqls.NewCnd().Asc("sort_no").Asc("id"))
 }
 
+func (s *tagService) GetSelfAndDescendantIDs(tagID int64) []int64 {
+	if tagID <= 0 {
+		return nil
+	}
+
+	allTags := s.FindAll()
+	if len(allTags) == 0 {
+		return nil
+	}
+
+	exists := false
+	childrenMap := make(map[int64][]int64, len(allTags))
+	for _, item := range allTags {
+		if item.ID == tagID {
+			exists = true
+		}
+		childrenMap[item.ParentID] = append(childrenMap[item.ParentID], item.ID)
+	}
+	if !exists {
+		return nil
+	}
+
+	result := make([]int64, 0, 8)
+	visited := make(map[int64]bool, len(allTags))
+	var walk func(id int64)
+	walk = func(id int64) {
+		if visited[id] {
+			return
+		}
+		visited[id] = true
+		result = append(result, id)
+		for _, childID := range childrenMap[id] {
+			walk(childID)
+		}
+	}
+	walk(tagID)
+
+	return result
+}
+
 func (s *tagService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")

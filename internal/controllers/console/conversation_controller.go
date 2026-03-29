@@ -34,17 +34,29 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "currentAssigneeId"},
 	).Desc("last_message_at").Desc("id")
 
+	paging := params.GetPaging(c.Ctx)
+
 	if keyword, _ := params.Get(c.Ctx, "keyword"); strs.IsNotBlank(keyword) {
-		cnd.Where("subject LIKE ? OR external_id LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+		keywordLike := "%" + strings.TrimSpace(keyword) + "%"
+		cnd.Where("subject LIKE ? OR external_id LIKE ? OR last_message_summary LIKE ?", keywordLike, keywordLike, keywordLike)
 	}
+
+	// 标签搜索
 	if tagID, _ := params.GetInt64(c.Ctx, "tagId"); tagID > 0 {
-		cnd.Where("id IN (SELECT conversation_id FROM conversation_tag_rels WHERE tag_id = ?)", tagID)
+		tagIDs := services.TagService.GetSelfAndDescendantIDs(tagID)
+		if len(tagIDs) == 0 {
+			return web.JsonData(&web.PageResult{
+				Results: []response.ConversationResponse{},
+				Page:    paging,
+			})
+		}
+		cnd.Where("id IN (SELECT conversation_id FROM conversation_tag_rels WHERE tag_id IN (?))", tagIDs)
 	}
 
 	list, paging := services.ConversationService.FindPageByCnd(cnd)
 	results := make([]response.ConversationResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, builders.BuildConversationResponse(&item))
+		results = append(results, builders.BuildConversation(&item))
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
@@ -73,7 +85,7 @@ func (c *ConversationController) AnyConversations() *web.JsonResult {
 
 	results := make([]response.ConversationResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, builders.BuildConversationResponse(&item))
+		results = append(results, builders.BuildConversation(&item))
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
@@ -89,7 +101,7 @@ func (c *ConversationController) GetBy(id int64) *web.JsonResult {
 	}
 
 	detail := response.ConversationDetailResponse{
-		ConversationResponse: builders.BuildConversationResponse(item),
+		ConversationResponse: builders.BuildConversation(item),
 		Participants:         builders.BuildParticipantResponses(id),
 	}
 	return web.JsonData(detail)

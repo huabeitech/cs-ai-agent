@@ -33,7 +33,7 @@ func (c *ImConversationController) GetBy(id int64) *web.JsonResult {
 	}
 
 	detail := response.ConversationDetailResponse{
-		ConversationResponse: builders.BuildConversationResponse(item),
+		ConversationResponse: builders.BuildConversation(item),
 		Participants:         builders.BuildParticipantResponses(id),
 	}
 	return web.JsonData(detail)
@@ -53,7 +53,7 @@ func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildConversationResponse(item))
+	return web.JsonData(builders.BuildConversation(item))
 }
 
 func (c *ImConversationController) PostClose() *web.JsonResult {

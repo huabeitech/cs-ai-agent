@@ -13,6 +13,10 @@ import { toast } from "sonner"
 import { ConversationCloseDialog } from "@/components/conversation-actions/close-dialog"
 import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog"
 import { ListPagination } from "@/components/list-pagination"
+import {
+  OptionCombobox,
+  type ComboboxOption,
+} from "@/components/option-combobox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -44,11 +48,13 @@ import {
   fetchConversationDetail,
   fetchConversationMessages,
   fetchConversations,
+  fetchTagsAll,
   markConversationRead,
   type AdminConversation,
   type AdminConversationDetail,
   type AdminMessage,
   type PageResult,
+  type TagTree,
 } from "@/lib/api/admin"
 import { formatDateTime } from "@/lib/utils"
 import { ConversationDetailDialog } from "./_components/detail"
@@ -96,13 +102,36 @@ function getStatusLabel(value: string) {
   return statusOptions.find((item) => item.value === value)?.label ?? "全部状态"
 }
 
+function buildTagOptions(
+  nodes: TagTree[],
+  parentPath = ""
+): ComboboxOption[] {
+  const result: ComboboxOption[] = []
+  nodes.forEach((item) => {
+    const currentPath = parentPath ? `${parentPath}/${item.name}` : item.name
+    result.push({
+      value: String(item.id),
+      label: currentPath,
+    })
+    if (item.children.length > 0) {
+      result.push(...buildTagOptions(item.children, currentPath))
+    }
+  })
+  return result
+}
+
 export default function DashboardConversationsPage() {
   const [keywordInput, setKeywordInput] = useState("")
   const [statusFilterInput, setStatusFilterInput] = useState("all")
+  const [tagFilterInput, setTagFilterInput] = useState("0")
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [tagFilter, setTagFilter] = useState("0")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
+  const [tagOptions, setTagOptions] = useState<ComboboxOption[]>([
+    { value: "0", label: "全部标签" },
+  ])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -137,6 +166,7 @@ export default function DashboardConversationsPage() {
       const data = await fetchConversations({
         keyword: keyword.trim() || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
+        tagId: tagFilter === "0" ? undefined : tagFilter,
         page,
         limit,
       })
@@ -146,7 +176,33 @@ export default function DashboardConversationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [keyword, limit, page, statusFilter])
+  }, [keyword, limit, page, statusFilter, tagFilter])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadTagOptions() {
+      try {
+        const data = await fetchTagsAll()
+        if (!cancelled) {
+          setTagOptions([
+            { value: "0", label: "全部标签" },
+            ...buildTagOptions(data),
+          ])
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "加载标签失败")
+        }
+      }
+    }
+
+    void loadTagOptions()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     detailItemRef.current = detailItem
@@ -326,6 +382,7 @@ export default function DashboardConversationsPage() {
   function applyFilters() {
     setKeyword(keywordInput)
     setStatusFilter(statusFilterInput)
+    setTagFilter(tagFilterInput)
     setPage(1)
   }
 
@@ -564,6 +621,16 @@ export default function DashboardConversationsPage() {
               ))}
             </SelectContent>
           </Select>
+          <div className="w-full xl:w-64">
+            <OptionCombobox
+              value={tagFilterInput}
+              options={tagOptions}
+              placeholder="选择标签"
+              searchPlaceholder="搜索标签路径"
+              emptyText="没有匹配标签"
+              onChange={setTagFilterInput}
+            />
+          </div>
           <Button variant="outline" onClick={applyFilters} disabled={loading}>
             <SearchIcon />
             查询

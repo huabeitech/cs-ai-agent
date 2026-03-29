@@ -12,7 +12,7 @@ import (
 	"github.com/mlogclub/simple/sqls"
 )
 
-func BuildConversationResponse(item *models.Conversation) response.ConversationResponse {
+func BuildConversation(item *models.Conversation) response.ConversationResponse {
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(item.ID)
 	ret := response.ConversationResponse{
 		ID:                        item.ID,
@@ -40,7 +40,7 @@ func BuildConversationResponse(item *models.Conversation) response.ConversationR
 		ClosedAt:                  utils.FormatTimePtr(item.ClosedAt),
 		ClosedBy:                  item.ClosedBy,
 		CloseReason:               item.CloseReason,
-		Tags:                      buildConversationTagResponses(item.ID),
+		Tags:                      buildConversationTags(item.ID),
 	}
 	if item.CurrentAssigneeID > 0 {
 		if user := services.UserService.Get(item.CurrentAssigneeID); user != nil {
@@ -61,7 +61,7 @@ func BuildConversationResponse(item *models.Conversation) response.ConversationR
 	return ret
 }
 
-func buildConversationTagResponses(conversationID int64) []response.ConversationTagResponse {
+func buildConversationTags(conversationID int64) []response.ConversationTagResponse {
 	relations := services.ConversationTagService.Find(sqls.NewCnd().Eq("conversation_id", conversationID))
 	if len(relations) == 0 {
 		return nil
