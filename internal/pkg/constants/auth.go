@@ -92,7 +92,7 @@ var (
 	PermissionCompanyDelete = Permission{Name: "删除公司", Code: "company.delete", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/delete", SortNo: 620}
 
 	// 客户相关权限
-	PermissionCustomerView   = Permission{Name: "查看客户", Code: "customer.view", Type: "api", GroupName: "customer", Method: "ANY", APIPath: "/api/console/customer/list", SortNo: 630}
+	PermissionCustomerView   = Permission{Name: "查看客户", Code: "customer.view", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/list", SortNo: 630}
 	PermissionCustomerCreate = Permission{Name: "创建客户", Code: "customer.create", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/create", SortNo: 640}
 	PermissionCustomerUpdate = Permission{Name: "更新客户", Code: "customer.update", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/update", SortNo: 650}
 	PermissionCustomerDelete = Permission{Name: "删除客户", Code: "customer.delete", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/delete", SortNo: 660}

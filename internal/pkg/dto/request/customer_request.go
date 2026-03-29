@@ -1,5 +1,17 @@
 package request
 
+// CustomerListRequest 客户分页列表查询（POST /customer/list JSON Body）。
+type CustomerListRequest struct {
+	Page          int    `json:"page"`
+	Limit         int    `json:"limit"`
+	Status        *int   `json:"status,omitempty"`
+	Gender        *int   `json:"gender,omitempty"`
+	CompanyID     *int64 `json:"companyId,omitempty"`
+	Name          string `json:"name"`
+	PrimaryMobile string `json:"primaryMobile"`
+	PrimaryEmail  string `json:"primaryEmail"`
+}
+
 type CreateCustomerRequest struct {
 	Name          string `json:"name"`
 	Gender        int    `json:"gender"`

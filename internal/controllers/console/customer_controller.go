@@ -5,11 +5,9 @@ import (
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
-	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
-	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -18,29 +16,16 @@ type CustomerController struct {
 	Ctx iris.Context
 }
 
-func (c *CustomerController) AnyList() *web.JsonResult {
+// PostList POST /list — 客户分页列表，参数见 request.CustomerListRequest。
+func (c *CustomerController) PostList() *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionCustomerView); err != nil {
 		return web.JsonError(err)
 	}
-	cnd := params.NewPagedSqlCnd(c.Ctx,
-		params.QueryFilter{ParamName: "status", ColumnName: "c.status"},
-		params.QueryFilter{ParamName: "gender", ColumnName: "c.gender"},
-		params.QueryFilter{ParamName: "companyId", ColumnName: "c.company_id"},
-		params.QueryFilter{ParamName: "name", Op: params.Like, ColumnName: "c.name"},
-	).Desc("c.id")
-	// 默认不返回已删除
-	cnd.Where("c.status <> ?", enums.StatusDeleted)
-
-	if mobile, _ := params.Get(c.Ctx, "primaryMobile"); strs.IsNotBlank(mobile) {
-		pat := "%" + mobile + "%"
-		cnd.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	var req request.CustomerListRequest
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
 	}
-	if email, _ := params.Get(c.Ctx, "primaryEmail"); strs.IsNotBlank(email) {
-		pat := "%" + email + "%"
-		cnd.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
-	}
-
-	list, paging := services.CustomerService.FindPageByCndForCustomerList(cnd)
+	list, paging := services.CustomerService.ListCustomers(req)
 	return web.JsonData(&web.PageResult{Results: builders.BuildCustomerList(list), Page: paging})
 }
 

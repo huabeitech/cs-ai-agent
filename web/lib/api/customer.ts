@@ -48,25 +48,23 @@ export type SaveCustomerProfilePayload = {
   contacts: SaveCustomerProfileContactLine[]
 }
 
-function toQueryString(query?: Record<string, string | number | undefined>) {
-  if (!query) {
-    return ""
-  }
-  const params = new URLSearchParams()
-  Object.entries(query).forEach(([key, value]) => {
-    if (value === undefined || value === "") {
-      return
-    }
-    params.set(key, String(value))
-  })
-  const output = params.toString()
-  return output ? `?${output}` : ""
+/** 与 POST /customer/list JSON Body 一致 */
+export type CustomerListRequest = {
+  page: number
+  limit: number
+  status?: number
+  gender?: number
+  companyId?: number
+  name?: string
+  primaryMobile?: string
+  primaryEmail?: string
 }
 
-export function fetchCustomers(query?: Record<string, string | number | undefined>) {
-  return request<PageResult<AdminCustomer>>(
-    `/api/console/customer/list${toQueryString(query)}`
-  )
+export function fetchCustomers(body: CustomerListRequest) {
+  return request<PageResult<AdminCustomer>>("/api/console/customer/list", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
 }
 
 export function fetchCustomer(id: number) {

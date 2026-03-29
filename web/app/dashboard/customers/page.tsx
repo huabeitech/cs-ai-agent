@@ -142,9 +142,12 @@ export default function DashboardCustomersPage() {
         name: name.trim() || undefined,
         primaryMobile: mobile.trim() || undefined,
         primaryEmail: email.trim() || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
-        gender: genderFilter === "all" ? undefined : genderFilter,
-        companyId: companyFilter === "0" ? undefined : companyFilter,
+        status:
+          statusFilter === "all" ? undefined : Number(statusFilter),
+        gender:
+          genderFilter === "all" ? undefined : Number(genderFilter),
+        companyId:
+          companyFilter === "0" ? undefined : Number(companyFilter),
         page,
         limit,
       })

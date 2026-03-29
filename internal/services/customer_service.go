@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -46,6 +47,44 @@ func (s *customerService) FindPageByParams(params *params.QueryParams) (list []m
 
 func (s *customerService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Customer, paging *sqls.Paging) {
 	return repositories.CustomerRepository.FindPageByCnd(sqls.DB(), cnd)
+}
+
+// ListCustomers 客户分页列表（连联系方式表，支持按非主联系方式检索）。
+func (s *customerService) ListCustomers(req request.CustomerListRequest) (list []models.Customer, paging *sqls.Paging) {
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+
+	cnd := sqls.NewCnd().Page(page, limit).Desc("c.id")
+	cnd.Where("c.status <> ?", enums.StatusDeleted)
+
+	if req.Status != nil {
+		cnd.Where("c.status = ?", *req.Status)
+	}
+	if req.Gender != nil {
+		cnd.Where("c.gender = ?", *req.Gender)
+	}
+	if req.CompanyID != nil && *req.CompanyID > 0 {
+		cnd.Where("c.company_id = ?", *req.CompanyID)
+	}
+	if name := strings.TrimSpace(req.Name); strs.IsNotBlank(name) {
+		cnd.Where("c.name LIKE ?", "%"+name+"%")
+	}
+	if strs.IsNotBlank(req.PrimaryMobile) {
+		pat := "%" + req.PrimaryMobile + "%"
+		cnd.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	}
+	if strs.IsNotBlank(req.PrimaryEmail) {
+		pat := "%" + req.PrimaryEmail + "%"
+		cnd.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	}
+
+	return repositories.CustomerRepository.FindPageByCndForCustomerList(sqls.DB(), cnd)
 }
 
 func (s *customerService) Count(cnd *sqls.Cnd) int64 {

@@ -207,12 +207,11 @@ export function CustomerLinkOrCreateDialog({
                       {row.primaryEmail}
                     </span>
                   </div>
-                  <div className="truncate font-medium flex items-center gap-2">
-                    <span>
-                      武汉花贝科技有限公司
-                      {row.company ? row.company?.name: ""}
-                    </span>
-                  </div>
+                  {row.company?.name ? (
+                    <div className="truncate text-muted-foreground text-xs">
+                      {row.company.name}
+                    </div>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
