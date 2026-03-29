@@ -1,47 +1,37 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react"
 import {
-  Link2Icon,
   MoreHorizontalIcon,
   PlusIcon,
-  RefreshCwIcon,
   SearchIcon,
   Trash2Icon,
-} from "lucide-react"
-import { toast } from "sonner"
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
+import { type CustomerFormSavePayload } from "@/components/customer-form";
+import { ListPagination } from "@/components/list-pagination";
 import {
-  deleteCustomer,
-  fetchCustomers,
-  saveCustomerProfile,
-  updateCustomerStatus,
-  type AdminCustomer,
-} from "@/lib/api/customer"
-import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
-import { type PageResult } from "@/lib/api/admin"
-import { type CustomerFormSavePayload } from "@/components/customer-form"
-import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog"
-import { EditDialog } from "./_components/edit"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
+  OptionCombobox,
+  type ComboboxOption,
+} from "@/components/option-combobox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { ListPagination } from "@/components/list-pagination"
-import { OptionCombobox, type ComboboxOption } from "@/components/option-combobox"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -49,9 +39,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { getEnumLabel, getEnumOptions } from "@/lib/enums"
-import { Gender, GenderLabels, Status, StatusLabels } from "@/lib/generated/enums"
+} from "@/components/ui/table";
+import { type PageResult } from "@/lib/api/admin";
+import { fetchCompanies, type AdminCompany } from "@/lib/api/company";
+import {
+  deleteCustomer,
+  fetchCustomers,
+  saveCustomerProfile,
+  updateCustomerStatus,
+  type AdminCustomer,
+} from "@/lib/api/customer";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
+import {
+  Gender,
+  GenderLabels,
+  Status,
+  StatusLabels,
+} from "@/lib/generated/enums";
+import { EditDialog } from "./_components/edit";
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
@@ -61,7 +66,7 @@ const listStatusOptions = [
       value: String(item.value),
       label: item.label,
     })),
-] as const
+] as const;
 
 const genderOptions = [
   { value: "all", label: "全部性别" },
@@ -69,183 +74,183 @@ const genderOptions = [
     value: String(item.value),
     label: item.label,
   })),
-] as const
+] as const;
 
 function getLabel(
   value: string,
-  options: ReadonlyArray<{ value: string; label: string }>
+  options: ReadonlyArray<{ value: string; label: string }>,
 ) {
-  return options.find((item) => item.value === value)?.label ?? "请选择"
+  return options.find((item) => item.value === value)?.label ?? "请选择";
 }
 
 export default function DashboardCustomersPage() {
-  const [keywordInput, setKeywordInput] = useState("")
-  const [statusFilterInput, setStatusFilterInput] = useState("all")
-  const [genderFilterInput, setGenderFilterInput] = useState("all")
-  const [companyFilterInput, setCompanyFilterInput] = useState("0")
+  const [keywordInput, setKeywordInput] = useState("");
+  const [statusFilterInput, setStatusFilterInput] = useState("all");
+  const [genderFilterInput, setGenderFilterInput] = useState("all");
+  const [companyFilterInput, setCompanyFilterInput] = useState("0");
 
-  const [keyword, setKeyword] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [genderFilter, setGenderFilter] = useState("all")
-  const [companyFilter, setCompanyFilter] = useState("0")
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [companyFilter, setCompanyFilter] = useState("0");
 
   const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>([
     { value: "0", label: "全部公司" },
-  ])
-  const [companyNameMap, setCompanyNameMap] = useState<Record<number, string>>({})
+  ]);
+  const [companyNameMap, setCompanyNameMap] = useState<Record<number, string>>(
+    {},
+  );
 
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [linkOrCreateOpen, setLinkOrCreateOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<AdminCustomer | null>(null)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<AdminCustomer | null>(null);
   const [result, setResult] = useState<PageResult<AdminCustomer>>({
     results: [],
     page: { page: 1, limit: 20, total: 0 },
-  })
+  });
 
   useEffect(() => {
     async function loadCompanies() {
       try {
-        const data = await fetchCompanies({ status: 0, page: 1, limit: 500 })
+        const data = await fetchCompanies({ status: 0, page: 1, limit: 500 });
         const opts: ComboboxOption[] = [
           { value: "0", label: "全部公司" },
           ...data.results.map((item) => ({
             value: String(item.id),
             label: item.name,
           })),
-        ]
-        setCompanyOptions(opts)
-        const map: Record<number, string> = {}
+        ];
+        setCompanyOptions(opts);
+        const map: Record<number, string> = {};
         data.results.forEach((item: AdminCompany) => {
-          map[item.id] = item.name
-        })
-        setCompanyNameMap(map)
+          map[item.id] = item.name;
+        });
+        setCompanyNameMap(map);
       } catch {
         // ignore
       }
     }
-    void loadCompanies()
-  }, [])
+    void loadCompanies();
+  }, []);
 
   const loadData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const data = await fetchCustomers({
         keyword: keyword.trim() || undefined,
-        status:
-          statusFilter === "all" ? undefined : Number(statusFilter),
-        gender:
-          genderFilter === "all" ? undefined : Number(genderFilter),
-        companyId:
-          companyFilter === "0" ? undefined : Number(companyFilter),
+        status: statusFilter === "all" ? undefined : Number(statusFilter),
+        gender: genderFilter === "all" ? undefined : Number(genderFilter),
+        companyId: companyFilter === "0" ? undefined : Number(companyFilter),
         page,
         limit,
-      })
-      setResult(data)
+      });
+      setResult(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "加载客户列表失败")
+      toast.error(error instanceof Error ? error.message : "加载客户列表失败");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [companyFilter, genderFilter, keyword, limit, page, statusFilter])
+  }, [companyFilter, genderFilter, keyword, limit, page, statusFilter]);
 
   useEffect(() => {
-    void loadData()
-  }, [loadData])
+    void loadData();
+  }, [loadData]);
 
   const companyFilterLabel = useMemo(() => {
     return (
       companyOptions.find((item) => item.value === companyFilterInput)?.label ??
       "全部公司"
-    )
-  }, [companyFilterInput, companyOptions])
+    );
+  }, [companyFilterInput, companyOptions]);
 
   function applyFilters() {
-    setKeyword(keywordInput)
-    setStatusFilter(statusFilterInput)
-    setGenderFilter(genderFilterInput)
-    setCompanyFilter(companyFilterInput)
-    setPage(1)
+    setKeyword(keywordInput);
+    setStatusFilter(statusFilterInput);
+    setGenderFilter(genderFilterInput);
+    setCompanyFilter(companyFilterInput);
+    setPage(1);
   }
 
   function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return
-    event.preventDefault()
-    applyFilters()
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    applyFilters();
   }
 
   function handlePageChange(nextPage: number) {
-    if (nextPage < 1 || nextPage === page) return
-    setPage(nextPage)
+    if (nextPage < 1 || nextPage === page) return;
+    setPage(nextPage);
   }
 
   function openCreateDialog() {
-    setEditingItem(null)
-    setDialogOpen(true)
+    setEditingItem(null);
+    setDialogOpen(true);
   }
 
   function openEditDialog(item: AdminCustomer) {
-    setEditingItem(item)
-    setDialogOpen(true)
+    setEditingItem(item);
+    setDialogOpen(true);
   }
 
   function handleDialogOpenChange(open: boolean) {
-    if (saving) return
-    if (!open) setEditingItem(null)
-    setDialogOpen(open)
+    if (saving) return;
+    if (!open) setEditingItem(null);
+    setDialogOpen(open);
   }
 
   async function handleSave(payload: CustomerFormSavePayload) {
-    if (saving) return
-    setSaving(true)
+    if (saving) return;
+    setSaving(true);
     try {
-      await saveCustomerProfile(payload)
+      await saveCustomerProfile(payload);
       toast.success(
-        editingItem ? `已更新客户：${editingItem.name}` : `已创建客户：${payload.name}`
-      )
-      setDialogOpen(false)
-      setEditingItem(null)
-      await loadData()
+        editingItem
+          ? `已更新客户：${editingItem.name}`
+          : `已创建客户：${payload.name}`,
+      );
+      setDialogOpen(false);
+      setEditingItem(null);
+      await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "保存客户失败")
+      toast.error(error instanceof Error ? error.message : "保存客户失败");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
   async function handleToggleStatus(item: AdminCustomer) {
-    setActionLoadingId(item.id)
+    setActionLoadingId(item.id);
     try {
-      const nextStatus = item.status === 0 ? 1 : 0
-      await updateCustomerStatus(item.id, nextStatus)
-      toast.success(`已${nextStatus === 0 ? "启用" : "禁用"}：${item.name}`)
-      await loadData()
+      const nextStatus = item.status === 0 ? 1 : 0;
+      await updateCustomerStatus(item.id, nextStatus);
+      toast.success(`已${nextStatus === 0 ? "启用" : "禁用"}：${item.name}`);
+      await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "更新状态失败")
+      toast.error(error instanceof Error ? error.message : "更新状态失败");
     } finally {
-      setActionLoadingId(null)
+      setActionLoadingId(null);
     }
   }
 
   async function handleDelete(item: AdminCustomer) {
-    setActionLoadingId(item.id)
+    setActionLoadingId(item.id);
     try {
-      await deleteCustomer(item.id)
-      toast.success(`已删除客户：${item.name}`)
-      await loadData()
+      await deleteCustomer(item.id);
+      toast.success(`已删除客户：${item.name}`);
+      await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "删除客户失败")
+      toast.error(error instanceof Error ? error.message : "删除客户失败");
     } finally {
-      setActionLoadingId(null)
+      setActionLoadingId(null);
     }
   }
 
   function getGenderText(gender: number) {
-    return getEnumLabel(GenderLabels, gender as Gender)
+    return getEnumLabel(GenderLabels, gender as Gender);
   }
 
   return (
@@ -263,9 +268,14 @@ export default function DashboardCustomersPage() {
             />
           </div>
 
-          <Select value={genderFilterInput} onValueChange={(v) => setGenderFilterInput(v ?? "all")}>
+          <Select
+            value={genderFilterInput}
+            onValueChange={(v) => setGenderFilterInput(v ?? "all")}
+          >
             <SelectTrigger className="w-full xl:w-28">
-              <SelectValue>{getLabel(genderFilterInput, genderOptions)}</SelectValue>
+              <SelectValue>
+                {getLabel(genderFilterInput, genderOptions)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {genderOptions.map((item) => (
@@ -286,9 +296,14 @@ export default function DashboardCustomersPage() {
             />
           </div>
 
-          <Select value={statusFilterInput} onValueChange={(v) => setStatusFilterInput(v ?? "all")}>
+          <Select
+            value={statusFilterInput}
+            onValueChange={(v) => setStatusFilterInput(v ?? "all")}
+          >
             <SelectTrigger className="w-full xl:w-28">
-              <SelectValue>{getLabel(statusFilterInput, listStatusOptions)}</SelectValue>
+              <SelectValue>
+                {getLabel(statusFilterInput, listStatusOptions)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {listStatusOptions.map((item) => (
@@ -302,10 +317,6 @@ export default function DashboardCustomersPage() {
           <Button variant="outline" onClick={applyFilters} disabled={loading}>
             <SearchIcon />
             查询
-          </Button>
-          <Button variant="outline" onClick={() => setLinkOrCreateOpen(true)}>
-            <Link2Icon />
-            搜索或新建
           </Button>
           <Button onClick={openCreateDialog}>
             <PlusIcon />
@@ -330,13 +341,16 @@ export default function DashboardCustomersPage() {
             <TableBody>
               {result.results.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-muted-foreground"
+                  >
                     暂无客户数据
                   </TableCell>
                 </TableRow>
               ) : (
                 result.results.map((item) => {
-                  const actionLoading = actionLoadingId === item.id
+                  const actionLoading = actionLoadingId === item.id;
                   return (
                     <TableRow key={item.id}>
                       <TableCell>{item.id}</TableCell>
@@ -345,7 +359,10 @@ export default function DashboardCustomersPage() {
                         {getGenderText(item.gender)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {item.companyId > 0 ? companyNameMap[item.companyId] ?? String(item.companyId) : "-"}
+                        {item.companyId > 0
+                          ? (companyNameMap[item.companyId] ??
+                            String(item.companyId))
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {item.primaryMobile || "-"}
@@ -354,26 +371,41 @@ export default function DashboardCustomersPage() {
                         {item.primaryEmail || "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={item.status === 0 ? "default" : "secondary"}>
+                        <Badge
+                          variant={item.status === 0 ? "default" : "secondary"}
+                        >
                           {item.status === 0 ? "启用" : "禁用"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <ButtonGroup className="w-full justify-end">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(item)}
+                          >
                             编辑
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={
-                                <Button variant="outline" size="sm" disabled={actionLoading} />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={actionLoading}
+                                />
                               }
                               aria-label={`更多操作 ${item.name}`}
                             >
                               <MoreHorizontalIcon />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40 min-w-40">
-                              <DropdownMenuItem onClick={() => void handleToggleStatus(item)}>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-40 min-w-40"
+                            >
+                              <DropdownMenuItem
+                                onClick={() => void handleToggleStatus(item)}
+                              >
                                 {item.status === 0 ? "禁用" : "启用"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -388,7 +420,7 @@ export default function DashboardCustomersPage() {
                         </ButtonGroup>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })
               )}
             </TableBody>
@@ -402,17 +434,11 @@ export default function DashboardCustomersPage() {
           loading={loading}
           onPageChange={handlePageChange}
           onLimitChange={(nextLimit) => {
-            setLimit(nextLimit)
-            setPage(1)
+            setLimit(nextLimit);
+            setPage(1);
           }}
         />
       </div>
-
-      <CustomerLinkOrCreateDialog
-        open={linkOrCreateOpen}
-        onOpenChange={setLinkOrCreateOpen}
-        onSuccess={() => void loadData()}
-      />
 
       <EditDialog
         open={dialogOpen}
@@ -422,6 +448,5 @@ export default function DashboardCustomersPage() {
         onSave={handleSave}
       />
     </>
-  )
+  );
 }
-
