@@ -122,6 +122,10 @@ type AgentConversationsStore = {
   readingMessageId: number
   setSearchKeyword: (keyword: string) => void
   setConversationFilter: (filter: AgentConversationFilterKey) => void
+  setConversationTags: (
+    conversationId: number,
+    tags: AgentConversation["tags"]
+  ) => void
   loadConversations: () => Promise<void>
   selectConversation: (conversationId: number) => Promise<void>
   loadMessages: (conversationId: number, options?: LoadMessagesOptions) => Promise<void>
@@ -158,6 +162,19 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
 
   setConversationFilter: (filter) => {
     set({ conversationFilter: filter })
+  },
+
+  setConversationTags: (conversationId, tags) => {
+    set((state) => ({
+      conversations: state.conversations.map((item) =>
+        item.id === conversationId
+          ? {
+              ...item,
+              tags: tags && tags.length > 0 ? tags : [],
+            }
+          : item
+      ),
+    }))
   },
 
   loadConversations: async () => {

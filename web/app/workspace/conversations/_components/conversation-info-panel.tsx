@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AgentConversation } from "@/lib/api/agent";
+import { type Tag, fetchTagsAll } from "@/lib/api/admin";
 import { updateCompany, type AdminCompany } from "@/lib/api/company";
 import {
   fetchCustomer,
@@ -48,6 +49,10 @@ import {
 } from "@/lib/generated/enums";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { cn, formatDateTime } from "@/lib/utils";
+import {
+  ConversationTagBadges,
+  ConversationTagPicker,
+} from "./conversation-tag-picker";
 
 function contactTypeLabel(contactType: ContactType | string) {
   return ContactTypeLabels[contactType as ContactType] ?? contactType;
@@ -215,10 +220,76 @@ export function ConversationInfoPanel({
               : "请选择左侧会话以查看会话信息"}
           </p>
         ) : (
-          <CustomerBody conversation={conversation} />
+          <div className="space-y-4 py-3">
+            <ConversationTagSection conversation={conversation} />
+            <CustomerBody conversation={conversation} />
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+function ConversationTagSection({
+  conversation,
+}: {
+  conversation: AgentConversation;
+}) {
+  const setConversationTags = useAgentConversationsStore(
+    (state) => state.setConversationTags,
+  );
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTags() {
+      setLoading(true);
+      try {
+        const data = await fetchTagsAll();
+        if (!cancelled) {
+          setAvailableTags(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "加载标签失败");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <section className="space-y-2 border-b border-border pb-4">
+      <SectionHeading
+        action={
+          <ConversationTagPicker
+            conversation={conversation}
+            availableTags={availableTags}
+            loading={loading}
+            onTagsChange={(tags) => {
+              setConversationTags(conversation.id, tags);
+            }}
+          />
+        }
+      >
+        会话标签
+      </SectionHeading>
+      <ConversationTagBadges tags={conversation.tags} />
+      {!conversation.tags || conversation.tags.length === 0 ? (
+        <p className="text-sm text-muted-foreground">暂未设置会话标签</p>
+      ) : null}
+    </section>
   );
 }
 
@@ -297,7 +368,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
       : null;
 
   return (
-    <div className="space-y-4 py-3">
+    <div className="space-y-4">
       {isProfileEmpty ? (
         <div className="rounded-lg bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:text-amber-100">
           客户主档已关联，但基础信息尚未填写。请点击「编辑」补全资料。

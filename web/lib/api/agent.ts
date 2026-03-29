@@ -21,7 +21,6 @@ export type CursorResult<T> = {
 export type AgentConversationTag = {
   id: number
   name: string
-  color: string
 }
 
 export type AgentConversationParticipant = {
@@ -211,6 +210,26 @@ export function linkConversationToCustomer(payload: {
   customerId: number
 }) {
   return request<void>("/api/console/conversation/link_customer", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function addConversationTag(payload: {
+  conversationId: number
+  tagId: number
+}) {
+  return request<void>("/api/console/conversation/add_tag", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function removeConversationTag(payload: {
+  conversationId: number
+  tagId: number
+}) {
+  return request<void>("/api/console/conversation/remove_tag", {
     method: "POST",
     body: JSON.stringify(payload),
   })
