@@ -1,6 +1,6 @@
 import { request } from "@/lib/api/client"
 
-export type CustomerContactType = "mobile" | "email" | "wechat" | "other"
+export type CustomerContactType = "mobile" | "email" | "other"
 
 export type AdminCustomerContact = {
   id: number

@@ -22,7 +22,6 @@ const (
 var contactTypeLabelMap = map[ContactType]string{
 	ContactTypeMobile: "手机号",
 	ContactTypeEmail:  "邮箱",
-	ContactTypeWeChat: "微信",
 	ContactTypeOther:  "其他",
 }
 

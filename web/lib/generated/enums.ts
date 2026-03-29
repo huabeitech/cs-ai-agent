@@ -65,13 +65,11 @@ export const AssetStatusLabels: Record<AssetStatus, string> = {
 export enum ContactType {
   Mobile = "mobile",
   Email = "email",
-  WeChat = "wechat",
   Other = "other",
 }
 export const ContactTypeLabels: Record<ContactType, string> = {
   [ContactType.Mobile]: "手机号",
   [ContactType.Email]: "邮箱",
-  [ContactType.WeChat]: "微信",
   [ContactType.Other]: "其他",
 }
 

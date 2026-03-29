@@ -54,8 +54,6 @@ function ContactTypeIcon({ contactType }: { contactType: string }) {
       return <PhoneIcon className={cls} aria-hidden />;
     case ContactType.Email:
       return <MailIcon className={cls} aria-hidden />;
-    case ContactType.WeChat:
-      return <MessageCircleIcon className={cls} aria-hidden />;
     default:
       return <Link2Icon className={cls} aria-hidden />;
   }
@@ -261,17 +259,23 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
 
       <section className="space-y-2">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 flex-1 line-clamp-2 leading-snug">
-            <span className="text-base font-semibold text-foreground">
-              {displayName}
-            </span>
-            {genderLabel ? (
-              <span className="text-sm font-normal text-muted-foreground">
-                {" "}
-                · {genderLabel}
-              </span>
-            ) : null}
-          </p>
+          <div className="flex min-w-0 flex-1 items-start gap-2 text-sm">
+            <UserRoundIcon
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <p className="line-clamp-2 leading-snug text-foreground">
+                <span className="font-medium">{displayName}</span>
+                {genderLabel ? (
+                  <span className="font-normal text-muted-foreground">
+                    {" "}
+                    · {genderLabel}
+                  </span>
+                ) : null}
+              </p>
+            </div>
+          </div>
           <Button
             type="button"
             variant="ghost"

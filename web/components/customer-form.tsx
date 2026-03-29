@@ -54,13 +54,12 @@ const genderValueOptions = [
 const contactTypeValues = [
   ContactType.Mobile,
   ContactType.Email,
-  ContactType.WeChat,
   ContactType.Other,
 ] as const
 
 const contactRowSchema = z.object({
   id: z.number().optional(),
-  contactType: z.enum(["mobile", "email", "wechat", "other"]),
+  contactType: z.enum(["mobile", "email", "other"]),
   contactValue: z.string(),
   remark: z.string(),
   isPrimary: z.boolean(),
