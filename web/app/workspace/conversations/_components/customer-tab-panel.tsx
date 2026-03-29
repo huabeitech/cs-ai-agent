@@ -1,9 +1,10 @@
 "use client";
 
 import { Link2Icon, PencilIcon, PlusIcon, UserRoundIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CustomerFormDialog } from "@/components/customer-form-dialog";
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog";
 import type { AgentConversation } from "@/lib/api/agent";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
@@ -13,13 +14,13 @@ import {
   updateCustomerContact,
   type AdminCustomerContact,
 } from "@/lib/api/customer-contact";
-import { fetchCustomer, updateCustomer, type AdminCustomer } from "@/lib/api/customer";
 import {
-  fetchCompanies,
-  fetchCompany,
-  updateCompany,
-  type AdminCompany,
-} from "@/lib/api/company";
+  fetchCustomer,
+  updateCustomer,
+  type AdminCustomer,
+  type CreateAdminCustomerPayload,
+} from "@/lib/api/customer";
+import { fetchCompany, updateCompany, type AdminCompany } from "@/lib/api/company";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -153,6 +154,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   const [contacts, setContacts] = useState<AdminCustomerContact[]>([]);
 
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
+  const [customerEditSaving, setCustomerEditSaving] = useState(false);
   const [companyEditOpen, setCompanyEditOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<AdminCustomerContact | null>(null);
@@ -386,12 +388,26 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         </section>
       </div>
 
-      <CustomerEditDialog
+      <CustomerFormDialog
         open={customerEditOpen}
         onOpenChange={setCustomerEditOpen}
-        customer={customer}
-        onSaved={() => {
-          void load();
+        saving={customerEditSaving}
+        itemId={customer.id}
+        onSubmit={async (payload: CreateAdminCustomerPayload) => {
+          if (customerEditSaving) {
+            return;
+          }
+          setCustomerEditSaving(true);
+          try {
+            await updateCustomer({ id: customer.id, ...payload });
+            toast.success("已保存");
+            void load();
+            setCustomerEditOpen(false);
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "保存失败");
+          } finally {
+            setCustomerEditSaving(false);
+          }
         }}
       />
       {company ? (
@@ -414,189 +430,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         }}
       />
     </div>
-  );
-}
-
-type CustomerEditDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  customer: AdminCustomer;
-  onSaved: () => void;
-};
-
-function CustomerEditDialog({
-  open,
-  onOpenChange,
-  customer,
-  onSaved,
-}: CustomerEditDialogProps) {
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState("0");
-  const [companyId, setCompanyId] = useState("0");
-  const [primaryMobile, setPrimaryMobile] = useState("");
-  const [primaryEmail, setPrimaryEmail] = useState("");
-  const [remark, setRemark] = useState("");
-  const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>([
-    { value: "0", label: "无" },
-  ]);
-  const [saving, setSaving] = useState(false);
-
-  const genderOptions = useMemo<ComboboxOption[]>(
-    () => [
-      { value: "0", label: GENDER_LABELS[0] },
-      { value: "1", label: GENDER_LABELS[1] },
-      { value: "2", label: GENDER_LABELS[2] },
-    ],
-    []
-  );
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    setName(customer.name);
-    setGender(String(customer.gender));
-    setCompanyId(String(customer.companyId || 0));
-    setPrimaryMobile(customer.primaryMobile);
-    setPrimaryEmail(customer.primaryEmail);
-    setRemark(customer.remark);
-    let cancelled = false;
-    void (async () => {
-      try {
-        const page = await fetchCompanies({ limit: 200, page: 1 });
-        if (cancelled) {
-          return;
-        }
-        const opts: ComboboxOption[] = [
-          { value: "0", label: "无" },
-          ...page.results.map((c) => ({
-            value: String(c.id),
-            label: c.name || `公司 #${c.id}`,
-          })),
-        ];
-        setCompanyOptions(opts);
-      } catch {
-        if (!cancelled) {
-          setCompanyOptions([{ value: "0", label: "无" }]);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, customer]);
-
-  const handleSubmit = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast.error("姓名不能为空");
-      return;
-    }
-    setSaving(true);
-    try {
-      await updateCustomer({
-        id: customer.id,
-        name: trimmed,
-        gender: Number.parseInt(gender, 10) || 0,
-        companyId: Number.parseInt(companyId, 10) || 0,
-        primaryMobile: primaryMobile.trim(),
-        primaryEmail: primaryEmail.trim(),
-        remark: remark.trim(),
-      });
-      toast.success("已保存");
-      onSaved();
-      onOpenChange(false);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "保存失败");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,560px)] overflow-y-auto sm:max-w-md" showCloseButton>
-        <DialogHeader>
-          <DialogTitle>编辑客户</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-1">
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cust-name">姓名</FieldLabel>
-            <FieldContent>
-              <Input
-                id="cust-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="off"
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel>性别</FieldLabel>
-            <FieldContent>
-              <OptionCombobox
-                value={gender}
-                options={genderOptions}
-                placeholder="性别"
-                onChange={setGender}
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel>所属公司</FieldLabel>
-            <FieldContent>
-              <OptionCombobox
-                value={companyId}
-                options={companyOptions}
-                placeholder="选择公司"
-                onChange={setCompanyId}
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cust-mobile">主手机号</FieldLabel>
-            <FieldContent>
-              <Input
-                id="cust-mobile"
-                value={primaryMobile}
-                onChange={(e) => setPrimaryMobile(e.target.value)}
-                autoComplete="off"
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cust-email">主邮箱</FieldLabel>
-            <FieldContent>
-              <Input
-                id="cust-email"
-                value={primaryEmail}
-                onChange={(e) => setPrimaryEmail(e.target.value)}
-                autoComplete="off"
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cust-remark">备注</FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="cust-remark"
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-                rows={3}
-              />
-            </FieldContent>
-          </Field>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
-          <Button type="button" disabled={saving} onClick={() => void handleSubmit()}>
-            {saving ? "保存中…" : "保存"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
