@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
@@ -80,14 +81,14 @@ func (c *UserController) PostCreate() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	user, err := services.UserService.CreateUser(req, operator)
+	user, generatedPassword, err := services.UserService.CreateUser(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildUserResponse(user, builders.UserBuildOptions{
-		Roles:       true,
-		Permissions: true,
-	}))
+	return web.JsonData(&response.CreateUserResultResponse{
+		User:     builders.BuildUserResponse(user, builders.UserBuildOptions{Roles: true, Permissions: true}),
+		Password: generatedPassword,
+	})
 }
 
 func (c *UserController) PostUpdate() *web.JsonResult {

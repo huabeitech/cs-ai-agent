@@ -4,6 +4,7 @@ import { type KeyboardEvent, useCallback, useEffect, useState } from "react"
 import {
   KeyRoundIcon,
   MoreHorizontalIcon,
+  PlusIcon,
   RefreshCwIcon,
   SearchIcon,
   ShieldIcon,
@@ -13,6 +14,7 @@ import { toast } from "sonner"
 
 import {
   assignUserRoles,
+  createUser,
   fetchRoleListAll,
   fetchUserDetail,
   fetchUsers,
@@ -21,6 +23,7 @@ import {
   updateUserStatus,
   type AdminRole,
   type AdminUser,
+  type CreateAdminUserPayload,
   type PageResult,
   type ResetPasswordResult,
   type UpdateAdminUserPayload,
@@ -28,7 +31,9 @@ import {
 import { Status } from "@/lib/generated/enums"
 import { formatDateTime } from "@/lib/utils"
 import { AssignRolesDrawer } from "./_components/assign-roles"
+import { CreateUserDrawer } from "./_components/create"
 import { EditDrawer } from "./_components/edit"
+import { InitialPasswordDialog } from "./_components/initial-password-dialog"
 import { ResetPasswordDialogs } from "./_components/reset-password"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -56,6 +61,12 @@ export default function DashboardUsersPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const [loading, setLoading] = useState(true)
+  const [creatingOpen, setCreatingOpen] = useState(false)
+  const [savingCreate, setSavingCreate] = useState(false)
+  const [initialPassword, setInitialPassword] = useState<{
+    username: string
+    password: string
+  } | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [savingRoles, setSavingRoles] = useState(false)
@@ -152,6 +163,37 @@ export default function DashboardUsersPage() {
     }
     if (!open) {
       setEditingUser(null)
+    }
+  }
+
+  function handleCreateDrawerOpenChange(open: boolean) {
+    if (savingCreate) {
+      return
+    }
+    if (!open) {
+      setCreatingOpen(false)
+    }
+  }
+
+  async function handleCreateUser(payload: CreateAdminUserPayload) {
+    if (savingCreate) {
+      return
+    }
+
+    setSavingCreate(true)
+    try {
+      const result = await createUser(payload)
+      toast.success(`已创建用户 ${result.user.username}`)
+      setCreatingOpen(false)
+      setInitialPassword({
+        username: result.user.username,
+        password: result.password,
+      })
+      await loadUsers()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "创建用户失败")
+    } finally {
+      setSavingCreate(false)
     }
   }
 
@@ -254,6 +296,10 @@ export default function DashboardUsersPage() {
     <>
       <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+          <Button onClick={() => setCreatingOpen(true)} disabled={loading}>
+            <PlusIcon />
+            添加用户
+          </Button>
           <div className="relative min-w-72">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -406,6 +452,22 @@ export default function DashboardUsersPage() {
           />
         </div>
       </div>
+      <CreateUserDrawer
+        open={creatingOpen}
+        saving={savingCreate}
+        onOpenChange={handleCreateDrawerOpenChange}
+        onSubmit={handleCreateUser}
+      />
+      <InitialPasswordDialog
+        open={!!initialPassword}
+        username={initialPassword?.username ?? ""}
+        password={initialPassword?.password ?? ""}
+        onOpenChange={(open) => {
+          if (!open) {
+            setInitialPassword(null)
+          }
+        }}
+      />
       <EditDrawer
         open={!!editingUser}
         saving={savingEdit}

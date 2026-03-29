@@ -15,6 +15,7 @@ import (
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 var UserService = newUserService()
@@ -86,30 +87,31 @@ func (s *userService) GetByEmail(email string) *models.User {
 	return repositories.UserRepository.GetByEmail(sqls.DB(), email)
 }
 
-func (s *userService) CreateUser(req request.CreateUserRequest, operator *dto.AuthPrincipal) (*models.User, error) {
+func (s *userService) CreateUser(req request.CreateUserRequest, operator *dto.AuthPrincipal) (*models.User, string, error) {
 	username := strings.TrimSpace(req.Username)
 	if username == "" {
-		return nil, errorsx.InvalidParam("用户名不能为空")
-	}
-	if strings.TrimSpace(req.Password) == "" {
-		return nil, errorsx.InvalidParam("密码不能为空")
+		return nil, "", errorsx.InvalidParam("用户名不能为空")
 	}
 	if s.GetByUsername(username) != nil {
-		return nil, errorsx.InvalidParam("用户名已存在")
+		return nil, "", errorsx.InvalidParam("用户名已存在")
 	}
 
 	mobile := utils.NormalizeNullableString(req.Mobile)
 	email := utils.NormalizeNullableString(req.Email)
 	if mobile != nil && s.GetByMobile(*mobile) != nil {
-		return nil, errorsx.InvalidParam("手机号已存在")
+		return nil, "", errorsx.InvalidParam("手机号已存在")
 	}
 	if email != nil && s.GetByEmail(*email) != nil {
-		return nil, errorsx.InvalidParam("邮箱已存在")
+		return nil, "", errorsx.InvalidParam("邮箱已存在")
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	plain, err := utils.GenerateRandomPassword(12)
 	if err != nil {
-		return nil, err
+		return nil, "", err
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(plain), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, "", err
 	}
 
 	user := &models.User{
@@ -128,10 +130,16 @@ func (s *userService) CreateUser(req request.CreateUserRequest, operator *dto.Au
 		user.Nickname = username
 	}
 
-	if err = s.replaceUserRoles(user.ID, req.RoleIDs, operator); err != nil {
-		return nil, err
+	err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if err := repositories.UserRepository.Create(ctx.Tx, user); err != nil {
+			return err
+		}
+		return s.replaceUserRolesDB(ctx.Tx, user.ID, req.RoleIDs, operator)
+	})
+	if err != nil {
+		return nil, "", err
 	}
-	return user, nil
+	return user, plain, nil
 }
 
 func (s *userService) UpdateUser(req request.UpdateUserRequest, operator *dto.AuthPrincipal) error {
@@ -236,28 +244,32 @@ func (s *userService) AssignRoles(userID int64, roleIDs []int64, operator *dto.A
 
 func (s *userService) replaceUserRoles(userID int64, roleIDs []int64, operator *dto.AuthPrincipal) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := ctx.Tx.Where("user_id = ?", userID).Delete(&models.UserRole{}).Error; err != nil {
+		return s.replaceUserRolesDB(ctx.Tx, userID, roleIDs, operator)
+	})
+}
+
+func (s *userService) replaceUserRolesDB(db *gorm.DB, userID int64, roleIDs []int64, operator *dto.AuthPrincipal) error {
+	if err := db.Where("user_id = ?", userID).Delete(&models.UserRole{}).Error; err != nil {
+		return err
+	}
+	for _, roleID := range roleIDs {
+		role := RoleService.Get(roleID)
+		if role == nil {
+			return errorsx.InvalidParam("角色不存在")
+		}
+		if role.Status != enums.StatusOk {
+			return errorsx.InvalidParam("禁用角色不允许分配")
+		}
+		relation := &models.UserRole{
+			UserID:      userID,
+			RoleID:      roleID,
+			AuditFields: utils.BuildAuditFields(operator),
+		}
+		if err := db.Create(relation).Error; err != nil {
 			return err
 		}
-		for _, roleID := range roleIDs {
-			role := RoleService.Get(roleID)
-			if role == nil {
-				return errorsx.InvalidParam("角色不存在")
-			}
-			if role.Status != enums.StatusOk {
-				return errorsx.InvalidParam("禁用角色不允许分配")
-			}
-			relation := &models.UserRole{
-				UserID:      userID,
-				RoleID:      roleID,
-				AuditFields: utils.BuildAuditFields(operator),
-			}
-			if err := ctx.Tx.Create(relation).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func (s *userService) changePassword(userID int64, password string, operator *dto.AuthPrincipal) error {

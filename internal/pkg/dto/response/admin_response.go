@@ -38,6 +38,12 @@ type UserResponse struct {
 	Permissions []string       `json:"permissions,omitempty"`
 }
 
+// CreateUserResultResponse 创建用户成功响应；password 仅在本次响应中返回一次。
+type CreateUserResultResponse struct {
+	User     *UserResponse `json:"user"`
+	Password string        `json:"password"`
+}
+
 type SessionResponse struct {
 	ID         int64  `json:"id"`
 	UserID     int64  `json:"userId"`

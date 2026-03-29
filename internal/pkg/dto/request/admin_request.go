@@ -13,7 +13,6 @@ type RevokeUserSessionsRequest struct {
 type CreateUserRequest struct {
 	Username string  `json:"username"`
 	Nickname string  `json:"nickname"`
-	Password string  `json:"password"`
 	Avatar   string  `json:"avatar"`
 	Mobile   *string `json:"mobile"`
 	Email    *string `json:"email"`

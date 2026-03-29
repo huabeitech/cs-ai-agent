@@ -42,6 +42,21 @@ export type UpdateAdminUserPayload = {
   remark: string
 }
 
+export type CreateAdminUserPayload = {
+  username: string
+  nickname: string
+  avatar: string
+  mobile: string | null
+  email: string | null
+  remark: string
+  roleIds: number[]
+}
+
+export type CreateUserResult = {
+  user: AdminUser
+  password: string
+}
+
 export type ResetPasswordResult = {
   password: string
 }
@@ -517,6 +532,21 @@ export function fetchUsersAll(query?: Record<string, string | number | undefined
   return request<AdminUser[]>(
     `/api/console/user/list_all${toQueryString(query)}`
   )
+}
+
+export function createUser(payload: CreateAdminUserPayload) {
+  return request<CreateUserResult>("/api/console/user/create", {
+    method: "POST",
+    body: JSON.stringify({
+      username: payload.username,
+      nickname: payload.nickname,
+      avatar: payload.avatar,
+      mobile: payload.mobile,
+      email: payload.email,
+      remark: payload.remark,
+      roleIds: payload.roleIds,
+    }),
+  })
 }
 
 export function updateUser(payload: UpdateAdminUserPayload) {
