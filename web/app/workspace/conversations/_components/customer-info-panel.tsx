@@ -4,21 +4,15 @@ import { useState } from "react";
 
 import type { AgentConversation } from "@/lib/api/agent";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  IMConversationServiceMode,
+  IMConversationServiceModeLabels,
+  IMConversationStatus,
+  IMConversationStatusLabels,
+} from "@/lib/generated/enums";
 import { cn, formatDateTime } from "@/lib/utils";
 
 import { CustomerTabPanel } from "./customer-tab-panel";
-
-const conversationStatusLabels: Record<number, string> = {
-  1: "待接入",
-  2: "处理中",
-  3: "已关闭",
-};
-
-const serviceModeLabels: Record<number, string> = {
-  1: "仅AI",
-  2: "仅人工",
-  3: "AI优先",
-};
 
 const infoTabOptions = [
   { value: "conversation", label: "会话" },
@@ -58,15 +52,16 @@ function ConversationDetails({
         <InfoRow
           label="状态"
           value={
-            conversationStatusLabels[conversation.status] ??
+            IMConversationStatusLabels[conversation.status as IMConversationStatus] ??
             String(conversation.status)
           }
         />
         <InfoRow
           label="服务模式"
           value={
-            serviceModeLabels[conversation.serviceMode] ??
-            String(conversation.serviceMode)
+            IMConversationServiceModeLabels[
+              conversation.serviceMode as IMConversationServiceMode
+            ] ?? String(conversation.serviceMode)
           }
         />
         <InfoRow
