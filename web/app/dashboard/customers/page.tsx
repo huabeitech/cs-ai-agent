@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  BanIcon,
+  CheckCircle2Icon,
   MoreHorizontalIcon,
   PlusIcon,
   SearchIcon,
@@ -404,15 +406,29 @@ export default function DashboardCustomersPage() {
                               className="w-40 min-w-40"
                             >
                               <DropdownMenuItem
+                                disabled={item.status === Status.Deleted}
                                 onClick={() => void handleToggleStatus(item)}
                               >
-                                {item.status === 0 ? "禁用" : "启用"}
+                                {actionLoadingId === item.id ? (
+                                  "处理中..."
+                                ) : item.status === 0 ? (
+                                  <>
+                                    <BanIcon />
+                                    禁用
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2Icon />
+                                    启用
+                                  </>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
+                                variant="destructive"
+                                disabled={item.status === Status.Deleted}
                                 onClick={() => void handleDelete(item)}
                               >
-                                <Trash2Icon className="mr-2 size-4" />
+                                <Trash2Icon />
                                 删除
                               </DropdownMenuItem>
                             </DropdownMenuContent>
