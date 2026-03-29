@@ -9,6 +9,7 @@ import {
   type AdminPermission,
   type PageResult,
 } from "@/lib/api/admin"
+import { Status, StatusLabels } from "@/lib/generated/enums"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,8 +32,9 @@ import {
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
-  { value: "1", label: "启用" },
-  { value: "0", label: "禁用" },
+  { value: String(Status.Ok), label: StatusLabels[Status.Ok] },
+  { value: String(Status.Disabled), label: StatusLabels[Status.Disabled] },
+  { value: String(Status.Deleted), label: StatusLabels[Status.Deleted] },
 ] as const
 
 function getStatusLabel(
@@ -192,8 +194,10 @@ export default function DashboardPermissionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={item.status === 1 ? "secondary" : "outline"}>
-                      {item.status === 1 ? "启用" : "禁用"}
+                    <Badge
+                      variant={item.status === Status.Ok ? "secondary" : "outline"}
+                    >
+                      {StatusLabels[item.status as Status] ?? String(item.status)}
                     </Badge>
                   </TableCell>
                 </TableRow>

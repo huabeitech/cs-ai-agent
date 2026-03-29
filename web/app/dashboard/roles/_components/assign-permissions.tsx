@@ -237,14 +237,14 @@ function AssignPermissionsDrawerBody({
                                     </div>
                                     <Badge
                                       variant={
-                                        permission.status === 1
-                                          ? "secondary"
-                                          : "outline"
+                                        permission.status === 0
+                                          ? "default"
+                                          : "secondary"
                                       }
                                     >
                                       {permission.status === 1
-                                        ? "启用"
-                                        : "禁用"}
+                                        ? "禁用"
+                                        : "启用"}
                                     </Badge>
                                   </label>
                                 );
