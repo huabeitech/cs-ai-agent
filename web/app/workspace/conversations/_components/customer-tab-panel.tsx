@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2Icon, PencilIcon, PlusIcon, UserRoundIcon } from "lucide-react";
+import { Link2Icon, PencilIcon, UserRoundIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,16 +9,10 @@ import { type CustomerFormSavePayload } from "@/components/customer-form";
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog";
 import type { AgentConversation } from "@/lib/api/agent";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
-import {
-  createCustomerContact,
-  fetchCustomerContacts,
-  updateCustomerContact,
-  type AdminCustomerContact,
-} from "@/lib/api/customer-contact";
+import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
 import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
 import { fetchCompany, updateCompany, type AdminCompany } from "@/lib/api/company";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +27,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { OptionCombobox, type ComboboxOption } from "@/components/option-combobox";
 import { formatDateTime } from "@/lib/utils";
 
 const GENDER_LABELS: Record<number, string> = {
@@ -48,17 +41,16 @@ const STATUS_LABELS: Record<number, string> = {
   2: "已删除",
 };
 
-const CONTACT_TYPE_OPTIONS: ComboboxOption[] = [
-  { value: "mobile", label: "手机号" },
-  { value: "email", label: "邮箱" },
-  { value: "wechat", label: "微信" },
-  { value: "other", label: "其他" },
-];
+const CONTACT_TYPE_LABELS: Record<string, string> = {
+  mobile: "手机号",
+  email: "邮箱",
+  wechat: "微信",
+  other: "其他",
+};
 
-const CONTACT_STATUS_OPTIONS: ComboboxOption[] = [
-  { value: "0", label: "启用" },
-  { value: "1", label: "禁用" },
-];
+function contactTypeLabel(contactType: string) {
+  return CONTACT_TYPE_LABELS[contactType] ?? contactType;
+}
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -152,8 +144,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
   const [customerEditSaving, setCustomerEditSaving] = useState(false);
   const [companyEditOpen, setCompanyEditOpen] = useState(false);
-  const [contactDialogOpen, setContactDialogOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState<AdminCustomerContact | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -182,16 +172,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   useEffect(() => {
     void load();
   }, [load]);
-
-  const openCreateContact = () => {
-    setEditingContact(null);
-    setContactDialogOpen(true);
-  };
-
-  const openEditContact = (row: AdminCustomerContact) => {
-    setEditingContact(row);
-    setContactDialogOpen(true);
-  };
 
   /** 客户主档存在但姓名等均为空时的弱空态 */
   const isProfileEmpty =
@@ -317,66 +297,30 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         </section>
 
         <section>
-          <SectionTitle
-            action={
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs"
-                onClick={openCreateContact}
-              >
-                <PlusIcon className="size-3.5" />
-                新增联系方式
-              </Button>
-            }
-          >
-            联系方式
-          </SectionTitle>
+          <SectionTitle>联系方式</SectionTitle>
           {contacts.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">暂无联系方式记录。</p>
+            <p className="py-2 text-sm text-muted-foreground">
+              暂无联系方式。请在上方「编辑客户」中维护。
+            </p>
           ) : (
-            <ul className="space-y-2 py-2">
+            <ul className="divide-y divide-border rounded-md border border-border/80 bg-muted/5">
               {contacts.map((row) => (
-                <li
-                  key={row.id}
-                  className="flex items-start justify-between gap-2 rounded-md border border-border bg-muted/20 px-2 py-2"
-                >
-                  <div className="min-w-0 flex-1 text-sm">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-medium text-foreground">
-                        {CONTACT_TYPE_OPTIONS.find((o) => o.value === row.contactType)?.label ??
-                          row.contactType}
-                      </span>
-                      {row.isPrimary ? (
-                        <span className="rounded bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary">
-                          主
-                        </span>
-                      ) : null}
-                      {row.isVerified ? (
-                        <span className="text-[10px] text-muted-foreground">已验证</span>
-                      ) : null}
-                    </div>
-                    <div className="mt-0.5 break-all text-foreground">{row.contactValue}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      来源 {row.source || "-"} · 状态{" "}
-                      {STATUS_LABELS[row.status] ?? row.status}
-                      {row.verifiedAt ? ` · 验证于 ${formatDateTime(row.verifiedAt)}` : ""}
-                      {row.remark ? ` · ${row.remark}` : ""}
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground/80">
-                      创建 {formatDateTime(row.createdAt)} · 更新 {formatDateTime(row.updatedAt)}
-                    </div>
+                <li key={row.id} className="px-2.5 py-1.5">
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="min-w-0 flex-1 break-all text-sm font-medium leading-snug text-foreground">
+                      {row.contactValue}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {contactTypeLabel(row.contactType)}
+                      {row.isPrimary ? " · 主" : ""}
+                      {row.isVerified ? " · 已验证" : ""}
+                    </span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 shrink-0 px-2 text-xs"
-                    onClick={() => openEditContact(row)}
-                  >
-                    编辑
-                  </Button>
+                  {row.remark ? (
+                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground break-all">
+                      {row.remark}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -416,15 +360,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           }}
         />
       ) : null}
-      <ContactEditDialog
-        open={contactDialogOpen}
-        onOpenChange={setContactDialogOpen}
-        customerId={customerId}
-        editing={editingContact}
-        onSaved={() => {
-          void load();
-        }}
-      />
     </div>
   );
 }
@@ -503,175 +438,6 @@ function CompanyEditDialog({
             <FieldLabel htmlFor="co-remark">备注</FieldLabel>
             <FieldContent>
               <Textarea id="co-remark" value={remark} onChange={(e) => setRemark(e.target.value)} rows={3} />
-            </FieldContent>
-          </Field>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
-          <Button type="button" disabled={saving} onClick={() => void handleSubmit()}>
-            {saving ? "保存中…" : "保存"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-type ContactEditDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  customerId: number;
-  editing: AdminCustomerContact | null;
-  onSaved: () => void;
-};
-
-function ContactEditDialog({
-  open,
-  onOpenChange,
-  customerId,
-  editing,
-  onSaved,
-}: ContactEditDialogProps) {
-  const [contactType, setContactType] = useState("mobile");
-  const [contactValue, setContactValue] = useState("");
-  const [isPrimary, setIsPrimary] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [source, setSource] = useState("manual");
-  const [status, setStatus] = useState("0");
-  const [remark, setRemark] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    if (editing) {
-      setContactType(editing.contactType || "mobile");
-      setContactValue(editing.contactValue);
-      setIsPrimary(editing.isPrimary);
-      setIsVerified(editing.isVerified);
-      setSource(editing.source || "manual");
-      setStatus(String(editing.status));
-      setRemark(editing.remark);
-    } else {
-      setContactType("mobile");
-      setContactValue("");
-      setIsPrimary(false);
-      setIsVerified(false);
-      setSource("manual");
-      setStatus("0");
-      setRemark("");
-    }
-  }, [open, editing]);
-
-  const handleSubmit = async () => {
-    const val = contactValue.trim();
-    if (!val) {
-      toast.error("联系方式不能为空");
-      return;
-    }
-    setSaving(true);
-    try {
-      if (editing) {
-        await updateCustomerContact({
-          id: editing.id,
-          contactType,
-          contactValue: val,
-          isPrimary,
-          isVerified,
-          source: source.trim() || "manual",
-          status: Number.parseInt(status, 10) || 0,
-          remark: remark.trim(),
-        });
-      } else {
-        await createCustomerContact({
-          customerId,
-          contactType,
-          contactValue: val,
-          isPrimary,
-          isVerified,
-          source: source.trim() || "manual",
-          status: Number.parseInt(status, 10) || 0,
-          remark: remark.trim(),
-        });
-      }
-      toast.success("已保存");
-      onSaved();
-      onOpenChange(false);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "保存失败");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,520px)] overflow-y-auto sm:max-w-md" showCloseButton>
-        <DialogHeader>
-          <DialogTitle>{editing ? "编辑联系方式" : "新增联系方式"}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-1">
-          <Field orientation="vertical">
-            <FieldLabel>类型</FieldLabel>
-            <FieldContent>
-              <OptionCombobox
-                value={contactType}
-                options={CONTACT_TYPE_OPTIONS}
-                placeholder="类型"
-                onChange={setContactType}
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cc-value">号码 / 地址</FieldLabel>
-            <FieldContent>
-              <Input
-                id="cc-value"
-                value={contactValue}
-                onChange={(e) => setContactValue(e.target.value)}
-                autoComplete="off"
-              />
-            </FieldContent>
-          </Field>
-          <div className="flex flex-col gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <Checkbox checked={isPrimary} onCheckedChange={(v) => setIsPrimary(Boolean(v))} />
-              主联系方式
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <Checkbox checked={isVerified} onCheckedChange={(v) => setIsVerified(Boolean(v))} />
-              已验证
-            </label>
-          </div>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cc-source">来源</FieldLabel>
-            <FieldContent>
-              <Input
-                id="cc-source"
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                placeholder="manual / import / system"
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel>状态</FieldLabel>
-            <FieldContent>
-              <OptionCombobox
-                value={status}
-                options={CONTACT_STATUS_OPTIONS}
-                placeholder="状态"
-                onChange={setStatus}
-              />
-            </FieldContent>
-          </Field>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="cc-remark">备注</FieldLabel>
-            <FieldContent>
-              <Textarea id="cc-remark" value={remark} onChange={(e) => setRemark(e.target.value)} rows={2} />
             </FieldContent>
           </Field>
         </div>

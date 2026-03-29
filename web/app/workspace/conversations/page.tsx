@@ -315,7 +315,7 @@ export default function ConversationsPage() {
           <ResizableHandle withHandle />
           <ResizablePanel
             panelRef={infoPanelRef}
-            defaultSize="20%"
+            defaultSize="500px"
             minSize="20%"
             maxSize="40%"
             collapsedSize="0%"
