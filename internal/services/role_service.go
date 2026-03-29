@@ -163,7 +163,7 @@ func (s *roleService) UpdateStatus(id int64, status enums.Status, operator *dto.
 	}); err != nil {
 		return err
 	}
-	return s.revokeRoleUsersSessions(id, operator)
+	return nil
 }
 
 func (s *roleService) AssignPermissions(roleID int64, permissionIDs []int64, operator *dto.AuthPrincipal) error {
@@ -172,10 +172,7 @@ func (s *roleService) AssignPermissions(roleID int64, permissionIDs []int64, ope
 		return errorsx.InvalidParam("角色不存在")
 	}
 
-	if err := s.replaceRolePermissions(roleID, permissionIDs, operator); err != nil {
-		return err
-	}
-	return s.revokeRoleUsersSessions(roleID, operator)
+	return s.replaceRolePermissions(roleID, permissionIDs, operator)
 }
 
 func (s *roleService) replaceRolePermissions(roleID int64, permissionIDs []int64, operator *dto.AuthPrincipal) error {
@@ -199,19 +196,4 @@ func (s *roleService) replaceRolePermissions(roleID int64, permissionIDs []int64
 		}
 		return nil
 	})
-}
-
-func (s *roleService) revokeRoleUsersSessions(roleID int64, operator *dto.AuthPrincipal) error {
-	userRoles := UserRoleService.Find(sqls.NewCnd().Eq("role_id", roleID))
-	seen := make(map[int64]struct{}, len(userRoles))
-	for _, item := range userRoles {
-		if _, ok := seen[item.UserID]; ok {
-			continue
-		}
-		seen[item.UserID] = struct{}{}
-		if err := LoginSessionService.RevokeByUser(item.UserID, operator.UserID, operator.Username); err != nil {
-			return err
-		}
-	}
-	return nil
 }
