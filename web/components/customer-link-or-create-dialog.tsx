@@ -1,28 +1,27 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
-import { ProjectDialog } from "@/components/project-dialog"
-import { Button } from "@/components/ui/button"
 import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from "@/components/ui/field"
+  CustomerFormFields,
+  customerFormResolver,
+  customerFormToPayload,
+  emptyCustomerForm,
+  type CustomerFormValues,
+} from "@/components/customer-form-fields"
+import { ProjectDialog } from "@/components/project-dialog"
+import type { ComboboxOption } from "@/components/option-combobox"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { OptionCombobox, type ComboboxOption } from "@/components/option-combobox"
 import { linkConversationToCustomer } from "@/lib/api/agent"
 import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
 import {
   createCustomer,
   fetchCustomers,
   type AdminCustomer,
-  type CreateAdminCustomerPayload,
 } from "@/lib/api/customer"
-import { getEnumOptions } from "@/lib/enums"
-import { GenderLabels } from "@/lib/generated/enums"
 
 export type CustomerLinkOrCreateDialogProps = {
   open: boolean
@@ -48,12 +47,7 @@ function buildCustomerSearchQuery(raw: string) {
   return { name: q }
 }
 
-const genderOptions: ComboboxOption[] = [
-  ...getEnumOptions(GenderLabels).map((item) => ({
-    value: String(item.value),
-    label: item.label,
-  })),
-]
+const createFormId = "customer-link-or-create-form"
 
 export function CustomerLinkOrCreateDialog({
   open,
@@ -69,24 +63,18 @@ export function CustomerLinkOrCreateDialog({
   const [saving, setSaving] = useState(false)
 
   const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>([
-    { value: "0", label: "无" },
+    { value: "0", label: "无所属公司" },
   ])
 
-  const [formName, setFormName] = useState("")
-  const [formGender, setFormGender] = useState("0")
-  const [formCompanyId, setFormCompanyId] = useState("0")
-  const [formMobile, setFormMobile] = useState("")
-  const [formEmail, setFormEmail] = useState("")
-  const [formRemark, setFormRemark] = useState("")
+  const form = useForm<CustomerFormValues>({
+    resolver: customerFormResolver,
+    defaultValues: emptyCustomerForm,
+  })
+  const { handleSubmit, reset } = form
 
-  const resetForm = useCallback(() => {
-    setFormName("")
-    setFormGender("0")
-    setFormCompanyId("0")
-    setFormMobile("")
-    setFormEmail("")
-    setFormRemark("")
-  }, [])
+  const resetCreateForm = useCallback(() => {
+    reset(emptyCustomerForm)
+  }, [reset])
 
   useEffect(() => {
     if (!open) {
@@ -96,16 +84,16 @@ export function CustomerLinkOrCreateDialog({
     setResults([])
     setShowCreate(false)
     setLinkingId(null)
-    resetForm()
+    resetCreateForm()
     let cancelled = false
     void (async () => {
       try {
-        const data = await fetchCompanies({ status: 0, page: 1, limit: 500 })
+        const data = await fetchCompanies({ status: 0, page: 1, limit: 200 })
         if (cancelled) {
           return
         }
         setCompanyOptions([
-          { value: "0", label: "无" },
+          { value: "0", label: "无所属公司" },
           ...data.results.map((c: AdminCompany) => ({
             value: String(c.id),
             label: c.name || `公司 #${c.id}`,
@@ -113,14 +101,14 @@ export function CustomerLinkOrCreateDialog({
         ])
       } catch {
         if (!cancelled) {
-          setCompanyOptions([{ value: "0", label: "无" }])
+          setCompanyOptions([{ value: "0", label: "无所属公司" }])
         }
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [open, resetForm])
+  }, [open, resetCreateForm])
 
   const runSearch = async () => {
     const q = searchText.trim()
@@ -171,20 +159,8 @@ export function CustomerLinkOrCreateDialog({
     }
   }
 
-  const handleCreateSubmit = async () => {
-    const name = formName.trim()
-    if (!name) {
-      toast.error("客户名称不能为空")
-      return
-    }
-    const payload: CreateAdminCustomerPayload = {
-      name,
-      gender: Number.parseInt(formGender, 10) || 0,
-      companyId: Number.parseInt(formCompanyId, 10) || 0,
-      primaryMobile: formMobile.trim(),
-      primaryEmail: formEmail.trim(),
-      remark: formRemark.trim(),
-    }
+  const onCreateSubmit = async (values: CustomerFormValues) => {
+    const payload = customerFormToPayload(values)
     setSaving(true)
     try {
       const created = await createCustomer(payload)
@@ -221,7 +197,6 @@ export function CustomerLinkOrCreateDialog({
       title="关联或创建客户"
       description={description}
       allowFullscreen
-      defaultFullscreen
       footer={
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -229,9 +204,9 @@ export function CustomerLinkOrCreateDialog({
           </Button>
           {showCreate ? (
             <Button
-              type="button"
+              type="submit"
+              form={createFormId}
               disabled={saving}
-              onClick={() => void handleCreateSubmit()}
             >
               {saving ? "提交中…" : conversationId ? "创建并关联会话" : "创建客户"}
             </Button>
@@ -298,79 +273,33 @@ export function CustomerLinkOrCreateDialog({
           <button
             type="button"
             className="text-sm text-primary underline-offset-4 hover:underline"
-            onClick={() => setShowCreate((v) => !v)}
+            onClick={() => {
+              setShowCreate((v) => {
+                const next = !v
+                if (next) {
+                  reset(emptyCustomerForm)
+                }
+                return next
+              })
+            }}
           >
             {showCreate ? "收起新建表单" : "未找到？填写新客户"}
           </button>
         </div>
 
         {showCreate ? (
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/10 p-3">
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="nl-name">客户名称</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="nl-name"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  autoComplete="off"
-                />
-              </FieldContent>
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel>性别</FieldLabel>
-              <FieldContent>
-                <OptionCombobox
-                  value={formGender}
-                  options={genderOptions}
-                  placeholder="性别"
-                  onChange={setFormGender}
-                />
-              </FieldContent>
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel>所属公司</FieldLabel>
-              <FieldContent>
-                <OptionCombobox
-                  value={formCompanyId}
-                  options={companyOptions}
-                  placeholder="选择公司"
-                  onChange={setFormCompanyId}
-                />
-              </FieldContent>
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="nl-mobile">手机号</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="nl-mobile"
-                  value={formMobile}
-                  onChange={(e) => setFormMobile(e.target.value)}
-                />
-              </FieldContent>
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="nl-email">邮箱</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="nl-email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                />
-              </FieldContent>
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="nl-remark">备注</FieldLabel>
-              <FieldContent>
-                <Textarea
-                  id="nl-remark"
-                  rows={2}
-                  value={formRemark}
-                  onChange={(e) => setFormRemark(e.target.value)}
-                />
-              </FieldContent>
-            </Field>
-          </div>
+          <form
+            id={createFormId}
+            onSubmit={handleSubmit(onCreateSubmit)}
+            className="flex flex-col gap-3 rounded-lg border border-border bg-muted/10 p-3"
+          >
+            <CustomerFormFields
+              form={form}
+              companyOptions={companyOptions}
+              fieldIdPrefix="link-or-create"
+              remarkRows={2}
+            />
+          </form>
         ) : null}
       </div>
     </ProjectDialog>
