@@ -5,7 +5,7 @@ import { ImageLightboxProvider } from "@/components/image-lightbox";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CS Agent Widget",
+  title: "贝壳AI客服插件",
   description: "Embedded customer service widget",
 };
 

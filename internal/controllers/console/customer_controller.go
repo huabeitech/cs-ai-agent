@@ -44,7 +44,7 @@ func (c *CustomerController) GetBy(id int64) *web.JsonResult {
 	if item == nil {
 		return web.JsonErrorMsg("客户不存在")
 	}
-	ret := builders.BuildCustomerResponse(item)
+	ret := builders.BuildCustomer(item)
 	return web.JsonData(&ret)
 }
 
@@ -69,7 +69,7 @@ func (c *CustomerController) PostSave_profile() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	ret := builders.BuildCustomerResponse(item)
+	ret := builders.BuildCustomer(item)
 	return web.JsonData(&ret)
 }
 
@@ -86,7 +86,7 @@ func (c *CustomerController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	ret := builders.BuildCustomerResponse(item)
+	ret := builders.BuildCustomer(item)
 	return web.JsonData(&ret)
 }
 

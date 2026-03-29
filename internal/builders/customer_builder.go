@@ -4,18 +4,20 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/utils"
+	"cs-agent/internal/services"
 	"time"
 )
 
-func BuildCustomerResponse(item *models.Customer) response.CustomerResponse {
+func BuildCustomer(item *models.Customer) *response.CustomerResponse {
 	if item == nil {
-		return response.CustomerResponse{}
+		return nil
 	}
-	return response.CustomerResponse{
+	return &response.CustomerResponse{
 		ID:            item.ID,
 		Name:          item.Name,
 		Gender:        item.Gender,
 		CompanyID:     item.CompanyID,
+		Company:       BuildCompany(services.CompanyService.Get(item.CompanyID)),
 		LastActiveAt:  utils.FormatTimePtr(item.LastActiveAt),
 		PrimaryMobile: item.PrimaryMobile,
 		PrimaryEmail:  item.PrimaryEmail,
@@ -29,7 +31,9 @@ func BuildCustomerResponse(item *models.Customer) response.CustomerResponse {
 func BuildCustomerList(list []models.Customer) []response.CustomerResponse {
 	results := make([]response.CustomerResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, BuildCustomerResponse(&item))
+		if customer := BuildCustomer(&item); customer != nil {
+			results = append(results, *customer)
+		}
 	}
 	return results
 }

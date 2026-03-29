@@ -25,6 +25,9 @@ type companyService struct {
 }
 
 func (s *companyService) Get(id int64) *models.Company {
+	if id <= 0 {
+		return nil
+	}
 	return repositories.CompanyRepository.Get(sqls.DB(), id)
 }
 

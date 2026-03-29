@@ -45,7 +45,7 @@ func (c *CompanyController) GetBy(id int64) *web.JsonResult {
 	if item == nil {
 		return web.JsonErrorMsg("公司不存在")
 	}
-	ret := builders.BuildCompanyResponse(item)
+	ret := builders.BuildCompany(item)
 	return web.JsonData(&ret)
 }
 
@@ -62,7 +62,7 @@ func (c *CompanyController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	ret := builders.BuildCompanyResponse(item)
+	ret := builders.BuildCompany(item)
 	return web.JsonData(&ret)
 }
 

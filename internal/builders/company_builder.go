@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-func BuildCompanyResponse(item *models.Company) response.CompanyResponse {
+func BuildCompany(item *models.Company) *response.CompanyResponse {
 	if item == nil {
-		return response.CompanyResponse{}
+		return nil
 	}
-	return response.CompanyResponse{
+	return &response.CompanyResponse{
 		ID:        item.ID,
 		Name:      item.Name,
 		Code:      item.Code,
@@ -24,7 +24,9 @@ func BuildCompanyResponse(item *models.Company) response.CompanyResponse {
 func BuildCompanyList(list []models.Company) []response.CompanyResponse {
 	results := make([]response.CompanyResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, BuildCompanyResponse(&item))
+		if company := BuildCompany(&item); company != nil {
+			results = append(results, *company)
+		}
 	}
 	return results
 }
