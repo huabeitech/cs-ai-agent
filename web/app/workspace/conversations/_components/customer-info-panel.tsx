@@ -36,7 +36,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ConversationDetails({ conversation }: { conversation: AgentConversation }) {
+function ConversationDetails({
+  conversation,
+}: {
+  conversation: AgentConversation;
+}) {
   return (
     <div className="divide-y divide-border">
       <section>
@@ -65,15 +69,29 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
             String(conversation.serviceMode)
           }
         />
-        <InfoRow label="当前客服" value={conversation.currentAssigneeName ?? "-"} />
+        <InfoRow
+          label="当前客服"
+          value={conversation.currentAssigneeName ?? "-"}
+        />
       </section>
       <section>
         <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           时间
         </h3>
-        <InfoRow label="最后活跃" value={formatDateTime(conversation.lastActiveAt)} />
-        <InfoRow label="最后消息" value={formatDateTime(conversation.lastMessageAt)} />
-        <InfoRow label="关闭时间" value={formatDateTime(conversation.closedAt)} />
+        <InfoRow
+          label="最后活跃"
+          value={formatDateTime(conversation.lastActiveAt)}
+        />
+        <InfoRow
+          label="最后消息"
+          value={formatDateTime(conversation.lastMessageAt)}
+        />
+        {conversation.closedAt ? (
+          <InfoRow
+            label="关闭时间"
+            value={formatDateTime(conversation.closedAt)}
+          />
+        ) : null}
       </section>
       {conversation.tags && conversation.tags.length > 0 ? (
         <section>
@@ -114,7 +132,9 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
                 key={p.id}
                 className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-xs text-foreground"
               >
-                <div className="font-medium text-foreground">{p.participantType}</div>
+                <div className="font-medium text-foreground">
+                  {p.participantType}
+                </div>
                 <div className="text-muted-foreground">
                   ID {p.participantId}
                   {p.externalParticipantId
@@ -153,7 +173,9 @@ export function CustomerInfoPanel({
     <div
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden",
-        embedded ? "bg-background text-foreground" : "border-l border-border bg-card text-card-foreground",
+        embedded
+          ? "bg-background text-foreground"
+          : "border-l border-border bg-card text-card-foreground",
         className,
       )}
     >
