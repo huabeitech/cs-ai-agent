@@ -12,12 +12,22 @@ type CustomerListRequest struct {
 	PrimaryEmail  string `json:"primaryEmail"`
 }
 
-// Offset 分页偏移（需先保证 Page、Limit 已规范化为正数）。
-func (r CustomerListRequest) Offset() int {
-	if r.Page <= 0 || r.Limit <= 0 {
-		return 0
+func (r CustomerListRequest) GetPage() int {
+	if r.Page <= 0 {
+		return 1
 	}
-	return (r.Page - 1) * r.Limit
+	return r.Page
+}
+
+func (r CustomerListRequest) GetLimit() int {
+	if r.Limit <= 0 {
+		return 20
+	}
+	return r.Limit
+}
+
+func (r CustomerListRequest) Offset() int {
+	return (r.GetPage() - 1) * r.GetLimit()
 }
 
 type CreateCustomerRequest struct {

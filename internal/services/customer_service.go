@@ -54,14 +54,7 @@ func (s *customerService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Customer, 
 
 // ListCustomers 客户分页列表（连联系方式表，支持按非主联系方式检索）。
 func (s *customerService) ListCustomers(req request.CustomerListRequest) (list []models.Customer, paging *sqls.Paging) {
-	if req.Limit <= 0 {
-		req.Limit = 20
-	}
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-
-	if err := s.newCustomerListQuery(req).Distinct("c.*").Offset(req.Offset()).Order("c.id DESC").Limit(req.Limit).Scan(&list).Error; err != nil {
+	if err := s.newCustomerListQuery(req).Distinct("c.*").Offset(req.Offset()).Order("c.id DESC").Limit(req.GetLimit()).Scan(&list).Error; err != nil {
 		slog.Error("customer list scan failed", slog.Any("error", err))
 	}
 
@@ -71,8 +64,8 @@ func (s *customerService) ListCustomers(req request.CustomerListRequest) (list [
 	}
 
 	paging = &sqls.Paging{
-		Page:  req.Page,
-		Limit: req.Limit,
+		Page:  req.GetPage(),
+		Limit: req.GetLimit(),
 		Total: total,
 	}
 	return
