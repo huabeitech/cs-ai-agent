@@ -113,6 +113,21 @@ func (s *customerContactService) hasDuplicateContact(
 	return repositories.CustomerContactRepository.FindOne(db, cnd) != nil
 }
 
+// findSoftDeletedContactByNaturalKey 按 uk_customer_contact 业务键查找已软删行；复活时用 UPDATE 代替 INSERT，避免唯一索引冲突。
+func (s *customerContactService) findSoftDeletedContactByNaturalKey(
+	db *gorm.DB,
+	customerID int64,
+	contactType enums.ContactType,
+	contactValue string,
+) *models.CustomerContact {
+	cnd := sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("contact_type = ?", contactType).
+		Where("contact_value = ?", contactValue).
+		Where("status = ?", enums.StatusDeleted)
+	return repositories.CustomerContactRepository.FindOne(db, cnd)
+}
+
 // syncCustomerPrimaryFromContacts 根据当前主联系方式更新客户表冗余字段（列表检索用）。
 func (s *customerContactService) syncCustomerPrimaryFromContacts(db *gorm.DB, customerID int64) error {
 	if customerID <= 0 {
@@ -251,6 +266,29 @@ func (s *customerContactService) ReplaceAllForCustomerInTx(
 		if s.hasDuplicateContact(ctx.Tx, customerID, it.ct, it.val, 0) {
 			return errorsx.InvalidParam("该联系方式已存在")
 		}
+		if deleted := s.findSoftDeletedContactByNaturalKey(ctx.Tx, customerID, it.ct, it.val); deleted != nil {
+			if it.primary {
+				if err := s.clearPrimaryExcept(ctx.Tx, customerID, deleted.ID); err != nil {
+					return err
+				}
+			}
+			if err := repositories.CustomerContactRepository.Updates(ctx.Tx, deleted.ID, map[string]any{
+				"status":           enums.StatusOk,
+				"contact_type":     it.ct,
+				"contact_value":    it.val,
+				"is_primary":       it.primary,
+				"is_verified":      false,
+				"verified_at":      nil,
+				"remark":           it.remark,
+				"source":           normalizeContactSource("manual"),
+				"update_user_id":   operator.UserID,
+				"update_user_name": operator.Username,
+				"updated_at":       now,
+			}); err != nil {
+				return err
+			}
+			continue
+		}
 		if it.primary {
 			if err := s.clearPrimaryExcept(ctx.Tx, customerID, 0); err != nil {
 				return err
@@ -332,12 +370,40 @@ func (s *customerContactService) CreateCustomerContact(req request.CreateCustome
 		if s.hasDuplicateContact(ctx.Tx, req.CustomerID, enums.ContactType(ct), val, 0) {
 			return errorsx.InvalidParam("该联系方式已存在")
 		}
+		now := time.Now()
+		if deleted := s.findSoftDeletedContactByNaturalKey(ctx.Tx, req.CustomerID, enums.ContactType(ct), val); deleted != nil {
+			if req.IsPrimary {
+				if err := s.clearPrimaryExcept(ctx.Tx, req.CustomerID, deleted.ID); err != nil {
+					return err
+				}
+			}
+			var verifiedAt *time.Time
+			if req.IsVerified {
+				verifiedAt = &now
+			}
+			if err := repositories.CustomerContactRepository.Updates(ctx.Tx, deleted.ID, map[string]any{
+				"status":           status,
+				"contact_type":     enums.ContactType(ct),
+				"contact_value":    val,
+				"is_primary":       req.IsPrimary,
+				"is_verified":      req.IsVerified,
+				"verified_at":      verifiedAt,
+				"source":           normalizeContactSource(req.Source),
+				"remark":           strings.TrimSpace(req.Remark),
+				"update_user_id":   operator.UserID,
+				"update_user_name": operator.Username,
+				"updated_at":       now,
+			}); err != nil {
+				return err
+			}
+			created = repositories.CustomerContactRepository.Get(ctx.Tx, deleted.ID)
+			return s.syncCustomerPrimaryFromContacts(ctx.Tx, req.CustomerID)
+		}
 		if req.IsPrimary {
 			if err := s.clearPrimaryExcept(ctx.Tx, req.CustomerID, 0); err != nil {
 				return err
 			}
 		}
-		now := time.Now()
 		var verifiedAt *time.Time
 		if req.IsVerified {
 			verifiedAt = &now
