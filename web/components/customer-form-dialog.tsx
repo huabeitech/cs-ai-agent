@@ -52,6 +52,7 @@ function CustomerFormDialogBody({
       onOpenChange={(next) => onOpenChange(next)}
       title={itemId ? "编辑客户" : "新建客户"}
       allowFullscreen
+      size="xl"
       footer={
         <>
           <Button
@@ -62,7 +63,11 @@ function CustomerFormDialogBody({
           >
             取消
           </Button>
-          <Button type="submit" form={formId} disabled={saving || loadingDetail}>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={saving || loadingDetail}
+          >
             {saving ? "保存中..." : itemId ? "保存" : "创建"}
           </Button>
         </>
@@ -77,5 +82,5 @@ function CustomerFormDialogBody({
         onLoadingDetailChange={setLoadingDetail}
       />
     </ProjectDialog>
-  )
+  );
 }

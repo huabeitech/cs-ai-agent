@@ -150,7 +150,7 @@ export function CustomerLinkOrCreateDialog({
       title="关联或创建客户"
       description={description}
       allowFullscreen
-      defaultFullscreen
+      size="xl"
       footer={
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
