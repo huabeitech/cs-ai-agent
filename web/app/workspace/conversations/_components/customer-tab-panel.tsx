@@ -1,10 +1,12 @@
 "use client";
 
-import { PencilIcon, PlusIcon, UserRoundIcon } from "lucide-react";
+import { Link2Icon, PencilIcon, PlusIcon, UserRoundIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog";
 import type { AgentConversation } from "@/lib/api/agent";
+import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import {
   createCustomerContact,
   fetchCustomerContacts,
@@ -88,6 +90,9 @@ function SectionTitle({
 }
 
 function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversation }) {
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const loadConversations = useAgentConversationsStore((s) => s.loadConversations);
+
   return (
     <div className="space-y-4 pt-2">
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
@@ -96,6 +101,14 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
         <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
           当前会话未绑定客户主档（CustomerID 为 0）。访客仅通过外部身份接待；绑定后可在此维护公司与联系方式。
         </p>
+        <Button
+          type="button"
+          className="mt-4 gap-2"
+          onClick={() => setLinkDialogOpen(true)}
+        >
+          <Link2Icon className="size-4" />
+          关联或创建客户
+        </Button>
       </div>
       <div className="divide-y divide-border rounded-lg border border-border">
         <section className="px-1">
@@ -104,6 +117,12 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
           <InfoRow label="外部用户标识" value={conversation.externalId} />
         </section>
       </div>
+      <CustomerLinkOrCreateDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        conversationId={conversation.id}
+        onSuccess={() => void loadConversations()}
+      />
     </div>
   );
 }

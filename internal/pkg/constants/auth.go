@@ -63,14 +63,15 @@ var (
 	PermissionSessionRevoke = Permission{Name: "踢除会话", Code: "session.revoke", Type: "api", GroupName: "session", Method: "POST", APIPath: "/api/console/session/revoke", SortNo: 320}
 
 	// 客服会话相关权限
-	PermissionConversationView     = Permission{Name: "查看会话", Code: "conversation.view", Type: "api", GroupName: "conversation", Method: "ANY", APIPath: "/api/console/conversation/list", SortNo: 410}
-	PermissionConversationAssign   = Permission{Name: "分配会话", Code: "conversation.assign", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/assign", SortNo: 430}
-	PermissionConversationTransfer = Permission{Name: "转接会话", Code: "conversation.transfer", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/transfer", SortNo: 440}
-	PermissionConversationClose    = Permission{Name: "关闭会话", Code: "conversation.close", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/close", SortNo: 450}
-	PermissionConversationSend     = Permission{Name: "发送会话消息", Code: "conversation.send", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/send_message", SortNo: 460}
-	PermissionConversationTag      = Permission{Name: "管理会话标签", Code: "conversation.tag", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/add_tag", SortNo: 470}
-	PermissionConversationHandover = Permission{Name: "处理会话交接", Code: "conversation.handover", Type: "api", GroupName: "conversation", Method: "ANY", APIPath: "/api/console/conversation/handover_list", SortNo: 480}
-	PermissionConversationRecycle  = Permission{Name: "回收会话", Code: "conversation.recycle", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/recycle", SortNo: 490}
+	PermissionConversationView         = Permission{Name: "查看会话", Code: "conversation.view", Type: "api", GroupName: "conversation", Method: "ANY", APIPath: "/api/console/conversation/list", SortNo: 410}
+	PermissionConversationAssign       = Permission{Name: "分配会话", Code: "conversation.assign", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/assign", SortNo: 430}
+	PermissionConversationTransfer     = Permission{Name: "转接会话", Code: "conversation.transfer", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/transfer", SortNo: 440}
+	PermissionConversationClose        = Permission{Name: "关闭会话", Code: "conversation.close", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/close", SortNo: 450}
+	PermissionConversationSend         = Permission{Name: "发送会话消息", Code: "conversation.send", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/send_message", SortNo: 460}
+	PermissionConversationTag          = Permission{Name: "管理会话标签", Code: "conversation.tag", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/add_tag", SortNo: 470}
+	PermissionConversationHandover     = Permission{Name: "处理会话交接", Code: "conversation.handover", Type: "api", GroupName: "conversation", Method: "ANY", APIPath: "/api/console/conversation/handover_list", SortNo: 480}
+	PermissionConversationRecycle      = Permission{Name: "回收会话", Code: "conversation.recycle", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/recycle", SortNo: 490}
+	PermissionConversationLinkCustomer = Permission{Name: "关联会话客户", Code: "conversation.linkCustomer", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/link_customer", SortNo: 495}
 
 	// 快捷回复相关权限
 	PermissionQuickReplyView   = Permission{Name: "查看快捷回复", Code: "quickReply.view", Type: "api", GroupName: "quickReply", Method: "ANY", APIPath: "/api/console/quick-reply/list", SortNo: 510}
@@ -175,6 +176,7 @@ var Permissions = []Permission{
 	PermissionConversationTag,
 	PermissionConversationHandover,
 	PermissionConversationRecycle,
+	PermissionConversationLinkCustomer,
 	PermissionQuickReplyView,
 	PermissionQuickReplyCreate,
 	PermissionQuickReplyUpdate,
@@ -259,7 +261,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionRoleView, PermissionRoleCreate, PermissionRoleUpdate, PermissionRoleAssignPermission,
 		PermissionPermissionView, PermissionPermissionSync,
 		PermissionSessionView, PermissionSessionRevoke,
-		PermissionConversationView, PermissionConversationAssign, PermissionConversationTransfer, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle,
+		PermissionConversationView, PermissionConversationAssign, PermissionConversationTransfer, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
@@ -276,7 +278,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionRoleView,
 		PermissionPermissionView,
 		PermissionSessionView,
-		PermissionConversationView, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle,
+		PermissionConversationView, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView,

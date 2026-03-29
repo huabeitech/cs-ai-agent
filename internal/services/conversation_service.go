@@ -644,6 +644,90 @@ func (s *conversationService) buildEventPayload(payload map[string]any) string {
 	return string(data)
 }
 
+// LinkConversationCustomer 将会话绑定到指定客户；若会话带外部访客标识则维护 CustomerIdentity（与创建会话时逻辑一致）。
+func (s *conversationService) LinkConversationCustomer(conversationID, customerID int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if conversationID <= 0 || customerID <= 0 {
+		return errorsx.InvalidParam("参数不合法")
+	}
+	cust := CustomerService.Get(customerID)
+	if cust == nil || cust.Status == enums.StatusDeleted {
+		return errorsx.InvalidParam("客户不存在")
+	}
+	conv := s.Get(conversationID)
+	if conv == nil {
+		return errorsx.InvalidParam("会话不存在")
+	}
+	if conv.Status == enums.IMConversationStatusClosed {
+		return errorsx.InvalidParam("已关闭的会话无法关联客户")
+	}
+	if !s.canLinkConversationCustomer(conv, operator) {
+		return errorsx.Forbidden("无权限关联该会话")
+	}
+
+	extID := strings.TrimSpace(conv.ExternalID)
+	extSrc := strings.TrimSpace(string(conv.ExternalSource))
+
+	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		current := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if current == nil {
+			return errorsx.InvalidParam("会话不存在")
+		}
+		if extID != "" && extSrc != "" {
+			existing := repositories.CustomerIdentityRepository.GetBy(ctx.Tx, enums.ExternalSource(extSrc), extID)
+			if existing != nil {
+				if existing.CustomerID != customerID {
+					return errorsx.BusinessError(1, "该访客身份已绑定其他客户，无法关联到当前选择")
+				}
+			} else {
+				idRow := &models.CustomerIdentity{
+					CustomerID:     customerID,
+					ExternalSource: enums.ExternalSource(extSrc),
+					ExternalID:     extID,
+					Status:         enums.StatusOk,
+					AuditFields:    utils.BuildAuditFields(operator),
+				}
+				if err := repositories.CustomerIdentityRepository.Create(ctx.Tx, idRow); err != nil {
+					return err
+				}
+			}
+		}
+		now := time.Now()
+		return repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
+			"customer_id":      customerID,
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+			"updated_at":       now,
+		})
+	})
+	if err != nil {
+		return err
+	}
+	if updated := s.Get(conversationID); updated != nil {
+		WsService.PublishConversationChanged(updated, enums.IMRealtimeEventConversationUpdated)
+	}
+	return nil
+}
+
+func (s *conversationService) canLinkConversationCustomer(conv *models.Conversation, operator *dto.AuthPrincipal) bool {
+	if conv == nil || operator == nil {
+		return false
+	}
+	if s.isAdmin(operator) {
+		return true
+	}
+	switch conv.Status {
+	case enums.IMConversationStatusPending:
+		return true
+	case enums.IMConversationStatusActive:
+		return conv.CurrentAssigneeID == 0 || conv.CurrentAssigneeID == operator.UserID
+	default:
+		return false
+	}
+}
+
 func (s *conversationService) buildDefaultSubject(externalInfo openidentity.ExternalInfo) string {
 	if strs.IsNotBlank(externalInfo.ExternalName) {
 		return externalInfo.ExternalName

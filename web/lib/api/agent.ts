@@ -205,6 +205,16 @@ export function transferAgentConversation(
   })
 }
 
+export function linkConversationToCustomer(payload: {
+  conversationId: number
+  customerId: number
+}) {
+  return request<void>("/api/console/conversation/link_customer", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export function createAgentWebSocketUrl() {
   const session = readSession()
   if (!session?.accessToken) {

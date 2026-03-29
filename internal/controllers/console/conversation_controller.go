@@ -183,6 +183,21 @@ func (c *ConversationController) PostClose() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *ConversationController) PostLink_customer() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationLinkCustomer)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.LinkConversationCustomerRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.ConversationService.LinkConversationCustomer(req.ConversationID, req.CustomerID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *ConversationController) PostSend_message() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend)
 	if err != nil {

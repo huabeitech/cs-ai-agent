@@ -53,3 +53,9 @@ type RemoveConversationTagRequest struct {
 	ConversationID int64 `json:"conversationId"`
 	TagID          int64 `json:"tagId"`
 }
+
+// LinkConversationCustomerRequest 将客服会话关联到 CRM 客户（并同步访客身份映射）。
+type LinkConversationCustomerRequest struct {
+	ConversationID int64 `json:"conversationId"`
+	CustomerID     int64 `json:"customerId"`
+}

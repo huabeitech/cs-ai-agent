@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
+  Link2Icon,
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCwIcon,
@@ -21,6 +22,7 @@ import {
 } from "@/lib/api/customer"
 import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
 import { type PageResult } from "@/lib/api/admin"
+import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog"
 import { EditDialog } from "./_components/edit"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -103,6 +105,7 @@ export default function DashboardCustomersPage() {
   const [saving, setSaving] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [linkOrCreateOpen, setLinkOrCreateOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<AdminCustomer | null>(null)
   const [result, setResult] = useState<PageResult<AdminCustomer>>({
     results: [],
@@ -327,6 +330,10 @@ export default function DashboardCustomersPage() {
             <RefreshCwIcon className={loading ? "animate-spin" : ""} />
             刷新列表
           </Button>
+          <Button variant="outline" onClick={() => setLinkOrCreateOpen(true)}>
+            <Link2Icon />
+            搜索或新建
+          </Button>
           <Button onClick={openCreateDialog}>
             <PlusIcon />
             新建
@@ -427,6 +434,12 @@ export default function DashboardCustomersPage() {
           }}
         />
       </div>
+
+      <CustomerLinkOrCreateDialog
+        open={linkOrCreateOpen}
+        onOpenChange={setLinkOrCreateOpen}
+        onSuccess={() => void loadData()}
+      />
 
       <EditDialog
         open={dialogOpen}
