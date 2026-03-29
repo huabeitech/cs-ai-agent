@@ -1,11 +1,13 @@
 import { request } from "@/lib/api/client"
 import type { PageResult } from "@/lib/api/admin"
+import { AdminCompany } from "./company"
 
 export type AdminCustomer = {
   id: number
   name: string
   gender: number
   companyId: number
+  company?: AdminCompany
   lastActiveAt?: string
   primaryMobile: string
   primaryEmail: string

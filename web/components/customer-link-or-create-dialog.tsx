@@ -148,12 +148,20 @@ export function CustomerLinkOrCreateDialog({
       size="xl"
       footer={
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             关闭
           </Button>
           {showCreate ? (
             <Button type="submit" form={createFormId} disabled={saving}>
-              {saving ? "提交中…" : conversationId ? "创建并关联会话" : "创建客户"}
+              {saving
+                ? "提交中…"
+                : conversationId
+                  ? "创建并关联会话"
+                  : "创建客户"}
             </Button>
           ) : null}
         </div>
@@ -167,8 +175,8 @@ export function CustomerLinkOrCreateDialog({
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                e.preventDefault()
-                void runSearch()
+                e.preventDefault();
+                void runSearch();
               }
             }}
           />
@@ -190,9 +198,20 @@ export function CustomerLinkOrCreateDialog({
                 className="flex items-center justify-between gap-2 rounded border border-transparent px-2 py-1.5 hover:bg-muted/40"
               >
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{row.name || `客户 #${row.id}`}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {row.primaryMobile || "-"} · {row.primaryEmail || "-"}
+                  <div className="truncate font-medium flex items-center gap-2">
+                    <span>{row.name || `客户 #${row.id}`}</span>
+                    <span className="text-muted-foreground">
+                      {row.primaryMobile}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {row.primaryEmail}
+                    </span>
+                  </div>
+                  <div className="truncate font-medium flex items-center gap-2">
+                    <span>
+                      武汉花贝科技有限公司
+                      {row.company ? row.company?.name: ""}
+                    </span>
                   </div>
                 </div>
                 <Button
@@ -235,5 +254,5 @@ export function CustomerLinkOrCreateDialog({
         ) : null}
       </div>
     </ProjectDialog>
-  )
+  );
 }
