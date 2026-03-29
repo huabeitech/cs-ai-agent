@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log/slog"
+
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
@@ -14,6 +16,7 @@ import (
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
+	"gorm.io/gorm"
 )
 
 var CustomerService = newCustomerService()
@@ -51,40 +54,59 @@ func (s *customerService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Customer, 
 
 // ListCustomers 客户分页列表（连联系方式表，支持按非主联系方式检索）。
 func (s *customerService) ListCustomers(req request.CustomerListRequest) (list []models.Customer, paging *sqls.Paging) {
-	page := req.Page
-	if page <= 0 {
-		page = 1
+	if req.Limit <= 0 {
+		req.Limit = 20
 	}
-	limit := req.Limit
-	if limit <= 0 {
-		limit = 20
+	if req.Page <= 0 {
+		req.Page = 1
 	}
 
-	cnd := sqls.NewCnd().Page(page, limit).Desc("c.id")
-	cnd.Where("c.status <> ?", enums.StatusDeleted)
+	if err := s.newCustomerListQuery(req).Distinct("c.*").Offset(req.Offset()).Order("c.id DESC").Limit(req.Limit).Scan(&list).Error; err != nil {
+		slog.Error("customer list scan failed", slog.Any("error", err))
+	}
+
+	var total int64
+	if err := s.newCustomerListQuery(req).Distinct("c.id").Count(&total).Error; err != nil {
+		slog.Error("customer list count failed", slog.Any("error", err))
+	}
+
+	paging = &sqls.Paging{
+		Page:  req.Page,
+		Limit: req.Limit,
+		Total: total,
+	}
+	return
+}
+
+func (s *customerService) newCustomerListQuery(req request.CustomerListRequest) *gorm.DB {
+	deleted := int(enums.StatusDeleted)
+	tx := sqls.DB().
+		Table("t_customer AS c").
+		Joins("LEFT JOIN t_customer_contact AS cc ON cc.customer_id = c.id AND cc.status <> ?", deleted)
+
+	tx.Where("c.status <> ?", enums.StatusDeleted)
 
 	if req.Status != nil {
-		cnd.Where("c.status = ?", *req.Status)
+		tx.Where("c.status = ?", *req.Status)
 	}
 	if req.Gender != nil {
-		cnd.Where("c.gender = ?", *req.Gender)
+		tx.Where("c.gender = ?", *req.Gender)
 	}
 	if req.CompanyID != nil && *req.CompanyID > 0 {
-		cnd.Where("c.company_id = ?", *req.CompanyID)
+		tx.Where("c.company_id = ?", *req.CompanyID)
 	}
 	if name := strings.TrimSpace(req.Name); strs.IsNotBlank(name) {
-		cnd.Where("c.name LIKE ?", "%"+name+"%")
+		tx.Where("c.name LIKE ?", "%"+name+"%")
 	}
 	if strs.IsNotBlank(req.PrimaryMobile) {
 		pat := "%" + req.PrimaryMobile + "%"
-		cnd.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+		tx.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
 	}
 	if strs.IsNotBlank(req.PrimaryEmail) {
 		pat := "%" + req.PrimaryEmail + "%"
-		cnd.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+		tx.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
 	}
-
-	return repositories.CustomerRepository.FindPageByCndForCustomerList(sqls.DB(), cnd)
+	return tx
 }
 
 func (s *customerService) Count(cnd *sqls.Cnd) int64 {
