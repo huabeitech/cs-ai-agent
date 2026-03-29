@@ -275,7 +275,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           </SectionTitle>
           {customer.companyId <= 0 ? (
             <p className="py-2 text-sm text-muted-foreground">
-              未关联公司。可在「编辑客户」中选择所属公司。
+              未关联公司
             </p>
           ) : company ? (
             <>
@@ -300,7 +300,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
           <SectionTitle>联系方式</SectionTitle>
           {contacts.length === 0 ? (
             <p className="py-2 text-sm text-muted-foreground">
-              暂无联系方式。请在上方「编辑客户」中维护。
+              暂无联系方式
             </p>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border/80 bg-muted/5">
