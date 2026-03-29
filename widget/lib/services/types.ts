@@ -43,6 +43,7 @@ export type WidgetMessage = {
   conversationId: number;
   senderType: string;
   senderName?: string;
+  senderAvatar?: string;
   messageType: string;
   content: string;
   payload?: string;

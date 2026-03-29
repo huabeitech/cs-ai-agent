@@ -52,6 +52,10 @@ func (s *agentProfileService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.AgentProfileRepository.Count(sqls.DB(), cnd)
 }
 
+func (s *agentProfileService) GetByUserID(userID int64) *models.AgentProfile {
+	return repositories.AgentProfileRepository.FindOne(sqls.DB(), sqls.NewCnd().Eq("user_id", userID))
+}
+
 // GetDispatchAgents 获取可用于分配会话的客服
 func (s *agentProfileService) GetDispatchAgents(teamIds []int64) []models.AgentProfile {
 	return AgentProfileService.Find(sqls.NewCnd().

@@ -90,7 +90,7 @@ export function ChatPanel() {
     if (conversationFilter !== "pending") {
       return;
     }
-    setConversationFilter("mine" satisfies AgentConversationFilterKey);
+    setConversationFilter("active" satisfies AgentConversationFilterKey);
   };
 
   const getViewport = useCallback(
@@ -537,6 +537,10 @@ const MessageItem = memo(
       : isAi
         ? "AI"
         : message.senderName || "客服";
+    const agentAvatarSrc =
+      isAgentSide && !isAi && message.senderAvatar?.trim()
+        ? message.senderAvatar.trim()
+        : undefined;
     const avatarFallback = isAi ? "AI" : senderName.charAt(0);
     const htmlContent = buildMessageHTML(message);
     const bubbleClassName = isAi
@@ -583,7 +587,7 @@ const MessageItem = memo(
               </div>
             </div>
             <Avatar className="size-8 shrink-0">
-              <AvatarImage src="" />
+              <AvatarImage src={agentAvatarSrc ?? ""} />
               <AvatarFallback className={avatarClassName}>
                 {avatarFallback}
               </AvatarFallback>

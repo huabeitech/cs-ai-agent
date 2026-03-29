@@ -63,6 +63,7 @@ export type ImMessage = {
   senderType: string
   senderId: number
   senderName?: string
+  senderAvatar?: string
   messageType: string
   content: string
   payload?: string

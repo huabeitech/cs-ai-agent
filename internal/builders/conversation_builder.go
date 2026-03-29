@@ -1,6 +1,8 @@
 package builders
 
 import (
+	"strings"
+
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
@@ -105,19 +107,20 @@ func BuildMessages(list []models.Message) []response.MessageResponse {
 	}
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(list[0].ConversationID)
 	aiSenderNames, userSenderNames := collectMessageSenderNameMaps(list)
+	agentProfiles := collectAgentProfilesByMessages(list)
 	ret := make([]response.MessageResponse, 0, len(list))
 	for i := range list {
-		ret = append(ret, BuildMessageWithReadStates(&list[i], agentReadState, customerReadState, aiSenderNames, userSenderNames))
+		ret = append(ret, BuildMessageWithReadStates(&list[i], agentReadState, customerReadState, aiSenderNames, userSenderNames, agentProfiles))
 	}
 	return ret
 }
 
 func BuildMessage(item *models.Message) response.MessageResponse {
 	agentReadState, customerReadState := services.ConversationReadStateService.GetConversationReadStates(item.ConversationID)
-	return BuildMessageWithReadStates(item, agentReadState, customerReadState, nil, nil)
+	return BuildMessageWithReadStates(item, agentReadState, customerReadState, nil, nil, nil)
 }
 
-func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState, aiSenderNames, userSenderNames map[int64]string) response.MessageResponse {
+func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState, aiSenderNames, userSenderNames map[int64]string, agentProfiles map[int64]*models.AgentProfile) response.MessageResponse {
 	ret := response.MessageResponse{
 		ID:              item.ID,
 		ConversationID:  item.ConversationID,
@@ -146,6 +149,26 @@ func BuildMessageWithReadStates(item *models.Message, agentReadState, customerRe
 			} else if aiAgent := services.AIAgentService.Get(item.SenderID); aiAgent != nil {
 				ret.SenderName = aiAgent.Name
 			}
+		} else if item.SenderType == enums.IMSenderTypeAgent {
+			profile := agentProfiles[item.SenderID]
+			if profile != nil {
+				if dn := strings.TrimSpace(profile.DisplayName); dn != "" {
+					ret.SenderName = dn
+				}
+				if av := strings.TrimSpace(profile.Avatar); av != "" {
+					ret.SenderAvatar = av
+				}
+			}
+			if ret.SenderName == "" {
+				if userSenderNames != nil {
+					ret.SenderName = userSenderNames[item.SenderID]
+				} else if user := services.UserService.Get(item.SenderID); user != nil {
+					ret.SenderName = user.Nickname
+					if ret.SenderName == "" {
+						ret.SenderName = user.Username
+					}
+				}
+			}
 		} else if userSenderNames != nil {
 			ret.SenderName = userSenderNames[item.SenderID]
 		} else if user := services.UserService.Get(item.SenderID); user != nil {
@@ -156,6 +179,31 @@ func BuildMessageWithReadStates(item *models.Message, agentReadState, customerRe
 		}
 	}
 	return ret
+}
+
+func collectAgentProfilesByMessages(list []models.Message) map[int64]*models.AgentProfile {
+	var agentUserIDs []int64
+	seen := make(map[int64]struct{})
+	for i := range list {
+		m := &list[i]
+		if m.SenderType != enums.IMSenderTypeAgent || m.SenderID <= 0 {
+			continue
+		}
+		if _, ok := seen[m.SenderID]; ok {
+			continue
+		}
+		seen[m.SenderID] = struct{}{}
+		agentUserIDs = append(agentUserIDs, m.SenderID)
+	}
+	if len(agentUserIDs) == 0 {
+		return nil
+	}
+	profiles := services.AgentProfileService.Find(sqls.NewCnd().In("user_id", agentUserIDs))
+	out := make(map[int64]*models.AgentProfile, len(profiles))
+	for i := range profiles {
+		out[profiles[i].UserID] = &profiles[i]
+	}
+	return out
 }
 
 func collectMessageSenderNameMaps(list []models.Message) (aiNames map[int64]string, userNames map[int64]string) {
