@@ -9,6 +9,9 @@ export default function nextConfig(phase: string): NextConfig {
     return {
       reactStrictMode: true,
       trailingSlash: true,
+      images: {
+        unoptimized: true,
+      },
       async rewrites() {
         return [
           {
@@ -32,5 +35,8 @@ export default function nextConfig(phase: string): NextConfig {
     basePath: "/widget",
     assetPrefix: "/widget/",
     trailingSlash: true,
+    images: {
+      unoptimized: true,
+    },
   }
 }

@@ -9,6 +9,7 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
+import Image from "next/image";
 
 import { MessageHTML } from "@/components/im/message-html";
 import { useImageLightbox } from "@/components/image-lightbox";
@@ -290,9 +291,11 @@ const MessageItem = memo(
           )}
         >
           {!isCustomer && agentAvatarSrc ? (
-            <img
+            <Image
               src={agentAvatarSrc}
               alt=""
+              width={32}
+              height={32}
               className="size-8 shrink-0 rounded-full object-cover ring-1 ring-white/80"
             />
           ) : null}
