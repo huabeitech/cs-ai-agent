@@ -1412,6 +1412,16 @@ export type Tag = {
   updatedAt: string
 }
 
+export type TagTree = {
+  id: number
+  parentId: number
+  name: string
+  remark: string
+  sortNo: number
+  status: number
+  children: TagTree[]
+}
+
 export type CreateTagPayload = {
   parentId: number
   name: string
@@ -1430,7 +1440,7 @@ export function fetchTags(query?: Record<string, string | number | undefined>) {
 }
 
 export function fetchTagsAll() {
-  return request<Tag[]>("/api/console/tag/list_all")
+  return request<TagTree[]>("/api/console/tag/list_all")
 }
 
 export function fetchTag(id: number) {

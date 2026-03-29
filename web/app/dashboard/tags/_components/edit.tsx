@@ -20,6 +20,7 @@ import {
   fetchTag,
   fetchTagsAll,
   type Tag,
+  type TagTree,
 } from "@/lib/api/admin";
 
 type TagFormDialogProps = {
@@ -70,40 +71,17 @@ function buildPayload(form: EditForm): CreateTagPayload {
   };
 }
 
-type TagTreeNode = Tag & {
+type TagTreeNode = TagTree & {
   children: TagTreeNode[];
   depth: number;
 };
 
-function buildTagTree(tags: Tag[]): TagTreeNode[] {
-  const tagMap = new Map<number, TagTreeNode>();
-  const roots: TagTreeNode[] = [];
-
-  tags.forEach((tag) => {
-    tagMap.set(tag.id, { ...tag, children: [], depth: 0 });
-  });
-
-  tags.forEach((tag) => {
-    const node = tagMap.get(tag.id)!;
-    if (tag.parentId === 0 || !tagMap.has(tag.parentId)) {
-      roots.push(node);
-    } else {
-      const parent = tagMap.get(tag.parentId);
-      if (parent) {
-        parent.children.push(node);
-      }
-    }
-  });
-
-  function setDepth(nodes: TagTreeNode[], depth: number) {
-    nodes.forEach((node) => {
-      node.depth = depth;
-      setDepth(node.children, depth + 1);
-    });
-  }
-  setDepth(roots, 0);
-
-  return roots;
+function withDepth(nodes: TagTree[], depth = 0): TagTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    depth,
+    children: withDepth(node.children, depth + 1),
+  }));
 }
 
 function flattenTreeForSelect(
@@ -184,7 +162,7 @@ function TagFormDialogBody({
     async function loadParentTags() {
       try {
         const data = await fetchTagsAll();
-        const tree = buildTagTree(data);
+        const tree = withDepth(data);
         const flatList = flattenTreeForSelect(tree, itemId ?? undefined);
         setParentTags(flatList);
       } catch (error) {

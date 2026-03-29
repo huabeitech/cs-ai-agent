@@ -35,12 +35,14 @@ import { toast } from "sonner"
 import {
   createTag,
   deleteTag,
+  fetchTags,
   fetchTagsAll,
   updateTag,
   updateTagSort,
   updateTagStatus,
   type CreateTagPayload,
   type Tag,
+  type TagTree,
 } from "@/lib/api/admin"
 import { EditDialog } from "./_components/edit"
 import { Badge } from "@/components/ui/badge"
@@ -64,40 +66,31 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-type TagNode = Tag & {
+type TagNode = TagTree & {
   children: TagNode[]
   depth: number
 }
 
-function buildTagTree(tags: Tag[]): TagNode[] {
-  const tagMap = new Map<number, TagNode>()
-  const roots: TagNode[] = []
+function withDepth(nodes: TagTree[], depth = 0): TagNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    depth,
+    children: withDepth(node.children, depth + 1),
+  }))
+}
 
-  tags.forEach((tag) => {
-    tagMap.set(tag.id, { ...tag, children: [], depth: 0 })
-  })
-
-  tags.forEach((tag) => {
-    const node = tagMap.get(tag.id)!
-    if (tag.parentId === 0 || !tagMap.has(tag.parentId)) {
-      roots.push(node)
-    } else {
-      const parent = tagMap.get(tag.parentId)
-      if (parent) {
-        parent.children.push(node)
+function collectParentIds(nodes: TagNode[]): Set<number> {
+  const ids = new Set<number>()
+  const walk = (items: TagNode[]) => {
+    items.forEach((item) => {
+      if (item.children.length > 0) {
+        ids.add(item.id)
+        walk(item.children)
       }
-    }
-  })
-
-  function setDepth(nodes: TagNode[], depth: number) {
-    nodes.forEach((node) => {
-      node.depth = depth
-      setDepth(node.children, depth + 1)
     })
   }
-  setDepth(roots, 0)
-
-  return roots
+  walk(nodes)
+  return ids
 }
 
 function filterTree(nodes: TagNode[], keyword: string, status?: number): TagNode[] {
@@ -161,9 +154,9 @@ type SortableRowProps = {
   disabled: boolean
   expanded: boolean
   onToggleExpand: () => void
-  onEdit: (item: Tag) => void
-  onToggleStatus: (item: Tag) => void
-  onDelete: (item: Tag) => void
+  onEdit: (item: TagNode) => void
+  onToggleStatus: (item: TagNode) => void
+  onDelete: (item: TagNode) => void
   actionLoadingId: number | null
 }
 
@@ -262,7 +255,7 @@ function SortableRow({
         </span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
-        {item.createdAt}
+        {"-"}
       </TableCell>
       <TableCell className="text-right">
         <ButtonGroup className="ml-auto">
@@ -306,8 +299,9 @@ export default function DashboardTagsPage() {
   const [saving, setSaving] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<Tag | null>(null)
+  const [editingItem, setEditingItem] = useState<{ id: number; name: string } | null>(null)
   const [allTags, setAllTags] = useState<Tag[]>([])
+  const [tree, setTree] = useState<TagNode[]>([])
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
 
   const sensors = useSensors(
@@ -325,12 +319,14 @@ export default function DashboardTagsPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await fetchTagsAll()
-      setAllTags(data)
-      const allParentIds = new Set(
-        data.filter((t) => t.parentId > 0).map((t) => t.parentId)
-      )
-      setExpandedIds(allParentIds)
+      const [treeData, listData] = await Promise.all([
+        fetchTagsAll(),
+        fetchTags({ page: 1, limit: 10000 }),
+      ])
+      const nextTree = withDepth(treeData)
+      setTree(nextTree)
+      setAllTags(listData.results)
+      setExpandedIds(collectParentIds(nextTree))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载标签失败")
     } finally {
@@ -372,10 +368,7 @@ export default function DashboardTagsPage() {
   }
 
   function expandAll() {
-    const allParentIds = new Set(
-      allTags.filter((t) => t.parentId > 0).map((t) => t.parentId)
-    )
-    setExpandedIds(allParentIds)
+    setExpandedIds(collectParentIds(tree))
   }
 
   function collapseAll() {
@@ -387,7 +380,7 @@ export default function DashboardTagsPage() {
     setDialogOpen(true)
   }
 
-  function openEditDialog(item: Tag) {
+  function openEditDialog(item: TagNode) {
     setEditingItem(item)
     setDialogOpen(true)
   }
@@ -429,7 +422,7 @@ export default function DashboardTagsPage() {
     }
   }
 
-  async function handleToggleStatus(item: Tag) {
+  async function handleToggleStatus(item: TagNode) {
     setActionLoadingId(item.id)
     try {
       const nextStatus = item.status === 0 ? 1 : 0
@@ -443,7 +436,7 @@ export default function DashboardTagsPage() {
     }
   }
 
-  async function handleDelete(item: Tag) {
+  async function handleDelete(item: TagNode) {
     setActionLoadingId(item.id)
     try {
       await deleteTag(item.id)
@@ -456,7 +449,6 @@ export default function DashboardTagsPage() {
     }
   }
 
-  const tree = useMemo(() => buildTagTree(allTags), [allTags])
   const filteredTree = useMemo(
     () =>
       filterTree(

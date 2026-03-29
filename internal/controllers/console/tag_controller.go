@@ -1,11 +1,10 @@
 package console
 
 import (
+	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
-	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/services"
-	"time"
 
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/web"
@@ -25,19 +24,7 @@ func (c *TagController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "parentId"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 	).Asc("sort_no").Desc("id"))
-	results := make([]response.TagResponse, 0, len(list))
-	for _, item := range list {
-		results = append(results, response.TagResponse{
-			ID:        item.ID,
-			ParentID:  item.ParentID,
-			Name:      item.Name,
-			Remark:    item.Remark,
-			SortNo:    item.SortNo,
-			Status:    item.Status,
-			CreatedAt: item.CreatedAt.Format(time.DateTime),
-			UpdatedAt: item.UpdatedAt.Format(time.DateTime),
-		})
-	}
+	results := builders.BuildTagResponses(list)
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
 
@@ -46,19 +33,7 @@ func (c *TagController) GetList_all() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	list := services.TagService.FindAll()
-	results := make([]response.TagResponse, 0, len(list))
-	for _, item := range list {
-		results = append(results, response.TagResponse{
-			ID:        item.ID,
-			ParentID:  item.ParentID,
-			Name:      item.Name,
-			Remark:    item.Remark,
-			SortNo:    item.SortNo,
-			Status:    item.Status,
-			CreatedAt: item.CreatedAt.Format(time.DateTime),
-			UpdatedAt: item.UpdatedAt.Format(time.DateTime),
-		})
-	}
+	results := builders.BuildTagTreeResponses(list)
 	return web.JsonData(results)
 }
 
@@ -71,16 +46,8 @@ func (c *TagController) GetBy(id int64) *web.JsonResult {
 	if item == nil {
 		return web.JsonErrorMsg("标签不存在")
 	}
-	return web.JsonData(&response.TagResponse{
-		ID:        item.ID,
-		ParentID:  item.ParentID,
-		Name:      item.Name,
-		Remark:    item.Remark,
-		SortNo:    item.SortNo,
-		Status:    item.Status,
-		CreatedAt: item.CreatedAt.Format(time.DateTime),
-		UpdatedAt: item.UpdatedAt.Format(time.DateTime),
-	})
+	result := builders.BuildTagResponse(item)
+	return web.JsonData(&result)
 }
 
 func (c *TagController) PostCreate() *web.JsonResult {
@@ -97,16 +64,8 @@ func (c *TagController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(&response.TagResponse{
-		ID:        item.ID,
-		ParentID:  item.ParentID,
-		Name:      item.Name,
-		Remark:    item.Remark,
-		SortNo:    item.SortNo,
-		Status:    item.Status,
-		CreatedAt: item.CreatedAt.Format(time.DateTime),
-		UpdatedAt: item.UpdatedAt.Format(time.DateTime),
-	})
+	result := builders.BuildTagResponse(item)
+	return web.JsonData(&result)
 }
 
 func (c *TagController) PostUpdate() *web.JsonResult {

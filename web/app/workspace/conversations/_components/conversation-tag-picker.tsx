@@ -25,69 +25,27 @@ import {
   type AgentConversation,
   type AgentConversationTag,
 } from "@/lib/api/agent"
-import { type Tag } from "@/lib/api/admin"
+import { type TagTree } from "@/lib/api/admin"
 import { cn } from "@/lib/utils"
 
-type TagNode = Tag & {
-  children: TagNode[]
+type TagNode = TagTree & {
   depth: number
 }
 
-function buildTagTree(tags: Tag[]): TagNode[] {
-  const sorted = [...tags].sort((a, b) => {
-    if (a.sortNo !== b.sortNo) {
-      return a.sortNo - b.sortNo
-    }
-    if (a.parentId !== b.parentId) {
-      return a.parentId - b.parentId
-    }
-    return a.id - b.id
-  })
-
-  const tagMap = new Map<number, TagNode>()
-  sorted.forEach((tag) => {
-    tagMap.set(tag.id, { ...tag, children: [], depth: 0 })
-  })
-
-  const roots: TagNode[] = []
-  sorted.forEach((tag) => {
-    const node = tagMap.get(tag.id)
-    if (!node) {
-      return
-    }
-    if (tag.parentId === 0 || !tagMap.has(tag.parentId)) {
-      roots.push(node)
-      return
-    }
-    const parent = tagMap.get(tag.parentId)
-    if (!parent) {
-      roots.push(node)
-      return
-    }
-    node.depth = parent.depth + 1
-    parent.children.push(node)
-  })
-
-  return roots
-}
-
-function flattenTagTree(nodes: TagNode[]): TagNode[] {
+function flattenTagTree(nodes: TagTree[], depth = 0): TagNode[] {
   const result: TagNode[] = []
-  const walk = (items: TagNode[]) => {
-    items.forEach((item) => {
-      result.push(item)
-      if (item.children.length > 0) {
-        walk(item.children)
-      }
-    })
-  }
-  walk(nodes)
+  nodes.forEach((item) => {
+    result.push({ ...item, depth })
+    if (item.children.length > 0) {
+      result.push(...flattenTagTree(item.children, depth + 1))
+    }
+  })
   return result
 }
 
 type ConversationTagPickerProps = {
   conversation: AgentConversation
-  availableTags: Tag[]
+  availableTags: TagTree[]
   loading?: boolean
   onTagsChange: (tags: AgentConversationTag[]) => void
 }
@@ -100,20 +58,17 @@ export function ConversationTagPicker({
 }: ConversationTagPickerProps) {
   const [pendingTagId, setPendingTagId] = useState<number | null>(null)
 
+  const flattenedTags = useMemo(() => flattenTagTree(availableTags), [availableTags])
   const activeTags = useMemo(
-    () => availableTags.filter((item) => item.status === 0),
-    [availableTags]
-  )
-  const flattenedTags = useMemo(
-    () => flattenTagTree(buildTagTree(activeTags)),
-    [activeTags]
+    () => flattenedTags.filter((item) => item.status === 0),
+    [flattenedTags]
   )
   const selectedTagIds = useMemo(
     () => new Set((conversation.tags ?? []).map((item) => item.id)),
     [conversation.tags]
   )
 
-  async function handleToggle(tag: Tag) {
+  async function handleToggle(tag: TagNode) {
     if (pendingTagId !== null) {
       return
     }

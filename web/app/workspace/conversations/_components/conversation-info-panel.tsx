@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AgentConversation } from "@/lib/api/agent";
-import { type Tag, fetchTagsAll } from "@/lib/api/admin";
+import { type TagTree, fetchTagsAll } from "@/lib/api/admin";
 import { updateCompany, type AdminCompany } from "@/lib/api/company";
 import {
   fetchCustomer,
@@ -237,7 +237,7 @@ function ConversationTagSection({
   const setConversationTags = useAgentConversationsStore(
     (state) => state.setConversationTags,
   );
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [availableTags, setAvailableTags] = useState<TagTree[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
