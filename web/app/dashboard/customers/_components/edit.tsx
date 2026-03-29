@@ -206,7 +206,6 @@ function CustomerEditDialogBody({
       open={open}
       onOpenChange={onOpenChange}
       title={itemId ? "编辑客户" : "新建客户"}
-      size="md"
       allowFullscreen
       footer={
         <>
