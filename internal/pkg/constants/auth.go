@@ -1,10 +1,10 @@
 package constants
 
 const (
-	RoleCodeSuperAdmin = "super_admin"
-	RoleCodeAdmin      = "admin"
-	RoleCodeOperator   = "operator"
-	RoleCodeViewer     = "viewer"
+	RoleCodeSuperAdmin   = "super_admin"    // 超管
+	RoleCodeAdmin        = "admin"          // 管理员
+	RoleCodeCsTeamLeader = "cs_team_leader" // 客服组长
+	RoleCodeCsUser       = "cs_user"        // 客服
 )
 
 const (
@@ -248,10 +248,10 @@ type RoleSpec struct {
 }
 
 var Roles = []RoleSpec{
-	{Name: "超级管理员", Code: RoleCodeSuperAdmin, SortNo: 10},
-	{Name: "管理员", Code: RoleCodeAdmin, SortNo: 20},
-	{Name: "客服主管", Code: RoleCodeOperator, SortNo: 30},
-	{Name: "只读成员", Code: RoleCodeViewer, SortNo: 40},
+	{Name: "超级管理员", Code: RoleCodeSuperAdmin, SortNo: 1},
+	{Name: "管理员", Code: RoleCodeAdmin, SortNo: 2},
+	{Name: "客服组长", Code: RoleCodeCsTeamLeader, SortNo: 3},
+	{Name: "客服", Code: RoleCodeCsUser, SortNo: 4},
 }
 
 var RolePermissions = map[string][]Permission{
@@ -273,7 +273,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionAIConfigView, PermissionAIConfigCreate, PermissionAIConfigUpdate, PermissionAIConfigDelete,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate, PermissionSkillDefinitionDelete,
 	},
-	RoleCodeOperator: {
+	RoleCodeCsTeamLeader: {
 		PermissionUserView,
 		PermissionRoleView,
 		PermissionPermissionView,
@@ -290,7 +290,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionAIConfigView,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate,
 	},
-	RoleCodeViewer: {
+	RoleCodeCsUser: {
 		PermissionUserView,
 		PermissionRoleView,
 		PermissionPermissionView,
