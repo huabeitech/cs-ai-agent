@@ -15,8 +15,8 @@ import { cn, formatDateTime } from "@/lib/utils";
 import { CustomerTabPanel } from "./customer-tab-panel";
 
 const infoTabOptions = [
-  { value: "conversation", label: "会话" },
   { value: "customer", label: "客户" },
+  { value: "conversation", label: "会话" },
 ] as const;
 
 type InfoTabValue = (typeof infoTabOptions)[number]["value"];
@@ -162,7 +162,7 @@ export function CustomerInfoPanel({
   variant = "default",
 }: CustomerInfoPanelProps) {
   const embedded = variant === "embedded";
-  const [activeTab, setActiveTab] = useState<InfoTabValue>("conversation");
+  const [activeTab, setActiveTab] = useState<InfoTabValue>("customer");
 
   return (
     <div
