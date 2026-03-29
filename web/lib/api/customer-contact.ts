@@ -1,11 +1,10 @@
 import { request } from "@/lib/api/client"
-
-export type CustomerContactType = "mobile" | "email" | "other"
+import type { ContactType } from "@/lib/generated/enums"
 
 export type AdminCustomerContact = {
   id: number
   customerId: number
-  contactType: CustomerContactType | string
+  contactType: ContactType | string
   contactValue: string
   isPrimary: boolean
   isVerified: boolean
@@ -19,7 +18,7 @@ export type AdminCustomerContact = {
 
 export type CreateCustomerContactPayload = {
   customerId: number
-  contactType: string
+  contactType: ContactType | string
   contactValue: string
   isPrimary: boolean
   isVerified: boolean
