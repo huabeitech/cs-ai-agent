@@ -19,7 +19,7 @@ import type { AgentConversation } from "@/lib/api/agent";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
 import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
-import { fetchCompany, updateCompany, type AdminCompany } from "@/lib/api/company";
+import { updateCompany, type AdminCompany } from "@/lib/api/company";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -176,7 +176,6 @@ type CustomerLinkedBodyProps = {
 function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProps) {
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState<AdminCustomer | null>(null);
-  const [company, setCompany] = useState<AdminCompany | null>(null);
   const [contacts, setContacts] = useState<AdminCustomerContact[]>([]);
 
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
@@ -188,19 +187,12 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
     try {
       const c = await fetchCustomer(customerId);
       setCustomer(c);
-      if (c.companyId > 0) {
-        const co = await fetchCompany(c.companyId);
-        setCompany(co);
-      } else {
-        setCompany(null);
-      }
       const list = await fetchCustomerContacts(customerId);
       setContacts(Array.isArray(list) ? list : []);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "加载客户信息失败";
       toast.error(msg);
       setCustomer(null);
-      setCompany(null);
       setContacts([]);
     } finally {
       setLoading(false);
@@ -240,6 +232,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
   }
 
   const displayName = customer.name.trim() || "未填写姓名";
+  const company = customer.company ?? null;
   const companyLine =
     customer.companyId > 0 ? company?.name || `公司 ID ${customer.companyId}` : "";
   const genderLabel =
@@ -334,7 +327,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
       </section>
 
       {customer.companyId > 0 ? (
-        <section className="space-y-2">
+        <section className="space-y-2 border-t">
           <SectionHeading
             action={
               company ? (
