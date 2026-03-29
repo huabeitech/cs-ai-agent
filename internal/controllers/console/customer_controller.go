@@ -5,6 +5,7 @@ import (
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
@@ -34,7 +35,7 @@ func (c *CustomerController) GetBy(id int64) *web.JsonResult {
 		return web.JsonError(err)
 	}
 	item := services.CustomerService.Get(id)
-	if item == nil {
+	if item == nil || item.Status != enums.StatusOk {
 		return web.JsonErrorMsg("客户不存在")
 	}
 	ret := builders.BuildCustomer(item)

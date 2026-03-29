@@ -267,8 +267,16 @@ export default function DashboardCompaniesPage() {
                       <TableCell className="text-muted-foreground">{item.code || "-"}</TableCell>
                       <TableCell>{item.customerCount}</TableCell>
                       <TableCell>
-                        <Badge variant={item.status === 0 ? "default" : "secondary"}>
-                          {item.status === 0 ? "启用" : "禁用"}
+                        <Badge
+                          variant={
+                            item.status === Status.Ok
+                              ? "default"
+                              : item.status === Status.Deleted
+                                ? "outline"
+                                : "secondary"
+                          }
+                        >
+                          {StatusLabels[item.status as Status] ?? "未知"}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[320px]">
@@ -289,14 +297,18 @@ export default function DashboardCompaniesPage() {
                               <MoreHorizontalIcon />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40 min-w-40">
-                              <DropdownMenuItem onClick={() => void handleToggleStatus(item)}>
+                              <DropdownMenuItem
+                                disabled={item.status === Status.Deleted}
+                                onClick={() => void handleToggleStatus(item)}
+                              >
                                 {item.status === 0 ? "禁用" : "启用"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
+                                variant="destructive"
+                                disabled={item.status === Status.Deleted}
                                 onClick={() => void handleDelete(item)}
                               >
-                                <Trash2Icon className="mr-2 size-4" />
+                                <Trash2Icon />
                                 删除
                               </DropdownMenuItem>
                             </DropdownMenuContent>
