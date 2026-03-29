@@ -31,13 +31,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AgentConversation } from "@/lib/api/agent";
 import { updateCompany, type AdminCompany } from "@/lib/api/company";
-import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
-import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
+import {
+  fetchCustomer,
+  saveCustomerProfile,
+  type AdminCustomer,
+} from "@/lib/api/customer";
+import {
+  fetchCustomerContacts,
+  type AdminCustomerContact,
+} from "@/lib/api/customer-contact";
 import {
   ContactType,
   ContactTypeLabels,
   Gender,
-  GenderLabels
+  GenderLabels,
 } from "@/lib/generated/enums";
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -58,7 +65,6 @@ function ContactTypeIcon({ contactType }: { contactType: ContactType | string })
   }
 }
 
-/** 侧边栏窄屏：左标签右内容，便于扫读 */
 function DetailRow({
   label,
   value,
@@ -169,11 +175,54 @@ function MissingCustomerEmpty({ conversation }: { conversation: AgentConversatio
   );
 }
 
-type CustomerTabPanelProps = {
-  conversation: AgentConversation;
+type ConversationInfoPanelProps = {
+  conversation: AgentConversation | null;
+  className?: string;
+  variant?: "default" | "embedded";
 };
 
-export function CustomerTabPanel({ conversation }: CustomerTabPanelProps) {
+export function ConversationInfoPanel({
+  conversation,
+  className,
+  variant = "default",
+}: ConversationInfoPanelProps) {
+  const embedded = variant === "embedded";
+
+  return (
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden",
+        embedded
+          ? "bg-background text-foreground"
+          : "border-l border-border bg-card text-card-foreground",
+        className,
+      )}
+    >
+      <div className="flex h-12.5 shrink-0 items-center border-b border-border px-3">
+        <h2 className="text-sm font-medium text-foreground">会话信息</h2>
+      </div>
+
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto px-3 pb-4",
+          embedded && "pb-[max(1rem,env(safe-area-inset-bottom))] pt-1",
+        )}
+      >
+        {!conversation ? (
+          <p className="pt-4 text-sm text-muted-foreground">
+            {embedded
+              ? "请选择会话以查看会话信息"
+              : "请选择左侧会话以查看会话信息"}
+          </p>
+        ) : (
+          <CustomerBody conversation={conversation} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomerBody({ conversation }: { conversation: AgentConversation }) {
   const customerId = conversation.customerId ?? 0;
 
   if (customerId <= 0) {
@@ -222,7 +271,6 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
     void load();
   }, [load]);
 
-  /** 客户主档存在但姓名等均为空时的弱空态 */
   const isProfileEmpty =
     customer &&
     !customer.name.trim() &&
@@ -327,12 +375,12 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
               }
               return (
                 <li key={row.id} className="text-sm">
-                  <div className="flex gap-2 items-center">
+                  <div className="flex items-center gap-2">
                     <ContactTypeIcon contactType={row.contactType} />
                     <div className="min-w-0 flex-1">
                       <p className="break-all font-medium leading-snug text-foreground">
                         {row.contactValue}
-                        <span className="ml-2 font-normal text-xs text-muted-foreground">
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
                           {contactTypeLabel(row.contactType)}
                         </span>
                         {tags.length > 0 ? (
@@ -342,7 +390,7 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
                         ) : null}
                       </p>
                       {row.remark ? (
-                        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground break-all">
+                        <p className="mt-1 line-clamp-3 break-all text-xs leading-relaxed text-muted-foreground">
                           {row.remark}
                         </p>
                       ) : null}
@@ -520,7 +568,12 @@ function CompanyEditDialog({
           <Field orientation="vertical">
             <FieldLabel htmlFor="co-remark">备注</FieldLabel>
             <FieldContent>
-              <Textarea id="co-remark" value={remark} onChange={(e) => setRemark(e.target.value)} rows={3} />
+              <Textarea
+                id="co-remark"
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
+                rows={3}
+              />
             </FieldContent>
           </Field>
         </div>

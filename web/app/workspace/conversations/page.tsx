@@ -39,7 +39,7 @@ import {
   useAgentConversationsStore,
 } from "@/lib/stores/agent-conversations";
 import { ChatPanel } from "./_components/chat-panel";
-import { CustomerInfoPanel } from "./_components/customer-info-panel";
+import { ConversationInfoPanel } from "./_components/conversation-info-panel";
 import { ConversationList } from "./_components/conversation-list";
 
 export default function ConversationsPage() {
@@ -325,7 +325,7 @@ export default function ConversationsPage() {
             }}
             className="min-h-0"
           >
-            <CustomerInfoPanel conversation={conversation} className="h-full" />
+            <ConversationInfoPanel conversation={conversation} className="h-full" />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -359,7 +359,7 @@ export default function ConversationsPage() {
           className="flex w-full flex-col gap-0 border-l p-0 sm:max-w-md"
           showCloseButton
         >
-          <CustomerInfoPanel
+          <ConversationInfoPanel
             conversation={conversation}
             variant="embedded"
             className="min-h-0 flex-1"
