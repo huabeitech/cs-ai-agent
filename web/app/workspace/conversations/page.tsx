@@ -212,7 +212,7 @@ export default function ConversationsPage() {
             size="icon"
             className="lg:hidden"
             disabled={!conversation}
-            aria-label="客户信息"
+            aria-label="会话信息"
             onClick={() => setMobileCustomerSheetOpen(true)}
           >
             <CircleUserRoundIcon className="size-4" />
@@ -247,7 +247,7 @@ export default function ConversationsPage() {
             size="icon"
             className="hidden lg:flex"
             onClick={handleInfoPanelToggle}
-            aria-label={infoPanelCollapsed ? "展开客户信息" : "收起客户信息"}
+            aria-label={infoPanelCollapsed ? "展开会话信息" : "收起会话信息"}
           >
             {infoPanelCollapsed ? (
               <ChevronLeft className="size-4" />
