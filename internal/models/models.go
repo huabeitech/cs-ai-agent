@@ -45,6 +45,7 @@ var Models = []any{
 	&KnowledgeFeedback{},
 	&SkillDefinition{},
 	&SkillRunLog{},
+	&SystemConfig{},
 }
 
 type Migration struct {
@@ -56,6 +57,18 @@ type Migration struct {
 	RetryCount int       `gorm:"type:int;not null;default:0"`
 	CreatedAt  time.Time `gorm:"type:datetime"`
 	UpdatedAt  time.Time `gorm:"type:datetime"`
+}
+
+// SystemConfig 运营侧系统配置项；具体有哪些 config_key 由业务代码约定，表内一行一项。
+type SystemConfig struct {
+	ID          int64        `gorm:"primaryKey;autoIncrement"`
+	ConfigKey   string       `gorm:"column:config_key;type:varchar(128);not null;uniqueIndex"`
+	ConfigValue string       `gorm:"column:config_value;type:text;not null"`
+	GroupCode   string       `gorm:"column:group_code;type:varchar(64);not null;default:'';index"`
+	Title       string       `gorm:"type:varchar(200);not null;default:''"`
+	Description string       `gorm:"type:text"`
+	Status      enums.Status `gorm:"type:int;not null;default:0;index"`
+	AuditFields
 }
 
 // AuditFields 定义涉及用户操作数据的统一审计字段。

@@ -9,6 +9,7 @@ import (
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -22,17 +23,24 @@ func (c *CustomerController) AnyList() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
-		params.QueryFilter{ParamName: "status"},
-		params.QueryFilter{ParamName: "gender"},
-		params.QueryFilter{ParamName: "companyId"},
-		params.QueryFilter{ParamName: "name", Op: params.Like},
-		params.QueryFilter{ParamName: "primaryMobile", Op: params.Like},
-		params.QueryFilter{ParamName: "primaryEmail", Op: params.Like},
-	).Desc("id")
+		params.QueryFilter{ParamName: "status", ColumnName: "c.status"},
+		params.QueryFilter{ParamName: "gender", ColumnName: "c.gender"},
+		params.QueryFilter{ParamName: "companyId", ColumnName: "c.company_id"},
+		params.QueryFilter{ParamName: "name", Op: params.Like, ColumnName: "c.name"},
+	).Desc("c.id")
 	// 默认不返回已删除
-	cnd.Where("status <> ?", enums.StatusDeleted)
+	cnd.Where("c.status <> ?", enums.StatusDeleted)
 
-	list, paging := services.CustomerService.FindPageByCnd(cnd)
+	if mobile, _ := params.Get(c.Ctx, "primaryMobile"); strs.IsNotBlank(mobile) {
+		pat := "%" + mobile + "%"
+		cnd.Where("(c.primary_mobile LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	}
+	if email, _ := params.Get(c.Ctx, "primaryEmail"); strs.IsNotBlank(email) {
+		pat := "%" + email + "%"
+		cnd.Where("(c.primary_email LIKE ? OR cc.contact_value LIKE ?)", pat, pat)
+	}
+
+	list, paging := services.CustomerService.FindPageByCndForCustomerList(cnd)
 	return web.JsonData(&web.PageResult{Results: builders.BuildCustomerList(list), Page: paging})
 }
 
