@@ -45,11 +45,13 @@ import {
 import {
   createAdminWebSocketUrl,
   dispatchConversation,
+  fetchAgentProfilesAll,
   fetchConversationDetail,
   fetchConversationMessages,
   fetchConversations,
   fetchTagsAll,
   markConversationRead,
+  type AdminAgentProfile,
   type AdminConversation,
   type AdminConversationDetail,
   type AdminMessage,
@@ -124,13 +126,18 @@ export default function DashboardConversationsPage() {
   const [keywordInput, setKeywordInput] = useState("")
   const [statusFilterInput, setStatusFilterInput] = useState("all")
   const [tagFilterInput, setTagFilterInput] = useState("0")
+  const [assigneeFilterInput, setAssigneeFilterInput] = useState("0")
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [tagFilter, setTagFilter] = useState("0")
+  const [assigneeFilter, setAssigneeFilter] = useState("0")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const [tagOptions, setTagOptions] = useState<ComboboxOption[]>([
     { value: "0", label: "全部标签" },
+  ])
+  const [assigneeOptions, setAssigneeOptions] = useState<ComboboxOption[]>([
+    { value: "0", label: "全部指派人" },
   ])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -167,6 +174,7 @@ export default function DashboardConversationsPage() {
         keyword: keyword.trim() || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
         tagId: tagFilter === "0" ? undefined : tagFilter,
+        currentAssigneeId: assigneeFilter === "0" ? undefined : assigneeFilter,
         page,
         limit,
       })
@@ -176,28 +184,38 @@ export default function DashboardConversationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [keyword, limit, page, statusFilter, tagFilter])
+  }, [keyword, limit, page, statusFilter, tagFilter, assigneeFilter])
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadTagOptions() {
+    async function loadFilterOptions() {
       try {
-        const data = await fetchTagsAll()
+        const [tagData, assigneeData] = await Promise.all([
+          fetchTagsAll(),
+          fetchAgentProfilesAll(),
+        ])
         if (!cancelled) {
           setTagOptions([
             { value: "0", label: "全部标签" },
-            ...buildTagOptions(data),
+            ...buildTagOptions(tagData),
+          ])
+          setAssigneeOptions([
+            { value: "0", label: "全部指派人" },
+            ...assigneeData.map((item: AdminAgentProfile) => ({
+              value: String(item.userId),
+              label: item.displayName || item.nickname || item.username || `#${item.userId}`,
+            })),
           ])
         }
       } catch (error) {
         if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "加载标签失败")
+          toast.error(error instanceof Error ? error.message : "加载筛选项失败")
         }
       }
     }
 
-    void loadTagOptions()
+    void loadFilterOptions()
 
     return () => {
       cancelled = true
@@ -383,6 +401,7 @@ export default function DashboardConversationsPage() {
     setKeyword(keywordInput)
     setStatusFilter(statusFilterInput)
     setTagFilter(tagFilterInput)
+    setAssigneeFilter(assigneeFilterInput)
     setPage(1)
   }
 
@@ -629,6 +648,16 @@ export default function DashboardConversationsPage() {
               searchPlaceholder="搜索标签路径"
               emptyText="没有匹配标签"
               onChange={setTagFilterInput}
+            />
+          </div>
+          <div className="w-full xl:w-56">
+            <OptionCombobox
+              value={assigneeFilterInput}
+              options={assigneeOptions}
+              placeholder="选择指派人"
+              searchPlaceholder="搜索指派人"
+              emptyText="没有匹配指派人"
+              onChange={setAssigneeFilterInput}
             />
           </div>
           <Button variant="outline" onClick={applyFilters} disabled={loading}>
