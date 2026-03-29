@@ -26,6 +26,7 @@ type CompanyEditDialogProps = {
   open: boolean
   saving: boolean
   itemId: number | null
+  initialValues?: Partial<CreateAdminCompanyPayload>
   onOpenChange: (open: boolean) => void
   onSubmit: (payload: CreateAdminCompanyPayload) => Promise<void>
 }
@@ -69,10 +70,19 @@ function buildPayload(form: EditForm): CreateAdminCompanyPayload {
   }
 }
 
+function buildInitialForm(initialValues?: Partial<CreateAdminCompanyPayload>): EditForm {
+  return {
+    name: initialValues?.name?.trim() ?? "",
+    code: initialValues?.code?.trim() ?? "",
+    remark: initialValues?.remark?.trim() ?? "",
+  }
+}
+
 export function EditDialog({
   open,
   saving,
   itemId,
+  initialValues,
   onOpenChange,
   onSubmit,
 }: CompanyEditDialogProps) {
@@ -85,6 +95,7 @@ export function EditDialog({
       open={open}
       saving={saving}
       itemId={itemId}
+      initialValues={initialValues}
       onOpenChange={onOpenChange}
       onSubmit={onSubmit}
     />
@@ -97,6 +108,7 @@ function CompanyEditDialogBody({
   open,
   saving,
   itemId,
+  initialValues,
   onOpenChange,
   onSubmit,
 }: CompanyEditDialogBodyProps) {
@@ -120,7 +132,7 @@ function CompanyEditDialogBody({
   useEffect(() => {
     async function loadDetail() {
       if (!itemId) {
-        reset(emptyForm)
+        reset(buildInitialForm(initialValues))
         return
       }
       setLoading(true)
@@ -132,7 +144,7 @@ function CompanyEditDialogBody({
       }
     }
     void loadDetail()
-  }, [itemId, reset])
+  }, [initialValues, itemId, reset])
 
   async function onFormSubmit(values: EditForm) {
     await onSubmit(buildPayload(values))
@@ -209,4 +221,3 @@ function CompanyEditDialogBody({
     </ProjectDialog>
   )
 }
-

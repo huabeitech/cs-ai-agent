@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Controller,
@@ -12,7 +12,7 @@ import {
 import { PlusIcon, Trash2Icon } from "lucide-react"
 import { z } from "zod/v4"
 
-import { OptionCombobox, type ComboboxOption } from "@/components/option-combobox"
+import { CompanyPicker } from "@/components/company-picker"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact"
-import { fetchCompanies } from "@/lib/api/company"
 import {
   fetchCustomer,
   type AdminCustomer,
@@ -166,14 +165,12 @@ function getContactTypeLabel(value: string) {
 
 type CustomerFormFieldsProps = {
   form: UseFormReturn<CustomerFormValues>
-  companyOptions: ComboboxOption[]
   fieldIdPrefix?: string
   remarkRows?: number
 }
 
 function CustomerFormFields({
   form,
-  companyOptions,
   fieldIdPrefix = "customer",
   remarkRows = 4,
 }: CustomerFormFieldsProps) {
@@ -186,11 +183,6 @@ function CustomerFormFields({
     getValues,
   } = form
   const { fields, append, remove } = useFieldArray({ control, name: "contacts" })
-
-  const companyId = watch("companyId")
-  const selectedCompanyLabel = useMemo(() => {
-    return companyOptions.find((item) => item.value === companyId)?.label ?? "请选择公司"
-  }, [companyOptions, companyId])
 
   const id = (suffix: string) => `${fieldIdPrefix}-${suffix}`
 
@@ -269,15 +261,10 @@ function CustomerFormFields({
                   control={control}
                   name="companyId"
                   render={({ field }) => (
-                    <div className="w-full">
-                      <OptionCombobox
-                        value={field.value}
-                        options={companyOptions}
-                        placeholder={selectedCompanyLabel}
-                        searchPlaceholder="搜索公司名称"
-                        onChange={field.onChange}
-                      />
-                    </div>
+                    <CompanyPicker
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
                 <FieldError errors={[errors.companyId]} />
@@ -412,17 +399,6 @@ function CustomerFormFields({
   )
 }
 
-/** 客户表单内公司列表请求参数（全项目统一） */
-export const CUSTOMER_FORM_COMPANY_LIST_QUERY = {
-  status: 0,
-  page: 1,
-  limit: 200,
-} as const
-
-const defaultCompanyOptions: ComboboxOption[] = [
-  { value: "0", label: "无所属公司" },
-]
-
 export type CustomerFormProps = {
   formId: string
   onSave: (payload: CustomerFormSavePayload) => Promise<void> | void
@@ -442,7 +418,6 @@ export function CustomerForm({
   className,
   onLoadingDetailChange,
 }: CustomerFormProps) {
-  const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>(defaultCompanyOptions)
   const [loadingDetail, setLoadingDetail] = useState(() => Boolean(itemId))
 
   const form = useForm<CustomerFormValues>({
@@ -452,32 +427,6 @@ export function CustomerForm({
   const { handleSubmit, reset } = form
   const onLoadingDetailChangeRef = useRef(onLoadingDetailChange)
   onLoadingDetailChangeRef.current = onLoadingDetailChange
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      try {
-        const data = await fetchCompanies({ ...CUSTOMER_FORM_COMPANY_LIST_QUERY })
-        if (cancelled) {
-          return
-        }
-        setCompanyOptions([
-          ...defaultCompanyOptions,
-          ...data.results.map((item) => ({
-            value: String(item.id),
-            label: item.name || `公司 #${item.id}`,
-          })),
-        ])
-      } catch {
-        if (!cancelled) {
-          setCompanyOptions(defaultCompanyOptions)
-        }
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   useEffect(() => {
     async function loadDetail() {
@@ -542,7 +491,6 @@ export function CustomerForm({
     <form id={formId} onSubmit={handleSubmit(onFormSubmit)} className={className}>
       <CustomerFormFields
         form={form}
-        companyOptions={companyOptions}
         fieldIdPrefix={fieldIdPrefix}
         remarkRows={remarkRows}
       />
