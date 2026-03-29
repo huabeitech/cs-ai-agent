@@ -1,26 +1,18 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import {
-  CustomerFormFields,
-  customerFormResolver,
-  customerFormToPayload,
-  emptyCustomerForm,
-  type CustomerFormValues,
-} from "@/components/customer-form-fields"
+import { CustomerForm } from "@/components/customer-form"
 import { ProjectDialog } from "@/components/project-dialog"
-import type { ComboboxOption } from "@/components/option-combobox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { linkConversationToCustomer } from "@/lib/api/agent"
-import { fetchCompanies, type AdminCompany } from "@/lib/api/company"
 import {
   createCustomer,
   fetchCustomers,
   type AdminCustomer,
+  type CreateAdminCustomerPayload,
 } from "@/lib/api/customer"
 
 export type CustomerLinkOrCreateDialogProps = {
@@ -62,20 +54,6 @@ export function CustomerLinkOrCreateDialog({
   const [linkingId, setLinkingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const [companyOptions, setCompanyOptions] = useState<ComboboxOption[]>([
-    { value: "0", label: "无所属公司" },
-  ])
-
-  const form = useForm<CustomerFormValues>({
-    resolver: customerFormResolver,
-    defaultValues: emptyCustomerForm,
-  })
-  const { handleSubmit, reset } = form
-
-  const resetCreateForm = useCallback(() => {
-    reset(emptyCustomerForm)
-  }, [reset])
-
   useEffect(() => {
     if (!open) {
       return
@@ -84,31 +62,7 @@ export function CustomerLinkOrCreateDialog({
     setResults([])
     setShowCreate(false)
     setLinkingId(null)
-    resetCreateForm()
-    let cancelled = false
-    void (async () => {
-      try {
-        const data = await fetchCompanies({ status: 0, page: 1, limit: 200 })
-        if (cancelled) {
-          return
-        }
-        setCompanyOptions([
-          { value: "0", label: "无所属公司" },
-          ...data.results.map((c: AdminCompany) => ({
-            value: String(c.id),
-            label: c.name || `公司 #${c.id}`,
-          })),
-        ])
-      } catch {
-        if (!cancelled) {
-          setCompanyOptions([{ value: "0", label: "无所属公司" }])
-        }
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [open, resetCreateForm])
+  }, [open])
 
   const runSearch = async () => {
     const q = searchText.trim()
@@ -159,8 +113,7 @@ export function CustomerLinkOrCreateDialog({
     }
   }
 
-  const onCreateSubmit = async (values: CustomerFormValues) => {
-    const payload = customerFormToPayload(values)
+  const onCreateSubmit = async (payload: CreateAdminCustomerPayload) => {
     setSaving(true)
     try {
       const created = await createCustomer(payload)
@@ -197,17 +150,14 @@ export function CustomerLinkOrCreateDialog({
       title="关联或创建客户"
       description={description}
       allowFullscreen
+      defaultFullscreen
       footer={
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             关闭
           </Button>
           {showCreate ? (
-            <Button
-              type="submit"
-              form={createFormId}
-              disabled={saving}
-            >
+            <Button type="submit" form={createFormId} disabled={saving}>
               {saving ? "提交中…" : conversationId ? "创建并关联会话" : "创建客户"}
             </Button>
           ) : null}
@@ -273,33 +223,20 @@ export function CustomerLinkOrCreateDialog({
           <button
             type="button"
             className="text-sm text-primary underline-offset-4 hover:underline"
-            onClick={() => {
-              setShowCreate((v) => {
-                const next = !v
-                if (next) {
-                  reset(emptyCustomerForm)
-                }
-                return next
-              })
-            }}
+            onClick={() => setShowCreate((v) => !v)}
           >
             {showCreate ? "收起新建表单" : "未找到？填写新客户"}
           </button>
         </div>
 
         {showCreate ? (
-          <form
-            id={createFormId}
-            onSubmit={handleSubmit(onCreateSubmit)}
+          <CustomerForm
+            formId={createFormId}
+            onSubmit={onCreateSubmit}
+            fieldIdPrefix="link-or-create"
+            remarkRows={2}
             className="flex flex-col gap-3 rounded-lg border border-border bg-muted/10 p-3"
-          >
-            <CustomerFormFields
-              form={form}
-              companyOptions={companyOptions}
-              fieldIdPrefix="link-or-create"
-              remarkRows={2}
-            />
-          </form>
+          />
         ) : null}
       </div>
     </ProjectDialog>
