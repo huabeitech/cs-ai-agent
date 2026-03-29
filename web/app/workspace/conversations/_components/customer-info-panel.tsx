@@ -41,7 +41,7 @@ function ConversationDetails({
         <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           基本信息
         </h3>
-        <InfoRow label="主题" value={conversation.subject} />
+        {/* <InfoRow label="主题" value={conversation.subject} /> */}
         <InfoRow label="外部来源" value={conversation.externalSource} />
         <InfoRow label="外部用户标识" value={conversation.externalId} />
       </section>
