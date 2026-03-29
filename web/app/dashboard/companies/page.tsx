@@ -229,10 +229,6 @@ export default function DashboardCompaniesPage() {
             <SearchIcon />
             查询
           </Button>
-          <Button variant="outline" onClick={() => void loadData()} disabled={loading}>
-            <RefreshCwIcon className={loading ? "animate-spin" : ""} />
-            刷新列表
-          </Button>
           <Button onClick={openCreateDialog}>
             <PlusIcon />
             新建
