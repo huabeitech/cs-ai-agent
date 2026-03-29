@@ -124,13 +124,6 @@ function UnlinkedCustomerEmpty({ conversation }: { conversation: AgentConversati
           关联或创建客户
         </Button>
       </div>
-      <div className="space-y-2">
-        <SectionHeading>访客标识</SectionHeading>
-        <div className="space-y-2">
-          <DetailRow label="外部来源" value={conversation.externalSource} />
-          <DetailRow label="外部标识" value={conversation.externalId} />
-        </div>
-      </div>
       <CustomerLinkOrCreateDialog
         open={linkDialogOpen}
         onOpenChange={setLinkDialogOpen}
@@ -360,42 +353,36 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
       </section>
 
       {customer.companyId > 0 ? (
-        <section className="space-y-2 border-t">
-          <SectionHeading
-            action={
-              company ? (
+        <section className="border-t pt-2">
+          {company ? (
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-1 items-start gap-2 text-sm">
+                  <Building2Icon
+                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="line-clamp-2 font-medium leading-snug text-foreground">
+                      {company.name}
+                    </p>
+                    {company.code ? (
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {company.code}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
+                  className="h-7 shrink-0 gap-1 px-2 text-xs"
                   onClick={() => setCompanyEditOpen(true)}
                 >
                   <PencilIcon className="size-3.5" />
                   编辑
                 </Button>
-              ) : null
-            }
-          >
-            公司
-          </SectionHeading>
-          {company ? (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm">
-                <Building2Icon
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <p className="font-medium leading-snug text-foreground">
-                    {company.name}
-                  </p>
-                  {company.code ? (
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {company.code}
-                    </p>
-                  ) : null}
-                </div>
               </div>
               <div className="space-y-2 pt-1">
                 <DetailRow
