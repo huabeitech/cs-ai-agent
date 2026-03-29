@@ -1,11 +1,20 @@
 package services
 
 import (
+	"strings"
+	"time"
+
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
+	"gorm.io/gorm"
 )
 
 var CustomerContactService = newCustomerContactService()
@@ -65,3 +74,190 @@ func (s *customerContactService) Delete(id int64) {
 	repositories.CustomerContactRepository.Delete(sqls.DB(), id)
 }
 
+// FindActiveByCustomerID 返回某客户下未删除的联系方式列表。
+func (s *customerContactService) FindActiveByCustomerID(customerID int64) []models.CustomerContact {
+	if customerID <= 0 {
+		return nil
+	}
+	cnd := sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("status <> ?", enums.StatusDeleted).
+		Asc("id")
+	return repositories.CustomerContactRepository.Find(sqls.DB(), cnd)
+}
+
+func normalizeContactSource(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return "manual"
+	}
+	return v
+}
+
+func (s *customerContactService) hasDuplicateContact(
+	db *gorm.DB,
+	customerID int64,
+	contactType enums.ContactType,
+	contactValue string,
+	excludeID int64,
+) bool {
+	cnd := sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("contact_type = ?", contactType).
+		Where("contact_value = ?", contactValue).
+		Where("status <> ?", enums.StatusDeleted)
+	if excludeID > 0 {
+		cnd = cnd.Where("id <> ?", excludeID)
+	}
+	return repositories.CustomerContactRepository.FindOne(db, cnd) != nil
+}
+
+func (s *customerContactService) clearPrimaryExcept(db *gorm.DB, customerID int64, exceptID int64) error {
+	cnd := sqls.NewCnd().
+		Where("customer_id = ?", customerID).
+		Where("is_primary = ?", true)
+	if exceptID > 0 {
+		cnd = cnd.Where("id <> ?", exceptID)
+	}
+	list := repositories.CustomerContactRepository.Find(db, cnd)
+	for i := range list {
+		if err := repositories.CustomerContactRepository.UpdateColumn(db, list[i].ID, "is_primary", false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *customerContactService) validateContactStatus(status int) error {
+	if !enums.IsValidStatus(status) {
+		return errorsx.InvalidParam("状态值不合法")
+	}
+	if status == int(enums.StatusDeleted) {
+		return errorsx.InvalidParam("状态值不合法")
+	}
+	return nil
+}
+
+// CreateCustomerContact 创建联系方式；主联系方式在同一客户下唯一。
+func (s *customerContactService) CreateCustomerContact(req request.CreateCustomerContactRequest, operator *dto.AuthPrincipal) (*models.CustomerContact, error) {
+	if operator == nil {
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if req.CustomerID <= 0 {
+		return nil, errorsx.InvalidParam("客户不存在")
+	}
+	if CustomerService.Get(req.CustomerID) == nil {
+		return nil, errorsx.InvalidParam("客户不存在")
+	}
+	ct := strings.TrimSpace(req.ContactType)
+	if !enums.IsValidContactType(ct) {
+		return nil, errorsx.InvalidParam("联系方式类型不合法")
+	}
+	val := strings.TrimSpace(req.ContactValue)
+	if val == "" {
+		return nil, errorsx.InvalidParam("联系方式不能为空")
+	}
+	if err := s.validateContactStatus(req.Status); err != nil {
+		return nil, err
+	}
+	status := enums.Status(req.Status)
+	if status == 0 {
+		status = enums.StatusOk
+	}
+
+	var created *models.CustomerContact
+	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if s.hasDuplicateContact(ctx.Tx, req.CustomerID, enums.ContactType(ct), val, 0) {
+			return errorsx.InvalidParam("该联系方式已存在")
+		}
+		if req.IsPrimary {
+			if err := s.clearPrimaryExcept(ctx.Tx, req.CustomerID, 0); err != nil {
+				return err
+			}
+		}
+		now := time.Now()
+		var verifiedAt *time.Time
+		if req.IsVerified {
+			verifiedAt = &now
+		}
+		item := &models.CustomerContact{
+			CustomerID:   req.CustomerID,
+			ContactType:  enums.ContactType(ct),
+			ContactValue: val,
+			IsPrimary:    req.IsPrimary,
+			IsVerified:   req.IsVerified,
+			VerifiedAt:   verifiedAt,
+			Source:       normalizeContactSource(req.Source),
+			Status:       status,
+			Remark:       strings.TrimSpace(req.Remark),
+			AuditFields:  utils.BuildAuditFields(operator),
+		}
+		if err := repositories.CustomerContactRepository.Create(ctx.Tx, item); err != nil {
+			return err
+		}
+		created = item
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
+}
+
+// UpdateCustomerContact 更新联系方式。
+func (s *customerContactService) UpdateCustomerContact(req request.UpdateCustomerContactRequest, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if req.ID <= 0 {
+		return errorsx.InvalidParam("联系方式不存在")
+	}
+	current := s.Get(req.ID)
+	if current == nil {
+		return errorsx.InvalidParam("联系方式不存在")
+	}
+	ct := strings.TrimSpace(req.ContactType)
+	if !enums.IsValidContactType(ct) {
+		return errorsx.InvalidParam("联系方式类型不合法")
+	}
+	val := strings.TrimSpace(req.ContactValue)
+	if val == "" {
+		return errorsx.InvalidParam("联系方式不能为空")
+	}
+	if err := s.validateContactStatus(req.Status); err != nil {
+		return err
+	}
+
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if s.hasDuplicateContact(ctx.Tx, current.CustomerID, enums.ContactType(ct), val, req.ID) {
+			return errorsx.InvalidParam("该联系方式已存在")
+		}
+		if req.IsPrimary {
+			if err := s.clearPrimaryExcept(ctx.Tx, current.CustomerID, req.ID); err != nil {
+				return err
+			}
+		}
+		now := time.Now()
+		verifiedAt := current.VerifiedAt
+		if req.IsVerified {
+			if verifiedAt == nil {
+				verifiedAt = &now
+			}
+		} else {
+			verifiedAt = nil
+		}
+		return repositories.CustomerContactRepository.Updates(ctx.Tx, req.ID, map[string]any{
+			"contact_type":     enums.ContactType(ct),
+			"contact_value":    val,
+			"is_primary":       req.IsPrimary,
+			"is_verified":      req.IsVerified,
+			"verified_at":      verifiedAt,
+			"source":           normalizeContactSource(req.Source),
+			"status":           req.Status,
+			"remark":           strings.TrimSpace(req.Remark),
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+			"updated_at":       now,
+		})
+	})
+}

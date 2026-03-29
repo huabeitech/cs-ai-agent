@@ -29,3 +29,13 @@ var contactTypeLabelMap = map[ContactType]string{
 func GetContactTypeLabel(contactType ContactType) string {
 	return contactTypeLabelMap[contactType]
 }
+
+// IsValidContactType 判断字符串是否为合法联系方式类型。
+func IsValidContactType(v string) bool {
+	switch ContactType(v) {
+	case ContactTypeMobile, ContactTypeEmail, ContactTypeWeChat, ContactTypeOther:
+		return true
+	default:
+		return false
+	}
+}

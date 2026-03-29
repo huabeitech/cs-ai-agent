@@ -6,6 +6,8 @@ import type { AgentConversation } from "@/lib/api/agent";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatDateTime } from "@/lib/utils";
 
+import { CustomerTabPanel } from "./customer-tab-panel";
+
 const conversationStatusLabels: Record<number, string> = {
   1: "待接入",
   2: "处理中",
@@ -35,6 +37,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function ConversationDetails({ conversation }: { conversation: AgentConversation }) {
+  const linkedCustomer =
+    conversation.customerId != null && conversation.customerId > 0
+      ? String(conversation.customerId)
+      : "未关联";
+
   return (
     <div className="divide-y divide-border">
       <section>
@@ -44,6 +51,7 @@ function ConversationDetails({ conversation }: { conversation: AgentConversation
         <InfoRow label="主题" value={conversation.subject} />
         <InfoRow label="外部来源" value={conversation.externalSource} />
         <InfoRow label="外部用户标识" value={conversation.externalId} />
+        <InfoRow label="关联客户 ID" value={linkedCustomer} />
       </section>
       <section>
         <h3 className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -192,8 +200,14 @@ export function CustomerInfoPanel({
           ) : (
             <ConversationDetails conversation={conversation} />
           )
+        ) : !conversation ? (
+          <p className="pt-4 text-sm text-muted-foreground">
+            {embedded
+              ? "请选择会话以查看客户信息"
+              : "请选择左侧会话以查看客户信息"}
+          </p>
         ) : (
-          <p className="pt-4 text-sm text-muted-foreground">客户信息即将上线，敬请期待。</p>
+          <CustomerTabPanel conversation={conversation} />
         )}
       </div>
     </div>
