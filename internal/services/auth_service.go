@@ -225,9 +225,6 @@ func (s *authService) HasPermission(ctx iris.Context, permissionCode string) boo
 	if principal == nil {
 		return false
 	}
-	if slices.Contains(principal.Roles, constants.RoleCodeSuperAdmin) {
-		return true
-	}
 	return slices.Contains(principal.Permissions, permissionCode)
 }
 
@@ -408,20 +405,15 @@ func (s *authService) loadUserRoles(tx *gorm.DB, userID int64) ([]models.Role, e
 }
 
 func (s *authService) loadUserPermissionCodes(tx *gorm.DB, userID int64) ([]string, error) {
-	isSuperAdmin, err := s.hasSuperAdminRole(tx, userID)
-	if err != nil {
-		return nil, err
-	}
-
 	permissionRows := make([]struct {
 		Code string
 	}, 0)
-	db := tx.Table("t_permission AS p").Select("DISTINCT p.code").Where("p.status = ?", enums.StatusOk)
-	if !isSuperAdmin {
-		db = db.Joins("JOIN t_role_permission AS rp ON rp.permission_id = p.id").
-			Joins("JOIN t_user_role AS ur ON ur.role_id = rp.role_id").
-			Where("ur.user_id = ?", userID)
-	}
+	db := tx.Table("t_permission AS p").
+		Select("DISTINCT p.code").
+		Joins("JOIN t_role_permission AS rp ON rp.permission_id = p.id").
+		Joins("JOIN t_user_role AS ur ON ur.role_id = rp.role_id").
+		Where("ur.user_id = ?", userID).
+		Where("p.status = ?", enums.StatusOk)
 	if err := db.Order("p.sort_no ASC, p.id ASC").Scan(&permissionRows).Error; err != nil {
 		return nil, err
 	}
@@ -462,18 +454,6 @@ func (s *authService) loadUserPermissionCodes(tx *gorm.DB, userID int64) ([]stri
 	}
 	sort.Strings(permissionCodes)
 	return permissionCodes, nil
-}
-
-func (s *authService) hasSuperAdminRole(tx *gorm.DB, userID int64) (bool, error) {
-	var count int64
-	if err := tx.
-		Table("t_role AS r").
-		Joins("JOIN t_user_role AS ur ON ur.role_id = r.id").
-		Where("ur.user_id = ? AND r.status = ? AND r.code = ?", userID, enums.StatusOk, constants.RoleCodeSuperAdmin).
-		Count(&count).Error; err != nil {
-		return false, err
-	}
-	return count > 0, nil
 }
 
 func (s *authService) extractBearerToken(header string) string {
