@@ -12,15 +12,9 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { CustomerFormDialog } from "@/components/customer-form-dialog";
 import { type CustomerFormSavePayload } from "@/components/customer-form";
+import { CustomerFormDialog } from "@/components/customer-form-dialog";
 import { CustomerLinkOrCreateDialog } from "@/components/customer-link-or-create-dialog";
-import type { AgentConversation } from "@/lib/api/agent";
-import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
-import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
-import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
-import { updateCompany, type AdminCompany } from "@/lib/api/company";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,28 +30,21 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { AgentConversation } from "@/lib/api/agent";
+import { updateCompany, type AdminCompany } from "@/lib/api/company";
+import { fetchCustomer, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer";
+import { fetchCustomerContacts, type AdminCustomerContact } from "@/lib/api/customer-contact";
 import {
   ContactType,
   ContactTypeLabels,
   Gender,
-  GenderLabels,
-  Status,
-  StatusLabels,
+  GenderLabels
 } from "@/lib/generated/enums";
+import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { cn, formatDateTime } from "@/lib/utils";
 
 function contactTypeLabel(contactType: string) {
   return ContactTypeLabels[contactType as ContactType] ?? contactType;
-}
-
-function customerStatusBadgeVariant(status: number): "secondary" | "destructive" | "outline" {
-  if (status === Status.Disabled) {
-    return "destructive";
-  }
-  if (status === Status.Deleted) {
-    return "destructive";
-  }
-  return "secondary";
 }
 
 function ContactTypeIcon({ contactType }: { contactType: string }) {
@@ -266,73 +253,43 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
 
   const displayName = customer.name.trim() || "未填写姓名";
   const company = customer.company ?? null;
-  const companyLine =
-    customer.companyId > 0 ? company?.name || `公司 ID ${customer.companyId}` : "";
   const genderLabel =
     customer.gender === Gender.Male || customer.gender === Gender.Female
       ? GenderLabels[customer.gender as Gender] ?? String(customer.gender)
       : null;
 
   return (
-    <div className="space-y-7 py-3">
+    <div className="space-y-4 py-3">
       {isProfileEmpty ? (
         <div className="rounded-lg bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:text-amber-100">
           客户主档已关联，但基础信息尚未填写。请点击「编辑」补全资料。
         </div>
       ) : null}
 
-      <section className="space-y-4">
-        <div className="space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <p className="min-w-0 flex-1 line-clamp-2 leading-snug">
-              <span className="text-base font-semibold text-foreground">
-                {displayName}
+      <section className="space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 flex-1 line-clamp-2 leading-snug">
+            <span className="text-base font-semibold text-foreground">
+              {displayName}
+            </span>
+            {genderLabel ? (
+              <span className="text-sm font-normal text-muted-foreground">
+                {" "}
+                · {genderLabel}
               </span>
-              {genderLabel ? (
-                <span className="text-sm font-normal text-muted-foreground">
-                  {" "}
-                  · {genderLabel}
-                </span>
-              ) : null}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 shrink-0 gap-1 px-2 text-xs"
-              onClick={() => setCustomerEditOpen(true)}
-            >
-              <PencilIcon className="size-3.5" />
-              编辑
-            </Button>
-          </div>
-          {companyLine ? (
-            <p className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
-              <Building2Icon
-                className="mt-0.5 size-3.5 shrink-0 opacity-80"
-                aria-hidden
-              />
-              <span className="min-w-0 break-all">{companyLine}</span>
-            </p>
-          ) : null}
+            ) : null}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1 px-2 text-xs"
+            onClick={() => setCustomerEditOpen(true)}
+          >
+            <PencilIcon className="size-3.5" />
+            编辑
+          </Button>
         </div>
-
-        {/* <div className="space-y-2 text-sm">
-          {customer.primaryMobile ? (
-            <div className="flex min-w-0 items-baseline gap-2">
-              <PhoneIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 break-all tabular-nums text-foreground">{customer.primaryMobile}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">主</span>
-            </div>
-          ) : null}
-          {customer.primaryEmail ? (
-            <div className="flex min-w-0 items-baseline gap-2">
-              <MailIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 break-all text-foreground">{customer.primaryEmail}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">主</span>
-            </div>
-          ) : null}
-        </div> */}
 
         <div className="space-y-2">
           <DetailRow
