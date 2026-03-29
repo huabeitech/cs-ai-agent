@@ -4,7 +4,6 @@ import {
   Building2Icon,
   Link2Icon,
   MailIcon,
-  MessageCircleIcon,
   PencilIcon,
   PhoneIcon,
   UserRoundIcon,
@@ -43,11 +42,11 @@ import {
 import { useAgentConversationsStore } from "@/lib/stores/agent-conversations";
 import { cn, formatDateTime } from "@/lib/utils";
 
-function contactTypeLabel(contactType: string) {
+function contactTypeLabel(contactType: ContactType | string) {
   return ContactTypeLabels[contactType as ContactType] ?? contactType;
 }
 
-function ContactTypeIcon({ contactType }: { contactType: string }) {
+function ContactTypeIcon({ contactType }: { contactType: ContactType | string }) {
   const cls = "size-3.5 shrink-0 text-muted-foreground";
   switch (contactType) {
     case ContactType.Mobile:

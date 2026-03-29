@@ -59,7 +59,7 @@ const contactTypeValues = [
 
 const contactRowSchema = z.object({
   id: z.number().optional(),
-  contactType: z.enum(["mobile", "email", "other"]),
+  contactType: z.enum(contactTypeValues),
   contactValue: z.string(),
   remark: z.string(),
   isPrimary: z.boolean(),

@@ -1,5 +1,6 @@
 import { request } from "@/lib/api/client"
 import type { PageResult } from "@/lib/api/admin"
+import type { ContactType } from "@/lib/generated/enums"
 import { AdminCompany } from "./company"
 
 export type AdminCustomer = {
@@ -33,7 +34,7 @@ export type UpdateAdminCustomerPayload = CreateAdminCustomerPayload & {
 /** 与 POST /customer/save/profile 请求体一致 */
 export type SaveCustomerProfileContactLine = {
   id?: number
-  contactType: string
+  contactType: ContactType | string
   contactValue: string
   remark: string
   isPrimary: boolean
