@@ -51,19 +51,8 @@ func (s *conversationService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Conver
 	return repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
 }
 
-func (s *conversationService) ListConversations(userID int64, filter request.AgentConversationFilter, keyword string, page, limit int) (list []models.Conversation, paging *sqls.Paging, err error) {
-	if page <= 0 {
-		page = 1
-	}
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	cnd := sqls.NewCnd().
-		Page(page, limit)
+func (s *conversationService) ListConversations(userID int64, filter request.AgentConversationFilter, keyword string, paging *sqls.Paging) ([]models.Conversation, *sqls.Paging, error) {
+	cnd := sqls.NewCnd().Page(paging.Page, paging.Limit)
 
 	if strs.IsNotBlank(keyword) {
 		keyword = strings.TrimSpace(keyword)
@@ -83,7 +72,7 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 		return nil, nil, errorsx.InvalidParam("会话筛选项不合法")
 	}
 
-	list, paging = repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
+	list, paging := repositories.ConversationRepository.FindPageByCnd(sqls.DB(), cnd)
 	return list, paging, nil
 }
 

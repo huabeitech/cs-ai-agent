@@ -69,15 +69,13 @@ func (c *ConversationController) AnyConversations() *web.JsonResult {
 
 	filterValue, _ := params.Get(c.Ctx, "filter")
 	keyword, _ := params.Get(c.Ctx, "keyword")
-	page, _ := params.GetInt(c.Ctx, "page")
-	limit, _ := params.GetInt(c.Ctx, "limit")
+	paging := params.GetPaging(c.Ctx)
 
 	list, paging, err := services.ConversationService.ListConversations(
 		operator.UserID,
 		request.AgentConversationFilter(strings.TrimSpace(filterValue)),
 		keyword,
-		page,
-		limit,
+		paging,
 	)
 	if err != nil {
 		return web.JsonError(err)
