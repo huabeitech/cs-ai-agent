@@ -146,18 +146,12 @@ func (s *conversationReadStateService) getByCursor(conversationID int64, c reade
 }
 
 func (s *conversationReadStateService) GetConversationReadStates(conversationID int64) (agentState, customerState *models.ConversationReadState) {
-	list := s.Find(sqls.NewCnd().Eq("conversation_id", conversationID))
-	return s.pickConversationReadStates(list)
+	return s.getConversationReadStates(sqls.DB(), conversationID)
 }
 
-func (s *conversationReadStateService) GetConversationReadStatesTx(ctx *sqls.TxContext, conversationID int64) (agentState, customerState *models.ConversationReadState, err error) {
-	var list []models.ConversationReadState
-	err = ctx.Tx.Where("conversation_id = ?", conversationID).Find(&list).Error
-	if err != nil {
-		return nil, nil, err
-	}
-	agentState, customerState = s.pickConversationReadStates(list)
-	return agentState, customerState, nil
+func (s *conversationReadStateService) getConversationReadStates(db *gorm.DB, conversationID int64) (agentState, customerState *models.ConversationReadState) {
+	list := repositories.ConversationReadStateRepository.Find(db, sqls.NewCnd().Eq("conversation_id", conversationID))
+	return s.pickConversationReadStates(list)
 }
 
 func (s *conversationReadStateService) pickConversationReadStates(list []models.ConversationReadState) (agentState, customerState *models.ConversationReadState) {
@@ -177,8 +171,8 @@ func (s *conversationReadStateService) pickConversationReadStates(list []models.
 	return agentState, customerState
 }
 
-// MarkAgentReadTx 在事务内更新/创建客服已读游标。
-func (s *conversationReadStateService) MarkAgentReadTx(ctx *sqls.TxContext, conversation *models.Conversation, operator *dto.AuthPrincipal, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+// MarkAgentRead 在事务内更新/创建客服已读游标。
+func (s *conversationReadStateService) MarkAgentRead(ctx *sqls.TxContext, conversation *models.Conversation, operator *dto.AuthPrincipal, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
 	c, err := agentReaderCursor(operator)
 	if err != nil {
 		return nil, err
@@ -186,8 +180,8 @@ func (s *conversationReadStateService) MarkAgentReadTx(ctx *sqls.TxContext, conv
 	return s.markReadTxWithCursor(ctx, conversation, c, message, now)
 }
 
-// MarkCustomerReadTx 在事务内更新/创建 IM 客户已读游标。
-func (s *conversationReadStateService) MarkCustomerReadTx(ctx *sqls.TxContext, conversation *models.Conversation, external *openidentity.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
+// MarkCustomerRead 在事务内更新/创建 IM 客户已读游标。
+func (s *conversationReadStateService) MarkCustomerRead(ctx *sqls.TxContext, conversation *models.Conversation, external *openidentity.ExternalInfo, message *models.Message, now time.Time) (*models.ConversationReadState, error) {
 	c, err := customerReaderCursor(external)
 	if err != nil {
 		return nil, err
@@ -238,28 +232,26 @@ func (s *conversationReadStateService) markReadTxWithCursor(ctx *sqls.TxContext,
 		return item, nil
 	}
 
-	updates := map[string]any{
-		"last_read_message_id": message.ID,
-		"last_read_seq_no":     message.SeqNo,
-		"last_read_at":         now,
-		"update_user_id":       c.auditUserID,
-		"update_user_name":     c.auditUserName,
-		"updated_at":           now,
-	}
-	if err := repositories.ConversationReadStateRepository.Updates(ctx.Tx, item.ID, updates); err != nil {
-		return nil, err
-	}
-
 	item.LastReadMessageID = message.ID
 	item.LastReadSeqNo = message.SeqNo
 	item.LastReadAt = &now
 	item.UpdatedAt = now
 	item.UpdateUserID = c.auditUserID
 	item.UpdateUserName = c.auditUserName
+	if err := repositories.ConversationReadStateRepository.Updates(ctx.Tx, item.ID, map[string]any{
+		"last_read_message_id": item.LastReadMessageID,
+		"last_read_seq_no":     item.LastReadSeqNo,
+		"last_read_at":         item.LastReadAt,
+		"updated_at":           item.UpdatedAt,
+		"update_user_id":       item.UpdateUserID,
+		"update_user_name":     item.UpdateUserName,
+	}); err != nil {
+		return nil, err
+	}
 	return item, nil
 }
 
-func (s *conversationReadStateService) CountUnreadMessagesTx(ctx *sqls.TxContext, conversationID, lastReadSeqNo int64, senderTypes ...enums.IMSenderType) (int64, error) {
+func (s *conversationReadStateService) CountUnreadMessages(ctx *sqls.TxContext, conversationID, lastReadSeqNo int64, senderTypes ...enums.IMSenderType) (int64, error) {
 	normalizedSenderTypes := make([]enums.IMSenderType, 0, len(senderTypes))
 	for _, senderType := range senderTypes {
 		if strs.IsBlank(string(senderType)) {

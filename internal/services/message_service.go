@@ -279,23 +279,20 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 			readStateType = enums.IMSenderTypeAgent
 		}
 		if readStateType == enums.IMSenderTypeAgent {
-			if _, err := ConversationReadStateService.MarkAgentReadTx(ctx, conversation, operator, message, now); err != nil {
+			if _, err := ConversationReadStateService.MarkAgentRead(ctx, conversation, operator, message, now); err != nil {
 				return err
 			}
 		} else {
-			if _, err := ConversationReadStateService.MarkCustomerReadTx(ctx, conversation, external, message, now); err != nil {
+			if _, err := ConversationReadStateService.MarkCustomerRead(ctx, conversation, external, message, now); err != nil {
 				return err
 			}
 		}
-		agentReadState, customerReadState, err := ConversationReadStateService.GetConversationReadStatesTx(ctx, conversationID)
+		agentReadState, customerReadState := ConversationReadStateService.getConversationReadStates(ctx.Tx, conversationID)
+		agentUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversationID, readSeqNo(agentReadState), enums.IMSenderTypeCustomer)
 		if err != nil {
 			return err
 		}
-		agentUnreadCount, err := ConversationReadStateService.CountUnreadMessagesTx(ctx, conversationID, readSeqNo(agentReadState), enums.IMSenderTypeCustomer)
-		if err != nil {
-			return err
-		}
-		customerUnreadCount, err := ConversationReadStateService.CountUnreadMessagesTx(ctx, conversationID, readSeqNo(customerReadState), enums.IMSenderTypeAgent, enums.IMSenderTypeAI)
+		customerUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversationID, readSeqNo(customerReadState), enums.IMSenderTypeAgent, enums.IMSenderTypeAI)
 		if err != nil {
 			return err
 		}

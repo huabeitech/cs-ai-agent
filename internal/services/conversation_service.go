@@ -463,7 +463,7 @@ func (a agentConversationReadActor) getReadState(conversationID int64) *models.C
 }
 
 func (a agentConversationReadActor) markReadTx(ctx *sqls.TxContext, conversation *models.Conversation, targetMessage *models.Message, now time.Time) error {
-	_, err := ConversationReadStateService.MarkAgentReadTx(ctx, conversation, a.operator, targetMessage, now)
+	_, err := ConversationReadStateService.MarkAgentRead(ctx, conversation, a.operator, targetMessage, now)
 	return err
 }
 
@@ -485,7 +485,7 @@ func (a customerConversationReadActor) getReadState(conversationID int64) *model
 }
 
 func (a customerConversationReadActor) markReadTx(ctx *sqls.TxContext, conversation *models.Conversation, targetMessage *models.Message, now time.Time) error {
-	_, err := ConversationReadStateService.MarkCustomerReadTx(ctx, conversation, a.external, targetMessage, now)
+	_, err := ConversationReadStateService.MarkCustomerRead(ctx, conversation, a.external, targetMessage, now)
 	return err
 }
 
@@ -542,10 +542,7 @@ func (s *conversationService) markConversationReadWithActor(conversation *models
 		if err := actor.markReadTx(ctx, currentConversation, targetMessage, now); err != nil {
 			return err
 		}
-		agentReadState, customerReadState, err := ConversationReadStateService.GetConversationReadStatesTx(ctx, currentConversation.ID)
-		if err != nil {
-			return err
-		}
+		agentReadState, customerReadState := ConversationReadStateService.getConversationReadStates(ctx.Tx, currentConversation.ID)
 		agentUnreadCount, err := s.countUnreadByState(ctx, currentConversation.ID, agentReadState, enums.IMSenderTypeCustomer)
 		if err != nil {
 			return err
@@ -584,7 +581,7 @@ func (s *conversationService) countUnreadByState(ctx *sqls.TxContext, conversati
 	for _, senderType := range senderTypes {
 		normalizedSenderTypes = append(normalizedSenderTypes, senderType)
 	}
-	count, err := ConversationReadStateService.CountUnreadMessagesTx(ctx, conversationID, lastReadSeqNo, normalizedSenderTypes...)
+	count, err := ConversationReadStateService.CountUnreadMessages(ctx, conversationID, lastReadSeqNo, normalizedSenderTypes...)
 	return int(count), err
 }
 
