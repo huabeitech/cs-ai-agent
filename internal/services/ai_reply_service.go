@@ -286,24 +286,20 @@ func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAge
 	case enums.AIAgentFallbackModeHandoff: // 转人工
 		return s.handoffConversation(conversation, aiAgent, reason)
 	case enums.AIAgentFallbackModeGuideRephrase: // 引导补充信息或换个问法
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackGuideMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
+		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
 	default: // 直接声明无答案
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackNoAnswerMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
+		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
 	}
 }
 
-func (s *aiReplyService) buildFallbackGuideMessage(aiAgent *models.AIAgent) string {
-	if aiAgent != nil && strings.TrimSpace(aiAgent.FallbackGuideMessage) != "" {
-		return strings.TrimSpace(aiAgent.FallbackGuideMessage)
+func (s *aiReplyService) buildFallbackMessage(aiAgent *models.AIAgent) string {
+	if aiAgent != nil && strings.TrimSpace(aiAgent.FallbackMessage) != "" {
+		return strings.TrimSpace(aiAgent.FallbackMessage)
 	}
-	return "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。"
-}
-
-func (s *aiReplyService) buildFallbackNoAnswerMessage(aiAgent *models.AIAgent) string {
-	if aiAgent != nil && strings.TrimSpace(aiAgent.FallbackNoAnswerMessage) != "" {
-		return strings.TrimSpace(aiAgent.FallbackNoAnswerMessage)
+	if aiAgent != nil && enums.AIAgentFallbackMode(aiAgent.FallbackMode) == enums.AIAgentFallbackModeGuideRephrase {
+		return "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。"
 	}
 	return "我暂时没有找到明确答案。"
 }

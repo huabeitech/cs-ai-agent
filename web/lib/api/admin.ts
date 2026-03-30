@@ -206,8 +206,7 @@ export type AIAgent = {
   maxAiReplyRounds: number
   fallbackMode: number
   fallbackModeName: string
-  fallbackGuideMessage: string
-  fallbackNoAnswerMessage: string
+  fallbackMessage: string
   knowledgeIds: number[]
   knowledgeBaseNames: string[]
   sortNo: number
@@ -230,8 +229,7 @@ export type CreateAIAgentPayload = {
   handoffMode: number
   maxAiReplyRounds: number
   fallbackMode: number
-  fallbackGuideMessage: string
-  fallbackNoAnswerMessage: string
+  fallbackMessage: string
   knowledgeIds: number[]
   remark: string
 }

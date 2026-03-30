@@ -78,8 +78,7 @@ const schema = z.object({
     .number()
     .min(0, "AI 最大回复次数必须是大于等于 0 的整数"),
   fallbackMode: z.string().trim().min(1, "请选择兜底模式"),
-  fallbackGuideMessage: z.string().trim(),
-  fallbackNoAnswerMessage: z.string().trim(),
+  fallbackMessage: z.string().trim(),
   remark: z.string().trim(),
 });
 
@@ -125,9 +124,8 @@ function buildForm(item: AIAgent | null): EditForm {
       handoffMode: String(AIAgentHandoffMode.WaitPool),
       maxAiReplyRounds: 2,
       fallbackMode: String(AIAgentFallbackMode.GuideRephrase),
-      fallbackGuideMessage:
+      fallbackMessage:
         "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。",
-      fallbackNoAnswerMessage: "我暂时没有找到明确答案。",
       remark: "",
     };
   }
@@ -142,8 +140,7 @@ function buildForm(item: AIAgent | null): EditForm {
     handoffMode: String(item.handoffMode),
     maxAiReplyRounds: item.maxAiReplyRounds ?? 2,
     fallbackMode: String(item.fallbackMode),
-    fallbackGuideMessage: item.fallbackGuideMessage || "",
-    fallbackNoAnswerMessage: item.fallbackNoAnswerMessage || "",
+    fallbackMessage: item.fallbackMessage || "",
     remark: item.remark || "",
   };
 }
@@ -165,8 +162,7 @@ function buildPayload(
     handoffMode: Number(form.handoffMode),
     maxAiReplyRounds: Number(form.maxAiReplyRounds),
     fallbackMode: Number(form.fallbackMode),
-    fallbackGuideMessage: form.fallbackGuideMessage.trim(),
-    fallbackNoAnswerMessage: form.fallbackNoAnswerMessage.trim(),
+    fallbackMessage: form.fallbackMessage.trim(),
     knowledgeIds,
     remark: form.remark.trim(),
   };
@@ -777,31 +773,17 @@ function EditDialogBody({
             </FieldContent>
           </Field>
 
-          <Field data-invalid={!!errors.fallbackGuideMessage}>
-            <FieldLabel htmlFor="ai-agent-fallback-guide-message">
-              兜底引导文案
+          <Field data-invalid={!!errors.fallbackMessage}>
+            <FieldLabel htmlFor="ai-agent-fallback-message">
+              兜底文案
             </FieldLabel>
             <FieldContent>
               <Textarea
-                id="ai-agent-fallback-guide-message"
+                id="ai-agent-fallback-message"
                 rows={3}
-                {...register("fallbackGuideMessage")}
+                {...register("fallbackMessage")}
               />
-              <FieldError errors={[errors.fallbackGuideMessage]} />
-            </FieldContent>
-          </Field>
-
-          <Field data-invalid={!!errors.fallbackNoAnswerMessage}>
-            <FieldLabel htmlFor="ai-agent-fallback-no-answer-message">
-              兜底无答案文案
-            </FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="ai-agent-fallback-no-answer-message"
-                rows={3}
-                {...register("fallbackNoAnswerMessage")}
-              />
-              <FieldError errors={[errors.fallbackNoAnswerMessage]} />
+              <FieldError errors={[errors.fallbackMessage]} />
             </FieldContent>
           </Field>
 

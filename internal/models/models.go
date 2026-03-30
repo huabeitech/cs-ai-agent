@@ -390,24 +390,23 @@ type QuickReply struct {
 
 // AIAgent AI 接待实例。
 type AIAgent struct {
-	ID                      int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为 AI Agent 主键。
-	Name                    string                          `gorm:"type:varchar(100);not null;default:'';index"` // Name 为 AI Agent 名称。
-	Description             string                          `gorm:"type:varchar(255);not null;default:''"`       // Description 为 AI Agent 描述。
-	Status                  enums.Status                    `gorm:"type:int;not null;index"`                     // Status 为 AI Agent
-	AIConfigID              int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIConfigID 为关联的 AI 配置ID。
-	ServiceMode             enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
-	SystemPrompt            string                          `gorm:"type:text"`                                   // SystemPrompt 为该 Agent 的系统提示词。
-	WelcomeMessage          string                          `gorm:"type:text"`                                   // WelcomeMessage 为该 Agent 的欢迎语或首响模板。
-	ReplyTimeoutSeconds     int                             `gorm:"type:int;not null;default:180"`               // ReplyTimeoutSeconds 为异步自动回复超时秒数。
-	TeamIDs                 string                          `gorm:"type:varchar(500);not null;default:''"`       // TeamIDs 为转人工时可路由的客服组ID列表，多个之间使用逗号分隔。
-	HandoffMode             enums.AIAgentHandoffMode        `gorm:"type:int;not null;default:1"`                 // HandoffMode 为转人工模式，如进入待接入池、进入默认客服组待接入池。
-	MaxAIReplyRounds        int                             `gorm:"type:int;not null;default:2"`                 // MaxAIReplyRounds 为单个会话允许的 AI 最大成功回复次数，超过后强制转人工。
-	FallbackMode            enums.AIAgentFallbackMode       `gorm:"type:int;not null;default:2"`                 // FallbackMode 为无答案或低置信度时的兜底模式。
-	FallbackGuideMessage    string                          `gorm:"type:text"`                                   // FallbackGuideMessage 为引导补充信息兜底文案。
-	FallbackNoAnswerMessage string                          `gorm:"type:text"`                                   // FallbackNoAnswerMessage 为直接声明无答案兜底文案。
-	KnowledgeIDs            string                          `gorm:"type:varchar(500);not null;default:''"`       // KnowledgeIDs 为绑定的知识库ID列表，按顺序表示优先级。
-	SortNo                  int                             `gorm:"type:int;not null;default:0;index"`           // SortNo 为后台展示排序号。
-	Remark                  string                          `gorm:"type:text"`                                   // Remark 为备注。
+	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为 AI Agent 主键。
+	Name                string                          `gorm:"type:varchar(100);not null;default:'';index"` // Name 为 AI Agent 名称。
+	Description         string                          `gorm:"type:varchar(255);not null;default:''"`       // Description 为 AI Agent 描述。
+	Status              enums.Status                    `gorm:"type:int;not null;index"`                     // Status 为 AI Agent
+	AIConfigID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIConfigID 为关联的 AI 配置ID。
+	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
+	SystemPrompt        string                          `gorm:"type:text"`                                   // SystemPrompt 为该 Agent 的系统提示词。
+	WelcomeMessage      string                          `gorm:"type:text"`                                   // WelcomeMessage 为该 Agent 的欢迎语或首响模板。
+	ReplyTimeoutSeconds int                             `gorm:"type:int;not null;default:180"`               // ReplyTimeoutSeconds 为异步自动回复超时秒数。
+	TeamIDs             string                          `gorm:"type:varchar(500);not null;default:''"`       // TeamIDs 为转人工时可路由的客服组ID列表，多个之间使用逗号分隔。
+	HandoffMode         enums.AIAgentHandoffMode        `gorm:"type:int;not null;default:1"`                 // HandoffMode 为转人工模式，如进入待接入池、进入默认客服组待接入池。
+	MaxAIReplyRounds    int                             `gorm:"type:int;not null;default:2"`                 // MaxAIReplyRounds 为单个会话允许的 AI 最大成功回复次数，超过后强制转人工。
+	FallbackMode        enums.AIAgentFallbackMode       `gorm:"type:int;not null;default:2"`                 // FallbackMode 为无答案或低置信度时的兜底模式。
+	FallbackMessage     string                          `gorm:"type:text"`                                   // FallbackMessage 为兜底回复文案。
+	KnowledgeIDs        string                          `gorm:"type:varchar(500);not null;default:''"`       // KnowledgeIDs 为绑定的知识库ID列表，按顺序表示优先级。
+	SortNo              int                             `gorm:"type:int;not null;default:0;index"`           // SortNo 为后台展示排序号。
+	Remark              string                          `gorm:"type:text"`                                   // Remark 为备注。
 	AuditFields
 }
 
