@@ -89,8 +89,6 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		if document == nil || document.Status != enums.StatusOk {
 			continue
 		}
-		language := "zh" // TODO 干嘛的？
-		sourceName := "" // TODO 干嘛的？
 		documentTitle := document.Title
 
 		results = append(results, RetrieveResult{
@@ -104,8 +102,6 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 			Content:         chunk.Content,
 			Score:           sr.Score,
 			ChunkType:       extractChunkType(sr.Payload),
-			Language:        language,
-			SourceName:      sourceName,
 		})
 	}
 

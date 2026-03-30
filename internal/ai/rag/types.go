@@ -18,8 +18,6 @@ type RetrieveResult struct {
 	Content         string  `json:"content"`
 	Score           float32 `json:"score"`
 	ChunkType       string  `json:"chunkType"`
-	Language        string  `json:"language"`
-	SourceName      string  `json:"sourceName"`
 }
 
 type RerankRequest struct {
