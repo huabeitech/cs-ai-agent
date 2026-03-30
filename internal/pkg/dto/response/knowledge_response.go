@@ -65,15 +65,16 @@ type KnowledgeChunkResponse struct {
 }
 
 type KnowledgeSearchResult struct {
-	ChunkID       int64   `json:"chunkId"`
-	DocumentID    int64   `json:"documentId"`
-	DocumentTitle string  `json:"documentTitle"`
-	ChunkNo       int     `json:"chunkNo"`
-	Title         string  `json:"title"`
-	SectionPath   string  `json:"sectionPath"`
-	Content       string  `json:"content"`
-	Score         float64 `json:"score"`
-	RerankScore   float64 `json:"rerankScore"`
+	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
+	ChunkID         int64   `json:"chunkId"`
+	DocumentID      int64   `json:"documentId"`
+	DocumentTitle   string  `json:"documentTitle"`
+	ChunkNo         int     `json:"chunkNo"`
+	Title           string  `json:"title"`
+	SectionPath     string  `json:"sectionPath"`
+	Content         string  `json:"content"`
+	Score           float64 `json:"score"`
+	RerankScore     float64 `json:"rerankScore"`
 }
 
 type KnowledgeSearchResponse struct {
@@ -166,24 +167,25 @@ type KnowledgeRetrieveLogResponse struct {
 }
 
 type KnowledgeRetrieveHitResponse struct {
-	ID            int64     `json:"id"`
-	RetrieveLogID int64     `json:"retrieveLogId"`
-	ChunkID       int64     `json:"chunkId"`
-	DocumentID    int64     `json:"documentId"`
-	DocumentTitle string    `json:"documentTitle"`
-	ChunkNo       int       `json:"chunkNo"`
-	Title         string    `json:"title"`
-	SectionPath   string    `json:"sectionPath"`
-	ChunkType     string    `json:"chunkType"`
-	ChunkTypeName string    `json:"chunkTypeName"`
-	Provider      string    `json:"provider"`
-	RankNo        int       `json:"rankNo"`
-	Score         float64   `json:"score"`
-	RerankScore   float64   `json:"rerankScore"`
-	UsedInAnswer  bool      `json:"usedInAnswer"`
-	IsCitation    bool      `json:"isCitation"`
-	Snippet       string    `json:"snippet"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID              int64     `json:"id"`
+	RetrieveLogID   int64     `json:"retrieveLogId"`
+	KnowledgeBaseID int64     `json:"knowledgeBaseId"`
+	ChunkID         int64     `json:"chunkId"`
+	DocumentID      int64     `json:"documentId"`
+	DocumentTitle   string    `json:"documentTitle"`
+	ChunkNo         int       `json:"chunkNo"`
+	Title           string    `json:"title"`
+	SectionPath     string    `json:"sectionPath"`
+	ChunkType       string    `json:"chunkType"`
+	ChunkTypeName   string    `json:"chunkTypeName"`
+	Provider        string    `json:"provider"`
+	RankNo          int       `json:"rankNo"`
+	Score           float64   `json:"score"`
+	RerankScore     float64   `json:"rerankScore"`
+	UsedInAnswer    bool      `json:"usedInAnswer"`
+	IsCitation      bool      `json:"isCitation"`
+	Snippet         string    `json:"snippet"`
+	CreatedAt       time.Time `json:"createdAt"`
 }
 
 type KnowledgeRetrieveLogDetailResponse struct {

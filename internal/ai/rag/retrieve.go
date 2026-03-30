@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/mlogclub/simple/sqls"
@@ -24,26 +25,26 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 	if req.Query == "" {
 		return nil, nil
 	}
-
-	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), req.KnowledgeBaseID)
-	if knowledgeBase == nil {
-		return nil, fmt.Errorf("knowledge base not found: %d", req.KnowledgeBaseID)
+	knowledgeBaseIDs := normalizeKnowledgeBaseIDs(req.KnowledgeBaseIDs)
+	if len(knowledgeBaseIDs) == 0 {
+		return nil, nil
 	}
-	if !isRetrievableKnowledgeBase(knowledgeBase) {
-		slog.Info("Skip retrieve for non-enabled knowledge base",
-			"knowledge_base_id", knowledgeBase.ID,
-			"status", knowledgeBase.Status)
+
+	retrievableKnowledgeBaseIDs := s.filterRetrievableKnowledgeBaseIDs(knowledgeBaseIDs)
+	if len(retrievableKnowledgeBaseIDs) == 0 {
+		slog.Info("Skip retrieve for non-enabled knowledge bases",
+			"knowledge_base_ids", fmt.Sprint(knowledgeBaseIDs))
 		return nil, nil
 	}
 
 	topK := req.TopK
 	if topK <= 0 {
-		topK = knowledgeBase.DefaultTopK
+		topK = 8
 	}
 
 	scoreThreshold := float32(req.ScoreThreshold)
 	if scoreThreshold <= 0 {
-		scoreThreshold = float32(knowledgeBase.DefaultScoreThreshold)
+		scoreThreshold = 0.3
 	}
 
 	embeddingResult, err := ai.Embedding.GenerateEmbedding(ctx, req.Query)
@@ -51,7 +52,7 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
 	}
 
-	collectionName := fmt.Sprintf("kb_%d", req.KnowledgeBaseID)
+	collectionName := knowledgeCollectionName
 	provider := vectordb.GetProvider()
 	if provider == nil {
 		return nil, fmt.Errorf("vectordb provider not initialized")
@@ -62,6 +63,9 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		Vector:         embeddingResult.Vector,
 		TopK:           topK,
 		ScoreThreshold: scoreThreshold,
+		Filter: &vectordb.SearchFilter{
+			KnowledgeBaseIDs: retrievableKnowledgeBaseIDs,
+		},
 	})
 	if err != nil {
 		slog.Error("Failed to search vectors", "error", err)
@@ -69,7 +73,7 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 	}
 
 	if len(searchResults) == 0 && scoreThreshold > 0 {
-		s.logEmptySearchDiagnostics(ctx, provider, collectionName, embeddingResult.Vector, topK, scoreThreshold, req)
+		s.logEmptySearchDiagnostics(ctx, provider, collectionName, embeddingResult.Vector, topK, scoreThreshold, retrievableKnowledgeBaseIDs, req)
 	}
 
 	if len(searchResults) == 0 {
@@ -98,17 +102,18 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		}
 
 		results = append(results, RetrieveResult{
-			ChunkID:       chunk.ID,
-			DocumentID:    chunk.DocumentID,
-			DocumentTitle: documentTitle,
-			ChunkNo:       chunk.ChunkNo,
-			Title:         chunk.Title,
-			SectionPath:   ExtractStringPayload(sr.Payload, "section_path"),
-			Content:       chunk.Content,
-			Score:         sr.Score,
-			ChunkType:     extractChunkType(sr.Payload),
-			Language:      language,
-			SourceName:    sourceName,
+			KnowledgeBaseID: chunk.KnowledgeBaseID,
+			ChunkID:         chunk.ID,
+			DocumentID:      chunk.DocumentID,
+			DocumentTitle:   documentTitle,
+			ChunkNo:         chunk.ChunkNo,
+			Title:           chunk.Title,
+			SectionPath:     ExtractStringPayload(sr.Payload, "section_path"),
+			Content:         chunk.Content,
+			Score:           sr.Score,
+			ChunkType:       extractChunkType(sr.Payload),
+			Language:        language,
+			SourceName:      sourceName,
 		})
 	}
 
@@ -137,16 +142,19 @@ func isRetrievableKnowledgeChunk(item *models.KnowledgeChunk) bool {
 	return item != nil && item.Status == enums.StatusOk
 }
 
-func (s *retrieve) logEmptySearchDiagnostics(ctx context.Context, provider vectordb.Provider, collectionName string, vector []float32, topK int, scoreThreshold float32, req RetrieveRequest) {
+func (s *retrieve) logEmptySearchDiagnostics(ctx context.Context, provider vectordb.Provider, collectionName string, vector []float32, topK int, scoreThreshold float32, knowledgeBaseIDs []int64, req RetrieveRequest) {
 	rawResults, err := provider.Search(ctx, &vectordb.SearchRequest{
 		CollectionName: collectionName,
 		Vector:         vector,
 		TopK:           topK,
 		ScoreThreshold: 0,
+		Filter: &vectordb.SearchFilter{
+			KnowledgeBaseIDs: knowledgeBaseIDs,
+		},
 	})
 	if err != nil {
 		slog.Warn("Knowledge retrieve diagnostics failed",
-			"knowledge_base_id", req.KnowledgeBaseID,
+			"knowledge_base_ids", fmt.Sprint(knowledgeBaseIDs),
 			"collection", collectionName,
 			"query", truncateForLog(req.Query, 80),
 			"score_threshold", scoreThreshold,
@@ -155,7 +163,7 @@ func (s *retrieve) logEmptySearchDiagnostics(ctx context.Context, provider vecto
 	}
 	if len(rawResults) == 0 {
 		slog.Info("Knowledge retrieve returned no candidates even without threshold",
-			"knowledge_base_id", req.KnowledgeBaseID,
+			"knowledge_base_ids", fmt.Sprint(knowledgeBaseIDs),
 			"collection", collectionName,
 			"query", truncateForLog(req.Query, 80),
 			"score_threshold", scoreThreshold)
@@ -168,7 +176,7 @@ func (s *retrieve) logEmptySearchDiagnostics(ctx context.Context, provider vecto
 	}
 
 	slog.Info("Knowledge retrieve filtered all candidates by score threshold",
-		"knowledge_base_id", req.KnowledgeBaseID,
+		"knowledge_base_ids", fmt.Sprint(knowledgeBaseIDs),
 		"collection", collectionName,
 		"query", truncateForLog(req.Query, 80),
 		"score_threshold", scoreThreshold,
@@ -328,6 +336,9 @@ func buildSectionKey(item RetrieveResult) string {
 
 func buildContextChunkText(item RetrieveResult) string {
 	title := strings.TrimSpace(item.DocumentTitle)
+	if title == "" {
+		title = fmt.Sprintf("文档#%d", item.DocumentID)
+	}
 	if item.SectionPath != "" {
 		return fmt.Sprintf("【文档：%s｜章节：%s】\n%s\n\n", title, item.SectionPath, item.Content)
 	}
@@ -350,24 +361,58 @@ func (s *retrieve) GetKnowledgeBaseStats(ctx context.Context, knowledgeBaseID in
 		Eq("knowledge_base_id", knowledgeBaseID).
 		Eq("status", enums.StatusOk))
 
-	collectionName := fmt.Sprintf("kb_%d", knowledgeBaseID)
-	provider := vectordb.GetProvider()
-
-	var vectorCount int
-	if provider != nil {
-		info, err := provider.GetCollection(ctx, collectionName)
-		if err == nil && info != nil {
-			vectorCount = info.PointCount
-		}
-	}
-
 	return &KnowledgeBaseStats{
 		KnowledgeBaseID: knowledgeBaseID,
 		DocumentCount:   documentCount,
 		PublishedCount:  publishedCount,
 		ChunkCount:      chunkCount,
-		VectorCount:     vectorCount,
+		VectorCount:     int(chunkCount),
 	}, nil
+}
+
+func normalizeKnowledgeBaseIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+	seen := make(map[int64]struct{}, len(ids))
+	normalized := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		normalized = append(normalized, id)
+	}
+	sort.SliceStable(normalized, func(i, j int) bool {
+		return normalized[i] < normalized[j]
+	})
+	return normalized
+}
+
+func (s *retrieve) filterRetrievableKnowledgeBaseIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+	items := repositories.KnowledgeBaseRepository.Find(sqls.DB(), sqls.NewCnd().In("id", ids))
+	if len(items) == 0 {
+		return nil
+	}
+	allowed := make(map[int64]struct{}, len(items))
+	for _, item := range items {
+		if isRetrievableKnowledgeBase(&item) {
+			allowed[item.ID] = struct{}{}
+		}
+	}
+	filtered := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := allowed[id]; ok {
+			filtered = append(filtered, id)
+		}
+	}
+	return filtered
 }
 
 type KnowledgeBaseStats struct {

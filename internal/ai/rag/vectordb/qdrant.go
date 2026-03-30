@@ -16,11 +16,16 @@ type Vector struct {
 }
 
 type SearchRequest struct {
-	CollectionName string    `json:"collectionName"`
-	Vector         []float32 `json:"vector"`
-	TopK           int       `json:"topK"`
-	ScoreThreshold float32   `json:"scoreThreshold"`
-	Filter         string    `json:"filter,omitempty"`
+	CollectionName string        `json:"collectionName"`
+	Vector         []float32     `json:"vector"`
+	TopK           int           `json:"topK"`
+	ScoreThreshold float32       `json:"scoreThreshold"`
+	Filter         *SearchFilter `json:"filter,omitempty"`
+}
+
+type SearchFilter struct {
+	KnowledgeBaseIDs []int64 `json:"knowledgeBaseIds,omitempty"`
+	DocumentIDs      []int64 `json:"documentIds,omitempty"`
 }
 
 type SearchResult struct {
@@ -236,16 +241,23 @@ func (p *QdrantProvider) Search(ctx context.Context, req *SearchRequest) ([]Sear
 	return searchResults, nil
 }
 
-func (p *QdrantProvider) buildFilter(filterStr string) *qdrant.Filter {
-	if filterStr == "" {
+func (p *QdrantProvider) buildFilter(filter *SearchFilter) *qdrant.Filter {
+	if filter == nil {
 		return nil
 	}
 
-	return &qdrant.Filter{
-		Must: []*qdrant.Condition{
-			qdrant.NewMatch("filter", filterStr),
-		},
+	must := make([]*qdrant.Condition, 0, 2)
+	if len(filter.KnowledgeBaseIDs) > 0 {
+		must = append(must, qdrant.NewMatchInts("knowledge_base_id", filter.KnowledgeBaseIDs...))
 	}
+	if len(filter.DocumentIDs) > 0 {
+		must = append(must, qdrant.NewMatchInts("document_id", filter.DocumentIDs...))
+	}
+	if len(must) == 0 {
+		return nil
+	}
+
+	return &qdrant.Filter{Must: must}
 }
 
 func (p *QdrantProvider) extractPayloadValue(v *qdrant.Value) interface{} {

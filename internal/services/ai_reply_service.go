@@ -210,40 +210,33 @@ func (s *aiReplyService) shouldHandoffByQuestion(question string, aiAgent *model
 
 func (s *aiReplyService) pickKnowledgeCandidate(ctx context.Context, aiAgent *models.AIAgent, question string) (*aiKnowledgeCandidate, error) {
 	knowledgeIDs := utils.SplitInt64s(aiAgent.KnowledgeIDs)
-	var best *aiKnowledgeCandidate
-	for _, knowledgeBaseID := range knowledgeIDs {
-		knowledgeBase := KnowledgeBaseService.Get(knowledgeBaseID)
-		if knowledgeBase == nil || knowledgeBase.Status != enums.StatusOk {
-			continue
-		}
-
-		results, err := rag.Retrieve.Retrieve(ctx, rag.RetrieveRequest{
-			KnowledgeBaseID: knowledgeBase.ID,
-			Query:           question,
-			TopK:            knowledgeBase.DefaultTopK,
-			ScoreThreshold:  knowledgeBase.DefaultScoreThreshold,
-		})
-		if err != nil {
-			slog.Warn("knowledge retrieve failed",
-				"knowledge_base_id", knowledgeBase.ID,
-				"conversation_ai_agent_id", aiAgent.ID,
-				"error", err)
-			continue
-		}
-		if len(results) == 0 {
-			continue
-		}
-
-		candidate := &aiKnowledgeCandidate{
-			knowledgeBase: knowledgeBase,
-			results:       results,
-			topScore:      results[0].Score,
-		}
-		if best == nil || candidate.topScore > best.topScore {
-			best = candidate
-		}
+	results, err := rag.Retrieve.Retrieve(ctx, rag.RetrieveRequest{
+		KnowledgeBaseIDs: knowledgeIDs,
+		Query:            question,
+		TopK:             8,
+		ScoreThreshold:   0.3,
+	})
+	if err != nil {
+		slog.Warn("knowledge retrieve failed",
+			"knowledge_base_ids", utils.JoinInt64s(knowledgeIDs),
+			"conversation_ai_agent_id", aiAgent.ID,
+			"error", err)
+		return nil, nil
 	}
-	return best, nil
+	if len(results) == 0 {
+		return nil, nil
+	}
+
+	var knowledgeBase *models.KnowledgeBase
+	if results[0].KnowledgeBaseID > 0 {
+		knowledgeBase = KnowledgeBaseService.Get(results[0].KnowledgeBaseID)
+	}
+
+	return &aiKnowledgeCandidate{
+		knowledgeBase: knowledgeBase,
+		results:       results,
+		topScore:      results[0].Score,
+	}, nil
 }
 
 func (s *aiReplyService) generateReply(ctx context.Context, aiConfig *models.AIConfig, aiAgent *models.AIAgent, candidate *aiKnowledgeCandidate, question string) (string, error) {

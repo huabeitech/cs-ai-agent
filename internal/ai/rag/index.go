@@ -33,6 +33,8 @@ type index struct {
 	registry    *ragchunk.Registry
 }
 
+const knowledgeCollectionName = "knowledge_chunks"
+
 var Index = &index{
 	chunkConfig: ChunkingConfig{
 		Provider:       string(enums.KnowledgeChunkProviderStructured),
@@ -84,7 +86,7 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		return fmt.Errorf("no chunks generated from document")
 	}
 
-	collectionName := s.getCollectionName(document.KnowledgeBaseID)
+	collectionName := s.getCollectionName()
 	provider := vectordb.GetProvider()
 	if provider == nil {
 		return fmt.Errorf("vectordb provider not initialized")
@@ -144,7 +146,7 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 			Payload: map[string]any{
 				"document_id":       document.ID,
 				"knowledge_base_id": knowledgeBase.ID,
-				"chunk_index":       chunk.ChunkNo,
+				"chunk_no":          chunk.ChunkNo,
 				"chunk_type":        string(chunk.ChunkType),
 				"section_path":      chunk.SectionPath,
 				"content":           chunk.Content,
@@ -226,7 +228,7 @@ func (s *index) removeDocumentIndexByChunks(ctx context.Context, knowledgeBaseID
 		return nil
 	}
 
-	collectionName := s.getCollectionName(knowledgeBaseID)
+	collectionName := s.getCollectionName()
 	provider := vectordb.GetProvider()
 	if provider == nil {
 		return fmt.Errorf("vectordb provider not initialized")
@@ -255,8 +257,8 @@ func (s *index) removeDocumentIndexByChunks(ctx context.Context, knowledgeBaseID
 	return nil
 }
 
-func (s *index) getCollectionName(knowledgeBaseID int64) string {
-	return fmt.Sprintf("kb_%d", knowledgeBaseID)
+func (s *index) getCollectionName() string {
+	return knowledgeCollectionName
 }
 
 func buildKnowledgeChunkVectorID(knowledgeBaseID int64, documentID int64, chunkNo int) string {
@@ -287,13 +289,13 @@ func firstNonEmptyString(values ...string) string {
 	return ""
 }
 
-func (s *index) CreateKnowledgeBaseCollection(ctx context.Context, knowledgeBaseID int64) error {
+func (s *index) EnsureCollection(ctx context.Context) error {
 	dimension, err := ai.Embedding.GetDimension(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get embedding dimension: %w", err)
 	}
 
-	collectionName := s.getCollectionName(knowledgeBaseID)
+	collectionName := s.getCollectionName()
 	provider := vectordb.GetProvider()
 	if provider == nil {
 		return fmt.Errorf("vectordb provider not initialized")
@@ -305,16 +307,6 @@ func (s *index) CreateKnowledgeBaseCollection(ctx context.Context, knowledgeBase
 	}
 
 	return provider.CreateCollection(ctx, collectionName, dimension)
-}
-
-func (s *index) DeleteKnowledgeBaseCollection(ctx context.Context, knowledgeBaseID int64) error {
-	collectionName := s.getCollectionName(knowledgeBaseID)
-	provider := vectordb.GetProvider()
-	if provider == nil {
-		return fmt.Errorf("vectordb provider not initialized")
-	}
-
-	return provider.DeleteCollection(ctx, collectionName)
 }
 
 func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID int64) error {
@@ -355,15 +347,22 @@ func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID i
 }
 
 func (s *index) resetKnowledgeBaseIndexStorage(ctx context.Context, knowledgeBaseID int64) error {
-	collectionName := s.getCollectionName(knowledgeBaseID)
+	collectionName := s.getCollectionName()
 	provider := vectordb.GetProvider()
 	if provider == nil {
 		return fmt.Errorf("vectordb provider not initialized")
 	}
 
-	if _, err := provider.GetCollection(ctx, collectionName); err == nil {
-		if err := provider.DeleteCollection(ctx, collectionName); err != nil {
-			return fmt.Errorf("failed to delete collection %s before rebuild: %w", collectionName, err)
+	chunks := repositories.KnowledgeChunkRepository.Find(sqls.DB(), sqls.NewCnd().Eq("knowledge_base_id", knowledgeBaseID))
+	vectorIDs := make([]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		if strs.IsNotBlank(chunk.VectorID) {
+			vectorIDs = append(vectorIDs, chunk.VectorID)
+		}
+	}
+	if len(vectorIDs) > 0 {
+		if err := provider.DeleteVectors(ctx, collectionName, vectorIDs); err != nil {
+			return fmt.Errorf("failed to delete vectors for knowledge base %d before rebuild: %w", knowledgeBaseID, err)
 		}
 	}
 

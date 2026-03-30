@@ -1,24 +1,25 @@
 package rag
 
 type RetrieveRequest struct {
-	KnowledgeBaseID int64
-	Query           string
-	TopK            int
-	ScoreThreshold  float64
+	KnowledgeBaseIDs []int64
+	Query            string
+	TopK             int
+	ScoreThreshold   float64
 }
 
 type RetrieveResult struct {
-	ChunkID       int64   `json:"chunkId"`
-	DocumentID    int64   `json:"documentId"`
-	DocumentTitle string  `json:"documentTitle"`
-	ChunkNo       int     `json:"chunkNo"`
-	Title         string  `json:"title"`
-	SectionPath   string  `json:"sectionPath"`
-	Content       string  `json:"content"`
-	Score         float32 `json:"score"`
-	ChunkType     string  `json:"chunkType"`
-	Language      string  `json:"language"`
-	SourceName    string  `json:"sourceName"`
+	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
+	ChunkID         int64   `json:"chunkId"`
+	DocumentID      int64   `json:"documentId"`
+	DocumentTitle   string  `json:"documentTitle"`
+	ChunkNo         int     `json:"chunkNo"`
+	Title           string  `json:"title"`
+	SectionPath     string  `json:"sectionPath"`
+	Content         string  `json:"content"`
+	Score           float32 `json:"score"`
+	ChunkType       string  `json:"chunkType"`
+	Language        string  `json:"language"`
+	SourceName      string  `json:"sourceName"`
 }
 
 type RerankRequest struct {

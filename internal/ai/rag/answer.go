@@ -9,6 +9,7 @@ import (
 	"github.com/mlogclub/simple/sqls"
 
 	"cs-agent/internal/ai"
+	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
@@ -35,14 +36,15 @@ func (s *answer) DebugSearch(ctx context.Context, req request.KnowledgeSearchReq
 	respResults := make([]response.KnowledgeSearchResult, 0, len(results))
 	for _, item := range results {
 		respResults = append(respResults, response.KnowledgeSearchResult{
-			ChunkID:       item.ChunkID,
-			DocumentID:    item.DocumentID,
-			DocumentTitle: item.DocumentTitle,
-			ChunkNo:       item.ChunkNo,
-			Title:         item.Title,
-			SectionPath:   item.SectionPath,
-			Content:       item.Content,
-			Score:         float64(item.Score),
+			KnowledgeBaseID: item.KnowledgeBaseID,
+			ChunkID:         item.ChunkID,
+			DocumentID:      item.DocumentID,
+			DocumentTitle:   item.DocumentTitle,
+			ChunkNo:         item.ChunkNo,
+			Title:           item.Title,
+			SectionPath:     item.SectionPath,
+			Content:         item.Content,
+			Score:           float64(item.Score),
 		})
 	}
 
@@ -61,13 +63,13 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 	startedAt := time.Now()
 
 	retrieveStartedAt := time.Now()
-	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), req.KnowledgeBaseID)
+	knowledgeBase := s.resolvePrimaryKnowledgeBase(req.KnowledgeBaseIDs)
 	results, err := s.retrieve(request.KnowledgeSearchRequest{
-		KnowledgeBaseID: req.KnowledgeBaseID,
-		Question:        req.Question,
-		TopK:            req.TopK,
-		ScoreThreshold:  req.ScoreThreshold,
-		RerankLimit:     req.RerankLimit,
+		KnowledgeBaseIDs: req.KnowledgeBaseIDs,
+		Question:         req.Question,
+		TopK:             req.TopK,
+		ScoreThreshold:   req.ScoreThreshold,
+		RerankLimit:      req.RerankLimit,
 	}, ctx)
 	if err != nil {
 		return nil, err
@@ -83,14 +85,15 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 			topScore = score
 		}
 		hits = append(hits, response.KnowledgeSearchResult{
-			ChunkID:       item.ChunkID,
-			DocumentID:    item.DocumentID,
-			DocumentTitle: item.DocumentTitle,
-			ChunkNo:       item.ChunkNo,
-			Title:         item.Title,
-			SectionPath:   item.SectionPath,
-			Content:       item.Content,
-			Score:         score,
+			KnowledgeBaseID: item.KnowledgeBaseID,
+			ChunkID:         item.ChunkID,
+			DocumentID:      item.DocumentID,
+			DocumentTitle:   item.DocumentTitle,
+			ChunkNo:         item.ChunkNo,
+			Title:           item.Title,
+			SectionPath:     item.SectionPath,
+			Content:         item.Content,
+			Score:           score,
 		})
 	}
 	citations := buildKnowledgeCitations(hits, 3)
@@ -159,7 +162,7 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 	}
 
 	logItem, err := RetrieveLog.CreateRetrieveLog(&CreateRetrieveLogRequest{
-		KnowledgeBaseID:    req.KnowledgeBaseID,
+		KnowledgeBaseID:    firstKnowledgeBaseID(req.KnowledgeBaseIDs),
 		Channel:            defaultRetrieveChannel(req.Channel),
 		Scene:              defaultRetrieveScene(req.Scene),
 		SessionID:          req.SessionID,
@@ -214,14 +217,15 @@ func buildContextHits(results []RetrieveResult) []response.KnowledgeSearchResult
 	hits := make([]response.KnowledgeSearchResult, 0, len(results))
 	for _, item := range results {
 		hits = append(hits, response.KnowledgeSearchResult{
-			ChunkID:       item.ChunkID,
-			DocumentID:    item.DocumentID,
-			DocumentTitle: item.DocumentTitle,
-			ChunkNo:       item.ChunkNo,
-			Title:         item.Title,
-			SectionPath:   item.SectionPath,
-			Content:       item.Content,
-			Score:         float64(item.Score),
+			KnowledgeBaseID: item.KnowledgeBaseID,
+			ChunkID:         item.ChunkID,
+			DocumentID:      item.DocumentID,
+			DocumentTitle:   item.DocumentTitle,
+			ChunkNo:         item.ChunkNo,
+			Title:           item.Title,
+			SectionPath:     item.SectionPath,
+			Content:         item.Content,
+			Score:           float64(item.Score),
 		})
 	}
 	return hits
@@ -271,31 +275,54 @@ func (s *answer) BuildDocumentIndex(ctx context.Context, documentID int64) error
 }
 
 func (s *answer) retrieve(req request.KnowledgeSearchRequest, ctx context.Context) ([]RetrieveResult, error) {
-	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), req.KnowledgeBaseID)
-	if knowledgeBase == nil {
-		return nil, errorsx.InvalidParam("知识库不存在")
+	if len(normalizeKnowledgeBaseIDs(req.KnowledgeBaseIDs)) == 0 {
+		return nil, errorsx.InvalidParam("知识库不能为空")
 	}
+	knowledgeBase := s.resolvePrimaryKnowledgeBase(req.KnowledgeBaseIDs)
 
 	results, err := Retrieve.Retrieve(ctx, RetrieveRequest{
-		KnowledgeBaseID: req.KnowledgeBaseID,
-		Query:           req.Question,
-		TopK:            req.TopK,
-		ScoreThreshold:  req.ScoreThreshold,
+		KnowledgeBaseIDs: req.KnowledgeBaseIDs,
+		Query:            req.Question,
+		TopK:             req.TopK,
+		ScoreThreshold:   req.ScoreThreshold,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	rerankLimit := resolveRerankLimit(req.RerankLimit, knowledgeBase.DefaultRerankLimit)
+	defaultRerankLimit := 0
+	if knowledgeBase != nil {
+		defaultRerankLimit = knowledgeBase.DefaultRerankLimit
+	}
+	rerankLimit := resolveRerankLimit(req.RerankLimit, defaultRerankLimit)
 	if rerankLimit > 0 && len(results) > rerankLimit {
 		return Retrieve.RetrieveWithRerank(ctx, RetrieveRequest{
-			KnowledgeBaseID: req.KnowledgeBaseID,
-			Query:           req.Question,
-			TopK:            req.TopK,
-			ScoreThreshold:  req.ScoreThreshold,
+			KnowledgeBaseIDs: req.KnowledgeBaseIDs,
+			Query:            req.Question,
+			TopK:             req.TopK,
+			ScoreThreshold:   req.ScoreThreshold,
 		}, rerankLimit)
 	}
 	return results, nil
+}
+
+func (s *answer) resolvePrimaryKnowledgeBase(knowledgeBaseIDs []int64) *models.KnowledgeBase {
+	normalized := normalizeKnowledgeBaseIDs(knowledgeBaseIDs)
+	for _, id := range normalized {
+		item := repositories.KnowledgeBaseRepository.Get(sqls.DB(), id)
+		if item != nil {
+			return item
+		}
+	}
+	return nil
+}
+
+func firstKnowledgeBaseID(ids []int64) int64 {
+	normalized := normalizeKnowledgeBaseIDs(ids)
+	if len(normalized) == 0 {
+		return 0
+	}
+	return normalized[0]
 }
 
 func resolveRerankLimit(requestLimit int, defaultLimit int) int {

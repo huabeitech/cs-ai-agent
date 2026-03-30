@@ -69,9 +69,10 @@ type retrieveTraceChunkConfig struct {
 }
 
 type retrieveTraceContext struct {
-	DocumentIDs   []int64  `json:"documentIds"`
-	SectionPaths  []string `json:"sectionPaths"`
-	UsedChunkKeys []string `json:"usedChunkKeys"`
+	KnowledgeBaseIDs []int64  `json:"knowledgeBaseIds"`
+	DocumentIDs      []int64  `json:"documentIds"`
+	SectionPaths     []string `json:"sectionPaths"`
+	UsedChunkKeys    []string `json:"usedChunkKeys"`
 }
 
 type retrieveTraceCitation struct {
@@ -147,22 +148,23 @@ func (s *retrieveLog) CreateRetrieveLog(req *CreateRetrieveLogRequest, _ *dto.Au
 		for i, hit := range req.Hits {
 			hitKey := buildKnowledgeSearchResultKey(hit)
 			hitRecord := &models.KnowledgeRetrieveHit{
-				RetrieveLogID: log.ID,
-				ChunkID:       hit.ChunkID,
-				DocumentID:    hit.DocumentID,
-				DocumentTitle: hit.DocumentTitle,
-				ChunkNo:       hit.ChunkNo,
-				Title:         hit.Title,
-				SectionPath:   hit.SectionPath,
-				ChunkType:     "",
-				Provider:      req.ChunkProvider,
-				RankNo:        i + 1,
-				Score:         hit.Score,
-				RerankScore:   hit.RerankScore,
-				UsedInAnswer:  hasHitKey(usedHitKeys, hitKey),
-				IsCitation:    hasHitKey(citationKeys, hitKey),
-				Snippet:       hit.Content,
-				CreatedAt:     now,
+				RetrieveLogID:   log.ID,
+				KnowledgeBaseID: hit.KnowledgeBaseID,
+				ChunkID:         hit.ChunkID,
+				DocumentID:      hit.DocumentID,
+				DocumentTitle:   hit.DocumentTitle,
+				ChunkNo:         hit.ChunkNo,
+				Title:           hit.Title,
+				SectionPath:     hit.SectionPath,
+				ChunkType:       "",
+				Provider:        req.ChunkProvider,
+				RankNo:          i + 1,
+				Score:           hit.Score,
+				RerankScore:     hit.RerankScore,
+				UsedInAnswer:    hasHitKey(usedHitKeys, hitKey),
+				IsCitation:      hasHitKey(citationKeys, hitKey),
+				Snippet:         hit.Content,
+				CreatedAt:       now,
 			}
 			if err := ctx.Tx.Create(hitRecord).Error; err != nil {
 				return err
@@ -193,9 +195,10 @@ func buildRetrieveTraceData(req *CreateRetrieveLogRequest) string {
 			OverlapTokens: req.ChunkOverlapTokens,
 		},
 		Context: retrieveTraceContext{
-			DocumentIDs:   distinctDocumentIDs(req.UsedHits),
-			SectionPaths:  distinctSectionPaths(req.UsedHits),
-			UsedChunkKeys: buildUsedChunkKeys(req.UsedHits),
+			KnowledgeBaseIDs: distinctKnowledgeBaseIDs(req.UsedHits),
+			DocumentIDs:      distinctDocumentIDs(req.UsedHits),
+			SectionPaths:     distinctSectionPaths(req.UsedHits),
+			UsedChunkKeys:    buildUsedChunkKeys(req.UsedHits),
 		},
 		Citations: buildTraceCitations(req.Citations),
 	}
@@ -224,6 +227,22 @@ func buildUsedChunkKeys(hits []response.KnowledgeSearchResult) []string {
 		keys = append(keys, buildKnowledgeSearchResultKey(item))
 	}
 	return keys
+}
+
+func distinctKnowledgeBaseIDs(hits []response.KnowledgeSearchResult) []int64 {
+	ids := make([]int64, 0)
+	seen := make(map[int64]struct{})
+	for _, item := range hits {
+		if item.KnowledgeBaseID <= 0 {
+			continue
+		}
+		if _, ok := seen[item.KnowledgeBaseID]; ok {
+			continue
+		}
+		seen[item.KnowledgeBaseID] = struct{}{}
+		ids = append(ids, item.KnowledgeBaseID)
+	}
+	return ids
 }
 
 func distinctDocumentIDs(hits []response.KnowledgeSearchResult) []int64 {

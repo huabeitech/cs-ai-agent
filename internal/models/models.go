@@ -588,23 +588,24 @@ type KnowledgeRetrieveLog struct {
 
 // KnowledgeRetrieveHit 检索命中详情表。
 type KnowledgeRetrieveHit struct {
-	ID            int64     `gorm:"primaryKey;autoIncrement"`              // ID 为命中记录主键。
-	RetrieveLogID int64     `gorm:"type:bigint;not null;index"`            // RetrieveLogID 为检索日志ID。
-	ChunkID       int64     `gorm:"type:bigint;not null;index"`            // ChunkID 为切片ID。
-	DocumentID    int64     `gorm:"type:bigint;not null;index"`            // DocumentID 为文档ID。
-	DocumentTitle string    `gorm:"type:varchar(255);not null;default:''"` // DocumentTitle 为文档标题。
-	ChunkNo       int       `gorm:"type:int;not null;default:0"`           // ChunkNo 为切片序号。
-	Title         string    `gorm:"type:varchar(255);not null;default:''"` // Title 为切片标题。
-	SectionPath   string    `gorm:"type:text"`                             // SectionPath 为章节路径。
-	ChunkType     string    `gorm:"type:varchar(30);not null;default:''"`  // ChunkType 为切片类型。
-	Provider      string    `gorm:"type:varchar(30);not null;default:''"`  // Provider 为分块 provider。
-	RankNo        int       `gorm:"type:int;not null;default:0"`           // RankNo 为排名。
-	Score         float64   `gorm:"type:decimal(5,4);not null;default:0"`  // Score 为相似度分数。
-	RerankScore   float64   `gorm:"type:decimal(5,4);not null;default:0"`  // RerankScore 为重排分数。
-	UsedInAnswer  bool      `gorm:"not null;default:false"`                // UsedInAnswer 是否用于生成答案。
-	IsCitation    bool      `gorm:"not null;default:false"`                // IsCitation 是否作为引用返回。
-	Snippet       string    `gorm:"type:text"`                             // Snippet 为内容片段。
-	CreatedAt     time.Time `gorm:"type:datetime;not null;index"`
+	ID              int64     `gorm:"primaryKey;autoIncrement"`              // ID 为命中记录主键。
+	RetrieveLogID   int64     `gorm:"type:bigint;not null;index"`            // RetrieveLogID 为检索日志ID。
+	KnowledgeBaseID int64     `gorm:"type:bigint;not null;default:0;index"`  // KnowledgeBaseID 为命中来源知识库ID。
+	ChunkID         int64     `gorm:"type:bigint;not null;index"`            // ChunkID 为切片ID。
+	DocumentID      int64     `gorm:"type:bigint;not null;index"`            // DocumentID 为文档ID。
+	DocumentTitle   string    `gorm:"type:varchar(255);not null;default:''"` // DocumentTitle 为文档标题。
+	ChunkNo         int       `gorm:"type:int;not null;default:0"`           // ChunkNo 为切片序号。
+	Title           string    `gorm:"type:varchar(255);not null;default:''"` // Title 为切片标题。
+	SectionPath     string    `gorm:"type:text"`                             // SectionPath 为章节路径。
+	ChunkType       string    `gorm:"type:varchar(30);not null;default:''"`  // ChunkType 为切片类型。
+	Provider        string    `gorm:"type:varchar(30);not null;default:''"`  // Provider 为分块 provider。
+	RankNo          int       `gorm:"type:int;not null;default:0"`           // RankNo 为排名。
+	Score           float64   `gorm:"type:decimal(5,4);not null;default:0"`  // Score 为相似度分数。
+	RerankScore     float64   `gorm:"type:decimal(5,4);not null;default:0"`  // RerankScore 为重排分数。
+	UsedInAnswer    bool      `gorm:"not null;default:false"`                // UsedInAnswer 是否用于生成答案。
+	IsCitation      bool      `gorm:"not null;default:false"`                // IsCitation 是否作为引用返回。
+	Snippet         string    `gorm:"type:text"`                             // Snippet 为内容片段。
+	CreatedAt       time.Time `gorm:"type:datetime;not null;index"`
 }
 
 // KnowledgeFeedback 问答反馈表。

@@ -35,29 +35,29 @@ type UpdateKnowledgeDocumentRequest struct {
 }
 
 type KnowledgeSearchRequest struct {
-	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
-	Question        string  `json:"question"`
-	TopK            int     `json:"topK"`
-	ScoreThreshold  float64 `json:"scoreThreshold"`
-	RerankLimit     int     `json:"rerankLimit"`
-	Channel         string  `json:"channel"`
-	Scene           string  `json:"scene"`
-	SessionID       string  `json:"sessionId"`
-	ConversationID  int64   `json:"conversationId"`
+	KnowledgeBaseIDs []int64 `json:"knowledgeBaseIds"`
+	Question         string  `json:"question"`
+	TopK             int     `json:"topK"`
+	ScoreThreshold   float64 `json:"scoreThreshold"`
+	RerankLimit      int     `json:"rerankLimit"`
+	Channel          string  `json:"channel"`
+	Scene            string  `json:"scene"`
+	SessionID        string  `json:"sessionId"`
+	ConversationID   int64   `json:"conversationId"`
 }
 
 type KnowledgeAnswerRequest struct {
-	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
-	Question        string  `json:"question"`
-	TopK            int     `json:"topK"`
-	ScoreThreshold  float64 `json:"scoreThreshold"`
-	RerankLimit     int     `json:"rerankLimit"`
-	Channel         string  `json:"channel"`
-	Scene           string  `json:"scene"`
-	SessionID       string  `json:"sessionId"`
-	ConversationID  int64   `json:"conversationId"`
-	AnswerMode      int     `json:"answerMode"`
-	FallbackMode    int     `json:"fallbackMode"`
+	KnowledgeBaseIDs []int64 `json:"knowledgeBaseIds"`
+	Question         string  `json:"question"`
+	TopK             int     `json:"topK"`
+	ScoreThreshold   float64 `json:"scoreThreshold"`
+	RerankLimit      int     `json:"rerankLimit"`
+	Channel          string  `json:"channel"`
+	Scene            string  `json:"scene"`
+	SessionID        string  `json:"sessionId"`
+	ConversationID   int64   `json:"conversationId"`
+	AnswerMode       int     `json:"answerMode"`
+	FallbackMode     int     `json:"fallbackMode"`
 }
 
 type KnowledgeCompareRequest struct {
