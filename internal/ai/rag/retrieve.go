@@ -10,7 +10,6 @@ import (
 
 	"cs-agent/internal/ai"
 	"cs-agent/internal/ai/rag/vectordb"
-	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/repositories"
 )
@@ -82,23 +81,17 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 	results := make([]RetrieveResult, 0, len(searchResults))
 	for _, sr := range searchResults {
 		chunk := repositories.KnowledgeChunkRepository.FindOne(sqls.DB(), sqls.NewCnd().Eq("vector_id", sr.ID))
-		if chunk == nil {
-			continue
-		}
-		if !isRetrievableKnowledgeChunk(chunk) {
+		if chunk == nil || chunk.Status != enums.StatusOk {
 			continue
 		}
 
 		document := repositories.KnowledgeDocumentRepository.Get(sqls.DB(), chunk.DocumentID)
-		if !isRetrievableKnowledgeDocument(document) {
+		if document == nil || document.Status != enums.StatusOk {
 			continue
 		}
-		documentTitle := ""
-		language := "zh"
-		sourceName := ""
-		if document != nil {
-			documentTitle = document.Title
-		}
+		language := "zh" // TODO 干嘛的？
+		sourceName := "" // TODO 干嘛的？
+		documentTitle := document.Title
 
 		results = append(results, RetrieveResult{
 			KnowledgeBaseID: chunk.KnowledgeBaseID,
@@ -124,21 +117,6 @@ func extractChunkType(payload vectordb.ChunkPayload) string {
 		return payload.ChunkType
 	}
 	return string(enums.KnowledgeChunkTypeText)
-}
-
-// TODO 我觉得这里不用这么麻烦，如果状态不对，咱们直接不入库就好了，入库了还要判断干嘛
-func isRetrievableKnowledgeBase(item *models.KnowledgeBase) bool {
-	return item != nil && item.Status == enums.StatusOk
-}
-
-// TODO 同上，状态不对直接不入库了还要判断个啥
-func isRetrievableKnowledgeDocument(item *models.KnowledgeDocument) bool {
-	return item != nil && item.Status == enums.StatusOk
-}
-
-// TODO 同上，状态不对直接不入库了还要判断个啥
-func isRetrievableKnowledgeChunk(item *models.KnowledgeChunk) bool {
-	return item != nil && item.Status == enums.StatusOk
 }
 
 func (s *retrieve) logEmptySearchDiagnostics(ctx context.Context, provider vectordb.Provider, collectionName string, vector []float32, topK int, scoreThreshold float32, knowledgeBaseIDs []int64, req RetrieveRequest) {
@@ -398,7 +376,7 @@ func (s *retrieve) filterRetrievableKnowledgeBaseIDs(ids []int64) []int64 {
 	}
 	allowed := make(map[int64]struct{}, len(items))
 	for _, item := range items {
-		if isRetrievableKnowledgeBase(&item) {
+		if item.Status == enums.StatusOk {
 			allowed[item.ID] = struct{}{}
 		}
 	}
