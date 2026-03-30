@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 
 import { getPageTitle } from "@/lib/navigation"
@@ -12,11 +13,37 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+
+const SIDEBAR_STORAGE_KEY = "dashboard_sidebar_open"
 
 export function SiteHeader() {
   const pathname = usePathname()
+  const { open, setOpen, isMobile } = useSidebar()
   const pageTitle = getPageTitle(pathname)
+  const hasRestoredRef = useRef(false)
+
+  useEffect(() => {
+    if (hasRestoredRef.current || isMobile) {
+      return
+    }
+
+    hasRestoredRef.current = true
+    const storedValue = window.localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    if (storedValue === null) {
+      return
+    }
+
+    setOpen(storedValue === "true")
+  }, [isMobile, setOpen])
+
+  useEffect(() => {
+    if (!hasRestoredRef.current || isMobile) {
+      return
+    }
+
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(open))
+  }, [isMobile, open])
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
