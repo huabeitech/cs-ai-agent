@@ -5,6 +5,7 @@ import (
 	"cs-agent/cmd/testdata/aiagent"
 	"cs-agent/cmd/testdata/aiconfig"
 	"cs-agent/cmd/testdata/kb"
+	"cs-agent/cmd/testdata/quickreply"
 	"cs-agent/cmd/testdata/tag"
 	"cs-agent/cmd/testdata/widgetsite"
 	"cs-agent/internal/bootstrap"
@@ -101,6 +102,11 @@ func run() error {
 		slog.Error("init tag failed", "error", err)
 	}
 	slog.Info("tag init success")
+
+	if err := quickreply.Init(); err != nil {
+		return fmt.Errorf("init quick reply failed: %w", err)
+	}
+	slog.Info("quick reply init success")
 
 	slog.Info("testdata initialization completed")
 	return nil
