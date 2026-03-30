@@ -5,7 +5,7 @@ import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
-import { ImageIcon, SendIcon } from "lucide-react"
+import { ImageIcon, MessageSquareTextIcon, SendIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -246,16 +246,16 @@ export function ImMessageEditor({
                 render={
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs"
+                    size="icon"
+                    className="size-8"
                     disabled={disabled || uploadingImage || loadingQuickReplies}
                     onMouseDown={(event) => event.preventDefault()}
                   />
                 }
               >
-                {loadingQuickReplies ? "快捷回复加载中..." : "快捷回复"}
+                <MessageSquareTextIcon className="size-4" />
               </PopoverTrigger>
-              <PopoverContent className="w-72 p-0" align="start">
+              <PopoverContent className="w-[30rem] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="搜索快捷回复" />
                   <CommandList>
@@ -267,11 +267,11 @@ export function ImMessageEditor({
                           value={`${item.groupName} ${item.title} ${item.content}`}
                           onSelect={() => handleInsertQuickReply(item)}
                         >
-                          <div className="flex min-w-0 flex-col">
-                            <span className="truncate text-sm">
+                          <div className="flex min-w-0 flex-col gap-0.5 py-0.5">
+                            <span className="line-clamp-1 text-sm">
                               {item.groupName ? `${item.groupName} / ${item.title}` : item.title}
                             </span>
-                            <span className="truncate text-xs text-muted-foreground">
+                            <span className="line-clamp-2 text-xs text-muted-foreground">
                               {item.content}
                             </span>
                           </div>
