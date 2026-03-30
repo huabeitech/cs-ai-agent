@@ -199,12 +199,15 @@ export type AIAgent = {
   serviceModeName: string
   systemPrompt: string
   welcomeMessage: string
+  replyTimeoutSeconds: number
   teams: { id: number; name: string }[]
   handoffMode: number
   handoffModeName: string
   maxAiReplyRounds: number
   fallbackMode: number
   fallbackModeName: string
+  fallbackGuideMessage: string
+  fallbackNoAnswerMessage: string
   knowledgeIds: number[]
   knowledgeBaseNames: string[]
   sortNo: number
@@ -222,10 +225,13 @@ export type CreateAIAgentPayload = {
   serviceMode: number
   systemPrompt: string
   welcomeMessage: string
+  replyTimeoutSeconds: number
   teamIds: number[]
   handoffMode: number
   maxAiReplyRounds: number
   fallbackMode: number
+  fallbackGuideMessage: string
+  fallbackNoAnswerMessage: string
   knowledgeIds: number[]
   remark: string
 }

@@ -34,18 +34,21 @@ type UpdateAIConfigStatusRequest struct {
 }
 
 type CreateAIAgentRequest struct {
-	Name             string                          `json:"name"`
-	Description      string                          `json:"description"`
-	AIConfigID       int64                           `json:"aiConfigId"`
-	ServiceMode      enums.IMConversationServiceMode `json:"serviceMode"`
-	SystemPrompt     string                          `json:"systemPrompt"`
-	WelcomeMessage   string                          `json:"welcomeMessage"`
-	TeamIDs          []int64                         `json:"teamIds"`
-	HandoffMode      enums.AIAgentHandoffMode        `json:"handoffMode"`
-	MaxAIReplyRounds int                             `json:"maxAiReplyRounds"`
-	FallbackMode     enums.AIAgentFallbackMode       `json:"fallbackMode"`
-	KnowledgeIDs     []int64                         `json:"knowledgeIds"`
-	Remark           string                          `json:"remark"`
+	Name                    string                          `json:"name"`
+	Description             string                          `json:"description"`
+	AIConfigID              int64                           `json:"aiConfigId"`
+	ServiceMode             enums.IMConversationServiceMode `json:"serviceMode"`
+	SystemPrompt            string                          `json:"systemPrompt"`
+	WelcomeMessage          string                          `json:"welcomeMessage"`
+	ReplyTimeoutSeconds     int                             `json:"replyTimeoutSeconds"`
+	TeamIDs                 []int64                         `json:"teamIds"`
+	HandoffMode             enums.AIAgentHandoffMode        `json:"handoffMode"`
+	MaxAIReplyRounds        int                             `json:"maxAiReplyRounds"`
+	FallbackMode            enums.AIAgentFallbackMode       `json:"fallbackMode"`
+	FallbackGuideMessage    string                          `json:"fallbackGuideMessage"`
+	FallbackNoAnswerMessage string                          `json:"fallbackNoAnswerMessage"`
+	KnowledgeIDs            []int64                         `json:"knowledgeIds"`
+	Remark                  string                          `json:"remark"`
 }
 
 type UpdateAIAgentRequest struct {

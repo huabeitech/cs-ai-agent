@@ -33,7 +33,10 @@ type aiKnowledgeCandidate struct {
 	topScore      float32
 }
 
-const aiReplyAsyncTimeout = 180 * time.Second // TODO 这个配置应该放到AI Agent配置里，或者全局AI配置里，目前先写死
+const (
+	defaultAIReplyAsyncTimeoutSeconds = 180
+	maxAIReplyAsyncTimeoutSeconds     = 600
+)
 
 func (s *aiReplyService) TriggerReplyAsync(messageID int64) {
 	if messageID <= 0 {
@@ -41,16 +44,44 @@ func (s *aiReplyService) TriggerReplyAsync(messageID int64) {
 	}
 	go func() {
 		startedAt := time.Now()
-		ctx, cancel := context.WithTimeout(context.Background(), aiReplyAsyncTimeout)
+		timeout := s.resolveReplyTimeout(messageID)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if err := s.TriggerReply(ctx, messageID); err != nil {
 			slog.Error("failed to trigger ai reply",
 				"message_id", messageID,
-				"timeout_ms", aiReplyAsyncTimeout.Milliseconds(),
+				"timeout_ms", timeout.Milliseconds(),
 				"elapsed_ms", time.Since(startedAt).Milliseconds(),
 				"error", err)
 		}
 	}()
+}
+
+func (s *aiReplyService) resolveReplyTimeout(messageID int64) time.Duration {
+	if messageID <= 0 {
+		return time.Duration(defaultAIReplyAsyncTimeoutSeconds) * time.Second
+	}
+	message := MessageService.Get(messageID)
+	if message == nil {
+		return time.Duration(defaultAIReplyAsyncTimeoutSeconds) * time.Second
+	}
+	conversation := ConversationService.Get(message.ConversationID)
+	if conversation == nil || conversation.AIAgentID <= 0 {
+		return time.Duration(defaultAIReplyAsyncTimeoutSeconds) * time.Second
+	}
+	aiAgent := AIAgentService.Get(conversation.AIAgentID)
+	return s.buildReplyTimeout(aiAgent)
+}
+
+func (s *aiReplyService) buildReplyTimeout(aiAgent *models.AIAgent) time.Duration {
+	timeoutSeconds := defaultAIReplyAsyncTimeoutSeconds
+	if aiAgent != nil && aiAgent.ReplyTimeoutSeconds > 0 {
+		timeoutSeconds = aiAgent.ReplyTimeoutSeconds
+	}
+	if timeoutSeconds > maxAIReplyAsyncTimeoutSeconds {
+		timeoutSeconds = maxAIReplyAsyncTimeoutSeconds
+	}
+	return time.Duration(timeoutSeconds) * time.Second
 }
 
 func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) error {
@@ -233,16 +264,18 @@ func (s *aiReplyService) generateReply(ctx context.Context, aiConfig *models.AIC
 }
 
 func (s *aiReplyService) buildSystemPrompt(aiAgent *models.AIAgent, knowledgeBase *models.KnowledgeBase) string {
-	// TODO 系统提示词模版，不同的AI Agent可以配置不同的模版，目前先写死
+	agentPrompt := ""
+	if aiAgent != nil {
+		agentPrompt = strings.TrimSpace(aiAgent.SystemPrompt)
+	}
+	if agentPrompt != "" {
+		return agentPrompt
+	}
 	basePrompt := "你是严格的客服知识库助手。只能依据提供的知识片段回答；如果资料不足，请明确说明知识库暂无明确信息。"
 	if knowledgeBase != nil && enums.KnowledgeAnswerMode(knowledgeBase.AnswerMode) == enums.KnowledgeAnswerModeAssist {
 		basePrompt = "你是客服知识库助手。请优先依据提供的知识片段回答，可以做轻度归纳，但不要编造未提供的事实。"
 	}
-	agentPrompt := strings.TrimSpace(aiAgent.SystemPrompt)
-	if agentPrompt == "" {
-		return basePrompt
-	}
-	return agentPrompt + "\n\n" + basePrompt
+	return basePrompt
 }
 
 func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAgent *models.AIAgent, reason string) error {
@@ -250,17 +283,29 @@ func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAge
 		return nil
 	}
 	switch enums.AIAgentFallbackMode(aiAgent.FallbackMode) {
-	case enums.AIAgentFallbackModeHandoff:
+	case enums.AIAgentFallbackModeHandoff: // 转人工
 		return s.handoffConversation(conversation, aiAgent, reason)
-	case enums.AIAgentFallbackModeGuideRephrase:
-		// TODO 这个文案不能写死，需要配置到AIAgent中
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。", "", s.buildAIPrincipal(aiAgent))
+	case enums.AIAgentFallbackModeGuideRephrase: // 引导补充信息或换个问法
+		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackGuideMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
-	default:
-		// TODO 这个文案不能写死，需要配置到AIAgent中
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, "我暂时没有找到明确答案。", "", s.buildAIPrincipal(aiAgent))
+	default: // 直接声明无答案
+		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackNoAnswerMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
 	}
+}
+
+func (s *aiReplyService) buildFallbackGuideMessage(aiAgent *models.AIAgent) string {
+	if aiAgent != nil && strings.TrimSpace(aiAgent.FallbackGuideMessage) != "" {
+		return strings.TrimSpace(aiAgent.FallbackGuideMessage)
+	}
+	return "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。"
+}
+
+func (s *aiReplyService) buildFallbackNoAnswerMessage(aiAgent *models.AIAgent) string {
+	if aiAgent != nil && strings.TrimSpace(aiAgent.FallbackNoAnswerMessage) != "" {
+		return strings.TrimSpace(aiAgent.FallbackNoAnswerMessage)
+	}
+	return "我暂时没有找到明确答案。"
 }
 
 func (s *aiReplyService) handoffConversation(conversation *models.Conversation, aiAgent *models.AIAgent, reason string) error {

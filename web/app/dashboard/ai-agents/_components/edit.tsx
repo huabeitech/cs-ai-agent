@@ -70,11 +70,16 @@ const schema = z.object({
   serviceMode: z.string().trim().min(1, "请选择服务模式"),
   systemPrompt: z.string().trim(),
   welcomeMessage: z.string().trim(),
+  replyTimeoutSeconds: z
+    .number()
+    .min(0, "回复超时秒数必须是大于等于 0 的整数"),
   handoffMode: z.string().trim().min(1, "请选择转人工模式"),
   maxAiReplyRounds: z
     .number()
     .min(0, "AI 最大回复次数必须是大于等于 0 的整数"),
   fallbackMode: z.string().trim().min(1, "请选择兜底模式"),
+  fallbackGuideMessage: z.string().trim(),
+  fallbackNoAnswerMessage: z.string().trim(),
   remark: z.string().trim(),
 });
 
@@ -116,9 +121,13 @@ function buildForm(item: AIAgent | null): EditForm {
       serviceMode: String(IMConversationServiceMode.AIFirst),
       systemPrompt: "",
       welcomeMessage: "",
+      replyTimeoutSeconds: 180,
       handoffMode: String(AIAgentHandoffMode.WaitPool),
       maxAiReplyRounds: 2,
       fallbackMode: String(AIAgentFallbackMode.GuideRephrase),
+      fallbackGuideMessage:
+        "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。",
+      fallbackNoAnswerMessage: "我暂时没有找到明确答案。",
       remark: "",
     };
   }
@@ -129,9 +138,12 @@ function buildForm(item: AIAgent | null): EditForm {
     serviceMode: String(item.serviceMode),
     systemPrompt: item.systemPrompt || "",
     welcomeMessage: item.welcomeMessage || "",
+    replyTimeoutSeconds: item.replyTimeoutSeconds ?? 180,
     handoffMode: String(item.handoffMode),
     maxAiReplyRounds: item.maxAiReplyRounds ?? 2,
     fallbackMode: String(item.fallbackMode),
+    fallbackGuideMessage: item.fallbackGuideMessage || "",
+    fallbackNoAnswerMessage: item.fallbackNoAnswerMessage || "",
     remark: item.remark || "",
   };
 }
@@ -148,10 +160,13 @@ function buildPayload(
     serviceMode: Number(form.serviceMode),
     systemPrompt: form.systemPrompt.trim(),
     welcomeMessage: form.welcomeMessage.trim(),
+    replyTimeoutSeconds: Number(form.replyTimeoutSeconds),
     teamIds,
     handoffMode: Number(form.handoffMode),
     maxAiReplyRounds: Number(form.maxAiReplyRounds),
     fallbackMode: Number(form.fallbackMode),
+    fallbackGuideMessage: form.fallbackGuideMessage.trim(),
+    fallbackNoAnswerMessage: form.fallbackNoAnswerMessage.trim(),
     knowledgeIds,
     remark: form.remark.trim(),
   };
@@ -540,7 +555,7 @@ function EditDialogBody({
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <Field data-invalid={!!errors.handoffMode}>
               <FieldLabel>转人工模式</FieldLabel>
               <FieldContent>
@@ -559,6 +574,41 @@ function EditDialogBody({
                   )}
                 />
                 <FieldError errors={[errors.handoffMode]} />
+              </FieldContent>
+            </Field>
+            <Field data-invalid={!!errors.replyTimeoutSeconds}>
+              <FieldLabel
+                htmlFor="ai-agent-reply-timeout-seconds"
+                className="flex items-center gap-1"
+              >
+                回复超时秒数
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        <InfoIcon className="size-4" />
+                      </button>
+                    }
+                  />
+                  <PopoverContent side="top" align="start" className="max-w-xs">
+                    <PopoverDescription>
+                      AI 自动回复的异步执行超时时间。填 0 时使用系统默认值 180 秒。
+                    </PopoverDescription>
+                  </PopoverContent>
+                </Popover>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  id="ai-agent-reply-timeout-seconds"
+                  type="number"
+                  min={0}
+                  step={1}
+                  {...register("replyTimeoutSeconds", { valueAsNumber: true })}
+                />
+                <FieldError errors={[errors.replyTimeoutSeconds]} />
               </FieldContent>
             </Field>
             <Field data-invalid={!!errors.maxAiReplyRounds}>
@@ -593,7 +643,7 @@ function EditDialogBody({
                   type="number"
                   min={0}
                   step={1}
-                  {...register("maxAiReplyRounds")}
+                  {...register("maxAiReplyRounds", { valueAsNumber: true })}
                 />
                 <FieldError errors={[errors.maxAiReplyRounds]} />
               </FieldContent>
@@ -724,6 +774,34 @@ function EditDialogBody({
                 {...register("systemPrompt")}
               />
               <FieldError errors={[errors.systemPrompt]} />
+            </FieldContent>
+          </Field>
+
+          <Field data-invalid={!!errors.fallbackGuideMessage}>
+            <FieldLabel htmlFor="ai-agent-fallback-guide-message">
+              兜底引导文案
+            </FieldLabel>
+            <FieldContent>
+              <Textarea
+                id="ai-agent-fallback-guide-message"
+                rows={3}
+                {...register("fallbackGuideMessage")}
+              />
+              <FieldError errors={[errors.fallbackGuideMessage]} />
+            </FieldContent>
+          </Field>
+
+          <Field data-invalid={!!errors.fallbackNoAnswerMessage}>
+            <FieldLabel htmlFor="ai-agent-fallback-no-answer-message">
+              兜底无答案文案
+            </FieldLabel>
+            <FieldContent>
+              <Textarea
+                id="ai-agent-fallback-no-answer-message"
+                rows={3}
+                {...register("fallbackNoAnswerMessage")}
+              />
+              <FieldError errors={[errors.fallbackNoAnswerMessage]} />
             </FieldContent>
           </Field>
 

@@ -87,21 +87,24 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 		return err
 	}
 	return repositories.AIAgentRepository.Updates(sqls.DB(), req.ID, map[string]any{
-		"name":                item.Name,
-		"description":         item.Description,
-		"ai_config_id":        item.AIConfigID,
-		"service_mode":        item.ServiceMode,
-		"system_prompt":       item.SystemPrompt,
-		"welcome_message":     item.WelcomeMessage,
-		"team_ids":            item.TeamIDs,
-		"handoff_mode":        item.HandoffMode,
-		"max_ai_reply_rounds": item.MaxAIReplyRounds,
-		"fallback_mode":       item.FallbackMode,
-		"knowledge_ids":       item.KnowledgeIDs,
-		"remark":              item.Remark,
-		"update_user_id":      operator.UserID,
-		"update_user_name":    operator.Username,
-		"updated_at":          time.Now(),
+		"name":                       item.Name,
+		"description":                item.Description,
+		"ai_config_id":               item.AIConfigID,
+		"service_mode":               item.ServiceMode,
+		"system_prompt":              item.SystemPrompt,
+		"welcome_message":            item.WelcomeMessage,
+		"reply_timeout_seconds":      item.ReplyTimeoutSeconds,
+		"team_ids":                   item.TeamIDs,
+		"handoff_mode":               item.HandoffMode,
+		"max_ai_reply_rounds":        item.MaxAIReplyRounds,
+		"fallback_mode":              item.FallbackMode,
+		"fallback_guide_message":     item.FallbackGuideMessage,
+		"fallback_no_answer_message": item.FallbackNoAnswerMessage,
+		"knowledge_ids":              item.KnowledgeIDs,
+		"remark":                     item.Remark,
+		"update_user_id":             operator.UserID,
+		"update_user_name":           operator.Username,
+		"updated_at":                 time.Now(),
 	})
 }
 
@@ -157,6 +160,9 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 	if !slices.Contains(enums.AIAgentFallbackModeValues, enums.AIAgentFallbackMode(req.FallbackMode)) {
 		return nil, errorsx.InvalidParam("兜底模式不合法")
 	}
+	if req.ReplyTimeoutSeconds < 0 {
+		return nil, errorsx.InvalidParam("回复超时秒数不能小于 0")
+	}
 
 	knowledgeIDs, err := s.normalizeKnowledgeIDs(req.KnowledgeIDs)
 	if err != nil {
@@ -166,18 +172,21 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 		return nil, errorsx.InvalidParam("请至少选择一个知识库")
 	}
 	return &models.AIAgent{
-		Name:             name,
-		Description:      strings.TrimSpace(req.Description),
-		AIConfigID:       req.AIConfigID,
-		ServiceMode:      req.ServiceMode,
-		SystemPrompt:     strings.TrimSpace(req.SystemPrompt),
-		WelcomeMessage:   strings.TrimSpace(req.WelcomeMessage),
-		TeamIDs:          utils.JoinInt64s(teamIDs),
-		HandoffMode:      req.HandoffMode,
-		MaxAIReplyRounds: req.MaxAIReplyRounds,
-		FallbackMode:     req.FallbackMode,
-		KnowledgeIDs:     utils.JoinInt64s(knowledgeIDs),
-		Remark:           strings.TrimSpace(req.Remark),
+		Name:                    name,
+		Description:             strings.TrimSpace(req.Description),
+		AIConfigID:              req.AIConfigID,
+		ServiceMode:             req.ServiceMode,
+		SystemPrompt:            strings.TrimSpace(req.SystemPrompt),
+		WelcomeMessage:          strings.TrimSpace(req.WelcomeMessage),
+		ReplyTimeoutSeconds:     req.ReplyTimeoutSeconds,
+		TeamIDs:                 utils.JoinInt64s(teamIDs),
+		HandoffMode:             req.HandoffMode,
+		MaxAIReplyRounds:        req.MaxAIReplyRounds,
+		FallbackMode:            req.FallbackMode,
+		FallbackGuideMessage:    strings.TrimSpace(req.FallbackGuideMessage),
+		FallbackNoAnswerMessage: strings.TrimSpace(req.FallbackNoAnswerMessage),
+		KnowledgeIDs:            utils.JoinInt64s(knowledgeIDs),
+		Remark:                  strings.TrimSpace(req.Remark),
 	}, nil
 }
 
