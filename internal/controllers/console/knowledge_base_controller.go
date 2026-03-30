@@ -35,7 +35,7 @@ func (c *KnowledgeBaseController) AnyList() *web.JsonResult {
 	results := make([]response.KnowledgeBaseResponse, 0, len(list))
 	for _, item := range list {
 		docCount := repositories.KnowledgeDocumentRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
-		resp := builders.BuildKnowledgeBaseResponse(&item)
+		resp := builders.BuildKnowledgeBase(&item)
 		resp.DocumentCount = docCount
 		results = append(results, resp)
 	}
@@ -52,7 +52,7 @@ func (c *KnowledgeBaseController) AnyList_all() *web.JsonResult {
 	).Asc("sort_no").Desc("id"))
 	results := make([]response.KnowledgeBaseResponse, 0, len(list))
 	for _, item := range list {
-		resp := builders.BuildKnowledgeBaseResponse(&item)
+		resp := builders.BuildKnowledgeBase(&item)
 		results = append(results, resp)
 	}
 	return web.JsonData(results)
@@ -67,7 +67,7 @@ func (c *KnowledgeBaseController) GetBy(id int64) *web.JsonResult {
 	if item == nil {
 		return web.JsonErrorMsg("知识库不存在")
 	}
-	resp := builders.BuildKnowledgeBaseResponse(item)
+	resp := builders.BuildKnowledgeBase(item)
 	resp.DocumentCount = repositories.KnowledgeDocumentRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
 	return web.JsonData(resp)
 }
@@ -86,7 +86,7 @@ func (c *KnowledgeBaseController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildKnowledgeBaseResponse(item))
+	return web.JsonData(builders.BuildKnowledgeBase(item))
 }
 
 func (c *KnowledgeBaseController) PostUpdate() *web.JsonResult {

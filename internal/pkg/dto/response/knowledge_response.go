@@ -46,24 +46,6 @@ type KnowledgeDocumentResponse struct {
 	UpdateUserName    string                             `json:"updateUserName"`
 }
 
-type KnowledgeChunkResponse struct {
-	ID              int64        `json:"id"`
-	KnowledgeBaseID int64        `json:"knowledgeBaseId"`
-	DocumentID      int64        `json:"documentId"`
-	DocumentTitle   string       `json:"documentTitle,omitempty"`
-	ChunkNo         int          `json:"chunkNo"`
-	Title           string       `json:"title"`
-	Content         string       `json:"content"`
-	ContentHash     string       `json:"contentHash"`
-	CharCount       int          `json:"charCount"`
-	TokenCount      int          `json:"tokenCount"`
-	Status          enums.Status `json:"status"`
-	StatusName      string       `json:"statusName"`
-	VectorID        string       `json:"vectorId"`
-	CreatedAt       time.Time    `json:"createdAt"`
-	UpdatedAt       time.Time    `json:"updatedAt"`
-}
-
 type KnowledgeSearchResult struct {
 	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
 	ChunkID         int64   `json:"chunkId"`

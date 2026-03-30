@@ -36,7 +36,7 @@ func (c *KnowledgeDocumentController) AnyList() *web.JsonResult {
 	list, paging := services.KnowledgeDocumentService.FindPageByCnd(cnd)
 	results := make([]response.KnowledgeDocumentResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, builders.BuildKnowledgeDocumentResponse(&item))
+		results = append(results, builders.BuildKnowledgeDocument(&item))
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
@@ -50,7 +50,7 @@ func (c *KnowledgeDocumentController) GetBy(id int64) *web.JsonResult {
 	if item == nil {
 		return web.JsonErrorMsg("文档不存在")
 	}
-	return web.JsonData(builders.BuildKnowledgeDocumentResponse(item))
+	return web.JsonData(builders.BuildKnowledgeDocument(item))
 }
 
 func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
@@ -67,7 +67,7 @@ func (c *KnowledgeDocumentController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildKnowledgeDocumentResponse(item))
+	return web.JsonData(builders.BuildKnowledgeDocument(item))
 }
 
 func (c *KnowledgeDocumentController) PostUpdate() *web.JsonResult {

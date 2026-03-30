@@ -40,7 +40,7 @@ func (c *KnowledgeRetrieveLogController) AnyList() *web.JsonResult {
 	list, paging := services.KnowledgeRetrieveLogService.FindPageByParams(queryParams)
 	results := make([]response.KnowledgeRetrieveLogResponse, 0, len(list))
 	for _, item := range list {
-		resp := builders.BuildKnowledgeRetrieveLogResponse(&item)
+		resp := builders.BuildKnowledgeRetrieveLog(&item)
 		if knowledgeBase := services.KnowledgeBaseService.Get(item.KnowledgeBaseID); knowledgeBase != nil {
 			resp.KnowledgeBaseName = knowledgeBase.Name
 		}
@@ -59,7 +59,7 @@ func (c *KnowledgeRetrieveLogController) GetBy(id int64) *web.JsonResult {
 		return web.JsonErrorMsg("检索日志不存在")
 	}
 
-	logResp := builders.BuildKnowledgeRetrieveLogResponse(logItem)
+	logResp := builders.BuildKnowledgeRetrieveLog(logItem)
 	if knowledgeBase := services.KnowledgeBaseService.Get(logItem.KnowledgeBaseID); knowledgeBase != nil {
 		logResp.KnowledgeBaseName = knowledgeBase.Name
 	}

@@ -6,7 +6,7 @@ import (
 	"cs-agent/internal/pkg/enums"
 )
 
-func BuildKnowledgeBaseResponse(item *models.KnowledgeBase) response.KnowledgeBaseResponse {
+func BuildKnowledgeBase(item *models.KnowledgeBase) response.KnowledgeBaseResponse {
 	return response.KnowledgeBaseResponse{
 		ID:                    item.ID,
 		Name:                  item.Name,
@@ -32,7 +32,7 @@ func BuildKnowledgeBaseResponse(item *models.KnowledgeBase) response.KnowledgeBa
 	}
 }
 
-func BuildKnowledgeDocumentResponse(item *models.KnowledgeDocument) response.KnowledgeDocumentResponse {
+func BuildKnowledgeDocument(item *models.KnowledgeDocument) response.KnowledgeDocumentResponse {
 	return response.KnowledgeDocumentResponse{
 		ID:              item.ID,
 		KnowledgeBaseID: item.KnowledgeBaseID,
@@ -49,27 +49,7 @@ func BuildKnowledgeDocumentResponse(item *models.KnowledgeDocument) response.Kno
 	}
 }
 
-func BuildKnowledgeChunkResponse(item *models.KnowledgeChunk) response.KnowledgeChunkResponse {
-	return response.KnowledgeChunkResponse{
-		ID:              item.ID,
-		KnowledgeBaseID: item.KnowledgeBaseID,
-		DocumentID:      item.DocumentID,
-		DocumentTitle:   "", // TODO
-		ChunkNo:         item.ChunkNo,
-		Title:           item.Title,
-		Content:         item.Content,
-		ContentHash:     item.ContentHash,
-		CharCount:       item.CharCount,
-		TokenCount:      item.TokenCount,
-		Status:          item.Status,
-		StatusName:      enums.GetStatusLabel(item.Status),
-		VectorID:        item.VectorID,
-		CreatedAt:       item.CreatedAt,
-		UpdatedAt:       item.UpdatedAt,
-	}
-}
-
-func BuildKnowledgeRetrieveLogResponse(item *models.KnowledgeRetrieveLog) response.KnowledgeRetrieveLogResponse {
+func BuildKnowledgeRetrieveLog(item *models.KnowledgeRetrieveLog) response.KnowledgeRetrieveLogResponse {
 	return response.KnowledgeRetrieveLogResponse{
 		ID:                 item.ID,
 		KnowledgeBaseID:    item.KnowledgeBaseID,
