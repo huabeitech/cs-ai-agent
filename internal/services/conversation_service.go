@@ -254,6 +254,7 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 	if toUserID <= 0 {
 		return errorsx.InvalidParam("目标客服不能为空")
 	}
+	// TODO 这里应该判断AgentProfile，而不是判断用户
 	targetUser := UserService.Get(toUserID)
 	if targetUser == nil || targetUser.Status != enums.StatusOk {
 		return errorsx.InvalidParam("目标客服不存在")
