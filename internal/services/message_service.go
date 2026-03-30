@@ -258,15 +258,16 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 				UpdateUserName: auditUserName,
 			},
 		}
-		if senderType == enums.IMSenderTypeAgent {
+		switch senderType {
+		case enums.IMSenderTypeAgent:
 			if message.SenderID == 0 {
 				message.SenderID = operator.UserID
 			}
-		} else if senderType == enums.IMSenderTypeAI {
+		case enums.IMSenderTypeAI:
 			if message.SenderID == 0 {
 				message.SenderID = reqSenderID
 			}
-		} else {
+		default:
 			message.SenderID = 0
 		}
 		if err := ctx.Tx.Create(message).Error; err != nil {
@@ -328,7 +329,7 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		}); err != nil {
 			return err
 		}
-		if err := ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeMessageSend, eventOperatorType, eventOperatorID, eventContent, "", now); err != nil {
+		if err := ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeMessageSend, eventOperatorType, eventOperatorID, eventContent, ""); err != nil {
 			return err
 		}
 		ret = message

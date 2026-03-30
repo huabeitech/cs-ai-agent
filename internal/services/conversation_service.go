@@ -140,7 +140,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiA
 		if err := ConversationParticipantService.CreateCustomerParticipant(ctx, conversation.ID, externalInfo); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "", time.Now())
+		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "")
 	}); err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 			"fromAssigneeId": conversation.CurrentAssigneeID,
 			"toAssigneeId":   assigneeID,
 			"reason":         strings.TrimSpace(reason),
-		}), now)
+		}))
 	}); err != nil {
 		return err
 	}
@@ -246,10 +246,9 @@ func (s *conversationService) DispatchConversation(conversationID int64, operato
 	return nil
 }
 
-func (s *conversationService) TransferConversation(conversationID, toUserID int64, reason string, operator dto.AuthPrincipal) error {
-	// TODO 这个权限控制不合理，后面需要调整；希望做成，只要有转接权限的人都可以转接；
-	if !s.isAdmin(&operator) {
-		return errorsx.Forbidden("只有管理员可以转接会话")
+func (s *conversationService) TransferConversation(conversationID, toUserID int64, reason string, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
 	}
 	if toUserID <= 0 {
 		return errorsx.InvalidParam("目标客服不能为空")
@@ -264,6 +263,9 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		if conversation == nil {
 			return errorsx.InvalidParam("会话不存在")
 		}
+		if !s.canTransferConversation(conversation, operator) {
+			return errorsx.Forbidden("无权转接该会话")
+		}
 		if conversation.Status != enums.IMConversationStatusActive {
 			return errorsx.InvalidParam("只有处理中会话允许转接")
 		}
@@ -277,7 +279,7 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, &operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, operator, now); err != nil {
 			return err
 		}
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
@@ -295,7 +297,7 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 			"fromAssigneeId": conversation.CurrentAssigneeID,
 			"toAssigneeId":   toUserID,
 			"reason":         strings.TrimSpace(reason),
-		}), now)
+		}))
 	}); err != nil {
 		return err
 	}
@@ -377,7 +379,7 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 			"fromAssigneeId": conversation.CurrentAssigneeID,
 			"toAssigneeId":   conversation.CurrentAssigneeID,
 			"closeReason":    closeReason,
-		}), now)
+		}))
 	}); err != nil {
 		return err
 	}
@@ -625,6 +627,18 @@ func (s *conversationService) canCloseConversation(conversation *models.Conversa
 		return true
 	}
 	return conversation.Status == enums.IMConversationStatusActive && conversation.CurrentAssigneeID > 0 && conversation.CurrentAssigneeID == operator.UserID
+}
+
+func (s *conversationService) canTransferConversation(conversation *models.Conversation, operator *dto.AuthPrincipal) bool {
+	if conversation == nil || operator == nil {
+		return false
+	}
+	if s.isAdmin(operator) {
+		return true
+	}
+	return conversation.Status == enums.IMConversationStatusActive &&
+		conversation.CurrentAssigneeID > 0 &&
+		conversation.CurrentAssigneeID == operator.UserID
 }
 
 func (s *conversationService) isAdmin(operator *dto.AuthPrincipal) bool {

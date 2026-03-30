@@ -7,6 +7,7 @@ import { useImageLightbox } from "@/components/image-lightbox";
 import { ImMessageEditor } from "@/components/im-message-editor";
 import { ImMessageHTML } from "@/components/im-message-html";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/resizable";
 import {
   assignAgentConversation,
-  transferAgentConversation,
   type AgentMessage,
 } from "@/lib/api/agent";
 import { readSession } from "@/lib/auth";
@@ -78,13 +78,21 @@ export function ChatPanel() {
   );
   const [claiming, setClaiming] = useState(false);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
-  const [transferring, setTransferring] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const isLgUp = useIsLgUp();
   const isClosedConversation = conversation?.status === 3;
   const isPendingConversation = conversation?.status === 1;
+  const isActiveConversation = conversation?.status === 2;
   const showMessageEditor = !isClosedConversation && !isPendingConversation;
   const session = readSession();
   const hasTransferPermission = session?.permissions?.includes("conversation.transfer") ?? false;
+  const isAdmin =
+    session?.roles?.includes("super_admin") || session?.roles?.includes("admin") || false;
+  const canTransferConversation =
+    !!conversation &&
+    isActiveConversation &&
+    hasTransferPermission &&
+    (isAdmin || conversation.currentAssigneeId === session?.user?.id);
 
   const switchToMyActiveIfNeeded = () => {
     if (conversationFilter !== "pending") {
@@ -310,10 +318,7 @@ export function ChatPanel() {
       switchToMyActiveIfNeeded();
       setClaimDialogOpen(false);
       toast.success("认领成功");
-      await loadConversations();
-      if (conversation.id) {
-        await loadMessages(conversation.id, { forceLoading: true, reset: true });
-      }
+      await reloadConversationData(conversation.id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "认领会话失败");
     } finally {
@@ -321,32 +326,9 @@ export function ChatPanel() {
     }
   };
 
-  const handleTransfer = async () => {
-    if (!conversation || transferring) return;
-    const session = readSession();
-    if (!session?.user?.id) {
-      toast.error("未登录或登录已过期");
-      return;
-    }
-
-    setTransferring(true);
-    try {
-      await transferAgentConversation(
-        conversation.id,
-        session.user.id,
-        "转接会话",
-      );
-
-      toast.success("转接成功");
-      await loadConversations();
-      if (conversation.id) {
-        await loadMessages(conversation.id, { forceLoading: true, reset: true });
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "转接会话失败");
-    } finally {
-      setTransferring(false);
-    }
+  const reloadConversationData = async (conversationId: number) => {
+    await loadConversations();
+    await loadMessages(conversationId, { forceLoading: true, reset: true });
   };
 
   if (!conversation) {
@@ -418,36 +400,41 @@ export function ChatPanel() {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => setClaimDialogOpen(true)}
-              disabled={claiming || transferring}
+              disabled={claiming}
               size="sm"
             >
               {claiming ? "认领中..." : "认领"}
             </Button>
-            {hasTransferPermission && (
-              <Button
-                onClick={handleTransfer}
-                disabled={claiming || transferring}
-                variant="outline"
-                size="sm"
-              >
-                {transferring ? "转接中..." : "转接"}
-              </Button>
-            )}
           </div>
         </div>
       ) : (
-        <ImMessageEditor
-          disabled={!conversation || sending}
-          uploadingImage={uploadingImage}
-          onSend={handleSend}
-          onUploadImage={async (file) => {
-            shouldStickToBottomRef.current = true;
-            const uploaded = await uploadImage(file);
-            return uploaded
-              ? { url: uploaded.url, filename: uploaded.filename }
-              : null;
-          }}
-        />
+        <div className="flex h-full min-h-0 flex-col">
+          {canTransferConversation ? (
+            <div className="flex shrink-0 justify-end border-b border-border px-4 py-3">
+              <Button
+                onClick={() => setTransferDialogOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                转接
+              </Button>
+            </div>
+          ) : null}
+          <div className="min-h-0 flex-1">
+            <ImMessageEditor
+              disabled={!conversation || sending}
+              uploadingImage={uploadingImage}
+              onSend={handleSend}
+              onUploadImage={async (file) => {
+                shouldStickToBottomRef.current = true;
+                const uploaded = await uploadImage(file);
+                return uploaded
+                  ? { url: uploaded.url, filename: uploaded.filename }
+                  : null;
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -517,6 +504,15 @@ export function ChatPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConversationTransferDialog
+        open={transferDialogOpen}
+        mode="transfer"
+        conversationId={conversation.id}
+        onOpenChange={setTransferDialogOpen}
+        onSuccess={async () => {
+          await reloadConversationData(conversation.id);
+        }}
+      />
     </div>
   );
 }

@@ -423,7 +423,7 @@ func (s *conversationDispatchService) tryAssignConversation(conversationID int64
 			return errConversationDispatchConflict
 		}
 
-		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeAssign, enums.IMSenderTypeSystem, operator.UserID, "会话已自动分配", buildDispatchEventPayload(conversation.CurrentAssigneeID, candidate.UserID, candidate.TeamID, reason), now)
+		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeAssign, enums.IMSenderTypeSystem, operator.UserID, "会话已自动分配", buildDispatchEventPayload(conversation.CurrentAssigneeID, candidate.UserID, candidate.TeamID, reason))
 	})
 	if err != nil {
 		return nil, err

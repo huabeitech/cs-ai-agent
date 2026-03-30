@@ -281,7 +281,7 @@ func (s *aiReplyService) handoffConversation(conversation *models.Conversation, 
 		}); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason), now)
+		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason))
 	}); err != nil {
 		return err
 	}
