@@ -202,10 +202,6 @@ func (s *conversationService) DispatchConversation(conversationID int64, operato
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
-	// TODO 这个权限控制不合理，后面需要调整；希望做成，只要有分配的人都可以分配；
-	if !s.isAdmin(operator) {
-		return errorsx.Forbidden("只有管理员可以自动分配会话")
-	}
 
 	conversation := s.Get(conversationID)
 	if conversation == nil {
