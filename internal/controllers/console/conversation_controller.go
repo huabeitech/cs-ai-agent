@@ -173,7 +173,7 @@ func (c *ConversationController) PostTransfer() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.TransferConversation(req.ConversationID, req.ToUserID, req.Reason, operator); err != nil {
+	if err := services.ConversationService.TransferConversation(req.ConversationID, req.ToUserID, req.Reason, *operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

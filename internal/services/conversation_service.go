@@ -246,12 +246,9 @@ func (s *conversationService) DispatchConversation(conversationID int64, operato
 	return nil
 }
 
-func (s *conversationService) TransferConversation(conversationID, toUserID int64, reason string, operator *dto.AuthPrincipal) error {
-	if operator == nil {
-		return errorsx.Unauthorized("未登录或登录已过期")
-	}
+func (s *conversationService) TransferConversation(conversationID, toUserID int64, reason string, operator dto.AuthPrincipal) error {
 	// TODO 这个权限控制不合理，后面需要调整；希望做成，只要有转接权限的人都可以转接；
-	if !s.isAdmin(operator) {
+	if !s.isAdmin(&operator) {
 		return errorsx.Forbidden("只有管理员可以转接会话")
 	}
 	if toUserID <= 0 {
@@ -279,7 +276,7 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, toUserID, enums.IMAssignmentTypeTransfer, reason, &operator, now); err != nil {
 			return err
 		}
 		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
