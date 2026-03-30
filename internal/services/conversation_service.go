@@ -154,10 +154,6 @@ func (s *conversationService) AssignConversation(req request.AssignConversationR
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
-	// TODO 这个权限控制不合理，后面需要调整；希望做成，只要有分配的人都可以分配；
-	if !s.isAdmin(operator) {
-		return errorsx.Forbidden("只有管理员可以分配会话")
-	}
 	targetProfile := AgentProfileService.GetByUserID(req.AssigneeID)
 	if targetProfile == nil || targetProfile.Status != enums.StatusOk {
 		return errorsx.InvalidParam("目标客服不存在")
