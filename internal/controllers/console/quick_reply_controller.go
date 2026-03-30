@@ -4,9 +4,11 @@ import (
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -24,7 +26,8 @@ func (c *QuickReplyController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "groupName"},
 		params.QueryFilter{ParamName: "title", Op: params.Like},
-	).Desc("sort_no").Desc("id")
+	).Asc("sort_no").Desc("id")
+
 	list, paging := services.QuickReplyService.FindPageByCnd(cnd)
 	results := make([]response.QuickReplyResponse, 0, len(list))
 	for _, item := range list {
@@ -38,6 +41,25 @@ func (c *QuickReplyController) AnyList() *web.JsonResult {
 		})
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
+}
+
+func (c *QuickReplyController) GetList_all() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionQuickReplyView); err != nil {
+		return web.JsonError(err)
+	}
+	list := services.QuickReplyService.Find(sqls.NewCnd().Eq("status", enums.StatusOk).Asc("sort_no").Desc("id"))
+	results := make([]response.QuickReplyResponse, 0, len(list))
+	for _, item := range list {
+		results = append(results, response.QuickReplyResponse{
+			ID:        item.ID,
+			GroupName: item.GroupName,
+			Title:     item.Title,
+			Content:   item.Content,
+			Status:    item.Status,
+			SortNo:    item.SortNo,
+		})
+	}
+	return web.JsonData(results)
 }
 
 func (c *QuickReplyController) PostCreate() *web.JsonResult {

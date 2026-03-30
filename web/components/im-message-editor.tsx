@@ -1,13 +1,24 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
 import { ImageIcon, SendIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { fetchQuickReplyListAll, type AdminQuickReply } from "@/lib/api/admin"
 
 type UploadedImage = {
   url: string
@@ -31,6 +42,9 @@ export function ImMessageEditor({
   const onSendRef = useRef(onSend)
   const onUploadImageRef = useRef(onUploadImage)
   const shouldRestoreFocusRef = useRef(false)
+  const [quickReplies, setQuickReplies] = useState<AdminQuickReply[]>([])
+  const [loadingQuickReplies, setLoadingQuickReplies] = useState(false)
+  const [quickReplyPickerOpen, setQuickReplyPickerOpen] = useState(false)
 
   useEffect(() => {
     onSendRef.current = onSend
@@ -39,6 +53,30 @@ export function ImMessageEditor({
   useEffect(() => {
     onUploadImageRef.current = onUploadImage
   }, [onUploadImage])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadingQuickReplies(true)
+    void fetchQuickReplyListAll()
+      .then((list) => {
+        if (!cancelled) {
+          setQuickReplies(list)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "加载快捷回复失败")
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingQuickReplies(false)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -164,6 +202,17 @@ export function ImMessageEditor({
     }
   }
 
+  const handleInsertQuickReply = (item: AdminQuickReply) => {
+    if (!editor || disabled || uploadingImage) {
+      return
+    }
+    if (!item.content.trim()) {
+      return
+    }
+    editor.chain().focus().insertContent(item.content).run()
+    setQuickReplyPickerOpen(false)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col p-2">
       <input
@@ -192,6 +241,47 @@ export function ImMessageEditor({
             >
               <ImageIcon className="size-4" />
             </Button>
+            <Popover open={quickReplyPickerOpen} onOpenChange={setQuickReplyPickerOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    disabled={disabled || uploadingImage || loadingQuickReplies}
+                    onMouseDown={(event) => event.preventDefault()}
+                  />
+                }
+              >
+                {loadingQuickReplies ? "快捷回复加载中..." : "快捷回复"}
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="搜索快捷回复" />
+                  <CommandList>
+                    <CommandEmpty>暂无快捷回复</CommandEmpty>
+                    <CommandGroup>
+                      {quickReplies.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={`${item.groupName} ${item.title} ${item.content}`}
+                          onSelect={() => handleInsertQuickReply(item)}
+                        >
+                          <div className="flex min-w-0 flex-col">
+                            <span className="truncate text-sm">
+                              {item.groupName ? `${item.groupName} / ${item.title}` : item.title}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {item.content}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">Enter 发送</p>

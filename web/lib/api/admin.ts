@@ -712,6 +712,10 @@ export function fetchQuickReplies(
   )
 }
 
+export function fetchQuickReplyListAll() {
+  return request<AdminQuickReply[]>("/api/console/quick-reply/list_all")
+}
+
 export function fetchQuickReply(id: number) {
   return request<AdminQuickReply>(`/api/console/quick-reply/${id}`)
 }
