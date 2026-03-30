@@ -1,33 +1,24 @@
 package vectordb
 
 import (
+	"github.com/mlogclub/simple/common/structs"
 	"github.com/spf13/cast"
 )
 
 type ChunkPayload struct {
-	KnowledgeBaseID int64  `json:"knowledgeBaseId"`
-	DocumentID      int64  `json:"documentId"`
-	DocumentTitle   string `json:"documentTitle"`
-	ChunkNo         int    `json:"chunkNo"`
-	ChunkType       string `json:"chunkType"`
-	SectionPath     string `json:"sectionPath"`
+	KnowledgeBaseID int64  `json:"knowledge_base_id"`
+	DocumentID      int64  `json:"document_id"`
+	DocumentTitle   string `json:"document_title"`
+	ChunkNo         int    `json:"chunk_no"`
+	ChunkType       string `json:"chunk_type"`
+	SectionPath     string `json:"section_path"`
 	Title           string `json:"title"`
 	Content         string `json:"content"`
 	Provider        string `json:"provider"`
 }
 
 func (p ChunkPayload) ToMap() map[string]any {
-	return map[string]any{
-		"knowledge_base_id": p.KnowledgeBaseID,
-		"document_id":       p.DocumentID,
-		"document_title":    p.DocumentTitle,
-		"chunk_no":          p.ChunkNo,
-		"chunk_type":        p.ChunkType,
-		"section_path":      p.SectionPath,
-		"title":             p.Title,
-		"content":           p.Content,
-		"provider":          p.Provider,
-	}
+	return structs.StructToMap(p)
 }
 
 func ChunkPayloadFromMap(data map[string]any) ChunkPayload {
