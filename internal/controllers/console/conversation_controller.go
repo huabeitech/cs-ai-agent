@@ -52,6 +52,16 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 		}
 		cnd.Where("id IN (SELECT conversation_id FROM conversation_tag_rels WHERE tag_id IN (?))", tagIDs)
 	}
+	if agentTeamID, _ := params.GetInt64(c.Ctx, "agentTeamId"); agentTeamID > 0 {
+		userIDs := services.AgentProfileService.GetUserIDsByTeamID(agentTeamID)
+		if len(userIDs) == 0 {
+			return web.JsonData(&web.PageResult{
+				Results: []response.ConversationResponse{},
+				Page:    paging,
+			})
+		}
+		cnd.In("current_assignee_id", userIDs)
+	}
 
 	list, paging := services.ConversationService.FindPageByCnd(cnd)
 	results := make([]response.ConversationResponse, 0, len(list))

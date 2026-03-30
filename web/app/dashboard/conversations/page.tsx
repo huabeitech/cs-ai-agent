@@ -46,12 +46,14 @@ import {
   createAdminWebSocketUrl,
   dispatchConversation,
   fetchAgentProfilesAll,
+  fetchAgentTeamsAll,
   fetchConversationDetail,
   fetchConversationMessages,
   fetchConversations,
   fetchTagsAll,
   markConversationRead,
   type AdminAgentProfile,
+  type AdminAgentTeam,
   type AdminConversation,
   type AdminConversationDetail,
   type AdminMessage,
@@ -127,10 +129,12 @@ export default function DashboardConversationsPage() {
   const [statusFilterInput, setStatusFilterInput] = useState("all")
   const [tagFilterInput, setTagFilterInput] = useState("0")
   const [assigneeFilterInput, setAssigneeFilterInput] = useState("0")
+  const [agentTeamFilterInput, setAgentTeamFilterInput] = useState("0")
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [tagFilter, setTagFilter] = useState("0")
   const [assigneeFilter, setAssigneeFilter] = useState("0")
+  const [agentTeamFilter, setAgentTeamFilter] = useState("0")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const [tagOptions, setTagOptions] = useState<ComboboxOption[]>([
@@ -138,6 +142,9 @@ export default function DashboardConversationsPage() {
   ])
   const [assigneeOptions, setAssigneeOptions] = useState<ComboboxOption[]>([
     { value: "0", label: "全部指派人" },
+  ])
+  const [agentTeamOptions, setAgentTeamOptions] = useState<ComboboxOption[]>([
+    { value: "0", label: "全部客服组" },
   ])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -175,6 +182,7 @@ export default function DashboardConversationsPage() {
         status: statusFilter === "all" ? undefined : statusFilter,
         tagId: tagFilter === "0" ? undefined : tagFilter,
         currentAssigneeId: assigneeFilter === "0" ? undefined : assigneeFilter,
+        agentTeamId: agentTeamFilter === "0" ? undefined : agentTeamFilter,
         page,
         limit,
       })
@@ -184,16 +192,17 @@ export default function DashboardConversationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [keyword, limit, page, statusFilter, tagFilter, assigneeFilter])
+  }, [keyword, limit, page, statusFilter, tagFilter, assigneeFilter, agentTeamFilter])
 
   useEffect(() => {
     let cancelled = false
 
     async function loadFilterOptions() {
       try {
-        const [tagData, assigneeData] = await Promise.all([
+        const [tagData, assigneeData, teamData] = await Promise.all([
           fetchTagsAll(),
           fetchAgentProfilesAll(),
+          fetchAgentTeamsAll(),
         ])
         if (!cancelled) {
           setTagOptions([
@@ -205,6 +214,13 @@ export default function DashboardConversationsPage() {
             ...assigneeData.map((item: AdminAgentProfile) => ({
               value: String(item.userId),
               label: item.displayName || item.nickname || item.username || `#${item.userId}`,
+            })),
+          ])
+          setAgentTeamOptions([
+            { value: "0", label: "全部客服组" },
+            ...teamData.map((item: AdminAgentTeam) => ({
+              value: String(item.id),
+              label: item.name,
             })),
           ])
         }
@@ -402,6 +418,7 @@ export default function DashboardConversationsPage() {
     setStatusFilter(statusFilterInput)
     setTagFilter(tagFilterInput)
     setAssigneeFilter(assigneeFilterInput)
+    setAgentTeamFilter(agentTeamFilterInput)
     setPage(1)
   }
 
@@ -658,6 +675,16 @@ export default function DashboardConversationsPage() {
               searchPlaceholder="搜索指派人"
               emptyText="没有匹配指派人"
               onChange={setAssigneeFilterInput}
+            />
+          </div>
+          <div className="w-full xl:w-56">
+            <OptionCombobox
+              value={agentTeamFilterInput}
+              options={agentTeamOptions}
+              placeholder="选择客服组"
+              searchPlaceholder="搜索客服组"
+              emptyText="没有匹配客服组"
+              onChange={setAgentTeamFilterInput}
             />
           </div>
           <Button variant="outline" onClick={applyFilters} disabled={loading}>

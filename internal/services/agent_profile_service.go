@@ -59,6 +59,23 @@ func (s *agentProfileService) GetByUserID(userID int64) *models.AgentProfile {
 	return repositories.AgentProfileRepository.FindOne(sqls.DB(), sqls.NewCnd().Eq("user_id", userID))
 }
 
+func (s *agentProfileService) GetUserIDsByTeamID(teamID int64) []int64 {
+	if teamID <= 0 {
+		return nil
+	}
+	list := s.Find(sqls.NewCnd().Eq("team_id", teamID))
+	if len(list) == 0 {
+		return nil
+	}
+	result := make([]int64, 0, len(list))
+	for _, item := range list {
+		if item.UserID > 0 {
+			result = append(result, item.UserID)
+		}
+	}
+	return result
+}
+
 // GetDispatchAgents 获取可用于分配会话的客服
 func (s *agentProfileService) GetDispatchAgents(teamIds []int64) []models.AgentProfile {
 	return AgentProfileService.Find(sqls.NewCnd().
