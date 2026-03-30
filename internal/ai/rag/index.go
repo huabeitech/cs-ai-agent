@@ -143,15 +143,16 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		vectors = append(vectors, vectordb.Vector{
 			ID:     chunkID,
 			Vector: embeddingResult.Vector,
-			Payload: map[string]any{
-				"document_id":       document.ID,
-				"knowledge_base_id": knowledgeBase.ID,
-				"chunk_no":          chunk.ChunkNo,
-				"chunk_type":        string(chunk.ChunkType),
-				"section_path":      chunk.SectionPath,
-				"content":           chunk.Content,
-				"title":             chunk.Title,
-				"provider":          providerName,
+			Payload: vectordb.ChunkPayload{
+				KnowledgeBaseID: knowledgeBase.ID,
+				DocumentID:      document.ID,
+				DocumentTitle:   document.Title,
+				ChunkNo:         chunk.ChunkNo,
+				ChunkType:       string(chunk.ChunkType),
+				SectionPath:     chunk.SectionPath,
+				Content:         chunk.Content,
+				Title:           chunk.Title,
+				Provider:        providerName,
 			},
 		})
 	}

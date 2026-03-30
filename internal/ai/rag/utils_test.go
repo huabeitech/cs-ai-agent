@@ -1,6 +1,7 @@
 package rag
 
 import (
+	"cs-agent/internal/ai/rag/vectordb"
 	"cs-agent/internal/pkg/enums"
 	"testing"
 )
@@ -21,22 +22,22 @@ func TestExtractPlainTextMarkdownUsesGoldmark(t *testing.T) {
 	}
 }
 
-func TestExtractStringPayloadNormalizesNonStringValue(t *testing.T) {
-	got := ExtractStringPayload(map[string]interface{}{
-		"title": "  hello\nworld  ",
-		"count": 12,
-	}, "count")
-	want := "12"
-	if got != want {
-		t.Fatalf("expected %q, got %q", want, got)
+func TestChunkPayloadFromMapSupportsTypedConversion(t *testing.T) {
+	got := vectordb.ChunkPayloadFromMap(map[string]any{
+		"knowledge_base_id": "1",
+		"document_id":       "123",
+		"document_title":    "Doc",
+		"chunk_no":          "2",
+		"chunk_type":        "text",
+		"section_path":      "A > B",
+		"title":             "hello",
+		"content":           "world",
+		"provider":          "structured",
+	})
+	if got.KnowledgeBaseID != 1 || got.DocumentID != 123 || got.ChunkNo != 2 {
+		t.Fatalf("unexpected numeric conversion result: %+v", got)
 	}
-}
-
-func TestExtractInt64PayloadSupportsStringValue(t *testing.T) {
-	got := ExtractInt64Payload(map[string]interface{}{
-		"document_id": "123",
-	}, "document_id")
-	if got != 123 {
-		t.Fatalf("expected %d, got %d", 123, got)
+	if got.DocumentTitle != "Doc" || got.SectionPath != "A > B" || got.Provider != "structured" {
+		t.Fatalf("unexpected string conversion result: %+v", got)
 	}
 }

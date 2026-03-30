@@ -2,10 +2,8 @@ package rag
 
 import (
 	"cs-agent/internal/pkg/enums"
-	"fmt"
 	"strings"
 
-	"github.com/spf13/cast"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -75,40 +73,6 @@ func ExtractPlainTextFromHTML(content string) string {
 	}
 	writeHTMLNodeText(&builder, doc)
 	return normalizeWhitespace(builder.String())
-}
-
-func ExtractStringPayload(payload map[string]interface{}, key string) string {
-	if payload == nil {
-		return ""
-	}
-	value, ok := payload[key]
-	if !ok || value == nil {
-		return ""
-	}
-	if str, ok := value.(string); ok {
-		return str
-	}
-	return normalizeWhitespace(fmt.Sprintf("%v", value))
-}
-
-func ExtractInt64Payload(payload map[string]interface{}, key string) int64 {
-	if payload == nil {
-		return 0
-	}
-	if value, ok := payload[key]; ok {
-		return cast.ToInt64(value)
-	}
-	return 0
-}
-
-func ExtractIntPayload(payload map[string]interface{}, key string) int {
-	if payload == nil {
-		return 0
-	}
-	if value, ok := payload[key]; ok {
-		return cast.ToInt(value)
-	}
-	return 0
 }
 
 func writeHTMLNodeText(builder *strings.Builder, node *htmlparser.Node) {

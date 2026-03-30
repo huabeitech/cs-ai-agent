@@ -107,7 +107,7 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 			DocumentTitle:   documentTitle,
 			ChunkNo:         chunk.ChunkNo,
 			Title:           chunk.Title,
-			SectionPath:     ExtractStringPayload(sr.Payload, "section_path"),
+			SectionPath:     sr.Payload.SectionPath,
 			Content:         chunk.Content,
 			Score:           sr.Score,
 			ChunkType:       extractChunkType(sr.Payload),
@@ -119,9 +119,9 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 	return results, nil
 }
 
-func extractChunkType(payload map[string]interface{}) string {
-	if value := ExtractStringPayload(payload, "chunk_type"); value != "" {
-		return value
+func extractChunkType(payload vectordb.ChunkPayload) string {
+	if payload.ChunkType != "" {
+		return payload.ChunkType
 	}
 	return string(enums.KnowledgeChunkTypeText)
 }

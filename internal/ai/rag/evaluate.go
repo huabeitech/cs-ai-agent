@@ -131,14 +131,16 @@ func (s *evaluate) compareProvider(ctx context.Context, knowledgeBase *models.Kn
 			vectors = append(vectors, vectordb.Vector{
 				ID:     uuid.NewString(),
 				Vector: embeddingResult.Vector,
-				Payload: map[string]interface{}{
-					"document_id":    doc.ID,
-					"document_title": doc.Title,
-					"chunk_no":       item.ChunkNo,
-					"title":          item.Title,
-					"section_path":   item.SectionPath,
-					"chunk_type":     item.ChunkType,
-					"content":        item.Content,
+				Payload: vectordb.ChunkPayload{
+					KnowledgeBaseID: knowledgeBase.ID,
+					DocumentID:      doc.ID,
+					DocumentTitle:   doc.Title,
+					ChunkNo:         item.ChunkNo,
+					ChunkType:       string(item.ChunkType),
+					SectionPath:     item.SectionPath,
+					Title:           item.Title,
+					Content:         item.Content,
+					Provider:        providerName,
 				},
 			})
 		}
@@ -174,14 +176,15 @@ func (s *evaluate) compareProvider(ctx context.Context, knowledgeBase *models.Kn
 	results := make([]response.KnowledgeSearchResult, 0, len(searchResults))
 	for _, item := range searchResults {
 		results = append(results, response.KnowledgeSearchResult{
-			ChunkID:       0,
-			DocumentID:    ExtractInt64Payload(item.Payload, "document_id"),
-			DocumentTitle: ExtractStringPayload(item.Payload, "document_title"),
-			ChunkNo:       ExtractIntPayload(item.Payload, "chunk_no"),
-			Title:         ExtractStringPayload(item.Payload, "title"),
-			SectionPath:   ExtractStringPayload(item.Payload, "section_path"),
-			Content:       ExtractStringPayload(item.Payload, "content"),
-			Score:         float64(item.Score),
+			KnowledgeBaseID: item.Payload.KnowledgeBaseID,
+			ChunkID:         0,
+			DocumentID:      item.Payload.DocumentID,
+			DocumentTitle:   item.Payload.DocumentTitle,
+			ChunkNo:         item.Payload.ChunkNo,
+			Title:           item.Payload.Title,
+			SectionPath:     item.Payload.SectionPath,
+			Content:         item.Payload.Content,
+			Score:           float64(item.Score),
 		})
 	}
 	top1Matched, top3Matched, matchedDocumentIDs := evaluateExpectedDocumentHits(results, req.ExpectedDocIDs)

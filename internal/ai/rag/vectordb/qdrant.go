@@ -10,9 +10,9 @@ import (
 )
 
 type Vector struct {
-	ID      string                 `json:"id"`
-	Vector  []float32              `json:"vector"`
-	Payload map[string]interface{} `json:"payload"`
+	ID      string       `json:"id"`
+	Vector  []float32    `json:"vector"`
+	Payload ChunkPayload `json:"payload"`
 }
 
 type SearchRequest struct {
@@ -29,9 +29,9 @@ type SearchFilter struct {
 }
 
 type SearchResult struct {
-	ID      string                 `json:"id"`
-	Score   float32                `json:"score"`
-	Payload map[string]interface{} `json:"payload"`
+	ID      string       `json:"id"`
+	Score   float32      `json:"score"`
+	Payload ChunkPayload `json:"payload"`
 }
 
 type CollectionInfo struct {
@@ -162,7 +162,7 @@ func (p *QdrantProvider) UpsertVectors(ctx context.Context, collectionName strin
 		points = append(points, &qdrant.PointStruct{
 			Id:      qdrant.NewID(v.ID),
 			Vectors: qdrant.NewVectors(v.Vector...),
-			Payload: qdrant.NewValueMap(v.Payload),
+			Payload: qdrant.NewValueMap(v.Payload.ToMap()),
 		})
 	}
 
@@ -219,7 +219,7 @@ func (p *QdrantProvider) Search(ctx context.Context, req *SearchRequest) ([]Sear
 
 	searchResults := make([]SearchResult, 0, len(results))
 	for _, r := range results {
-		payload := make(map[string]interface{})
+		payload := make(map[string]any)
 		if r.Payload != nil {
 			for k, v := range r.Payload {
 				payload[k] = p.extractPayloadValue(v)
@@ -234,7 +234,7 @@ func (p *QdrantProvider) Search(ctx context.Context, req *SearchRequest) ([]Sear
 		searchResults = append(searchResults, SearchResult{
 			ID:      id,
 			Score:   r.Score,
-			Payload: payload,
+			Payload: ChunkPayloadFromMap(payload),
 		})
 	}
 
