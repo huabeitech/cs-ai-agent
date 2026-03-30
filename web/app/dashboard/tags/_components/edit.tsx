@@ -76,8 +76,13 @@ type TagTreeNode = TagTree & {
   depth: number;
 };
 
-function withDepth(nodes: TagTree[], depth = 0): TagTreeNode[] {
-  return nodes.map((node) => ({
+function withDepth(
+  nodes: TagTree[] | null | undefined,
+  depth = 0,
+): TagTreeNode[] {
+  const safeNodes = Array.isArray(nodes) ? nodes : [];
+
+  return safeNodes.map((node) => ({
     ...node,
     depth,
     children: withDepth(node.children, depth + 1),

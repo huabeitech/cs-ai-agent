@@ -71,8 +71,10 @@ type TagNode = TagTree & {
   depth: number
 }
 
-function withDepth(nodes: TagTree[], depth = 0): TagNode[] {
-  return nodes.map((node) => ({
+function withDepth(nodes: TagTree[] | null | undefined, depth = 0): TagNode[] {
+  const safeNodes = Array.isArray(nodes) ? nodes : []
+
+  return safeNodes.map((node) => ({
     ...node,
     depth,
     children: withDepth(node.children, depth + 1),
@@ -325,7 +327,7 @@ export default function DashboardTagsPage() {
       ])
       const nextTree = withDepth(treeData)
       setTree(nextTree)
-      setAllTags(listData.results)
+      setAllTags(Array.isArray(listData.results) ? listData.results : [])
       setExpandedIds(collectParentIds(nextTree))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载标签失败")
