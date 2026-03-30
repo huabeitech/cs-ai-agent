@@ -20,6 +20,8 @@ import {
   type CreateAdminQuickReplyPayload,
   type PageResult,
 } from "@/lib/api/admin"
+import { getEnumLabel, getEnumOptions } from "@/lib/enums"
+import { Status, StatusLabels } from "@/lib/generated/enums"
 import { EditDialog } from "./_components/edit"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -50,8 +52,12 @@ import {
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
-  { value: "1", label: "启用" },
-  { value: "0", label: "禁用" },
+  ...getEnumOptions(StatusLabels)
+    .filter((item) => Number(item.value) !== Status.Deleted)
+    .map((item) => ({
+      value: String(item.value),
+      label: item.label,
+    })),
 ] as const
 
 function getStatusLabel(
@@ -179,7 +185,8 @@ export default function DashboardQuickRepliesPage() {
   async function handleToggleStatus(item: AdminQuickReply) {
     setActionLoadingId(item.id)
     try {
-      const nextStatus = item.status === 1 ? 0 : 1
+      const nextStatus =
+        item.status === Status.Ok ? Status.Disabled : Status.Ok
       await updateQuickReply({
         id: item.id,
         groupName: item.groupName,
@@ -188,7 +195,9 @@ export default function DashboardQuickRepliesPage() {
         sortNo: item.sortNo,
         status: nextStatus,
       })
-      toast.success(`已${nextStatus === 1 ? "启用" : "禁用"}：${item.title}`)
+      toast.success(
+        `已${nextStatus === Status.Ok ? "启用" : "禁用"}：${item.title}`
+      )
       await loadData()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新状态失败")
@@ -288,8 +297,12 @@ export default function DashboardQuickRepliesPage() {
                       <Badge variant="outline">{item.groupName}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={item.status === 1 ? "secondary" : "outline"}>
-                        {item.status === 1 ? "启用" : "禁用"}
+                      <Badge
+                        variant={
+                          item.status === Status.Ok ? "default" : "outline"
+                        }
+                      >
+                        {getEnumLabel(StatusLabels, item.status as Status)}
                       </Badge>
                     </TableCell>
                     <TableCell>{item.sortNo}</TableCell>
@@ -315,7 +328,7 @@ export default function DashboardQuickRepliesPage() {
                               <RefreshCwIcon />
                               {actionLoadingId === item.id
                                 ? "处理中..."
-                                : item.status === 1
+                                : item.status === Status.Ok
                                   ? "禁用"
                                   : "启用"}
                             </DropdownMenuItem>

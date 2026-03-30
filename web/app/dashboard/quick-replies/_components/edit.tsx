@@ -27,6 +27,8 @@ import {
   type CreateAdminQuickReplyPayload,
   fetchQuickReply,
 } from "@/lib/api/admin";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
+import { Status, StatusLabels } from "@/lib/generated/enums";
 
 type QuickReplyFormDialogProps = {
   open: boolean;
@@ -40,20 +42,21 @@ const emptyForm: EditForm = {
   groupName: "",
   title: "",
   content: "",
-  status: "1",
+  status: String(Status.Ok),
   sortNo: "0",
 };
 
-const formStatusOptions = [
-  { value: "1", label: "启用" },
-  { value: "0", label: "禁用" },
-] as const;
+const formStatusOptions = getEnumOptions(StatusLabels).filter(
+  (item) => Number(item.value) !== Status.Deleted,
+);
 
 const quickReplyFormSchema = z.object({
   groupName: z.string().trim().min(1, "分组名称不能为空"),
   title: z.string().trim().min(1, "标题不能为空"),
   content: z.string().trim().min(1, "回复内容不能为空"),
-  status: z.enum(["0", "1"], { message: "请选择状态" }),
+  status: z.enum([String(Status.Ok), String(Status.Disabled)], {
+    message: "请选择状态",
+  }),
   sortNo: z
     .string()
     .trim()
@@ -69,10 +72,7 @@ const editFormResolver = zodResolver(quickReplyFormSchema as never) as Resolver<
 >;
 
 function getStatusLabel(value: string) {
-  return (
-    formStatusOptions.find((option) => option.value === value)?.label ??
-    "请选择状态"
-  );
+  return getEnumLabel(StatusLabels, Number(value) as Status);
 }
 
 function buildForm(item: AdminQuickReply | null): EditForm {
@@ -84,7 +84,7 @@ function buildForm(item: AdminQuickReply | null): EditForm {
     groupName: item.groupName,
     title: item.title,
     content: item.content,
-    status: item.status === 1 ? "1" : "0",
+    status: String(item.status) as EditForm["status"],
     sortNo: String(item.sortNo),
   };
 }
@@ -94,7 +94,7 @@ function buildPayload(form: EditForm): CreateAdminQuickReplyPayload {
     groupName: form.groupName.trim(),
     title: form.title.trim(),
     content: form.content.trim(),
-    status: Number(form.status) === 1 ? 1 : 0,
+    status: Number(form.status) as Status,
     sortNo: Number(form.sortNo),
   };
 }
@@ -267,7 +267,10 @@ function QuickReplyFormDialogBody({
                       </SelectTrigger>
                       <SelectContent>
                         {formStatusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
+                          <SelectItem
+                            key={String(option.value)}
+                            value={String(option.value)}
+                          >
                             {option.label}
                           </SelectItem>
                         ))}

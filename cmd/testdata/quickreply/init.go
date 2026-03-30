@@ -87,7 +87,7 @@ func Init() error {
 			groupName: "售后支持",
 			title:     "版本更新通知模板",
 			content:   "您好，本周四晚间会进行一次版本更新，主要涉及知识库检索优化和工作台体验改进。更新期间可能出现短时波动，我们会提前做好回滚预案。",
-			status:    enums.StatusDisabled,
+			status:    enums.StatusOk,
 			sortNo:    60,
 		},
 		{
