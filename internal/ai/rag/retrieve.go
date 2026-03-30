@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
 	"strings"
 
 	"github.com/mlogclub/simple/sqls"
@@ -386,9 +385,6 @@ func normalizeKnowledgeBaseIDs(ids []int64) []int64 {
 		seen[id] = struct{}{}
 		normalized = append(normalized, id)
 	}
-	sort.SliceStable(normalized, func(i, j int) bool {
-		return normalized[i] < normalized[j]
-	})
 	return normalized
 }
 

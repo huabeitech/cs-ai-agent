@@ -1081,6 +1081,7 @@ export type KnowledgeDocument = {
 }
 
 export type KnowledgeSearchResult = {
+  knowledgeBaseId: number
   chunkId: number
   documentId: number
   documentTitle: string
@@ -1184,6 +1185,7 @@ export type KnowledgeRetrieveLog = {
 export type KnowledgeRetrieveHit = {
   id: number
   retrieveLogId: number
+  knowledgeBaseId: number
   chunkId: number
   documentId: number
   documentTitle: string
@@ -1220,7 +1222,7 @@ export type KnowledgeRetrieveLogListQuery = {
 }
 
 export type KnowledgeSearchPayload = {
-  knowledgeBaseId: number
+  knowledgeBaseIds: number[]
   question: string
   topK?: number
   scoreThreshold?: number
@@ -1232,7 +1234,11 @@ export type KnowledgeAnswerPayload = KnowledgeSearchPayload & {
   fallbackMode?: number
 }
 
-export type KnowledgeComparePayload = KnowledgeSearchPayload & {
+export type KnowledgeComparePayload = {
+  knowledgeBaseId: number
+  question: string
+  topK?: number
+  scoreThreshold?: number
   providers?: string[]
   expectedDocIds?: number[]
 }

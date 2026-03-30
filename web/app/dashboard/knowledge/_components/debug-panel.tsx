@@ -50,7 +50,7 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
     setSearching(true);
     try {
       const data = await debugKnowledgeSearch({
-        knowledgeBaseId,
+        knowledgeBaseIds: [knowledgeBaseId],
         question: question.trim(),
         topK: Number(topK) || undefined,
         scoreThreshold: Number(scoreThreshold) || undefined,
@@ -106,7 +106,7 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
     setAnswering(true);
     try {
       const data = await debugKnowledgeAnswer({
-        knowledgeBaseId,
+        knowledgeBaseIds: [knowledgeBaseId],
         question: question.trim(),
         topK: Number(topK) || undefined,
         scoreThreshold: Number(scoreThreshold) || undefined,
