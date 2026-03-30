@@ -47,6 +47,7 @@
   frameUrl.searchParams.set("baseUrl", baseUrl);
   if (config.apiBaseUrl) frameUrl.searchParams.set("apiBaseUrl", config.apiBaseUrl);
   if (config.title) frameUrl.searchParams.set("title", config.title);
+  if (config.subtitle) frameUrl.searchParams.set("subtitle", config.subtitle);
   if (config.position) frameUrl.searchParams.set("position", config.position);
   if (config.themeColor) frameUrl.searchParams.set("themeColor", config.themeColor);
   if (config.width) frameUrl.searchParams.set("width", config.width);

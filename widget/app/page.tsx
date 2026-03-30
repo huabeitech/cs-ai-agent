@@ -32,6 +32,7 @@ function buildDefaultConfig(baseUrl: string): TestConfig {
     baseUrl,
     apiBaseUrl: baseUrl,
     title: "在线客服",
+    subtitle: "贝壳AI客服为您服务",
     position: "right",
     themeColor: "#0f6cbd",
     width: "680px",
@@ -132,6 +133,8 @@ function WidgetTestPageInner() {
         currentConfig.baseUrl.trim() ||
         window.location.origin,
       title: currentConfig.title?.trim() || "在线客服",
+      subtitle:
+        currentConfig.subtitle?.trim() || "",
       themeColor: currentConfig.themeColor?.trim() || "#0f6cbd",
       width: currentConfig.width?.trim() || "680px",
     };
@@ -156,6 +159,7 @@ function WidgetTestPageInner() {
     baseUrl: "${currentConfig.baseUrl}",
     apiBaseUrl: "${currentConfig.apiBaseUrl || currentConfig.baseUrl}",
     title: "${currentConfig.title || "在线客服"}",
+    subtitle: "${currentConfig.subtitle || ""}",
     position: "${currentConfig.position || "right"}",
     themeColor: "${currentConfig.themeColor || "#0f6cbd"}",
     width: "${currentConfig.width || "680px"}",
@@ -217,6 +221,19 @@ function WidgetTestPageInner() {
               <input
                 value={currentConfig.title ?? ""}
                 onChange={(event) => updateField("title", event.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-400"
+              />
+            </label>
+            <label className="block">
+              <div className="mb-1.5 text-xs font-medium text-slate-700">
+                副标题
+              </div>
+              <input
+                value={currentConfig.subtitle ?? ""}
+                onChange={(event) =>
+                  updateField("subtitle", event.target.value)
+                }
+                placeholder="例如：通常几分钟内回复，支持连续会话记录"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-400"
               />
             </label>

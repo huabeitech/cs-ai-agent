@@ -34,6 +34,7 @@ export function ChatShell() {
 
   const {
     title,
+    subtitle,
     themeColor,
     conversation,
     messages,
@@ -55,6 +56,7 @@ export function ChatShell() {
   } = useChatStore(
     useShallow((state) => ({
       title: state.title,
+      subtitle: state.subtitle,
       themeColor: state.themeColor,
       conversation: state.conversation,
       messages: state.messages,
@@ -196,7 +198,7 @@ export function ChatShell() {
                 {title}
               </div>
               <div className="mt-1 text-[12px] text-slate-500">
-                通常几分钟内回复，支持连续会话记录
+                {subtitle}
               </div>
             </div>
             <div className="flex items-center gap-2">

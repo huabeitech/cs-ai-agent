@@ -75,6 +75,7 @@ export type WidgetAsset = {
 
 export type WidgetConfigResponse = {
   title?: string;
+  subtitle?: string;
   welcomeText?: string;
   themeColor?: string;
 };

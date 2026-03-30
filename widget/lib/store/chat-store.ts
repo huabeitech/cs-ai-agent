@@ -9,17 +9,23 @@ import {
   sendMessage,
   uploadImage,
 } from "@/lib/services/message";
-import { getNotificationBody, showNotification } from "@/lib/services/notification";
+import {
+  getNotificationBody,
+  showNotification,
+} from "@/lib/services/notification";
 import {
   createRealtimeConnection,
   type RealtimeEnvelope,
 } from "@/lib/services/realtime";
-import { fetchWidgetConfig, readWidgetConfig } from "@/lib/services/widget-config";
 import type {
   WidgetConfigResponse,
   WidgetConversation,
   WidgetMessage,
 } from "@/lib/services/types";
+import {
+  fetchWidgetConfig,
+  readWidgetConfig,
+} from "@/lib/services/widget-config";
 
 type ChatStatus = "connecting" | "connected" | "disconnected";
 
@@ -72,11 +78,7 @@ function hasMoreAfterLatestSyncMerge(args: {
     return Boolean(args.apiHasMore);
   }
 
-  if (
-    !args.previousHasMore &&
-    prevMin !== null &&
-    mergedMin >= prevMin
-  ) {
+  if (!args.previousHasMore && prevMin !== null && mergedMin >= prevMin) {
     return false;
   }
 
@@ -85,6 +87,7 @@ function hasMoreAfterLatestSyncMerge(args: {
 
 export interface ChatStore {
   title: string;
+  subtitle: string;
   welcomeText: string;
   themeColor: string;
   conversation: WidgetConversation | null;
@@ -104,7 +107,9 @@ export interface ChatStore {
   setIsVisible: (isVisible: boolean) => void;
   bootstrap: () => void;
   handleSendMessage: (html: string) => Promise<void>;
-  uploadMessageImage: (file: File) => Promise<{ url: string; filename?: string } | null>;
+  uploadMessageImage: (
+    file: File,
+  ) => Promise<{ url: string; filename?: string } | null>;
   retry: () => void;
   disconnectSocket: () => void;
   refreshMessages: () => Promise<void>;
@@ -186,22 +191,29 @@ export const useChatStore = create<ChatStore>((set, get) => {
         event.type?.startsWith("conversation.");
 
       if (needsRefresh && payload?.conversationId === conversationId) {
-        void get().syncLatestMessages().then(() => {
-          if (event.type === "message.created") {
-            const state = get();
-            const lastMessage = state.messages.at(-1);
-            if (lastMessage && lastMessage.senderType !== "customer" && typeof document !== "undefined" && document.visibilityState !== "visible") {
-              showNotification(
-                "新消息",
-                getNotificationBody(lastMessage),
-                () => {
-                  state.setIsOpen(true);
-                  state.setIsVisible(true);
-                }
-              );
+        void get()
+          .syncLatestMessages()
+          .then(() => {
+            if (event.type === "message.created") {
+              const state = get();
+              const lastMessage = state.messages.at(-1);
+              if (
+                lastMessage &&
+                lastMessage.senderType !== "customer" &&
+                typeof document !== "undefined" &&
+                document.visibilityState !== "visible"
+              ) {
+                showNotification(
+                  "新消息",
+                  getNotificationBody(lastMessage),
+                  () => {
+                    state.setIsOpen(true);
+                    state.setIsVisible(true);
+                  },
+                );
+              }
             }
-          }
-        });
+          });
       }
     };
 
@@ -247,6 +259,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
 
   return {
     title: "在线客服",
+    subtitle: "",
     welcomeText: "",
     themeColor: "#2563eb",
     conversation: null,
@@ -256,8 +269,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
     messagesLoadingMore: false,
     status: "connecting",
     error: "",
-    isOpen:
-      typeof window !== "undefined" ? window.self === window.top : false,
+    isOpen: typeof window !== "undefined" ? window.self === window.top : false,
     isVisible:
       typeof window !== "undefined" ? window.self === window.top : false,
     initialized: false,
@@ -285,8 +297,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         const currentConversation = get().conversation;
         set({
           messages: page.results,
-          messagesCursor:
-            cursorFromLoadedMessages(page.results) || page.cursor,
+          messagesCursor: cursorFromLoadedMessages(page.results) || page.cursor,
           messagesHasMore: page.hasMore,
           conversation: currentConversation,
         });
@@ -312,8 +323,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
           const merged = mergeMessagesByIdAsc(preserved, batch);
           return {
             messages: merged,
-            messagesCursor:
-              cursorFromLoadedMessages(merged) || page.cursor,
+            messagesCursor: cursorFromLoadedMessages(merged) || page.cursor,
             messagesHasMore: hasMoreAfterLatestSyncMerge({
               previousMessages: state.messages,
               previousHasMore: state.messagesHasMore,
@@ -352,8 +362,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
           const merged = mergeMessagesByIdAsc(page.results, state.messages);
           return {
             messages: merged,
-            messagesCursor:
-              cursorFromLoadedMessages(merged) || page.cursor,
+            messagesCursor: cursorFromLoadedMessages(merged) || page.cursor,
             messagesHasMore: page.hasMore,
             messagesLoadingMore: false,
             conversation: currentConversation,
@@ -420,19 +429,21 @@ export const useChatStore = create<ChatStore>((set, get) => {
         try {
           set({ error: "", status: "connecting" });
 
+          const hostConfig = readWidgetConfig();
           const widgetConfig: WidgetConfigResponse =
             await fetchWidgetConfig().catch(() => ({}));
           if (bootstrapToken !== token || !get().isOpen) return;
 
           set({
-            title: widgetConfig.title || "在线客服",
+            title: hostConfig.title || widgetConfig.title || "在线客服",
+            subtitle: hostConfig.subtitle || widgetConfig.subtitle || "",
             welcomeText: widgetConfig.welcomeText || "",
-            themeColor: widgetConfig.themeColor || "#2563eb",
+            themeColor:
+              hostConfig.themeColor || widgetConfig.themeColor || "#2563eb",
           });
 
           let currentConversation = get().conversation;
           if (!get().initialized || !currentConversation) {
-            const widgetConfig = readWidgetConfig();
             currentConversation = await createOrMatchConversation();
             if (bootstrapToken !== token || !get().isOpen) return;
             set({ initialized: true, conversation: currentConversation });
@@ -509,8 +520,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       } catch (retryError) {
         set({
           status: "disconnected",
-          error:
-            retryError instanceof Error ? retryError.message : "刷新失败",
+          error: retryError instanceof Error ? retryError.message : "刷新失败",
         });
       }
     },

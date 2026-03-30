@@ -5,6 +5,7 @@ export type WidgetHostConfig = {
   /** 与后端 enums.ExternalSource 一致，默认 web_chat */
   externalSource?: string;
   title?: string;
+  subtitle?: string;
   position?: "left" | "right";
   themeColor?: string;
   width?: string;
@@ -34,6 +35,7 @@ export function readWidgetConfig(): WidgetHostConfig {
     apiBaseUrl: query.get("apiBaseUrl") ?? undefined,
     externalSource: query.get("externalSource") ?? undefined,
     title: query.get("title") ?? undefined,
+    subtitle: query.get("subtitle") ?? undefined,
     position: (query.get("position") as "left" | "right" | null) ?? undefined,
     themeColor: query.get("themeColor") ?? undefined,
     width: query.get("width") ?? undefined,
