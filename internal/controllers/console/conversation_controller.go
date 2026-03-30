@@ -155,7 +155,7 @@ func (c *ConversationController) PostDispatch() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.ConversationService.DispatchConversation(req.ConversationID, operator); err != nil {
+	if err := services.ConversationService.AutoAssignConversation(req.ConversationID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

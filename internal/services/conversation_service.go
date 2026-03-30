@@ -198,7 +198,7 @@ func (s *conversationService) AssignConversation(req request.AssignConversationR
 	return nil
 }
 
-func (s *conversationService) DispatchConversation(conversationID int64, operator *dto.AuthPrincipal) error {
+func (s *conversationService) AutoAssignConversation(conversationID int64, operator *dto.AuthPrincipal) error {
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
