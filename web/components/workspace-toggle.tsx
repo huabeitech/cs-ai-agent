@@ -1,7 +1,7 @@
 "use client"
 
 import { LayoutDashboardIcon, MessageSquareIcon } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +25,6 @@ const workspaceOptions: Array<{
 ]
 
 export function WorkspaceToggle() {
-  const router = useRouter()
   const pathname = usePathname()
 
   const isAgentWorkspace = pathname.startsWith("/workspace")
@@ -36,7 +35,7 @@ export function WorkspaceToggle() {
     const workspace = value as Workspace
     const target = workspaceOptions.find((option) => option.value === workspace)
     if (target) {
-      router.push(target.url)
+      window.open(target.url, "_blank", "noopener,noreferrer")
     }
   }
 
