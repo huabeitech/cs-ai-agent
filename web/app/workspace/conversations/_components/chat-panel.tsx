@@ -3,11 +3,11 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { useImageLightbox } from "@/components/image-lightbox";
+import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog";
 import { ImMessageEditor } from "@/components/im-message-editor";
 import { ImMessageHTML } from "@/components/im-message-html";
+import { useImageLightbox } from "@/components/image-lightbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,17 +22,17 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { useIsLgUp } from "@/hooks/use-lg-media";
 import {
   assignAgentConversation,
   type AgentMessage,
 } from "@/lib/api/agent";
 import { readSession } from "@/lib/auth";
 import {
-  type AgentConversationFilterKey,
   agentConversationSelectors,
   useAgentConversationsStore,
+  type AgentConversationFilterKey,
 } from "@/lib/stores/agent-conversations";
-import { useIsLgUp } from "@/hooks/use-lg-media";
 import { formatDateTime } from "@/lib/utils";
 
 const EMPTY_AGENT_MESSAGES: AgentMessage[] = [];
@@ -82,17 +82,7 @@ export function ChatPanel() {
   const isLgUp = useIsLgUp();
   const isClosedConversation = conversation?.status === 3;
   const isPendingConversation = conversation?.status === 1;
-  const isActiveConversation = conversation?.status === 2;
   const showMessageEditor = !isClosedConversation && !isPendingConversation;
-  const session = readSession();
-  const hasTransferPermission = session?.permissions?.includes("conversation.transfer") ?? false;
-  const isAdmin =
-    session?.roles?.includes("super_admin") || session?.roles?.includes("admin") || false;
-  const canTransferConversation =
-    !!conversation &&
-    isActiveConversation &&
-    hasTransferPermission &&
-    (isAdmin || conversation.currentAssigneeId === session?.user?.id);
 
   const switchToMyActiveIfNeeded = () => {
     if (conversationFilter !== "pending") {
@@ -409,17 +399,6 @@ export function ChatPanel() {
         </div>
       ) : (
         <div className="flex h-full min-h-0 flex-col">
-          {canTransferConversation ? (
-            <div className="flex shrink-0 justify-end border-b border-border px-4 py-3">
-              <Button
-                onClick={() => setTransferDialogOpen(true)}
-                variant="outline"
-                size="sm"
-              >
-                转接
-              </Button>
-            </div>
-          ) : null}
           <div className="min-h-0 flex-1">
             <ImMessageEditor
               disabled={!conversation || sending}
