@@ -257,6 +257,17 @@ export const KnowledgeDocumentContentTypeLabels: Record<KnowledgeDocumentContent
   [KnowledgeDocumentContentType.Markdown]: "Markdown",
 }
 
+export enum KnowledgeDocumentIndexStatus {
+  Pending = "pending",
+  Indexed = "indexed",
+  Failed = "failed",
+}
+export const KnowledgeDocumentIndexStatusLabels: Record<KnowledgeDocumentIndexStatus, string> = {
+  [KnowledgeDocumentIndexStatus.Pending]: "待索引",
+  [KnowledgeDocumentIndexStatus.Indexed]: "已索引",
+  [KnowledgeDocumentIndexStatus.Failed]: "索引失败",
+}
+
 export enum KnowledgeFallbackMode {
   NoAnswer = 1,
   SuggestRetry = 2,

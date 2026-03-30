@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertCircleIcon,
   FileTextIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -12,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -34,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   buildKnowledgeDocumentIndex,
   createKnowledgeDocument,
   deleteKnowledgeDocument,
@@ -45,8 +53,11 @@ import {
 } from "@/lib/api/admin";
 import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import {
+  KnowledgeDocumentIndexStatus,
+  KnowledgeDocumentIndexStatusLabels,
   StatusLabels
 } from "@/lib/generated/enums";
+import { cn, formatDateTime } from "@/lib/utils";
 import { DocumentEditDialog } from "./document-edit";
 
 type DocumentListProps = {
@@ -66,6 +77,22 @@ const statusOptions = [
   { value: "all", label: "全部状态" },
   ...getEnumOptions(StatusLabels),
 ] as const;
+
+const indexStatusOptions = [
+  { value: "all", label: "全部索引状态" },
+  ...getEnumOptions(KnowledgeDocumentIndexStatusLabels),
+] as const;
+
+function getIndexStatusBadgeVariant(status: string) {
+  switch (status) {
+    case KnowledgeDocumentIndexStatus.Indexed:
+      return "secondary" as const;
+    case KnowledgeDocumentIndexStatus.Failed:
+      return "destructive" as const;
+    default:
+      return "outline" as const;
+  }
+}
 
 function getDocumentPreview(content: string, contentType: string) {
   const preview =
@@ -87,8 +114,10 @@ const VIEW_MODE_STORAGE_KEY = "knowledge-document-view-mode";
 export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentListProps) {
   const [keywordInput, setKeywordInput] = useState("");
   const [statusFilterInput, setStatusFilterInput] = useState("all");
+  const [indexStatusFilterInput, setIndexStatusFilterInput] = useState("all");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [indexStatusFilter, setIndexStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<number, { rebuildIndex: boolean; delete: boolean }>>({});
@@ -118,6 +147,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
       const data = await fetchKnowledgeDocuments({
         title: keyword.trim() || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
+        indexStatus: indexStatusFilter === "all" ? undefined : indexStatusFilter,
         knowledgeBaseId,
         limit: 1000,
       });
@@ -127,7 +157,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     } finally {
       setLoading(false);
     }
-  }, [keyword, statusFilter, knowledgeBaseId]);
+  }, [indexStatusFilter, keyword, statusFilter, knowledgeBaseId]);
 
   useEffect(() => {
     void loadData();
@@ -143,9 +173,16 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     setStatusFilter(newValue);
   }
 
+  function handleIndexStatusFilterChange(value: string | null) {
+    const newValue = value ?? "all";
+    setIndexStatusFilterInput(newValue);
+    setIndexStatusFilter(newValue);
+  }
+
   function applyFilters() {
     setKeyword(keywordInput);
     setStatusFilter(statusFilterInput);
+    setIndexStatusFilter(indexStatusFilterInput);
   }
 
   function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -288,6 +325,32 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={indexStatusFilterInput}
+              onValueChange={handleIndexStatusFilterChange}
+            >
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue>
+                  {indexStatusFilterInput === "all"
+                    ? "全部索引状态"
+                    : getEnumLabel(
+                        KnowledgeDocumentIndexStatusLabels,
+                        indexStatusFilterInput as KnowledgeDocumentIndexStatus
+                      )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {indexStatusOptions.map((item) => (
+                  <SelectItem
+                    key={item.value}
+                    value={item.value}
+                    className="text-xs"
+                  >
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="min-h-0 flex-1">
@@ -306,13 +369,46 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium">{item.title}</div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
+                                      {item.indexStatusName}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent align="start">
+                                    <div className="space-y-1">
+                                      <div>索引状态：{item.indexStatusName}</div>
+                                      <div>索引时间：{formatDateTime(item.indexedAt)}</div>
+                                      {item.indexError ? <div>失败原因：{item.indexError}</div> : null}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              {item.indexError ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <AlertCircleIcon className="size-3.5 text-destructive" />
+                                    </TooltipTrigger>
+                                    <TooltipContent align="start">
+                                      {item.indexError}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : null}
                             </div>
                             <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
                               {getDocumentPreview(item.content, item.contentType)}
                             </div>
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              {item.createUserName || "-"} ·{" "}
-                              {new Date(item.createdAt).toLocaleString()}
+                            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                              <span>{item.createUserName || "-"}</span>
+                              <span>{formatDateTime(item.createdAt)}</span>
+                              <span className={cn(item.indexStatus === KnowledgeDocumentIndexStatus.Failed && "text-destructive")}>
+                                {item.indexStatus === KnowledgeDocumentIndexStatus.Indexed
+                                  ? `已索引 ${formatDateTime(item.indexedAt)}`
+                                  : item.indexStatusName}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -379,13 +475,36 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <div className="truncate text-sm font-medium">{item.title}</div>
+                          <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
+                            {item.indexStatusName}
+                          </Badge>
+                          {item.indexError ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <AlertCircleIcon className="size-3.5 text-destructive" />
+                                </TooltipTrigger>
+                                <TooltipContent align="start">
+                                  <div className="space-y-1">
+                                    <div>索引时间：{formatDateTime(item.indexedAt)}</div>
+                                    <div>失败原因：{item.indexError}</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : null}
                         </div>
                         <div className="mt-0.5 truncate text-xs text-muted-foreground">
                           {getDocumentPreview(item.content, item.contentType)}
                         </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {item.indexStatus === KnowledgeDocumentIndexStatus.Indexed
+                            ? `索引时间：${formatDateTime(item.indexedAt)}`
+                            : item.indexError || item.indexStatusName}
+                        </div>
                       </div>
                       <div className="shrink-0 text-xs text-muted-foreground">
-                        {new Date(item.createdAt).toLocaleDateString()}
+                        {formatDateTime(item.createdAt)}
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger

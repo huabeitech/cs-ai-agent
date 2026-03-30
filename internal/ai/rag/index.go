@@ -56,10 +56,21 @@ func (s *index) IndexDocumentByID(ctx context.Context, documentID int64) error {
 
 func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDocument) error {
 	start := time.Now()
+	if err := s.markDocumentIndexPending(document.ID); err != nil {
+		slog.Error("Failed to mark knowledge document index as pending", "document_id", document.ID, "error", err)
+	}
+
+	fail := func(err error) error {
+		if updateErr := s.markDocumentIndexFailed(document.ID, err); updateErr != nil {
+			slog.Error("Failed to mark knowledge document index as failed", "document_id", document.ID, "error", updateErr)
+		}
+		return err
+	}
+
 	// TODO 这里每次都查询下知识库不太友好
 	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), document.KnowledgeBaseID)
 	if knowledgeBase == nil {
-		return fmt.Errorf("knowledge base not found: %d", document.KnowledgeBaseID)
+		return fail(fmt.Errorf("knowledge base not found: %d", document.KnowledgeBaseID))
 	}
 
 	existingChunks := repositories.KnowledgeChunkRepository.FindByDocumentID(sqls.DB(), document.ID)
@@ -80,20 +91,20 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to chunk document: %w", err)
+		return fail(fmt.Errorf("failed to chunk document: %w", err))
 	}
 	if len(chunks) == 0 {
-		return fmt.Errorf("no chunks generated from document")
+		return fail(fmt.Errorf("no chunks generated from document"))
 	}
 
 	collectionName := s.getCollectionName()
 	provider := vectordb.GetProvider()
 	if provider == nil {
-		return fmt.Errorf("vectordb provider not initialized")
+		return fail(fmt.Errorf("vectordb provider not initialized"))
 	}
 
 	if _, err := ai.Embedding.GetModel(ctx); err != nil {
-		return fmt.Errorf("failed to get embedding model: %w", err)
+		return fail(fmt.Errorf("failed to get embedding model: %w", err))
 	}
 
 	existingVectorIDs := make([]string, 0, len(existingChunks))
@@ -111,7 +122,7 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		embeddingResult, err := ai.Embedding.GenerateEmbedding(ctx, chunk.Content)
 		if err != nil {
 			slog.Error("Failed to generate embedding for chunk", "document_id", document.ID, "chunk_index", i, "error", err)
-			return fmt.Errorf("failed to generate embedding for chunk %d: %w", i, err)
+			return fail(fmt.Errorf("failed to generate embedding for chunk %d: %w", i, err))
 		}
 		if dimension == 0 {
 			dimension = embeddingResult.Dimension
@@ -158,28 +169,28 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 	}
 
 	if len(vectors) == 0 {
-		return fmt.Errorf("no vectors generated")
+		return fail(fmt.Errorf("no vectors generated"))
 	}
 
 	collectionInfo, err := provider.GetCollection(ctx, collectionName)
 	if err != nil || collectionInfo == nil {
 		if dimension <= 0 {
-			return fmt.Errorf("invalid embedding dimension: %d", dimension)
+			return fail(fmt.Errorf("invalid embedding dimension: %d", dimension))
 		}
 		if err := provider.CreateCollection(ctx, collectionName, dimension); err != nil {
-			return fmt.Errorf("failed to create collection: %w", err)
+			return fail(fmt.Errorf("failed to create collection: %w", err))
 		}
 		slog.Info("Created collection for knowledge base", "collection", collectionName, "dimension", dimension)
 	}
 
 	if len(existingVectorIDs) > 0 {
 		if err := provider.DeleteVectors(ctx, collectionName, existingVectorIDs); err != nil {
-			return fmt.Errorf("failed to delete old vectors: %w", err)
+			return fail(fmt.Errorf("failed to delete old vectors: %w", err))
 		}
 	}
 
 	if err := provider.UpsertVectors(ctx, collectionName, vectors); err != nil {
-		return fmt.Errorf("failed to upsert vectors: %w", err)
+		return fail(fmt.Errorf("failed to upsert vectors: %w", err))
 	}
 
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
@@ -193,7 +204,11 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed to save chunks: %w", err)
+		return fail(fmt.Errorf("failed to save chunks: %w", err))
+	}
+
+	if err := s.markDocumentIndexIndexed(document.ID); err != nil {
+		slog.Error("Failed to mark knowledge document index as indexed", "document_id", document.ID, "error", err)
 	}
 
 	slog.Info("Document indexed successfully",
@@ -320,10 +335,20 @@ func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID i
 		return err
 	}
 
-	documents := repositories.KnowledgeDocumentRepository.Find(sqls.DB(), sqls.NewCnd().Eq("knowledge_base_id", knowledgeBaseID))
+	documents := repositories.KnowledgeDocumentRepository.Find(sqls.DB(), sqls.NewCnd().
+		Eq("knowledge_base_id", knowledgeBaseID).
+		Where("status != ?", enums.StatusDeleted))
 	if len(documents) == 0 {
 		slog.Info("No documents found in knowledge base, nothing to rebuild", "knowledge_base_id", knowledgeBaseID)
 		return nil
+	}
+
+	documentIDs := make([]int64, 0, len(documents))
+	for _, doc := range documents {
+		documentIDs = append(documentIDs, doc.ID)
+	}
+	if err := s.markKnowledgeBaseDocumentsIndexPending(knowledgeBaseID, documentIDs); err != nil {
+		slog.Error("Failed to mark knowledge base documents index as pending", "knowledge_base_id", knowledgeBaseID, "error", err)
 	}
 
 	slog.Info("Rebuilding knowledge base index", "knowledge_base_id", knowledgeBaseID, "document_count", len(documents))
@@ -345,6 +370,59 @@ func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID i
 		"failed_count", failedCount)
 
 	return nil
+}
+
+func (s *index) markDocumentIndexPending(documentID int64) error {
+	return repositories.KnowledgeDocumentRepository.Updates(sqls.DB(), documentID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusPending,
+		"indexed_at":   nil,
+		"index_error":  "",
+		"updated_at":   time.Now(),
+	})
+}
+
+func (s *index) markDocumentIndexIndexed(documentID int64) error {
+	now := time.Now()
+	return repositories.KnowledgeDocumentRepository.Updates(sqls.DB(), documentID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusIndexed,
+		"indexed_at":   &now,
+		"index_error":  "",
+		"updated_at":   now,
+	})
+}
+
+func (s *index) markDocumentIndexFailed(documentID int64, err error) error {
+	return repositories.KnowledgeDocumentRepository.Updates(sqls.DB(), documentID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusFailed,
+		"index_error":  truncateIndexError(err),
+		"updated_at":   time.Now(),
+	})
+}
+
+func (s *index) markKnowledgeBaseDocumentsIndexPending(knowledgeBaseID int64, documentIDs []int64) error {
+	if len(documentIDs) == 0 {
+		return nil
+	}
+	return sqls.DB().Model(&models.KnowledgeDocument{}).
+		Where("knowledge_base_id = ?", knowledgeBaseID).
+		Where("id IN ?", documentIDs).
+		Updates(map[string]any{
+			"index_status": enums.KnowledgeDocumentIndexStatusPending,
+			"indexed_at":   nil,
+			"index_error":  "",
+			"updated_at":   time.Now(),
+		}).Error
+}
+
+func truncateIndexError(err error) string {
+	if err == nil {
+		return ""
+	}
+	message := err.Error()
+	if len(message) <= 1000 {
+		return message
+	}
+	return message[:1000]
 }
 
 func (s *index) resetKnowledgeBaseIndexStorage(ctx context.Context, knowledgeBaseID int64) error {

@@ -30,6 +30,39 @@ func GetKnowledgeDocumentContentTypeLabel(contentType KnowledgeDocumentContentTy
 	return knowledgeDocumentContentTypeLabelMap[contentType]
 }
 
+type KnowledgeDocumentIndexStatus string
+
+const (
+	KnowledgeDocumentIndexStatusPending KnowledgeDocumentIndexStatus = "pending"
+	KnowledgeDocumentIndexStatusIndexed KnowledgeDocumentIndexStatus = "indexed"
+	KnowledgeDocumentIndexStatusFailed  KnowledgeDocumentIndexStatus = "failed"
+)
+
+var KnowledgeDocumentIndexStatusValues = []KnowledgeDocumentIndexStatus{
+	KnowledgeDocumentIndexStatusPending,
+	KnowledgeDocumentIndexStatusIndexed,
+	KnowledgeDocumentIndexStatusFailed,
+}
+
+var knowledgeDocumentIndexStatusLabelMap = map[KnowledgeDocumentIndexStatus]string{
+	KnowledgeDocumentIndexStatusPending: "待索引",
+	KnowledgeDocumentIndexStatusIndexed: "已索引",
+	KnowledgeDocumentIndexStatusFailed:  "索引失败",
+}
+
+func GetKnowledgeDocumentIndexStatusLabel(status KnowledgeDocumentIndexStatus) string {
+	return knowledgeDocumentIndexStatusLabelMap[status]
+}
+
+func IsValidKnowledgeDocumentIndexStatus(status string) bool {
+	for _, item := range KnowledgeDocumentIndexStatusValues {
+		if string(item) == status {
+			return true
+		}
+	}
+	return false
+}
+
 type KnowledgeChunkType string
 
 const (

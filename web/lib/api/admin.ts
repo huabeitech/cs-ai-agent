@@ -1073,6 +1073,10 @@ export type KnowledgeDocument = {
   content: string
   status: number
   statusName: string
+  indexStatus: string
+  indexStatusName: string
+  indexedAt?: string | null
+  indexError: string
   contentHash: string
   createdAt: string
   updatedAt: string

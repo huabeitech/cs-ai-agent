@@ -91,6 +91,9 @@ func (s *knowledgeDocumentService) CreateKnowledgeDocument(req request.CreateKno
 		return nil, err
 	}
 	item.Status = enums.StatusOk
+	item.IndexStatus = enums.KnowledgeDocumentIndexStatusPending
+	item.IndexError = ""
+	item.IndexedAt = nil
 	item.AuditFields = utils.BuildAuditFields(operator)
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := ctx.Tx.Create(item).Error; err != nil {
@@ -102,8 +105,8 @@ func (s *knowledgeDocumentService) CreateKnowledgeDocument(req request.CreateKno
 	}
 	if err := rag.Index.IndexDocumentByID(context.Background(), item.ID); err != nil {
 		slog.Error("failed to index created knowledge document", "document_id", item.ID, "error", err)
-		return item, err
 	}
+	item = s.Get(item.ID)
 	return item, nil
 }
 
@@ -130,6 +133,9 @@ func (s *knowledgeDocumentService) UpdateKnowledgeDocument(req request.UpdateKno
 		"content_type":      item.ContentType,
 		"content_hash":      item.ContentHash,
 		"content":           item.Content,
+		"index_status":      enums.KnowledgeDocumentIndexStatusPending,
+		"indexed_at":        nil,
+		"index_error":       "",
 		"update_user_id":    operator.UserID,
 		"update_user_name":  operator.Username,
 		"updated_at":        time.Now(),
@@ -145,7 +151,6 @@ func (s *knowledgeDocumentService) UpdateKnowledgeDocument(req request.UpdateKno
 
 	if err := rag.Index.IndexDocumentByID(context.Background(), req.ID); err != nil {
 		slog.Error("failed to reindex updated knowledge document", "document_id", req.ID, "error", err)
-		return err
 	}
 	return nil
 }

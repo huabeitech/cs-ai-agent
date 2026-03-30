@@ -39,6 +39,10 @@ type KnowledgeDocumentResponse struct {
 	Content           string                             `json:"content"`
 	Status            enums.Status                       `json:"status"`
 	StatusName        string                             `json:"statusName"`
+	IndexStatus       enums.KnowledgeDocumentIndexStatus `json:"indexStatus"`
+	IndexStatusName   string                             `json:"indexStatusName"`
+	IndexedAt         *time.Time                         `json:"indexedAt"`
+	IndexError        string                             `json:"indexError"`
 	ContentHash       string                             `json:"contentHash"`
 	CreatedAt         time.Time                          `json:"createdAt"`
 	UpdatedAt         time.Time                          `json:"updatedAt"`

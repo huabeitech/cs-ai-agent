@@ -32,6 +32,12 @@ func (c *KnowledgeDocumentController) AnyList() *web.JsonResult {
 	} else {
 		cnd.Where("status != ?", enums.StatusDeleted)
 	}
+	if indexStatus, ok := params.Get(c.Ctx, "indexStatus"); ok {
+		if !enums.IsValidKnowledgeDocumentIndexStatus(indexStatus) {
+			return web.JsonErrorMsg("indexStatus参数不合法")
+		}
+		cnd.Where("index_status = ?", indexStatus)
+	}
 
 	list, paging := services.KnowledgeDocumentService.FindPageByCnd(cnd)
 	results := make([]response.KnowledgeDocumentResponse, 0, len(list))

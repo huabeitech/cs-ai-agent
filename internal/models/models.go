@@ -523,14 +523,17 @@ type KnowledgeBase struct {
 
 // KnowledgeDocument 知识文档主表。
 type KnowledgeDocument struct {
-	ID              int64                              `gorm:"primaryKey;autoIncrement"`                    // ID 为文档主键。
-	TenantID        int64                              `gorm:"type:bigint;not null;default:0;index"`        // TenantID 为租户ID。
-	KnowledgeBaseID int64                              `gorm:"type:bigint;not null;index"`                  // KnowledgeBaseID 为所属知识库ID。
-	Title           string                             `gorm:"type:varchar(255);not null;default:'';index"` // Title 为文档标题。
-	ContentType     enums.KnowledgeDocumentContentType `gorm:"type:varchar(20);not null;default:'html'"`    // ContentType 为内容类型：html/markdown。
-	Content         string                             `gorm:"type:text"`                                   // Content 为文档内容。
-	Status          enums.Status                       `gorm:"type:int;not null;default:0;index"`           // Status 为状态
-	ContentHash     string                             `gorm:"type:varchar(64);not null;default:'';index"`  // ContentHash 为内容哈希，用于变更检测。
+	ID              int64                              `gorm:"primaryKey;autoIncrement"`                          // ID 为文档主键。
+	TenantID        int64                              `gorm:"type:bigint;not null;default:0;index"`              // TenantID 为租户ID。
+	KnowledgeBaseID int64                              `gorm:"type:bigint;not null;index"`                        // KnowledgeBaseID 为所属知识库ID。
+	Title           string                             `gorm:"type:varchar(255);not null;default:'';index"`       // Title 为文档标题。
+	ContentType     enums.KnowledgeDocumentContentType `gorm:"type:varchar(20);not null;default:'html'"`          // ContentType 为内容类型：html/markdown。
+	Content         string                             `gorm:"type:text"`                                         // Content 为文档内容。
+	Status          enums.Status                       `gorm:"type:int;not null;default:0;index"`                 // Status 为状态
+	IndexStatus     enums.KnowledgeDocumentIndexStatus `gorm:"type:varchar(20);not null;default:'pending';index"` // IndexStatus 为索引状态：pending/indexed/failed。
+	IndexedAt       *time.Time                         `gorm:"type:datetime;index"`                               // IndexedAt 为最近一次索引成功时间。
+	IndexError      string                             `gorm:"type:text"`                                         // IndexError 为最近一次索引失败信息。
+	ContentHash     string                             `gorm:"type:varchar(64);not null;default:'';index"`        // ContentHash 为内容哈希，用于变更检测。
 	AuditFields
 }
 
