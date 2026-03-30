@@ -150,7 +150,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiA
 	return s.Get(conversation.ID), nil
 }
 
-func (s *conversationService) AssignConversation(conversationID, assigneeID int64, reason string, operator *dto.AuthPrincipal) error {
+func (s *conversationService) AssignConversation(req request.AssignConversationRequest, operator *dto.AuthPrincipal) error {
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
@@ -158,15 +158,12 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 	if !s.isAdmin(operator) {
 		return errorsx.Forbidden("只有管理员可以分配会话")
 	}
-	if assigneeID <= 0 {
-		return errorsx.InvalidParam("目标客服不能为空")
-	}
-	targetUser := UserService.Get(assigneeID)
-	if targetUser == nil || targetUser.Status != enums.StatusOk {
+	targetProfile := AgentProfileService.GetByUserID(req.AssigneeID)
+	if targetProfile == nil || targetProfile.Status != enums.StatusOk {
 		return errorsx.InvalidParam("目标客服不存在")
 	}
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, req.ConversationID)
 		if conversation == nil {
 			return errorsx.InvalidParam("会话不存在")
 		}
@@ -174,14 +171,14 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 			return errorsx.InvalidParam("只有待接入会话允许分配")
 		}
 		now := time.Now()
-		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, conversationID, now); err != nil {
+		if err := ConversationAssignmentService.FinishActiveAssignments(ctx, req.ConversationID, now); err != nil {
 			return err
 		}
-		if err := ConversationAssignmentService.CreateAssignment(ctx, conversationID, conversation.CurrentAssigneeID, assigneeID, enums.IMAssignmentTypeAssign, reason, operator, now); err != nil {
+		if err := ConversationAssignmentService.CreateAssignment(ctx, req.ConversationID, conversation.CurrentAssigneeID, req.AssigneeID, enums.IMAssignmentTypeAssign, req.Reason, operator, now); err != nil {
 			return err
 		}
-		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
-			"current_assignee_id": assigneeID,
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, req.ConversationID, map[string]any{
+			"current_assignee_id": req.AssigneeID,
 			"status":              enums.IMConversationStatusActive,
 			"update_user_id":      operator.UserID,
 			"update_user_name":    operator.Username,
@@ -189,17 +186,17 @@ func (s *conversationService) AssignConversation(conversationID, assigneeID int6
 		}); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeAssign, enums.IMSenderTypeAgent, operator.UserID, "会话已分配", s.buildEventPayload(map[string]any{
+		return ConversationEventLogService.CreateEvent(ctx, req.ConversationID, enums.IMEventTypeAssign, enums.IMSenderTypeAgent, operator.UserID, "会话已分配", s.buildEventPayload(map[string]any{
 			"fromStatus":     conversation.Status,
 			"toStatus":       enums.IMConversationStatusActive,
 			"fromAssigneeId": conversation.CurrentAssigneeID,
-			"toAssigneeId":   assigneeID,
-			"reason":         strings.TrimSpace(reason),
+			"toAssigneeId":   req.AssigneeID,
+			"reason":         strings.TrimSpace(req.Reason),
 		}))
 	}); err != nil {
 		return err
 	}
-	if conversation := s.Get(conversationID); conversation != nil {
+	if conversation := s.Get(req.ConversationID); conversation != nil {
 		WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationAssigned)
 	}
 	return nil

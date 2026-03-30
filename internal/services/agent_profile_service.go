@@ -53,6 +53,9 @@ func (s *agentProfileService) Count(cnd *sqls.Cnd) int64 {
 }
 
 func (s *agentProfileService) GetByUserID(userID int64) *models.AgentProfile {
+	if userID <= 0 {
+		return nil
+	}
 	return repositories.AgentProfileRepository.FindOne(sqls.DB(), sqls.NewCnd().Eq("user_id", userID))
 }
 
