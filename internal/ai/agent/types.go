@@ -9,8 +9,11 @@ type Action string
 
 const (
 	ActionNoop     Action = "noop"
+	ActionSkill    Action = "skill"
+	ActionRAG      Action = "rag"
 	ActionReply    Action = "reply"
 	ActionFallback Action = "fallback"
+	ActionHandoff  Action = "handoff"
 )
 
 // TurnContext 表示客服 Agent 处理一轮消息所需的最小上下文。
@@ -31,4 +34,10 @@ type TurnResult struct {
 	Reason        string
 	KnowledgeBase *models.KnowledgeBase
 	RetrieveHits  []rag.RetrieveResult
+}
+
+type Plan struct {
+	Action    Action
+	SkillCode string
+	Reason    string
 }

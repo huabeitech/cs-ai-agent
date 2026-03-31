@@ -14,11 +14,13 @@ import (
 
 type Runtime struct {
 	ragExecutor *ragExecutor
+	planner     *planner
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
 		ragExecutor: newRAGExecutor(),
+		planner:     newPlanner(),
 	}
 }
 
@@ -45,6 +47,21 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 	}
 	if strings.TrimSpace(turnCtx.ManualSkillCode) != "" {
 		return r.runManualSkill(ctx, turnCtx, question)
+	}
+	plan, err := r.planner.Plan(ctx, turnCtx, question)
+	if err != nil {
+		return nil, err
+	}
+	switch plan.Action {
+	case ActionSkill:
+		turnCtx.ManualSkillCode = plan.SkillCode
+		return r.runManualSkill(ctx, turnCtx, question)
+	case ActionHandoff:
+		return &TurnResult{
+			Action:   ActionHandoff,
+			Question: question,
+			Reason:   plan.Reason,
+		}, nil
 	}
 	return r.ragExecutor.Execute(ctx, turnCtx, question)
 }

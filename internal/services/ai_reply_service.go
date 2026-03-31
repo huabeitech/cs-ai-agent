@@ -161,6 +161,8 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 		})
 	case agent.ActionFallback:
 		return s.handleFallback(conversation, aiAgent, result.Reason)
+	case agent.ActionHandoff:
+		return s.handoffConversation(conversation, aiAgent, result.Reason)
 	default:
 		return nil
 	}
