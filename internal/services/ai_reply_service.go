@@ -7,16 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"cs-agent/internal/ai"
-	"cs-agent/internal/ai/rag"
+	"cs-agent/internal/ai/agent"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
-	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
-	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 )
 
@@ -27,12 +24,6 @@ func newAIReplyService() *aiReplyService {
 }
 
 type aiReplyService struct{}
-
-type aiKnowledgeCandidate struct {
-	knowledgeBase *models.KnowledgeBase
-	results       []rag.RetrieveResult
-	topScore      float32
-}
 
 const (
 	defaultAIReplyAsyncTimeoutSeconds = 180
@@ -116,11 +107,13 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 		return nil
 	}
 
-	question := s.buildQuestion(message, conversation)
+	question := strings.TrimSpace(message.Content)
+	if question == "" {
+		question = strings.TrimSpace(conversation.LastMessageSummary)
+	}
 	if question == "" {
 		return nil
 	}
-
 	if s.shouldHandoffByQuestion(question, aiAgent) {
 		return s.handoffConversation(conversation, aiAgent, "用户主动要求人工")
 	}
@@ -130,53 +123,47 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 		return s.handoffConversation(conversation, aiAgent, "达到AI最大回复轮次")
 	}
 
-	candidate, err := s.pickKnowledgeCandidate(ctx, aiAgent, question)
-	if err != nil {
-		return err
-	}
-	if candidate == nil || len(candidate.results) == 0 {
-		return s.handleFallback(conversation, aiAgent, "知识库未命中")
-	}
-
 	aiConfig := AIConfigService.Get(aiAgent.AIConfigID)
 	if aiConfig == nil || aiConfig.Status != enums.StatusOk {
 		return errorsx.InvalidParam("AI Agent 关联的 AI 配置不可用")
 	}
-
-	replyText, err := s.generateReply(ctx, aiConfig, aiAgent, candidate, question)
+	runtime := agent.NewRuntime()
+	result, err := runtime.RunConversationTurn(ctx, agent.TurnContext{
+		Message:      message,
+		Conversation: conversation,
+		AIAgent:      aiAgent,
+		AIConfig:     aiConfig,
+	})
 	if err != nil {
 		slog.Warn("ai reply generation failed, fallback instead",
 			"conversation_id", conversation.ID,
 			"message_id", message.ID,
 			"ai_agent_id", aiAgent.ID,
-			"knowledge_base_id", candidate.knowledgeBase.ID,
 			"error", err)
+		if result != nil && strings.TrimSpace(result.Reason) != "" {
+			return s.handleFallback(conversation, aiAgent, result.Reason)
+		}
 		return s.handleFallback(conversation, aiAgent, "AI生成失败")
 	}
-	if strings.TrimSpace(replyText) == "" {
-		return s.handleFallback(conversation, aiAgent, "AI回复为空")
+	if result == nil || result.Action == agent.ActionNoop {
+		return nil
 	}
-
-	if _, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_%d", message.ID), enums.IMMessageTypeText, replyText, "", s.buildAIPrincipal(aiAgent)); err != nil {
-		return err
+	switch result.Action {
+	case agent.ActionReply:
+		if strings.TrimSpace(result.ReplyText) == "" {
+			return s.handleFallback(conversation, aiAgent, "AI回复为空")
+		}
+		if _, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_%d", message.ID), enums.IMMessageTypeText, result.ReplyText, "", s.buildAIPrincipal(aiAgent)); err != nil {
+			return err
+		}
+		return ConversationService.Updates(conversation.ID, map[string]any{
+			"ai_reply_rounds": conversation.AIReplyRounds + 1,
+		})
+	case agent.ActionFallback:
+		return s.handleFallback(conversation, aiAgent, result.Reason)
+	default:
+		return nil
 	}
-	return ConversationService.Updates(conversation.ID, map[string]any{
-		"ai_reply_rounds": conversation.AIReplyRounds + 1,
-	})
-}
-
-func (s *aiReplyService) buildQuestion(message *models.Message, conversation *models.Conversation) string {
-	if message == nil {
-		return ""
-	}
-	question := strings.TrimSpace(message.Content)
-	if question != "" {
-		return question
-	}
-	if conversation != nil {
-		return strings.TrimSpace(conversation.LastMessageSummary)
-	}
-	return ""
 }
 
 func (s *aiReplyService) buildAIPrincipal(aiAgent *models.AIAgent) *dto.AuthPrincipal {
@@ -206,65 +193,6 @@ func (s *aiReplyService) shouldHandoffByQuestion(question string, aiAgent *model
 		}
 	}
 	return false
-}
-
-func (s *aiReplyService) pickKnowledgeCandidate(ctx context.Context, aiAgent *models.AIAgent, question string) (*aiKnowledgeCandidate, error) {
-	knowledgeIDs := utils.SplitInt64s(aiAgent.KnowledgeIDs)
-	results, err := rag.Retrieve.Retrieve(ctx, rag.RetrieveRequest{
-		KnowledgeBaseIDs: knowledgeIDs,
-		Query:            question,
-	})
-	if err != nil {
-		slog.Warn("knowledge retrieve failed",
-			"knowledge_base_ids", utils.JoinInt64s(knowledgeIDs),
-			"conversation_ai_agent_id", aiAgent.ID,
-			"error", err)
-		return nil, nil
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	var knowledgeBase *models.KnowledgeBase
-	if results[0].KnowledgeBaseID > 0 {
-		knowledgeBase = KnowledgeBaseService.Get(results[0].KnowledgeBaseID)
-	}
-
-	return &aiKnowledgeCandidate{
-		knowledgeBase: knowledgeBase,
-		results:       results,
-		topScore:      results[0].Score,
-	}, nil
-}
-
-func (s *aiReplyService) generateReply(ctx context.Context, aiConfig *models.AIConfig, aiAgent *models.AIAgent, candidate *aiKnowledgeCandidate, question string) (string, error) {
-	if aiConfig == nil || aiAgent == nil || candidate == nil || candidate.knowledgeBase == nil {
-		return "", nil
-	}
-	contextText := rag.Retrieve.BuildContext(ctx, candidate.results, 4000)
-	if strings.TrimSpace(contextText) == "" {
-		return "", nil
-	}
-
-	systemPrompt := s.buildSystemPrompt(aiAgent, candidate.knowledgeBase)
-	userPrompt := fmt.Sprintf("用户问题：%s\n\n参考资料：\n%s", question, contextText)
-	result, err := ai.LLM.ChatWithConfig(ctx, aiConfig, systemPrompt, userPrompt)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(result.Content), nil
-}
-
-func (s *aiReplyService) buildSystemPrompt(aiAgent *models.AIAgent, knowledgeBase *models.KnowledgeBase) string {
-	if aiAgent != nil && strs.IsNotBlank(aiAgent.SystemPrompt) {
-		return strings.TrimSpace(aiAgent.SystemPrompt)
-	}
-
-	basePrompt := "你是严格的客服知识库助手。只能依据提供的知识片段回答；如果资料不足，请明确说明知识库暂无明确信息。"
-	if knowledgeBase != nil && enums.KnowledgeAnswerMode(knowledgeBase.AnswerMode) == enums.KnowledgeAnswerModeAssist {
-		basePrompt = "你是客服知识库助手。请优先依据提供的知识片段回答，可以做轻度归纳，但不要编造未提供的事实。"
-	}
-	return basePrompt
 }
 
 func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAgent *models.AIAgent, reason string) error {
