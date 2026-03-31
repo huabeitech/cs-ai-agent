@@ -57,6 +57,7 @@ import {
   Status,
 } from "@/lib/generated/enums";
 import { getEnumOptions } from "@/lib/enums";
+import { FieldDescription } from "@base-ui/react";
 
 type EditDialogProps = {
   open: boolean;
@@ -606,7 +607,6 @@ function EditDialogBody({
       onOpenChange={onOpenChange}
       title={itemId ? "编辑 AI Agent" : "新建 AI Agent"}
       size="xl"
-      allowFullscreen
       defaultFullscreen
       footer={
         <>
@@ -692,8 +692,16 @@ function EditDialogBody({
             <Field data-invalid={!!errors.description}>
               <FieldLabel htmlFor="ai-agent-description">描述</FieldLabel>
               <FieldContent>
-                <Input id="ai-agent-description" {...register("description")} />
+                <Textarea id="ai-agent-description" {...register("description")} />
                 <FieldError errors={[errors.description]} />
+              </FieldContent>
+            </Field>
+
+            <Field data-invalid={!!errors.remark}>
+              <FieldLabel htmlFor="ai-agent-remark">备注</FieldLabel>
+              <FieldContent>
+                <Textarea id="ai-agent-remark" rows={3} {...register("remark")} />
+                <FieldError errors={[errors.remark]} />
               </FieldContent>
             </Field>
           </SectionCard>
@@ -1117,68 +1125,48 @@ function EditDialogBody({
 
           <SectionCard
             title="话术配置"
-            description="配置用户能直接看到的欢迎语和兜底文案。"
+            description="配置用户能直接看到的欢迎语、兜底文案，以及影响整体回复风格的系统提示词。"
           >
-            <div className="grid gap-4 xl:grid-cols-2">
-              <Field data-invalid={!!errors.welcomeMessage}>
-                <FieldLabel htmlFor="ai-agent-welcome-message">欢迎语</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="ai-agent-welcome-message"
-                    rows={5}
-                    {...register("welcomeMessage")}
-                  />
-                  <FieldError errors={[errors.welcomeMessage]} />
-                </FieldContent>
-              </Field>
+            <Field data-invalid={!!errors.welcomeMessage}>
+              <FieldLabel htmlFor="ai-agent-welcome-message">欢迎语</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  id="ai-agent-welcome-message"
+                  rows={5}
+                  {...register("welcomeMessage")}
+                />
+                <FieldError errors={[errors.welcomeMessage]} />
+              </FieldContent>
+            </Field>
 
-              <Field data-invalid={!!errors.fallbackMessage}>
-                <FieldLabel htmlFor="ai-agent-fallback-message">
-                  兜底文案
-                </FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="ai-agent-fallback-message"
-                    rows={5}
-                    {...register("fallbackMessage")}
-                  />
-                  <FieldError errors={[errors.fallbackMessage]} />
-                </FieldContent>
-              </Field>
-            </div>
+            <Field data-invalid={!!errors.fallbackMessage}>
+              <FieldLabel htmlFor="ai-agent-fallback-message">
+                兜底文案
+              </FieldLabel>
+              <FieldContent>
+                <Textarea
+                  id="ai-agent-fallback-message"
+                  rows={5}
+                  {...register("fallbackMessage")}
+                />
+                <FieldError errors={[errors.fallbackMessage]} />
+              </FieldContent>
+            </Field>
+
+            <Field data-invalid={!!errors.systemPrompt}>
+              <FieldLabel htmlFor="ai-agent-system-prompt">
+                系统提示词
+              </FieldLabel>
+              <FieldContent>
+                <Textarea
+                  id="ai-agent-system-prompt"
+                  rows={8}
+                  {...register("systemPrompt")}
+                />
+                <FieldError errors={[errors.systemPrompt]} />
+              </FieldContent>
+            </Field>
           </SectionCard>
-
-          <details className="rounded-2xl border bg-muted/10 p-4">
-            <summary className="cursor-pointer list-none text-sm font-medium">
-              高级设置
-            </summary>
-            <div className="mt-4 space-y-4">
-              <div className="text-sm text-muted-foreground">
-                这里放置不影响主流程跑通、但会影响回复风格和调优效果的配置。
-              </div>
-              <Field data-invalid={!!errors.systemPrompt}>
-                <FieldLabel htmlFor="ai-agent-system-prompt">
-                  系统提示词
-                </FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="ai-agent-system-prompt"
-                    rows={10}
-                    {...register("systemPrompt")}
-                  />
-                  <FieldError errors={[errors.systemPrompt]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.remark}>
-                <FieldLabel htmlFor="ai-agent-remark">备注</FieldLabel>
-                <FieldContent>
-                  <Textarea id="ai-agent-remark" rows={4} {...register("remark")} />
-                  <FieldError errors={[errors.remark]} />
-                </FieldContent>
-              </Field>
-            </div>
-          </details>
         </form>
       )}
     </ProjectDialog>
@@ -1195,7 +1183,7 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border bg-card p-5">
+    <section className="rounded-xl border bg-card p-5">
       <div className="mb-4">
         <div className="text-base font-semibold">{title}</div>
         <div className="mt-1 text-sm text-muted-foreground">{description}</div>
