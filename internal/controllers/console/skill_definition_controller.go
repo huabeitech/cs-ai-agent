@@ -43,6 +43,21 @@ func (c *SkillDefinitionController) AnyList() *web.JsonResult {
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
 
+func (c *SkillDefinitionController) GetList_all() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
+		return web.JsonError(err)
+	}
+
+	list := services.SkillDefinitionService.Find(params.NewSqlCnd(c.Ctx,
+		params.QueryFilter{ParamName: "status"},
+	).Asc("priority").Desc("id"))
+	results := make([]response.SkillDefinitionResponse, 0, len(list))
+	for _, item := range list {
+		results = append(results, builders.BuildSkillDefinitionResponse(&item))
+	}
+	return web.JsonData(results)
+}
+
 func (c *SkillDefinitionController) GetBy(id int64) *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
 		return web.JsonError(err)

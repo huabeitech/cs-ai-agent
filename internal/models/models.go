@@ -406,6 +406,7 @@ type AIAgent struct {
 	FallbackMode        enums.AIAgentFallbackMode       `gorm:"type:int;not null;default:2"`                 // FallbackMode 为无答案或低置信度时的兜底模式。
 	FallbackMessage     string                          `gorm:"type:text"`                                   // FallbackMessage 为兜底回复文案。
 	KnowledgeIDs        string                          `gorm:"type:varchar(500);not null;default:''"`       // KnowledgeIDs 为绑定的知识库ID列表，按顺序表示优先级。
+	SkillIDs            string                          `gorm:"type:varchar(500);not null;default:''"`       // SkillIDs 为绑定的技能ID列表，按顺序表示允许路由的范围。
 	SortNo              int                             `gorm:"type:int;not null;default:0;index"`           // SortNo 为后台展示排序号。
 	Remark              string                          `gorm:"type:text"`                                   // Remark 为备注。
 	AuditFields

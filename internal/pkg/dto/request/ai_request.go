@@ -47,6 +47,7 @@ type CreateAIAgentRequest struct {
 	FallbackMode        enums.AIAgentFallbackMode       `json:"fallbackMode"`
 	FallbackMessage     string                          `json:"fallbackMessage"`
 	KnowledgeIDs        []int64                         `json:"knowledgeIds"`
+	SkillIDs            []int64                         `json:"skillIds"`
 	Remark              string                          `json:"remark"`
 }
 

@@ -209,6 +209,8 @@ export type AIAgent = {
   fallbackMessage: string
   knowledgeIds: number[]
   knowledgeBaseNames: string[]
+  skillIds: number[]
+  skills: { id: number; code: string; name: string }[]
   sortNo: number
   remark: string
   createdAt: string
@@ -231,6 +233,7 @@ export type CreateAIAgentPayload = {
   fallbackMode: number
   fallbackMessage: string
   knowledgeIds: number[]
+  skillIds: number[]
   remark: string
 }
 
@@ -768,6 +771,14 @@ export function fetchSkillDefinitions(
 ) {
   return request<PageResult<SkillDefinition>>(
     `/api/console/skill-definition/list${toQueryString(query)}`
+  )
+}
+
+export function fetchSkillDefinitionsAll(
+  query?: Record<string, string | number | undefined>
+) {
+  return request<SkillDefinition[]>(
+    `/api/console/skill-definition/list_all${toQueryString(query)}`
   )
 }
 

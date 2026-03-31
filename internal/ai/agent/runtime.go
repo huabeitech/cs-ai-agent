@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"cs-agent/internal/ai/skills"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
@@ -89,11 +91,22 @@ func (r *Runtime) runPlannedSkillOrRAG(ctx context.Context, turnCtx TurnContext,
 }
 
 func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, question string) (*TurnResult, error) {
+	skillCode := strings.TrimSpace(turnCtx.ManualSkillCode)
+	if !isSkillAllowed(turnCtx.AIAgent, skillCode) {
+		return &TurnResult{
+			Action:           ActionFallback,
+			Question:         question,
+			Reason:           "Skill未绑定到当前Agent",
+			PlannedAction:    ActionSkill,
+			PlannedSkillCode: skillCode,
+			PlanReason:       "manual_skill",
+		}, errorsx.Forbidden("Skill 未绑定到当前 AI Agent")
+	}
 	result, err := skills.Execute(ctx, skills.RuntimeContext{
 		AIAgentID:       turnCtx.AIAgent.ID,
 		UserMessage:     question,
 		ConversationID:  conversationID(turnCtx.Conversation),
-		ManualSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+		ManualSkillCode: skillCode,
 		IntentCode:      strings.TrimSpace(turnCtx.IntentCode),
 	})
 	if err != nil {
@@ -102,7 +115,7 @@ func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, quest
 			Question:         question,
 			Reason:           "Skill执行失败",
 			PlannedAction:    ActionSkill,
-			PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+			PlannedSkillCode: skillCode,
 			PlanReason:       "manual_skill",
 		}, err
 	}
@@ -112,7 +125,7 @@ func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, quest
 			Question:         question,
 			Reason:           "Skill未返回结果",
 			PlannedAction:    ActionSkill,
-			PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+			PlannedSkillCode: skillCode,
 			PlanReason:       "manual_skill",
 		}, nil
 	}
@@ -122,7 +135,7 @@ func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, quest
 		ReplyText:        result.ReplyText,
 		Reason:           "manual_skill",
 		PlannedAction:    ActionSkill,
-		PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+		PlannedSkillCode: skillCode,
 		PlanReason:       "manual_skill",
 	}, nil
 }
@@ -153,4 +166,16 @@ func conversationID(conversation *models.Conversation) int64 {
 		return 0
 	}
 	return conversation.ID
+}
+
+func isSkillAllowed(agent *models.AIAgent, skillCode string) bool {
+	skillCode = strings.TrimSpace(skillCode)
+	if agent == nil || skillCode == "" {
+		return false
+	}
+	skill := repositories.SkillDefinitionRepository.GetByCode(sqls.DB(), skillCode)
+	if skill == nil {
+		return false
+	}
+	return slices.Contains(utils.SplitInt64s(agent.SkillIDs), skill.ID)
 }

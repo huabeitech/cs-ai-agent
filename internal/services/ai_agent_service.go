@@ -100,6 +100,7 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 		"fallback_mode":         item.FallbackMode,
 		"fallback_message":      item.FallbackMessage,
 		"knowledge_ids":         item.KnowledgeIDs,
+		"skill_ids":             item.SkillIDs,
 		"remark":                item.Remark,
 		"update_user_id":        operator.UserID,
 		"update_user_name":      operator.Username,
@@ -170,6 +171,10 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 	if len(knowledgeIDs) == 0 {
 		return nil, errorsx.InvalidParam("请至少选择一个知识库")
 	}
+	skillIDs, err := s.normalizeSkillIDs(req.SkillIDs)
+	if err != nil {
+		return nil, err
+	}
 	return &models.AIAgent{
 		Name:                name,
 		Description:         strings.TrimSpace(req.Description),
@@ -184,6 +189,7 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 		FallbackMode:        req.FallbackMode,
 		FallbackMessage:     strings.TrimSpace(req.FallbackMessage),
 		KnowledgeIDs:        utils.JoinInt64s(knowledgeIDs),
+		SkillIDs:            utils.JoinInt64s(skillIDs),
 		Remark:              strings.TrimSpace(req.Remark),
 	}, nil
 }
@@ -228,6 +234,29 @@ func (s *aIAgentService) normalizeKnowledgeIDs(input []int64) ([]int64, error) {
 		}
 		if kb.Status != enums.StatusOk {
 			return nil, errorsx.InvalidParam("知识库未启用")
+		}
+		seen[id] = struct{}{}
+		ret = append(ret, id)
+	}
+	return ret, nil
+}
+
+func (s *aIAgentService) normalizeSkillIDs(input []int64) ([]int64, error) {
+	ret := make([]int64, 0, len(input))
+	seen := make(map[int64]struct{})
+	for _, id := range input {
+		if id <= 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		skill := SkillDefinitionService.Get(id)
+		if skill == nil {
+			return nil, errorsx.InvalidParam("Skill 不存在")
+		}
+		if skill.Status != enums.StatusOk {
+			return nil, errorsx.InvalidParam("Skill 未启用")
 		}
 		seen[id] = struct{}{}
 		ret = append(ret, id)

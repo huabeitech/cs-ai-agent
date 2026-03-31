@@ -10,6 +10,12 @@ type AIAgentTeamResponse struct {
 	Name string `json:"name"`
 }
 
+type AIAgentSkillResponse struct {
+	ID   int64  `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
 type AIConfigResponse struct {
 	ID               int64             `json:"id"`
 	Name             string            `json:"name"`
@@ -74,6 +80,8 @@ type AIAgentResponse struct {
 	FallbackMessage     string                          `json:"fallbackMessage"`
 	KnowledgeIDs        []int64                         `json:"knowledgeIds"`
 	KnowledgeBaseNames  []string                        `json:"knowledgeBaseNames"`
+	SkillIDs            []int64                         `json:"skillIds"`
+	Skills              []AIAgentSkillResponse          `json:"skills"`
 	SortNo              int                             `json:"sortNo"`
 	Remark              string                          `json:"remark"`
 	CreatedAt           string                          `json:"createdAt"`

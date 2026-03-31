@@ -125,6 +125,7 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 		FallbackModeName:    enums.GetAIAgentFallbackModeLabel(enums.AIAgentFallbackMode(item.FallbackMode)),
 		FallbackMessage:     item.FallbackMessage,
 		KnowledgeIDs:        utils.SplitInt64s(item.KnowledgeIDs),
+		SkillIDs:            utils.SplitInt64s(item.SkillIDs),
 		SortNo:              item.SortNo,
 		Remark:              item.Remark,
 		CreatedAt:           item.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -146,6 +147,15 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 	for _, id := range ret.KnowledgeIDs {
 		if knowledgeBase := services.KnowledgeBaseService.Get(id); knowledgeBase != nil {
 			ret.KnowledgeBaseNames = append(ret.KnowledgeBaseNames, knowledgeBase.Name)
+		}
+	}
+	for _, id := range ret.SkillIDs {
+		if skill := services.SkillDefinitionService.Get(id); skill != nil {
+			ret.Skills = append(ret.Skills, response.AIAgentSkillResponse{
+				ID:   skill.ID,
+				Code: skill.Code,
+				Name: skill.Name,
+			})
 		}
 	}
 	return ret

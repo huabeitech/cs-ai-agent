@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"cs-agent/internal/ai"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
@@ -27,7 +29,7 @@ func newPlanner() *planner {
 }
 
 func (p *planner) Plan(ctx context.Context, turnCtx TurnContext, question string) (*Plan, error) {
-	skills := p.loadCandidateSkills()
+	skills := p.loadCandidateSkills(turnCtx)
 	if len(skills) == 0 || turnCtx.AIConfig == nil {
 		return &Plan{
 			Action: ActionReply,
@@ -54,11 +56,32 @@ func (p *planner) Plan(ctx context.Context, turnCtx TurnContext, question string
 	return p.normalizePlan(parsed, skills), nil
 }
 
-func (p *planner) loadCandidateSkills() []models.SkillDefinition {
-	return repositories.SkillDefinitionRepository.Find(sqls.DB(), sqls.NewCnd().
+func (p *planner) loadCandidateSkills(turnCtx TurnContext) []models.SkillDefinition {
+	if turnCtx.AIAgent == nil {
+		return nil
+	}
+	skillIDs := utils.SplitInt64s(turnCtx.AIAgent.SkillIDs)
+	if len(skillIDs) == 0 {
+		return nil
+	}
+	allSkills := repositories.SkillDefinitionRepository.Find(sqls.DB(), sqls.NewCnd().
+		In("id", skillIDs).
 		Eq("status", enums.StatusOk).
-		Desc("priority").
+		Asc("priority").
 		Desc("id"))
+	if len(allSkills) == 0 {
+		return nil
+	}
+	ordered := make([]models.SkillDefinition, 0, len(allSkills))
+	for _, id := range skillIDs {
+		index := slices.IndexFunc(allSkills, func(skill models.SkillDefinition) bool {
+			return skill.ID == id
+		})
+		if index >= 0 {
+			ordered = append(ordered, allSkills[index])
+		}
+	}
+	return ordered
 }
 
 func (p *planner) normalizePlan(parsed plannerResult, skills []models.SkillDefinition) *Plan {

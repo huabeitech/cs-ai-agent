@@ -37,11 +37,12 @@ import {
   type AdminAgentTeam,
   type CreateAIAgentPayload,
   type KnowledgeBase,
+  type SkillDefinition,
   fetchAIAgent,
   fetchAIConfigsAll,
-  fetchAgentTeams,
   fetchAgentTeamsAll,
   fetchKnowledgeBasesAll,
+  fetchSkillDefinitionsAll,
 } from "@/lib/api/admin";
 import {
   AIAgentFallbackMode,
@@ -149,6 +150,7 @@ function buildPayload(
   form: EditForm,
   knowledgeIds: number[],
   teamIds: number[],
+  skillIds: number[],
 ): CreateAIAgentPayload {
   return {
     name: form.name.trim(),
@@ -164,6 +166,7 @@ function buildPayload(
     fallbackMode: Number(form.fallbackMode),
     fallbackMessage: form.fallbackMessage.trim(),
     knowledgeIds,
+    skillIds,
     remark: form.remark.trim(),
   };
 }
@@ -219,11 +222,14 @@ function EditDialogBody({
     [],
   );
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   const [knowledgeToAdd, setKnowledgeToAdd] = useState("");
   const [teamToAdd, setTeamToAdd] = useState("");
+  const [skillToAdd, setSkillToAdd] = useState("");
   const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [agentTeams, setAgentTeams] = useState<AdminAgentTeam[]>([]);
+  const [skills, setSkills] = useState<SkillDefinition[]>([]);
 
   useEffect(() => {
     async function loadDetail() {
@@ -231,8 +237,10 @@ function EditDialogBody({
         reset(buildForm(null));
         setSelectedKnowledgeIds([]);
         setSelectedTeamIds([]);
+        setSelectedSkillIds([]);
         setKnowledgeToAdd("");
         setTeamToAdd("");
+        setSkillToAdd("");
         return;
       }
       setLoading(true);
@@ -241,8 +249,10 @@ function EditDialogBody({
         reset(buildForm(data));
         setSelectedKnowledgeIds(data.knowledgeIds ?? []);
         setSelectedTeamIds(data.teams?.map((team) => team.id) ?? []);
+        setSelectedSkillIds(data.skillIds ?? []);
         setKnowledgeToAdd("");
         setTeamToAdd("");
+        setSkillToAdd("");
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "加载 AI Agent 详情失败",
@@ -297,15 +307,17 @@ function EditDialogBody({
   }, []);
 
   useEffect(() => {
-    async function loadAgentTeams() {
+    async function loadSkills() {
       try {
-        const data = await fetchAgentTeams();
-        setAgentTeams(data);
+        const data = await fetchSkillDefinitionsAll({
+          status: Status.Ok,
+        });
+        setSkills(data);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "加载客服组失败");
+        toast.error(error instanceof Error ? error.message : "加载 Skills 失败");
       }
     }
-    void loadAgentTeams();
+    void loadSkills();
   }, []);
 
   const aiConfigOptions = useMemo(
@@ -335,6 +347,15 @@ function EditDialogBody({
     [knowledgeBases],
   );
 
+  const skillOptions = useMemo(
+    () =>
+      skills.map((item) => ({
+        value: String(item.id),
+        label: item.name,
+      })),
+    [skills],
+  );
+
   const addableKnowledgeOptions = useMemo(
     () =>
       knowledgeOptions.filter(
@@ -353,6 +374,24 @@ function EditDialogBody({
           (option): option is { value: string; label: string } => !!option,
         ),
     [knowledgeOptions, selectedKnowledgeIds],
+  );
+
+  const addableSkillOptions = useMemo(
+    () =>
+      skillOptions.filter(
+        (option) => !selectedSkillIds.includes(Number(option.value)),
+      ),
+    [selectedSkillIds, skillOptions],
+  );
+
+  const selectedSkillOptions = useMemo(
+    () =>
+      selectedSkillIds
+        .map((id) => skillOptions.find((option) => Number(option.value) === id))
+        .filter(
+          (option): option is { value: string; label: string } => !!option,
+        ),
+    [selectedSkillIds, skillOptions],
   );
 
   const addableTeamOptions = useMemo(
@@ -376,7 +415,14 @@ function EditDialogBody({
   const handoffMode = watch("handoffMode");
 
   async function onFormSubmit(values: EditForm) {
-    await onSubmit(buildPayload(values, selectedKnowledgeIds, selectedTeamIds));
+    await onSubmit(
+      buildPayload(
+        values,
+        selectedKnowledgeIds,
+        selectedTeamIds,
+        selectedSkillIds,
+      ),
+    );
   }
 
   function handleAddTeam(value: string) {
@@ -417,6 +463,19 @@ function EditDialogBody({
 
   function handleRemoveKnowledge(id: number) {
     setSelectedKnowledgeIds((prev) => prev.filter((item) => item !== id));
+  }
+
+  function handleAddSkill(value: string) {
+    const id = Number(value);
+    if (!Number.isFinite(id) || id <= 0 || selectedSkillIds.includes(id)) {
+      return;
+    }
+    setSelectedSkillIds((prev) => [...prev, id]);
+    setSkillToAdd("");
+  }
+
+  function handleRemoveSkill(id: number) {
+    setSelectedSkillIds((prev) => prev.filter((item) => item !== id));
   }
 
   return (
@@ -746,6 +805,60 @@ function EditDialogBody({
               {selectedKnowledgeIds.length === 0 ? (
                 <FieldError errors={[{ message: "请至少选择一个知识库" }]} />
               ) : null}
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel>Skills</FieldLabel>
+            <FieldContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <OptionCombobox
+                    value={skillToAdd}
+                    options={addableSkillOptions}
+                    placeholder="选择并添加 Skill"
+                    searchPlaceholder="搜索 Skill"
+                    emptyText="没有可添加的 Skill"
+                    onChange={handleAddSkill}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!skillToAdd}
+                  onClick={() => handleAddSkill(skillToAdd)}
+                >
+                  <PlusIcon />
+                  添加
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedSkillOptions.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    不绑定 Skill 时，自动路由只会走知识库或转人工。
+                  </span>
+                ) : (
+                  selectedSkillOptions.map((option) => (
+                    <Badge
+                      key={option.value}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {option.label}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-5"
+                        onClick={() => handleRemoveSkill(Number(option.value))}
+                        aria-label={`移除 Skill ${option.label}`}
+                      >
+                        <Trash2Icon className="size-3" />
+                      </Button>
+                    </Badge>
+                  ))
+                )}
+              </div>
             </FieldContent>
           </Field>
 

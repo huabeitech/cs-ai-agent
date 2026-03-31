@@ -181,6 +181,19 @@ function SortableAIAgentRow({
         </div>
       </TableCell>
       <TableCell>
+        <div className="flex flex-wrap gap-1">
+          {item.skills.length === 0 ? (
+            <span className="text-sm text-muted-foreground">仅RAG</span>
+          ) : (
+            item.skills.map((skill) => (
+              <Badge key={skill.id} variant="outline">
+                {skill.name}
+              </Badge>
+            ))
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
         <div className="flex items-center gap-3">
           <Switch
             checked={item.status === Status.Ok}
@@ -461,6 +474,7 @@ export default function DashboardAIAgentsPage() {
                   <TableHead>AI配置</TableHead>
                   <TableHead>服务模式</TableHead>
                   <TableHead>知识库</TableHead>
+                  <TableHead>Skills</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="w-[88px] text-right">操作</TableHead>
                 </TableRow>
@@ -469,7 +483,7 @@ export default function DashboardAIAgentsPage() {
                 {result.results.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="py-12 text-center text-muted-foreground"
                     >
                       {loading ? "正在加载 AI Agent..." : "暂无 AI Agent"}
