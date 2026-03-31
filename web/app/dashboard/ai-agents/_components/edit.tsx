@@ -248,7 +248,7 @@ function EditDialogBody({
         const data = await fetchAIAgent(itemId);
         reset(buildForm(data));
         setSelectedKnowledgeIds(data.knowledgeIds ?? []);
-        setSelectedTeamIds(data.teams?.map((team) => team.id) ?? []);
+        setSelectedTeamIds((data.teams ?? []).map((team) => team.id));
         setSelectedSkillIds(data.skillIds ?? []);
         setKnowledgeToAdd("");
         setTeamToAdd("");

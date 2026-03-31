@@ -108,6 +108,9 @@ function SortableAIAgentRow({
   handleToggleStatus,
   handleDelete,
 }: SortableAIAgentRowProps) {
+  const knowledgeIds = item.knowledgeIds ?? [];
+  const knowledgeBaseNames = item.knowledgeBaseNames ?? [];
+  const skills = item.skills ?? [];
   const {
     attributes,
     listeners,
@@ -169,11 +172,11 @@ function SortableAIAgentRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
-          {item.knowledgeIds.length === 0 ? (
+          {knowledgeIds.length === 0 ? (
             <span className="text-sm text-muted-foreground">未配置</span>
           ) : (
-            item.knowledgeBaseNames.map((name, index) => (
-              <Badge key={item.knowledgeIds[index]} variant="secondary">
+            knowledgeBaseNames.map((name, index) => (
+              <Badge key={knowledgeIds[index] ?? `${item.id}-${index}`} variant="secondary">
                 {name}
               </Badge>
             ))
@@ -182,10 +185,10 @@ function SortableAIAgentRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
-          {item.skills.length === 0 ? (
+          {skills.length === 0 ? (
             <span className="text-sm text-muted-foreground">仅RAG</span>
           ) : (
-            item.skills.map((skill) => (
+            skills.map((skill) => (
               <Badge key={skill.id} variant="outline">
                 {skill.name}
               </Badge>
