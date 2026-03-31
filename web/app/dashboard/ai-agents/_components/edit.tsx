@@ -8,7 +8,7 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Controller, Resolver, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v4";
@@ -504,6 +504,9 @@ function EditDialogBody({
   );
 
   const handoffMode = watch("handoffMode");
+  const selectedHandoffModeLabel =
+    handoffModeOptions.find((item) => item.value === handoffMode)?.label ??
+    "未选择";
 
   async function onFormSubmit(values: EditForm) {
     await onSubmit(
@@ -628,66 +631,51 @@ function EditDialogBody({
         <form
           id={formId}
           onSubmit={handleSubmit(onFormSubmit)}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <Field data-invalid={!!errors.name}>
-            <FieldLabel htmlFor="ai-agent-name">名称</FieldLabel>
-            <FieldContent>
-              <Input id="ai-agent-name" {...register("name")} />
-              <FieldError errors={[errors.name]} />
-            </FieldContent>
-          </Field>
+          <SectionCard
+            title="基础信息"
+            description="定义这个 Agent 是谁、使用哪个模型、以什么服务模式工作。"
+          >
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <Field data-invalid={!!errors.name}>
+                <FieldLabel htmlFor="ai-agent-name">名称</FieldLabel>
+                <FieldContent>
+                  <Input id="ai-agent-name" {...register("name")} />
+                  <FieldError errors={[errors.name]} />
+                </FieldContent>
+              </Field>
 
-          <Field data-invalid={!!errors.description}>
-            <FieldLabel htmlFor="ai-agent-description">描述</FieldLabel>
-            <FieldContent>
-              <Input id="ai-agent-description" {...register("description")} />
-              <FieldError errors={[errors.description]} />
-            </FieldContent>
-          </Field>
+              <Field data-invalid={!!errors.aiConfigId}>
+                <FieldLabel>AI 配置</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={control}
+                    name="aiConfigId"
+                    render={({ field }) => (
+                      <OptionCombobox
+                        value={field.value}
+                        options={aiConfigOptions}
+                        placeholder="请选择 AI 配置"
+                        searchPlaceholder="搜索 AI 配置"
+                        emptyText="未找到 AI 配置"
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <FieldError errors={[errors.aiConfigId]} />
+                </FieldContent>
+              </Field>
+            </div>
 
-          <Field>
-            <FieldLabel>客服组</FieldLabel>
-            <FieldContent className="space-y-3">
-              <OptionCombobox
-                value={teamToAdd}
-                options={addableTeamOptions}
-                placeholder="请选择客服组"
-                searchPlaceholder="搜索客服组"
-                emptyText="未找到客服组"
-                onChange={handleAddTeam}
-              />
-              <div className="flex flex-wrap gap-2">
-                {selectedTeamOptions.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    未配置客服组
-                  </span>
-                ) : (
-                  selectedTeamOptions.map((option) => (
-                    <Badge
-                      key={option.value}
-                      variant="secondary"
-                      className="gap-1 pr-1"
-                    >
-                      {option.label}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-5"
-                        onClick={() => handleRemoveTeam(Number(option.value))}
-                        aria-label={`移除客服组 ${option.label}`}
-                      >
-                        <Trash2Icon className="size-3" />
-                      </Button>
-                    </Badge>
-                  ))
-                )}
-              </div>
-            </FieldContent>
-          </Field>
+            <Field data-invalid={!!errors.description}>
+              <FieldLabel htmlFor="ai-agent-description">描述</FieldLabel>
+              <FieldContent>
+                <Input id="ai-agent-description" {...register("description")} />
+                <FieldError errors={[errors.description]} />
+              </FieldContent>
+            </Field>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.serviceMode}>
               <FieldLabel>服务模式</FieldLabel>
               <FieldContent>
@@ -708,406 +696,511 @@ function EditDialogBody({
                 <FieldError errors={[errors.serviceMode]} />
               </FieldContent>
             </Field>
-            <Field data-invalid={!!errors.aiConfigId}>
-              <FieldLabel>AI 配置</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={control}
-                  name="aiConfigId"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={aiConfigOptions}
-                      placeholder="请选择 AI 配置"
-                      searchPlaceholder="搜索 AI 配置"
-                      emptyText="未找到 AI 配置"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.aiConfigId]} />
-              </FieldContent>
-            </Field>
-          </div>
+          </SectionCard>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <Field data-invalid={!!errors.handoffMode}>
-              <FieldLabel>转人工模式</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={control}
-                  name="handoffMode"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={handoffModeOptions}
-                      placeholder="请选择转人工模式"
-                      searchPlaceholder="搜索转人工模式"
-                      emptyText="未找到转人工模式"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.handoffMode]} />
-              </FieldContent>
-            </Field>
-            <Field data-invalid={!!errors.replyTimeoutSeconds}>
-              <FieldLabel
-                htmlFor="ai-agent-reply-timeout-seconds"
-                className="flex items-center gap-1"
-              >
-                回复超时秒数
-                <Popover>
-                  <PopoverTrigger
-                    render={
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
-                      >
-                        <InfoIcon className="size-4" />
-                      </button>
-                    }
-                  />
-                  <PopoverContent side="top" align="start" className="max-w-xs">
-                    <PopoverDescription>
-                      AI 自动回复的异步执行超时时间。填 0 时使用系统默认值 180 秒。
-                    </PopoverDescription>
-                  </PopoverContent>
-                </Popover>
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  id="ai-agent-reply-timeout-seconds"
-                  type="number"
-                  min={0}
-                  step={1}
-                  {...register("replyTimeoutSeconds", { valueAsNumber: true })}
-                />
-                <FieldError errors={[errors.replyTimeoutSeconds]} />
-              </FieldContent>
-            </Field>
-            <Field data-invalid={!!errors.maxAiReplyRounds}>
-              <FieldLabel
-                htmlFor="ai-agent-max-rounds"
-                className="flex items-center gap-1"
-              >
-                AI 最大回复次数
-                <Popover>
-                  <PopoverTrigger
-                    render={
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
-                      >
-                        <InfoIcon className="size-4" />
-                      </button>
-                    }
-                  />
-                  <PopoverContent side="top" align="start" className="max-w-xs">
-                    <PopoverDescription>
-                      单个会话内 AI
-                      成功回复达到该次数后，下一条客户消息会自动转人工。填 0
-                      表示不限制。
-                    </PopoverDescription>
-                  </PopoverContent>
-                </Popover>
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  id="ai-agent-max-rounds"
-                  type="number"
-                  min={0}
-                  step={1}
-                  {...register("maxAiReplyRounds", { valueAsNumber: true })}
-                />
-                <FieldError errors={[errors.maxAiReplyRounds]} />
-              </FieldContent>
-            </Field>
-            <Field data-invalid={!!errors.fallbackMode}>
-              <FieldLabel>兜底模式</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={control}
-                  name="fallbackMode"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={fallbackModeOptions}
-                      placeholder="请选择兜底模式"
-                      searchPlaceholder="搜索兜底模式"
-                      emptyText="未找到兜底模式"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.fallbackMode]} />
-              </FieldContent>
-            </Field>
-          </div>
-
-          {handoffMode === String(AIAgentHandoffMode.DefaultTeamPool) ? (
-            <div className="text-xs text-muted-foreground">
-              当前模式要求至少指定一个客服组，转人工后会进入这些客服组对应的待分配范围。
-            </div>
-          ) : null}
-
-          <Field data-invalid={selectedKnowledgeIds.length === 0}>
-            <FieldLabel>知识库</FieldLabel>
-            <FieldContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <OptionCombobox
-                    value={knowledgeToAdd}
-                    options={addableKnowledgeOptions}
-                    placeholder="选择并添加知识库"
-                    searchPlaceholder="搜索知识库"
-                    emptyText="没有可添加的知识库"
-                    onChange={handleAddKnowledge}
-                  />
+          <SectionCard
+            title="能力配置"
+            description="知识库用于 RAG，Skills 用于业务流程，Direct Tools 用于低风险实时查询。"
+          >
+            <div className="grid gap-4 xl:grid-cols-3">
+              <div className="rounded-xl border bg-muted/10 p-4">
+                <div className="mb-1 text-sm font-medium">知识库</div>
+                <div className="mb-4 text-xs text-muted-foreground">
+                  至少选择一个知识库，可拖动调整优先级。
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!knowledgeToAdd}
-                  onClick={() => handleAddKnowledge(knowledgeToAdd)}
-                >
-                  <PlusIcon />
-                  添加
-                </Button>
-              </div>
-              {selectedKnowledgeIds.length === 0 ? (
-                <div className="rounded-md border border-dashed px-3 py-4 text-sm text-muted-foreground">
-                  请至少选择一个知识库。
-                </div>
-              ) : (
-                <div className="space-y-2 rounded-md border p-3">
-                  {selectedKnowledgeOptions.map((option, index) => (
-                    <div key={option.value} className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="min-w-8 justify-center"
-                      >
-                        {index + 1}
-                      </Badge>
-                      <div className="flex-1 text-sm">{option.label}</div>
+                <Field data-invalid={selectedKnowledgeIds.length === 0}>
+                  <FieldContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <OptionCombobox
+                          value={knowledgeToAdd}
+                          options={addableKnowledgeOptions}
+                          placeholder="选择并添加知识库"
+                          searchPlaceholder="搜索知识库"
+                          emptyText="没有可添加的知识库"
+                          onChange={handleAddKnowledge}
+                        />
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon-sm"
-                        disabled={index === 0}
-                        onClick={() => handleMoveKnowledge(index, -1)}
+                        disabled={!knowledgeToAdd}
+                        onClick={() => handleAddKnowledge(knowledgeToAdd)}
                       >
-                        <ArrowUpIcon />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon-sm"
-                        disabled={index === selectedKnowledgeOptions.length - 1}
-                        onClick={() => handleMoveKnowledge(index, 1)}
-                      >
-                        <ArrowDownIcon />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() =>
-                          handleRemoveKnowledge(Number(option.value))
-                        }
-                      >
-                        <Trash2Icon />
+                        <PlusIcon />
+                        添加
                       </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-              {selectedKnowledgeIds.length === 0 ? (
-                <FieldError errors={[{ message: "请至少选择一个知识库" }]} />
-              ) : null}
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel>Skills</FieldLabel>
-            <FieldContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <OptionCombobox
-                    value={skillToAdd}
-                    options={addableSkillOptions}
-                    placeholder="选择并添加 Skill"
-                    searchPlaceholder="搜索 Skill"
-                    emptyText="没有可添加的 Skill"
-                    onChange={handleAddSkill}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!skillToAdd}
-                  onClick={() => handleAddSkill(skillToAdd)}
-                >
-                  <PlusIcon />
-                  添加
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedSkillOptions.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    不绑定 Skill 时，自动路由只会走知识库或转人工。
-                  </span>
-                ) : (
-                  selectedSkillOptions.map((option) => (
-                    <Badge
-                      key={option.value}
-                      variant="secondary"
-                      className="gap-1 pr-1"
-                    >
-                      {option.label}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-5"
-                        onClick={() => handleRemoveSkill(Number(option.value))}
-                        aria-label={`移除 Skill ${option.label}`}
-                      >
-                        <Trash2Icon className="size-3" />
-                      </Button>
-                    </Badge>
-                  ))
-                )}
-              </div>
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel>Direct MCP Tools</FieldLabel>
-            <FieldContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-52">
-                  <OptionCombobox
-                    value={directToolServerCodeToAdd}
-                    options={directToolServerOptions}
-                    placeholder="选择 MCP Server"
-                    searchPlaceholder="搜索 MCP Server"
-                    emptyText="没有可用的 MCP Server"
-                    onChange={(value) => {
-                      setDirectToolServerCodeToAdd(value);
-                      setDirectToolToAdd("");
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <OptionCombobox
-                    value={directToolToAdd}
-                    options={addableDirectToolOptions}
-                    placeholder="选择该 Server 下的 Direct Tool"
-                    searchPlaceholder="搜索 Direct Tool"
-                    emptyText="没有可添加的 Direct Tool"
-                    onChange={handleAddDirectTool}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!directToolServerCodeToAdd || !directToolToAdd}
-                  onClick={() => handleAddDirectTool(directToolToAdd)}
-                >
-                  <PlusIcon />
-                  添加
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {directTools.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    不配置 Direct Tool 时，Agent 不会直接访问 MCP，只能通过 Skill 间接调用。
-                  </span>
-                ) : (
-                  directToolsGroupedByServer.map(([serverCode, tools]) => (
-                    <div key={serverCode} className="rounded-md border p-3">
-                      <div className="mb-2 text-xs font-medium text-muted-foreground">
-                        {serverCode}
+                    {selectedKnowledgeIds.length === 0 ? (
+                      <div className="rounded-md border border-dashed px-3 py-4 text-sm text-muted-foreground">
+                        请至少选择一个知识库。
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {tools.map((tool) => {
-                          const value = `${tool.serverCode}/${tool.toolName}`;
-                          return (
+                    ) : (
+                      <div className="space-y-2 rounded-md border p-3">
+                        {selectedKnowledgeOptions.map((option, index) => (
+                          <div
+                            key={option.value}
+                            className="flex items-center gap-2"
+                          >
                             <Badge
-                              key={value}
                               variant="secondary"
-                              className="gap-1 pr-1"
+                              className="min-w-8 justify-center"
                             >
-                              {tool.title || value}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-5"
-                                onClick={() => handleRemoveDirectTool(value)}
-                                aria-label={`移除 Direct Tool ${value}`}
-                              >
-                                <Trash2Icon className="size-3" />
-                              </Button>
+                              {index + 1}
                             </Badge>
-                          );
-                        })}
+                            <div className="flex-1 text-sm">{option.label}</div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              disabled={index === 0}
+                              onClick={() => handleMoveKnowledge(index, -1)}
+                            >
+                              <ArrowUpIcon />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              disabled={
+                                index === selectedKnowledgeOptions.length - 1
+                              }
+                              onClick={() => handleMoveKnowledge(index, 1)}
+                            >
+                              <ArrowDownIcon />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              onClick={() =>
+                                handleRemoveKnowledge(Number(option.value))
+                              }
+                            >
+                              <Trash2Icon />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {selectedKnowledgeIds.length === 0 ? (
+                      <FieldError errors={[{ message: "请至少选择一个知识库" }]} />
+                    ) : null}
+                  </FieldContent>
+                </Field>
+              </div>
+
+              <div className="rounded-xl border bg-muted/10 p-4">
+                <div className="mb-1 text-sm font-medium">Skills</div>
+                <div className="mb-4 text-xs text-muted-foreground">
+                  用于固定业务流程和多步任务编排。
+                </div>
+                <Field>
+                  <FieldContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <OptionCombobox
+                          value={skillToAdd}
+                          options={addableSkillOptions}
+                          placeholder="选择并添加 Skill"
+                          searchPlaceholder="搜索 Skill"
+                          emptyText="没有可添加的 Skill"
+                          onChange={handleAddSkill}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!skillToAdd}
+                        onClick={() => handleAddSkill(skillToAdd)}
+                      >
+                        <PlusIcon />
+                        添加
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSkillOptions.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                          不绑定 Skill 时，自动路由只会走知识库或转人工。
+                        </span>
+                      ) : (
+                        selectedSkillOptions.map((option) => (
+                          <Badge
+                            key={option.value}
+                            variant="secondary"
+                            className="gap-1 pr-1"
+                          >
+                            {option.label}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-5"
+                              onClick={() =>
+                                handleRemoveSkill(Number(option.value))
+                              }
+                              aria-label={`移除 Skill ${option.label}`}
+                            >
+                              <Trash2Icon className="size-3" />
+                            </Button>
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </FieldContent>
+                </Field>
+              </div>
+
+              <div className="rounded-xl border bg-muted/10 p-4">
+                <div className="mb-1 text-sm font-medium">Direct MCP Tools</div>
+                <div className="mb-4 text-xs text-muted-foreground">
+                  用于低风险、原子化的实时查询。先选 MCP Server，再选该
+                  Server 下的工具。
+                </div>
+                <Field>
+                  <FieldContent className="space-y-3">
+                    <div className="flex flex-col gap-2">
+                      <OptionCombobox
+                        value={directToolServerCodeToAdd}
+                        options={directToolServerOptions}
+                        placeholder="选择 MCP Server"
+                        searchPlaceholder="搜索 MCP Server"
+                        emptyText="没有可用的 MCP Server"
+                        onChange={(value) => {
+                          setDirectToolServerCodeToAdd(value);
+                          setDirectToolToAdd("");
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <OptionCombobox
+                            value={directToolToAdd}
+                            options={addableDirectToolOptions}
+                            placeholder="选择该 Server 下的 Direct Tool"
+                            searchPlaceholder="搜索 Direct Tool"
+                            emptyText="没有可添加的 Direct Tool"
+                            onChange={handleAddDirectTool}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            !directToolServerCodeToAdd || !directToolToAdd
+                          }
+                          onClick={() => handleAddDirectTool(directToolToAdd)}
+                        >
+                          <PlusIcon />
+                          添加
+                        </Button>
                       </div>
                     </div>
-                  ))
-                )}
+                    <div className="space-y-3">
+                      {directTools.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                          不配置 Direct Tool 时，Agent 不会直接访问 MCP，只能通过 Skill 间接调用。
+                        </span>
+                      ) : (
+                        directToolsGroupedByServer.map(([serverCode, tools]) => (
+                          <div
+                            key={serverCode}
+                            className="rounded-md border p-3"
+                          >
+                            <div className="mb-2 text-xs font-medium text-muted-foreground">
+                              {serverCode}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {tools.map((tool) => {
+                                const value = `${tool.serverCode}/${tool.toolName}`;
+                                return (
+                                  <Badge
+                                    key={value}
+                                    variant="secondary"
+                                    className="gap-1 pr-1"
+                                  >
+                                    {tool.title || value}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-5"
+                                      onClick={() =>
+                                        handleRemoveDirectTool(value)
+                                      }
+                                      aria-label={`移除 Direct Tool ${value}`}
+                                    >
+                                      <Trash2Icon className="size-3" />
+                                    </Button>
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </FieldContent>
+                </Field>
               </div>
-            </FieldContent>
-          </Field>
+            </div>
+          </SectionCard>
 
-          <Field data-invalid={!!errors.welcomeMessage}>
-            <FieldLabel htmlFor="ai-agent-welcome-message">欢迎语</FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="ai-agent-welcome-message"
-                rows={3}
-                {...register("welcomeMessage")}
-              />
-              <FieldError errors={[errors.welcomeMessage]} />
-            </FieldContent>
-          </Field>
+          <SectionCard
+            title="服务策略"
+            description="控制转人工规则、兜底策略和自动回复行为边界。"
+          >
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+              <Field data-invalid={!!errors.handoffMode}>
+                <FieldLabel>转人工模式</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={control}
+                    name="handoffMode"
+                    render={({ field }) => (
+                      <OptionCombobox
+                        value={field.value}
+                        options={handoffModeOptions}
+                        placeholder="请选择转人工模式"
+                        searchPlaceholder="搜索转人工模式"
+                        emptyText="未找到转人工模式"
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <FieldError errors={[errors.handoffMode]} />
+                </FieldContent>
+              </Field>
+              <Field data-invalid={!!errors.replyTimeoutSeconds}>
+                <FieldLabel
+                  htmlFor="ai-agent-reply-timeout-seconds"
+                  className="flex items-center gap-1"
+                >
+                  回复超时秒数
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                        >
+                          <InfoIcon className="size-4" />
+                        </button>
+                      }
+                    />
+                    <PopoverContent side="top" align="start" className="max-w-xs">
+                      <PopoverDescription>
+                        AI 自动回复的异步执行超时时间。填 0 时使用系统默认值 180 秒。
+                      </PopoverDescription>
+                    </PopoverContent>
+                  </Popover>
+                </FieldLabel>
+                <FieldContent>
+                  <Input
+                    id="ai-agent-reply-timeout-seconds"
+                    type="number"
+                    min={0}
+                    step={1}
+                    {...register("replyTimeoutSeconds", { valueAsNumber: true })}
+                  />
+                  <FieldError errors={[errors.replyTimeoutSeconds]} />
+                </FieldContent>
+              </Field>
+              <Field data-invalid={!!errors.maxAiReplyRounds}>
+                <FieldLabel
+                  htmlFor="ai-agent-max-rounds"
+                  className="flex items-center gap-1"
+                >
+                  AI 最大回复次数
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                        >
+                          <InfoIcon className="size-4" />
+                        </button>
+                      }
+                    />
+                    <PopoverContent side="top" align="start" className="max-w-xs">
+                      <PopoverDescription>
+                        单个会话内 AI 成功回复达到该次数后，下一条客户消息会自动转人工。填 0 表示不限制。
+                      </PopoverDescription>
+                    </PopoverContent>
+                  </Popover>
+                </FieldLabel>
+                <FieldContent>
+                  <Input
+                    id="ai-agent-max-rounds"
+                    type="number"
+                    min={0}
+                    step={1}
+                    {...register("maxAiReplyRounds", { valueAsNumber: true })}
+                  />
+                  <FieldError errors={[errors.maxAiReplyRounds]} />
+                </FieldContent>
+              </Field>
+              <Field data-invalid={!!errors.fallbackMode}>
+                <FieldLabel>兜底模式</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={control}
+                    name="fallbackMode"
+                    render={({ field }) => (
+                      <OptionCombobox
+                        value={field.value}
+                        options={fallbackModeOptions}
+                        placeholder="请选择兜底模式"
+                        searchPlaceholder="搜索兜底模式"
+                        emptyText="未找到兜底模式"
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <FieldError errors={[errors.fallbackMode]} />
+                </FieldContent>
+              </Field>
+            </div>
 
-          <Field data-invalid={!!errors.systemPrompt}>
-            <FieldLabel htmlFor="ai-agent-system-prompt">系统提示词</FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="ai-agent-system-prompt"
-                rows={8}
-                {...register("systemPrompt")}
-              />
-              <FieldError errors={[errors.systemPrompt]} />
-            </FieldContent>
-          </Field>
+            <div className="rounded-xl border bg-muted/10 p-4">
+              <div className="mb-1 text-sm font-medium">客服组</div>
+              <div className="mb-4 text-xs text-muted-foreground">
+                当前转人工模式：{selectedHandoffModeLabel}
+                {handoffMode ===
+                String(AIAgentHandoffMode.DefaultTeamPool)
+                  ? "。该模式要求至少配置一个客服组。"
+                  : "。仅在涉及转人工时生效。"}
+              </div>
+              <Field>
+                <FieldContent className="space-y-3">
+                  <OptionCombobox
+                    value={teamToAdd}
+                    options={addableTeamOptions}
+                    placeholder="请选择客服组"
+                    searchPlaceholder="搜索客服组"
+                    emptyText="未找到客服组"
+                    onChange={handleAddTeam}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTeamOptions.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">
+                        未配置客服组
+                      </span>
+                    ) : (
+                      selectedTeamOptions.map((option) => (
+                        <Badge
+                          key={option.value}
+                          variant="secondary"
+                          className="gap-1 pr-1"
+                        >
+                          {option.label}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-5"
+                            onClick={() =>
+                              handleRemoveTeam(Number(option.value))
+                            }
+                            aria-label={`移除客服组 ${option.label}`}
+                          >
+                            <Trash2Icon className="size-3" />
+                          </Button>
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </FieldContent>
+              </Field>
+            </div>
+          </SectionCard>
 
-          <Field data-invalid={!!errors.fallbackMessage}>
-            <FieldLabel htmlFor="ai-agent-fallback-message">
-              兜底文案
-            </FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="ai-agent-fallback-message"
-                rows={3}
-                {...register("fallbackMessage")}
-              />
-              <FieldError errors={[errors.fallbackMessage]} />
-            </FieldContent>
-          </Field>
+          <SectionCard
+            title="话术配置"
+            description="配置用户能直接看到的欢迎语和兜底文案。"
+          >
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Field data-invalid={!!errors.welcomeMessage}>
+                <FieldLabel htmlFor="ai-agent-welcome-message">欢迎语</FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    id="ai-agent-welcome-message"
+                    rows={5}
+                    {...register("welcomeMessage")}
+                  />
+                  <FieldError errors={[errors.welcomeMessage]} />
+                </FieldContent>
+              </Field>
 
-          <Field data-invalid={!!errors.remark}>
-            <FieldLabel htmlFor="ai-agent-remark">备注</FieldLabel>
-            <FieldContent>
-              <Textarea id="ai-agent-remark" rows={3} {...register("remark")} />
-              <FieldError errors={[errors.remark]} />
-            </FieldContent>
-          </Field>
+              <Field data-invalid={!!errors.fallbackMessage}>
+                <FieldLabel htmlFor="ai-agent-fallback-message">
+                  兜底文案
+                </FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    id="ai-agent-fallback-message"
+                    rows={5}
+                    {...register("fallbackMessage")}
+                  />
+                  <FieldError errors={[errors.fallbackMessage]} />
+                </FieldContent>
+              </Field>
+            </div>
+          </SectionCard>
+
+          <details className="rounded-2xl border bg-muted/10 p-4">
+            <summary className="cursor-pointer list-none text-sm font-medium">
+              高级设置
+            </summary>
+            <div className="mt-4 space-y-4">
+              <div className="text-sm text-muted-foreground">
+                这里放置不影响主流程跑通、但会影响回复风格和调优效果的配置。
+              </div>
+              <Field data-invalid={!!errors.systemPrompt}>
+                <FieldLabel htmlFor="ai-agent-system-prompt">
+                  系统提示词
+                </FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    id="ai-agent-system-prompt"
+                    rows={10}
+                    {...register("systemPrompt")}
+                  />
+                  <FieldError errors={[errors.systemPrompt]} />
+                </FieldContent>
+              </Field>
+
+              <Field data-invalid={!!errors.remark}>
+                <FieldLabel htmlFor="ai-agent-remark">备注</FieldLabel>
+                <FieldContent>
+                  <Textarea id="ai-agent-remark" rows={4} {...register("remark")} />
+                  <FieldError errors={[errors.remark]} />
+                </FieldContent>
+              </Field>
+            </div>
+          </details>
         </form>
       )}
     </ProjectDialog>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="mb-4">
+        <div className="text-base font-semibold">{title}</div>
+        <div className="mt-1 text-sm text-muted-foreground">{description}</div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
   );
 }
