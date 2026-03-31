@@ -96,7 +96,8 @@ func (c *AIConfigController) PostUpdate() *web.JsonResult {
 }
 
 func (c *AIConfigController) PostDelete() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigDelete); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigDelete)
+	if err != nil {
 		return web.JsonError(err)
 	}
 
@@ -104,7 +105,7 @@ func (c *AIConfigController) PostDelete() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIConfigService.DeleteAIConfig(req.ID); err != nil {
+	if err := services.AIConfigService.DeleteAIConfig(req.ID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

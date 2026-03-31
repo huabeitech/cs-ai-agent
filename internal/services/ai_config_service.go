@@ -131,16 +131,20 @@ func (s *aIConfigService) UpdateAIConfig(req request.UpdateAIConfigRequest, oper
 	})
 }
 
-func (s *aIConfigService) DeleteAIConfig(id int64) error {
+func (s *aIConfigService) DeleteAIConfig(id int64, operator *dto.AuthPrincipal) error {
 	current := s.Get(id)
 	if current == nil {
-		return errorsx.InvalidParam("AI配置不存在")
+		return nil
 	}
 	if current.Status == enums.StatusOk {
 		return errorsx.Forbidden("启用中的AI配置不允许删除")
 	}
-	repositories.AIConfigRepository.Delete(sqls.DB(), id)
-	return nil
+	return repositories.AIConfigRepository.Updates(sqls.DB(), id, map[string]any{
+		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
 }
 
 func (s *aIConfigService) UpdateStatus(id int64, status enums.Status, operator *dto.AuthPrincipal) error {
