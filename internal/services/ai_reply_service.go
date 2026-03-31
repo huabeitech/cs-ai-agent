@@ -213,8 +213,6 @@ func (s *aiReplyService) pickKnowledgeCandidate(ctx context.Context, aiAgent *mo
 	results, err := rag.Retrieve.Retrieve(ctx, rag.RetrieveRequest{
 		KnowledgeBaseIDs: knowledgeIDs,
 		Query:            question,
-		TopK:             8,
-		ScoreThreshold:   0.3,
 	})
 	if err != nil {
 		slog.Warn("knowledge retrieve failed",

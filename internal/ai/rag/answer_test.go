@@ -3,6 +3,7 @@ package rag
 import (
 	"testing"
 
+	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 )
@@ -77,6 +78,18 @@ func TestResolveRerankLimit(t *testing.T) {
 		if got := resolveRerankLimit(tt.requestLimit, tt.defaultLimit); got != tt.expected {
 			t.Fatalf("%s: expected %d, got %d", tt.name, tt.expected, got)
 		}
+	}
+}
+
+func TestResolveDefaultRerankLimit(t *testing.T) {
+	items := []models.KnowledgeBase{
+		{ID: 11, DefaultRerankLimit: 3},
+		{ID: 22, DefaultRerankLimit: 7},
+		{ID: 33, DefaultRerankLimit: 5},
+	}
+
+	if got := resolveDefaultRerankLimit(items); got != 7 {
+		t.Fatalf("expected max rerank limit 7, got %d", got)
 	}
 }
 

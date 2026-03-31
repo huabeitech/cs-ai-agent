@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
+	"cs-agent/internal/models"
 	"github.com/mlogclub/simple/sqls"
 
 	"cs-agent/internal/ai"
@@ -28,21 +30,11 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		return nil, nil
 	}
 
-	retrievableKnowledgeBaseIDs := s.filterRetrievableKnowledgeBaseIDs(knowledgeBaseIDs)
-	if len(retrievableKnowledgeBaseIDs) == 0 {
+	retrievableKnowledgeBases := s.loadRetrievableKnowledgeBases(knowledgeBaseIDs)
+	if len(retrievableKnowledgeBases) == 0 {
 		slog.Info("Skip retrieve for non-enabled knowledge bases",
 			"knowledge_base_ids", fmt.Sprint(knowledgeBaseIDs))
 		return nil, nil
-	}
-
-	topK := req.TopK
-	if topK <= 0 {
-		topK = 8
-	}
-
-	scoreThreshold := float32(req.ScoreThreshold)
-	if scoreThreshold <= 0 {
-		scoreThreshold = 0.3
 	}
 
 	embeddingResult, err := ai.Embedding.GenerateEmbedding(ctx, req.Query)
@@ -56,27 +48,39 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 		return nil, fmt.Errorf("vectordb provider not initialized")
 	}
 
-	searchResults, err := provider.Search(ctx, &vectordb.SearchRequest{
-		CollectionName: collectionName,
-		Vector:         embeddingResult.Vector,
-		TopK:           topK,
-		ScoreThreshold: scoreThreshold,
-		Filter: &vectordb.SearchFilter{
-			KnowledgeBaseIDs: retrievableKnowledgeBaseIDs,
-		},
-	})
-	if err != nil {
-		slog.Error("Failed to search vectors", "error", err)
-		return nil, fmt.Errorf("failed to search vectors: %w", err)
-	}
-
-	if len(searchResults) == 0 && scoreThreshold > 0 {
-		s.logEmptySearchDiagnostics(ctx, provider, collectionName, embeddingResult.Vector, topK, scoreThreshold, retrievableKnowledgeBaseIDs, req)
+	searchResults := make([]vectordb.SearchResult, 0)
+	for _, knowledgeBase := range retrievableKnowledgeBases {
+		topK, scoreThreshold := resolveKnowledgeBaseSearchOptions(req, &knowledgeBase)
+		kbResults, searchErr := provider.Search(ctx, &vectordb.SearchRequest{
+			CollectionName: collectionName,
+			Vector:         embeddingResult.Vector,
+			TopK:           topK,
+			ScoreThreshold: scoreThreshold,
+			Filter: &vectordb.SearchFilter{
+				KnowledgeBaseIDs: []int64{knowledgeBase.ID},
+			},
+		})
+		if searchErr != nil {
+			slog.Error("Failed to search vectors",
+				"knowledge_base_id", knowledgeBase.ID,
+				"error", searchErr)
+			return nil, fmt.Errorf("failed to search vectors: %w", searchErr)
+		}
+		if len(kbResults) == 0 && scoreThreshold > 0 {
+			s.logEmptySearchDiagnostics(ctx, provider, collectionName, embeddingResult.Vector, topK, scoreThreshold, []int64{knowledgeBase.ID}, req)
+		}
+		searchResults = append(searchResults, kbResults...)
 	}
 
 	if len(searchResults) == 0 {
 		return nil, nil
 	}
+	sort.SliceStable(searchResults, func(i, j int) bool {
+		if searchResults[i].Score == searchResults[j].Score {
+			return searchResults[i].ID < searchResults[j].ID
+		}
+		return searchResults[i].Score > searchResults[j].Score
+	})
 
 	results := make([]RetrieveResult, 0, len(searchResults))
 	for _, sr := range searchResults {
@@ -362,7 +366,26 @@ func normalizeKnowledgeBaseIDs(ids []int64) []int64 {
 	return normalized
 }
 
-func (s *retrieve) filterRetrievableKnowledgeBaseIDs(ids []int64) []int64 {
+func resolveKnowledgeBaseSearchOptions(req RetrieveRequest, knowledgeBase *models.KnowledgeBase) (int, float32) {
+	topK := req.TopK
+	if topK <= 0 && knowledgeBase != nil && knowledgeBase.DefaultTopK > 0 {
+		topK = knowledgeBase.DefaultTopK
+	}
+	if topK <= 0 {
+		topK = 8
+	}
+
+	scoreThreshold := float32(req.ScoreThreshold)
+	if scoreThreshold <= 0 && knowledgeBase != nil && knowledgeBase.DefaultScoreThreshold > 0 {
+		scoreThreshold = float32(knowledgeBase.DefaultScoreThreshold)
+	}
+	if scoreThreshold <= 0 {
+		scoreThreshold = 0.3
+	}
+	return topK, scoreThreshold
+}
+
+func (s *retrieve) loadRetrievableKnowledgeBases(ids []int64) []models.KnowledgeBase {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -370,16 +393,16 @@ func (s *retrieve) filterRetrievableKnowledgeBaseIDs(ids []int64) []int64 {
 	if len(items) == 0 {
 		return nil
 	}
-	allowed := make(map[int64]struct{}, len(items))
+	allowed := make(map[int64]models.KnowledgeBase, len(items))
 	for _, item := range items {
 		if item.Status == enums.StatusOk {
-			allowed[item.ID] = struct{}{}
+			allowed[item.ID] = item
 		}
 	}
-	filtered := make([]int64, 0, len(ids))
+	filtered := make([]models.KnowledgeBase, 0, len(ids))
 	for _, id := range ids {
-		if _, ok := allowed[id]; ok {
-			filtered = append(filtered, id)
+		if item, ok := allowed[id]; ok {
+			filtered = append(filtered, item)
 		}
 	}
 	return filtered

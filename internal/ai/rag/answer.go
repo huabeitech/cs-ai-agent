@@ -63,7 +63,6 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 	startedAt := time.Now()
 
 	retrieveStartedAt := time.Now()
-	knowledgeBase := s.resolvePrimaryKnowledgeBase(req.KnowledgeBaseIDs)
 	results, err := s.retrieve(request.KnowledgeSearchRequest{
 		KnowledgeBaseIDs: req.KnowledgeBaseIDs,
 		Question:         req.Question,
@@ -75,6 +74,7 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 		return nil, err
 	}
 	retrieveMs := time.Since(retrieveStartedAt).Milliseconds()
+	knowledgeBase := s.resolveAnswerKnowledgeBase(req.KnowledgeBaseIDs, results)
 	contextResults := buildContextHits(Retrieve.SelectContextResults(results, 4000))
 
 	hits := make([]response.KnowledgeSearchResult, 0, len(results))
@@ -278,7 +278,7 @@ func (s *answer) retrieve(req request.KnowledgeSearchRequest, ctx context.Contex
 	if len(normalizeKnowledgeBaseIDs(req.KnowledgeBaseIDs)) == 0 {
 		return nil, errorsx.InvalidParam("知识库不能为空")
 	}
-	knowledgeBase := s.resolvePrimaryKnowledgeBase(req.KnowledgeBaseIDs)
+	knowledgeBases := s.loadKnowledgeBases(req.KnowledgeBaseIDs)
 
 	results, err := Retrieve.Retrieve(ctx, RetrieveRequest{
 		KnowledgeBaseIDs: req.KnowledgeBaseIDs,
@@ -290,10 +290,7 @@ func (s *answer) retrieve(req request.KnowledgeSearchRequest, ctx context.Contex
 		return nil, err
 	}
 
-	defaultRerankLimit := 0
-	if knowledgeBase != nil {
-		defaultRerankLimit = knowledgeBase.DefaultRerankLimit
-	}
+	defaultRerankLimit := resolveDefaultRerankLimit(knowledgeBases)
 	rerankLimit := resolveRerankLimit(req.RerankLimit, defaultRerankLimit)
 	if rerankLimit > 0 && len(results) > rerankLimit {
 		return Retrieve.RetrieveWithRerank(ctx, RetrieveRequest{
@@ -306,15 +303,49 @@ func (s *answer) retrieve(req request.KnowledgeSearchRequest, ctx context.Contex
 	return results, nil
 }
 
-func (s *answer) resolvePrimaryKnowledgeBase(knowledgeBaseIDs []int64) *models.KnowledgeBase {
+func (s *answer) loadKnowledgeBases(knowledgeBaseIDs []int64) []models.KnowledgeBase {
 	normalized := normalizeKnowledgeBaseIDs(knowledgeBaseIDs)
+	if len(normalized) == 0 {
+		return nil
+	}
+	items := repositories.KnowledgeBaseRepository.Find(sqls.DB(), sqls.NewCnd().In("id", normalized))
+	if len(items) == 0 {
+		return nil
+	}
+	itemMap := make(map[int64]models.KnowledgeBase, len(items))
+	for _, item := range items {
+		itemMap[item.ID] = item
+	}
+	results := make([]models.KnowledgeBase, 0, len(normalized))
 	for _, id := range normalized {
-		item := repositories.KnowledgeBaseRepository.Get(sqls.DB(), id)
-		if item != nil {
-			return item
+		if item, ok := itemMap[id]; ok {
+			results = append(results, item)
 		}
 	}
+	return results
+}
+
+func (s *answer) resolvePrimaryKnowledgeBase(knowledgeBaseIDs []int64) *models.KnowledgeBase {
+	items := s.loadKnowledgeBases(knowledgeBaseIDs)
+	for _, item := range items {
+		return &item
+	}
 	return nil
+}
+
+func (s *answer) resolveAnswerKnowledgeBase(knowledgeBaseIDs []int64, results []RetrieveResult) *models.KnowledgeBase {
+	items := s.loadKnowledgeBases(knowledgeBaseIDs)
+	if len(items) == 0 {
+		return nil
+	}
+	if len(results) > 0 {
+		for _, item := range items {
+			if item.ID == results[0].KnowledgeBaseID {
+				return &item
+			}
+		}
+	}
+	return &items[0]
 }
 
 func firstKnowledgeBaseID(ids []int64) int64 {
@@ -333,6 +364,16 @@ func resolveRerankLimit(requestLimit int, defaultLimit int) int {
 		return defaultLimit
 	}
 	return 0
+}
+
+func resolveDefaultRerankLimit(items []models.KnowledgeBase) int {
+	limit := 0
+	for _, item := range items {
+		if item.DefaultRerankLimit > limit {
+			limit = item.DefaultRerankLimit
+		}
+	}
+	return limit
 }
 
 func buildAnswerSystemPrompt(answerMode enums.KnowledgeAnswerMode) string {
