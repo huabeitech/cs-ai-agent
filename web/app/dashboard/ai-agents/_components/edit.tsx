@@ -867,41 +867,41 @@ function EditDialogBody({
                 </div>
                 <Field>
                   <FieldContent className="space-y-3">
-                    <div className="flex flex-col gap-2">
-                      <OptionCombobox
-                        value={directToolServerCodeToAdd}
-                        options={directToolServerOptions}
-                        placeholder="选择 MCP Server"
-                        searchPlaceholder="搜索 MCP Server"
-                        emptyText="没有可用的 MCP Server"
-                        onChange={(value) => {
-                          setDirectToolServerCodeToAdd(value);
-                          setDirectToolToAdd("");
-                        }}
-                      />
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <OptionCombobox
-                            value={directToolToAdd}
-                            options={addableDirectToolOptions}
-                            placeholder="选择该 Server 下的 Direct Tool"
-                            searchPlaceholder="搜索 Direct Tool"
-                            emptyText="没有可添加的 Direct Tool"
-                            onChange={handleAddDirectTool}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={
-                            !directToolServerCodeToAdd || !directToolToAdd
-                          }
-                          onClick={() => handleAddDirectTool(directToolToAdd)}
-                        >
-                          <PlusIcon />
-                          添加
-                        </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="w-52">
+                        <OptionCombobox
+                          value={directToolServerCodeToAdd}
+                          options={directToolServerOptions}
+                          placeholder="选择 MCP Server"
+                          searchPlaceholder="搜索 MCP Server"
+                          emptyText="没有可用的 MCP Server"
+                          onChange={(value) => {
+                            setDirectToolServerCodeToAdd(value);
+                            setDirectToolToAdd("");
+                          }}
+                        />
                       </div>
+                      <div className="flex-1">
+                        <OptionCombobox
+                          value={directToolToAdd}
+                          options={addableDirectToolOptions}
+                          placeholder="选择该 Server 下的 Direct Tool"
+                          searchPlaceholder="搜索 Direct Tool"
+                          emptyText="没有可添加的 Direct Tool"
+                          onChange={handleAddDirectTool}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                          !directToolServerCodeToAdd || !directToolToAdd
+                        }
+                        onClick={() => handleAddDirectTool(directToolToAdd)}
+                      >
+                        <PlusIcon />
+                        添加
+                      </Button>
                     </div>
                     <div className="space-y-3">
                       {directTools.length === 0 ? (
