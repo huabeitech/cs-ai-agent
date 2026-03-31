@@ -1,6 +1,7 @@
 package aiagent
 
 import (
+	"cs-agent/cmd/testdata/skill"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
@@ -35,8 +36,12 @@ func Init() (*InitResult, error) {
 	}
 
 	defaultTeamIDs := getDefaultTeamIDs()
+	defaultSkillIDs, err := getDefaultSkillIDs()
+	if err != nil {
+		return result, fmt.Errorf("get default skill ids failed: %w", err)
+	}
 
-	seedItems := buildSeedItems(aiConfigID, knowledgeID, defaultTeamIDs)
+	seedItems := buildSeedItems(aiConfigID, knowledgeID, defaultTeamIDs, defaultSkillIDs)
 	for _, item := range seedItems {
 		itemCopy := item
 		if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
@@ -63,7 +68,7 @@ func Init() (*InitResult, error) {
 	return result, nil
 }
 
-func buildSeedItems(aiConfigID, knowledgeID int64, defaultTeamIDs string) []models.AIAgent {
+func buildSeedItems(aiConfigID, knowledgeID int64, defaultTeamIDs string, defaultSkillIDs string) []models.AIAgent {
 	now := time.Now()
 	return []models.AIAgent{
 		{
@@ -81,6 +86,7 @@ func buildSeedItems(aiConfigID, knowledgeID int64, defaultTeamIDs string) []mode
 			FallbackMode:        enums.AIAgentFallbackModeGuideRephrase,
 			FallbackMessage:     "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。",
 			KnowledgeIDs:        fmt.Sprintf("%d", knowledgeID),
+			SkillIDs:            defaultSkillIDs,
 			SortNo:              10,
 			Remark:              "Local testdata seed",
 			AuditFields: models.AuditFields{
@@ -130,4 +136,17 @@ func getDefaultTeamIDs() string {
 		teamIDs = append(teamIDs, team.ID)
 	}
 	return utils.JoinInt64s(teamIDs)
+}
+
+func getDefaultSkillIDs() (string, error) {
+	skillItem := repositories.SkillDefinitionRepository.Take(
+		sqls.DB(),
+		"code = ? AND status = ?",
+		skill.TestGreetingSkillCode,
+		enums.StatusOk,
+	)
+	if skillItem == nil {
+		return "", fmt.Errorf("default test skill not found: %s", skill.TestGreetingSkillCode)
+	}
+	return utils.JoinInt64s([]int64{skillItem.ID}), nil
 }

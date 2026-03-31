@@ -6,6 +6,7 @@ import (
 	"cs-agent/cmd/testdata/aiconfig"
 	"cs-agent/cmd/testdata/kb"
 	"cs-agent/cmd/testdata/quickreply"
+	"cs-agent/cmd/testdata/skill"
 	"cs-agent/cmd/testdata/tag"
 	"cs-agent/cmd/testdata/widgetsite"
 	"cs-agent/internal/bootstrap"
@@ -75,6 +76,12 @@ func run() error {
 		return fmt.Errorf("init knowledge base failed: %w", err)
 	}
 	slog.Info("knowledge base init success", slog.Int("created", kbResult.CreatedDocuments))
+
+	skillResult, err := skill.Init()
+	if err != nil {
+		return fmt.Errorf("init skill failed: %w", err)
+	}
+	slog.Info("skill init success", slog.Int("created", skillResult.Created), slog.Int("updated", skillResult.Updated))
 
 	agentTeamResult, err := agentteam.Init()
 	if err != nil {
