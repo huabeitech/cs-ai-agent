@@ -237,6 +237,23 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 	return web.JsonData(builders.BuildMessage(item))
 }
 
+func (c *ConversationController) PostRecall_message() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend)
+	if err != nil {
+		return web.JsonError(err)
+	}
+
+	req := request.RecallConversationMessageRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	item, err := services.MessageService.RecallAgentMessage(req.MessageID, operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildMessage(item))
+}
+
 func (c *ConversationController) PostRead() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationView)
 	if err != nil {

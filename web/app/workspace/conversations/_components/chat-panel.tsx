@@ -56,6 +56,10 @@ export function ChatPanel() {
   const markSelectedConversationRead = useAgentConversationsStore(
     (state) => state.markSelectedConversationRead,
   );
+  const recallMessage = useAgentConversationsStore((state) => state.recallMessage);
+  const recallingMessageId = useAgentConversationsStore(
+    (state) => state.recallingMessageId,
+  );
   const loadConversations = useAgentConversationsStore((state) => state.loadConversations);
   const loadMessages = useAgentConversationsStore((state) => state.loadMessages);
   const loadOlderMessages = useAgentConversationsStore(
@@ -85,6 +89,7 @@ export function ChatPanel() {
   const isClosedConversation = conversation?.status === 3;
   const isPendingConversation = conversation?.status === 1;
   const showMessageEditor = !isClosedConversation && !isPendingConversation;
+  const currentUserId = readSession()?.user?.id ?? 0;
 
   const switchToMyActiveIfNeeded = () => {
     if (conversationFilter !== "pending") {
@@ -364,6 +369,11 @@ export function ChatPanel() {
               key={message.id}
               message={message}
               onImageSettled={handleImageSettled}
+              canRecall={message.senderType === "agent" && message.senderId === currentUserId}
+              recalling={recallingMessageId === message.id}
+              onRecall={async (messageId) => {
+                await recallMessage(messageId);
+              }}
             />
           ))
         ) : (
@@ -509,14 +519,24 @@ export function ChatPanel() {
 type MessageItemProps = {
   message: AgentMessage;
   onImageSettled: () => void;
+  canRecall: boolean;
+  recalling: boolean;
+  onRecall: (messageId: number) => Promise<void>;
 };
 
 const MessageItem = memo(
-  function MessageItem({ message, onImageSettled }: MessageItemProps) {
+  function MessageItem({
+    message,
+    onImageSettled,
+    canRecall,
+    recalling,
+    onRecall,
+  }: MessageItemProps) {
     const { open: openImageLightbox } = useImageLightbox();
     const isCustomer = message.senderType === "customer";
     const isAi = message.senderType === "ai";
     const isAgentSide = message.senderType === "agent" || isAi;
+    const isRecalled = Boolean(message.recalledAt) || message.sendStatus === 6;
     const senderName = isCustomer
       ? message.senderName || "客户"
       : isAi
@@ -527,7 +547,7 @@ const MessageItem = memo(
         ? message.senderAvatar.trim()
         : undefined;
     const avatarFallback = isAi ? "AI" : senderName.charAt(0);
-    const htmlContent = buildMessageHTML(message);
+    const htmlContent = isRecalled ? "<p>该消息已撤回</p>" : buildMessageHTML(message);
     const bubbleClassName = isAi
       ? "border border-primary/15 bg-primary/5 text-foreground shadow-sm"
       : isAgentSide
@@ -543,6 +563,13 @@ const MessageItem = memo(
       : isAgentSide
         ? "bg-emerald-600 text-xs text-white"
         : "border border-border/70 bg-muted/60 text-xs text-foreground";
+    const recalledBubbleClassName = isAgentSide
+      ? "border border-dashed border-emerald-200 bg-emerald-50 text-emerald-800"
+      : "border border-dashed border-border/70 bg-muted/40 text-muted-foreground";
+    const recalledHtmlClassName = isAgentSide
+      ? "[&_p]:text-emerald-800"
+      : "[&_p]:text-muted-foreground";
+    const showRecallAction = canRecall && !isRecalled;
 
     return (
       <div
@@ -556,19 +583,40 @@ const MessageItem = memo(
               <div className="mb-1 text-xs text-muted-foreground">
                 {senderName}
               </div>
-              <div className={`w-fit rounded-2xl px-3 py-2 text-left ${bubbleClassName}`}>
+              <div
+                className={`w-fit rounded-2xl px-3 py-2 text-left ${
+                  isRecalled ? recalledBubbleClassName : bubbleClassName
+                }`}
+              >
                 <ImMessageHTML
                   html={htmlContent}
-                  className={htmlClassName}
+                  className={isRecalled ? recalledHtmlClassName : htmlClassName}
                   onImageSettled={onImageSettled}
-                  onImageClick={openImageLightbox}
+                  onImageClick={isRecalled ? undefined : openImageLightbox}
                 />
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{formatDateTime(message.sentAt || "")}</span>
-                {message.sendStatus === 2 && (
+                {isRecalled ? <span>已撤回</span> : null}
+                {message.sendStatus === 2 && !isRecalled && (
                   <span>{message.customerRead ? "客户已读" : "客户未读"}</span>
                 )}
+                {showRecallAction ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 py-0 text-xs text-muted-foreground"
+                    disabled={recalling}
+                    onClick={() => {
+                      void onRecall(message.id).catch((error) => {
+                        toast.error(error instanceof Error ? error.message : "撤回消息失败");
+                      });
+                    }}
+                  >
+                    {recalling ? "撤回中..." : "撤回"}
+                  </Button>
+                ) : null}
               </div>
             </div>
             <Avatar className="size-8 shrink-0">
@@ -590,16 +638,21 @@ const MessageItem = memo(
               <div className="mb-1 text-xs text-muted-foreground">
                 {senderName}
               </div>
-              <div className={`w-fit rounded-2xl px-3 py-2 ${bubbleClassName}`}>
+              <div
+                className={`w-fit rounded-2xl px-3 py-2 ${
+                  isRecalled ? recalledBubbleClassName : bubbleClassName
+                }`}
+              >
                 <ImMessageHTML
                   html={htmlContent}
-                  className={htmlClassName}
+                  className={isRecalled ? recalledHtmlClassName : htmlClassName}
                   onImageSettled={onImageSettled}
-                  onImageClick={openImageLightbox}
+                  onImageClick={isRecalled ? undefined : openImageLightbox}
                 />
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{formatDateTime(message.sentAt || "")}</span>
+                {isRecalled ? <span>已撤回</span> : null}
               </div>
             </div>
           </>
@@ -609,7 +662,10 @@ const MessageItem = memo(
   },
   (prevProps, nextProps) =>
     prevProps.message === nextProps.message &&
-    prevProps.onImageSettled === nextProps.onImageSettled,
+    prevProps.onImageSettled === nextProps.onImageSettled &&
+    prevProps.canRecall === nextProps.canRecall &&
+    prevProps.recalling === nextProps.recalling &&
+    prevProps.onRecall === nextProps.onRecall,
 );
 
 function buildMessageHTML(message: {

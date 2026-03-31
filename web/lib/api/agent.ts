@@ -156,6 +156,13 @@ export function sendAgentMessage(payload: {
   })
 }
 
+export function recallAgentMessage(messageId: number) {
+  return request<AgentMessage>("/api/console/conversation/recall_message", {
+    method: "POST",
+    body: JSON.stringify({ messageId }),
+  })
+}
+
 export function markAgentMessageRead(conversationId: number, messageId = 0) {
   return request<void>("/api/console/conversation/read", {
     method: "POST",

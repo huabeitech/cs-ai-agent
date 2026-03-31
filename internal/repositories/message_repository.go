@@ -38,6 +38,19 @@ func (r *messageRepository) Find(db *gorm.DB, cnd *sqls.Cnd) (list []models.Mess
 	return
 }
 
+func (r *messageRepository) FindLastUnrecalledByConversationID(db *gorm.DB, conversationID int64) *models.Message {
+	ret := &models.Message{}
+	if err := db.
+		Where("conversation_id = ? AND recalled_at IS NULL AND send_status <> ?", conversationID, 6).
+		Order("seq_no DESC").
+		Order("id DESC").
+		Limit(1).
+		Take(ret).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *messageRepository) FindOne(db *gorm.DB, cnd *sqls.Cnd) *models.Message {
 	ret := &models.Message{}
 	if err := cnd.FindOne(db, &ret); err != nil {

@@ -15,3 +15,7 @@ type SendConversationMessageRequest struct {
 	Payload        string              `json:"payload"`
 	ClientMsgID    string              `json:"clientMsgId"`
 }
+
+type RecallConversationMessageRequest struct {
+	MessageID int64 `json:"messageId"`
+}

@@ -258,6 +258,24 @@ func (s *wsService) PublishMessageCreated(conversation *models.Conversation, mes
 	s.PublishToTopics(s.routeConversationTopics(conversation), event)
 }
 
+func (s *wsService) PublishMessageRecalled(conversation *models.Conversation, message *models.Message) {
+	if conversation == nil || message == nil {
+		return
+	}
+
+	event := s.newEvent(s.conversationTopic(conversation.ID), RealtimeMessageRecalledEvent{
+		Payload: RealtimeMessageRecalledPayload{
+			ConversationID: conversation.ID,
+			MessageID:      message.ID,
+			SenderType:     message.SenderType,
+			SenderID:       message.SenderID,
+			SendStatus:     message.SendStatus,
+			RecalledAt:     formatWsTime(message.RecalledAt),
+		},
+	})
+	s.PublishToTopics(s.routeConversationTopics(conversation), event)
+}
+
 func (s *wsService) PublishConversationChanged(conversation *models.Conversation, eventType string) {
 	if conversation == nil {
 		return

@@ -431,10 +431,13 @@ export function ConversationDetailDialog({
                   {messages.length ? (
                     messages.map((message) => {
                       const layout = getMessageLayout(message);
+                      const isRecalled =
+                        Boolean(message.recalledAt) || message.sendStatus === 6;
                       const isHtmlMessage =
-                        message.messageType === "html" ||
-                        message.messageType === "attachment";
-                      const isImageMessage = message.messageType === "image";
+                        !isRecalled &&
+                        (message.messageType === "html" ||
+                          message.messageType === "attachment");
+                      const isImageMessage = !isRecalled && message.messageType === "image";
 
                       return (
                         <div
@@ -448,11 +451,19 @@ export function ConversationDetailDialog({
                               <span>{getSenderLabel(message)}</span>
                               <span className="mx-2">·</span>
                               <span>{formatDateTime(message.sentAt)}</span>
+                              {isRecalled ? (
+                                <>
+                                  <span className="mx-2">·</span>
+                                  <span>已撤回</span>
+                                </>
+                              ) : null}
                             </div>
                             <div
                               className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${layout.bubbleClassName}`}
                             >
-                              {isHtmlMessage ? (
+                              {isRecalled ? (
+                                <div className="text-muted-foreground">该消息已撤回</div>
+                              ) : isHtmlMessage ? (
                                 <ImMessageHTML
                                   html={renderIMMessageHTML(message)}
                                   className="[&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in"

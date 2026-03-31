@@ -160,6 +160,29 @@ func (e RealtimeMessageCreatedEvent) EventPayload() RealtimeEventPayload {
 	return e.Payload
 }
 
+type RealtimeMessageRecalledPayload struct {
+	ConversationID int64              `json:"conversationId,omitempty"`
+	MessageID      int64              `json:"messageId,omitempty"`
+	SenderType     enums.IMSenderType `json:"senderType,omitempty"`
+	SenderID       int64              `json:"senderId,omitempty"`
+	SendStatus     int                `json:"sendStatus,omitempty"`
+	RecalledAt     string             `json:"recalledAt,omitempty"`
+}
+
+func (RealtimeMessageRecalledPayload) realtimeEventPayload() {}
+
+type RealtimeMessageRecalledEvent struct {
+	Payload RealtimeMessageRecalledPayload
+}
+
+func (e RealtimeMessageRecalledEvent) EventType() string {
+	return enums.IMRealtimeEventMessageRecalled
+}
+
+func (e RealtimeMessageRecalledEvent) EventPayload() RealtimeEventPayload {
+	return e.Payload
+}
+
 type RealtimeConversationChangedPayload struct {
 	ConversationID            int64                           `json:"conversationId,omitempty"`
 	Status                    enums.IMConversationStatus      `json:"status,omitempty"`

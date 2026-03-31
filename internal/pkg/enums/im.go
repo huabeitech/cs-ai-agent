@@ -167,19 +167,21 @@ func GetIMMessageStatusLabel(status IMMessageStatus) string {
 type IMEventType string
 
 const (
-	IMEventTypeCreate      IMEventType = "create"
-	IMEventTypeAssign      IMEventType = "assign"
-	IMEventTypeTransfer    IMEventType = "transfer"
-	IMEventTypeClose       IMEventType = "close"
-	IMEventTypeMessageSend IMEventType = "message_send"
+	IMEventTypeCreate        IMEventType = "create"
+	IMEventTypeAssign        IMEventType = "assign"
+	IMEventTypeTransfer      IMEventType = "transfer"
+	IMEventTypeClose         IMEventType = "close"
+	IMEventTypeMessageSend   IMEventType = "message_send"
+	IMEventTypeMessageRecall IMEventType = "message_recall"
 )
 
 var imEventTypeLabelMap = map[IMEventType]string{
-	IMEventTypeCreate:      "创建会话",
-	IMEventTypeAssign:      "分配会话",
-	IMEventTypeTransfer:    "转接会话",
-	IMEventTypeClose:       "关闭会话",
-	IMEventTypeMessageSend: "发送消息",
+	IMEventTypeCreate:        "创建会话",
+	IMEventTypeAssign:        "分配会话",
+	IMEventTypeTransfer:      "转接会话",
+	IMEventTypeClose:         "关闭会话",
+	IMEventTypeMessageSend:   "发送消息",
+	IMEventTypeMessageRecall: "撤回消息",
 }
 
 func GetIMEventTypeLabel(eventType IMEventType) string {
@@ -241,6 +243,7 @@ const (
 	IMRealtimeEventUnsubscribed            = "unsubscribed"
 	IMRealtimeEventResyncRequired          = "resyncRequired"
 	IMRealtimeEventMessageCreated          = "message.created"
+	IMRealtimeEventMessageRecalled         = "message.recalled"
 	IMRealtimeEventConversationCreated     = "conversation.created"
 	IMRealtimeEventConversationUpdated     = "conversation.updated"
 	IMRealtimeEventConversationAssigned    = "conversation.assigned"

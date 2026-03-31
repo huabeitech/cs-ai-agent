@@ -6,6 +6,7 @@ import {
   fetchAgentConversations,
   fetchAgentMessages,
   markAgentMessageRead,
+  recallAgentMessage,
   sendAgentMessage,
   uploadAgentConversationAttachment,
   uploadAgentConversationImage,
@@ -121,6 +122,7 @@ type AgentConversationsStore = {
   messagesLoadedConversationId: number | null
   sending: boolean
   uploadingAsset: boolean
+  recallingMessageId: number
   readingMessageId: number
   setSearchKeyword: (keyword: string) => void
   setConversationFilter: (filter: AgentConversationFilterKey) => void
@@ -137,6 +139,7 @@ type AgentConversationsStore = {
   sendMessage: (html: string) => Promise<AgentMessage | null>
   uploadImage: (file: File) => Promise<AgentAsset | null>
   sendAttachment: (file: File) => Promise<AgentMessage | null>
+  recallMessage: (messageId: number) => Promise<AgentMessage | null>
 }
 
 let conversationsRequestSeq = 0
@@ -157,6 +160,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
   messagesLoadedConversationId: null,
   sending: false,
   uploadingAsset: false,
+  recallingMessageId: 0,
   readingMessageId: 0,
 
   setSearchKeyword: (keyword) => {
@@ -540,6 +544,50 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       return message
     } finally {
       set({ uploadingAsset: false })
+    }
+  },
+
+  recallMessage: async (messageId) => {
+    const { selectedConversationId, recallingMessageId } = get()
+    if (!selectedConversationId || messageId <= 0 || recallingMessageId === messageId) {
+      return null
+    }
+
+    set({ recallingMessageId: messageId })
+    try {
+      const message = await recallAgentMessage(messageId)
+      if (get().selectedConversationId === selectedConversationId) {
+        set((current) => {
+          const nextMessages = current.messages.map((item) =>
+            item.id === message.id ? message : item
+          )
+          const lastActiveMessage = [...nextMessages]
+            .reverse()
+            .find((item) => !item.recalledAt && item.sendStatus !== 6)
+          return {
+            recallingMessageId: 0,
+            messages: nextMessages,
+            conversations: current.conversations.map((item) =>
+              item.id === selectedConversationId
+                ? {
+                    ...item,
+                    lastMessageId: lastActiveMessage?.id ?? 0,
+                    lastMessageAt: lastActiveMessage?.sentAt ?? "",
+                    lastMessageSummary: lastActiveMessage
+                      ? summarizeIMMessage(lastActiveMessage)
+                      : "",
+                  }
+                : item
+            ),
+          }
+        })
+      } else {
+        set({ recallingMessageId: 0 })
+      }
+      return message
+    } catch (error) {
+      set({ recallingMessageId: 0 })
+      throw error
     }
   },
 }))

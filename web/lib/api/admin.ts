@@ -744,6 +744,13 @@ export function sendConversationMessage(payload: {
   })
 }
 
+export function recallConversationMessage(messageId: number) {
+  return request<AdminMessage>("/api/console/conversation/recall_message", {
+    method: "POST",
+    body: JSON.stringify({ messageId }),
+  })
+}
+
 export function fetchQuickReplies(
   query?: Record<string, string | number | undefined>
 ) {

@@ -145,6 +145,101 @@ func (s *messageService) SendAgentMessage(cfg *config.Config, conversationID int
 	return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
 }
 
+func (s *messageService) RecallAgentMessage(messageID int64, operator *dto.AuthPrincipal) (*models.Message, error) {
+	if operator == nil {
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if messageID <= 0 {
+		return nil, errorsx.InvalidParam("消息不存在")
+	}
+
+	message := s.Get(messageID)
+	if message == nil {
+		return nil, errorsx.InvalidParam("消息不存在")
+	}
+	if message.SenderType != enums.IMSenderTypeAgent {
+		return nil, errorsx.InvalidParam("仅支持撤回客服消息")
+	}
+	if message.SenderID != operator.UserID {
+		return nil, errorsx.Forbidden("仅允许撤回自己发送的消息")
+	}
+	if message.RecalledAt != nil || message.SendStatus == int(enums.IMMessageStatusRecalled) {
+		return nil, errorsx.InvalidParam("消息已撤回")
+	}
+
+	conversation, err := s.ValidateConversationSender(message.ConversationID, enums.IMSenderTypeAgent, operator, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	err = sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		updates := map[string]any{
+			"send_status":      int(enums.IMMessageStatusRecalled),
+			"recalled_at":      now,
+			"updated_at":       now,
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+		}
+		if err := repositories.MessageRepository.Updates(ctx.Tx, message.ID, updates); err != nil {
+			return err
+		}
+
+		message.SendStatus = int(enums.IMMessageStatusRecalled)
+		message.RecalledAt = &now
+		message.UpdatedAt = now
+		message.UpdateUserID = operator.UserID
+		message.UpdateUserName = operator.Username
+
+		agentReadState, customerReadState := ConversationReadStateService.getConversationReadStates(ctx.Tx, conversation.ID)
+		agentUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversation.ID, readSeqNo(agentReadState), enums.IMSenderTypeCustomer)
+		if err != nil {
+			return err
+		}
+		customerUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversation.ID, readSeqNo(customerReadState), enums.IMSenderTypeAgent, enums.IMSenderTypeAI)
+		if err != nil {
+			return err
+		}
+
+		conversationUpdates := map[string]any{
+			"agent_unread_count":    agentUnreadCount,
+			"customer_unread_count": customerUnreadCount,
+			"updated_at":            now,
+			"update_user_id":        operator.UserID,
+			"update_user_name":      operator.Username,
+		}
+		if conversation.LastMessageID == message.ID {
+			lastMessage := repositories.MessageRepository.FindLastUnrecalledByConversationID(ctx.Tx, conversation.ID)
+			if lastMessage != nil {
+				conversationUpdates["last_message_id"] = lastMessage.ID
+				conversationUpdates["last_message_at"] = lastMessage.SentAt
+				conversationUpdates["last_message_summary"] = limitText(buildMessageSummary(lastMessage.MessageType, lastMessage.Content), 255)
+			} else {
+				conversationUpdates["last_message_id"] = 0
+				conversationUpdates["last_message_at"] = nil
+				conversationUpdates["last_message_summary"] = ""
+			}
+		}
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversation.ID, conversationUpdates); err != nil {
+			return err
+		}
+
+		if err := ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeMessageRecall, enums.IMSenderTypeAgent, operator.UserID, "客服撤回消息", ""); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if updatedConversation := ConversationService.Get(conversation.ID); updatedConversation != nil {
+		WsService.PublishMessageRecalled(updatedConversation, message)
+		WsService.PublishConversationChanged(updatedConversation, enums.IMRealtimeEventConversationUpdated)
+	}
+	return message, nil
+}
+
 func (s *messageService) SendAIMessage(cfg *config.Config, conversationID int64, aiAgentID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal) (*models.Message, error) {
 	return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAI, aiAgentID, clientMsgID, messageType, content, payload, operator, nil)
 }
