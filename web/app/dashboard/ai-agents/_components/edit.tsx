@@ -637,7 +637,7 @@ function EditDialogBody({
             title="基础信息"
             description="定义这个 Agent 是谁、使用哪个模型、以什么服务模式工作。"
           >
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
               <Field data-invalid={!!errors.name}>
                 <FieldLabel htmlFor="ai-agent-name">名称</FieldLabel>
                 <FieldContent>
@@ -666,6 +666,27 @@ function EditDialogBody({
                   <FieldError errors={[errors.aiConfigId]} />
                 </FieldContent>
               </Field>
+
+              <Field data-invalid={!!errors.serviceMode}>
+                <FieldLabel>服务模式</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={control}
+                    name="serviceMode"
+                    render={({ field }) => (
+                      <OptionCombobox
+                        value={field.value}
+                        options={serviceModeOptions}
+                        placeholder="请选择服务模式"
+                        searchPlaceholder="搜索服务模式"
+                        emptyText="未找到服务模式"
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <FieldError errors={[errors.serviceMode]} />
+                </FieldContent>
+              </Field>
             </div>
 
             <Field data-invalid={!!errors.description}>
@@ -673,27 +694,6 @@ function EditDialogBody({
               <FieldContent>
                 <Input id="ai-agent-description" {...register("description")} />
                 <FieldError errors={[errors.description]} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={!!errors.serviceMode}>
-              <FieldLabel>服务模式</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={control}
-                  name="serviceMode"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={serviceModeOptions}
-                      placeholder="请选择服务模式"
-                      searchPlaceholder="搜索服务模式"
-                      emptyText="未找到服务模式"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.serviceMode]} />
               </FieldContent>
             </Field>
           </SectionCard>
