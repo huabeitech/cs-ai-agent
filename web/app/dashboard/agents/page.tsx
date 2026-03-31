@@ -5,10 +5,9 @@ import {
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlusIcon,
-  RefreshCwIcon,
   SearchIcon,
   Trash2Icon,
-  UserCogIcon,
+  UserCogIcon
 } from "lucide-react";
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
@@ -49,11 +48,11 @@ import {
   type CreateAdminAgentProfilePayload,
   type PageResult,
 } from "@/lib/api/admin";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import {
   ServiceStatus,
   ServiceStatusLabels,
 } from "@/lib/generated/enums";
-import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import { formatDateTime } from "@/lib/utils";
 import { EditDialog } from "./_components/edit";
 import { AgentTeamSidebar } from "./_components/team-sidebar";

@@ -50,6 +50,18 @@ func (c *AIConfigController) AnyList_all() *web.JsonResult {
 	return web.JsonData(results)
 }
 
+func (c *AIConfigController) GetBy(id int64) *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigView); err != nil {
+		return web.JsonError(err)
+	}
+
+	item := services.AIConfigService.Get(id)
+	if item == nil || item.Status == enums.StatusDeleted {
+		return web.JsonErrorMsg("AI配置不存在")
+	}
+	return web.JsonData(response.BuildAIConfigResponse(item))
+}
+
 func (c *AIConfigController) PostCreate() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIConfigCreate)
 	if err != nil {

@@ -604,6 +604,7 @@ function EditDialogBody({
       title={itemId ? "编辑 AI Agent" : "新建 AI Agent"}
       size="xl"
       allowFullscreen
+      defaultFullscreen
       footer={
         <>
           <Button
