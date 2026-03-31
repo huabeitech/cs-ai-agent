@@ -54,8 +54,7 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 	}
 	switch plan.Action {
 	case ActionSkill:
-		turnCtx.ManualSkillCode = plan.SkillCode
-		return r.runManualSkill(ctx, turnCtx, question)
+		return r.runPlannedSkillOrRAG(ctx, turnCtx, question, plan)
 	case ActionHandoff:
 		return &TurnResult{
 			Action:           ActionHandoff,
@@ -67,6 +66,26 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 		}, nil
 	}
 	return r.ragExecutor.Execute(ctx, turnCtx, question)
+}
+
+func (r *Runtime) runPlannedSkillOrRAG(ctx context.Context, turnCtx TurnContext, question string, plan *Plan) (*TurnResult, error) {
+	if plan == nil {
+		return r.ragExecutor.Execute(ctx, turnCtx, question)
+	}
+	turnCtx.ManualSkillCode = strings.TrimSpace(plan.SkillCode)
+	result, err := r.runManualSkill(ctx, turnCtx, question)
+	if err == nil && result != nil && result.Action == ActionReply {
+		result.PlanReason = normalizeReason(plan.Reason, "planner_skill")
+		return result, nil
+	}
+	ragResult, ragErr := r.ragExecutor.Execute(ctx, turnCtx, question)
+	if ragResult != nil {
+		ragResult.PlanReason = normalizeReason(plan.Reason, "planner_skill")
+	}
+	if ragErr != nil {
+		return ragResult, ragErr
+	}
+	return ragResult, nil
 }
 
 func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, question string) (*TurnResult, error) {

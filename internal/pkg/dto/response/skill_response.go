@@ -29,3 +29,20 @@ type SkillDebugRunResponse struct {
 	ConversationID int64  `json:"conversationId"`
 	AIAgentID      int64  `json:"aiAgentId"`
 }
+
+type AgentRunLogResponse struct {
+	ID               int64  `json:"id"`
+	ConversationID   int64  `json:"conversationId"`
+	MessageID        int64  `json:"messageId"`
+	AIAgentID        int64  `json:"aiAgentId"`
+	AIConfigID       int64  `json:"aiConfigId"`
+	UserMessage      string `json:"userMessage"`
+	PlannedAction    string `json:"plannedAction"`
+	PlannedSkillCode string `json:"plannedSkillCode"`
+	PlanReason       string `json:"planReason"`
+	FinalAction      string `json:"finalAction"`
+	ReplyText        string `json:"replyText"`
+	ErrorMessage     string `json:"errorMessage"`
+	LatencyMs        int64  `json:"latencyMs"`
+	CreatedAt        string `json:"createdAt"`
+}

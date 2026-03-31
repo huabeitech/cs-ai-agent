@@ -155,6 +155,7 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Party("/knowledge-document").Handle(new(console.KnowledgeDocumentController))
 		m.Party("/knowledge-retrieve").Handle(new(console.KnowledgeRetrieveController))
 		m.Party("/knowledge-retrieve-log").Handle(new(console.KnowledgeRetrieveLogController))
+		m.Party("/agent-run-log").Handle(new(console.AgentRunLogController))
 		m.Party("/skill-definition").Handle(new(console.SkillDefinitionController))
 		m.Party("/mcp").Handle(new(console.MCPController))
 	})
