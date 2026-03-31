@@ -1,5 +1,7 @@
 package request
 
+import "cs-agent/internal/pkg/enums"
+
 type SkillDefinitionListRequest struct {
 	Name   string `json:"name"`
 	Code   string `json:"code"`
@@ -7,11 +9,13 @@ type SkillDefinitionListRequest struct {
 }
 
 type CreateSkillDefinitionRequest struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Prompt      string `json:"prompt"`
-	Remark      string `json:"remark"`
+	Code            string                   `json:"code"`
+	Name            string                   `json:"name"`
+	Description     string                   `json:"description"`
+	Prompt          string                   `json:"prompt"`
+	ExecutionMode   enums.SkillExecutionMode `json:"executionMode"`
+	ExecutionConfig string                   `json:"executionConfig"`
+	Remark          string                   `json:"remark"`
 }
 
 type UpdateSkillDefinitionRequest struct {

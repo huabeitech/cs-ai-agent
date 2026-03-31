@@ -8,19 +8,22 @@ import (
 
 func BuildSkillDefinitionResponse(item *models.SkillDefinition) response.SkillDefinitionResponse {
 	return response.SkillDefinitionResponse{
-		ID:             item.ID,
-		Code:           item.Code,
-		Name:           item.Name,
-		Description:    item.Description,
-		Prompt:         item.Prompt,
-		Priority:       item.Priority,
-		Status:         int(item.Status),
-		StatusName:     getSkillStatusName(item.Status),
-		Remark:         item.Remark,
-		CreatedAt:      item.CreatedAt,
-		UpdatedAt:      item.UpdatedAt,
-		CreateUserName: item.CreateUserName,
-		UpdateUserName: item.UpdateUserName,
+		ID:                item.ID,
+		Code:              item.Code,
+		Name:              item.Name,
+		Description:       item.Description,
+		Prompt:            item.Prompt,
+		ExecutionMode:     string(item.ExecutionMode),
+		ExecutionModeName: enums.GetSkillExecutionModeLabel(item.ExecutionMode),
+		ExecutionConfig:   item.ExecutionConfig,
+		Priority:          item.Priority,
+		Status:            int(item.Status),
+		StatusName:        getSkillStatusName(item.Status),
+		Remark:            item.Remark,
+		CreatedAt:         item.CreatedAt,
+		UpdatedAt:         item.UpdatedAt,
+		CreateUserName:    item.CreateUserName,
+		UpdateUserName:    item.UpdateUserName,
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"cs-agent/internal/ai"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/repositories"
@@ -61,10 +60,10 @@ func Execute(ctx context.Context, runtimeCtx RuntimeContext) (*ExecutionResult, 
 		return nil, nil
 	}
 
-	replyText, err := executePromptOnly(ctx, plan, runtimeCtx)
+	replyText, err := executeByPlan(ctx, plan, runtimeCtx)
 	log := BuildRunLog(runtimeCtx, plan, err)
-	if strings.TrimSpace(replyText) != "" {
-		log.MatchReason = "prompt_only"
+	if strings.TrimSpace(replyText) != "" && strings.TrimSpace(log.MatchReason) == "" {
+		log.MatchReason = string(plan.Skill.ExecutionMode)
 	}
 	if writeErr := WriteRunLog(log); writeErr != nil && err == nil {
 		err = writeErr
@@ -77,26 +76,4 @@ func Execute(ctx context.Context, runtimeCtx RuntimeContext) (*ExecutionResult, 
 		ReplyText: strings.TrimSpace(replyText),
 		RunLog:    log,
 	}, nil
-}
-
-func executePromptOnly(ctx context.Context, plan *ExecutionPlan, runtimeCtx RuntimeContext) (string, error) {
-	if plan == nil || plan.Skill == nil {
-		return "", nil
-	}
-	if plan.AIConfig == nil {
-		return "", errorsx.InvalidParam("Skill 关联的 AI 配置不可用")
-	}
-	systemPrompt := strings.TrimSpace(plan.Skill.Prompt)
-	if systemPrompt == "" {
-		return "", errorsx.InvalidParam("Skill Prompt 不能为空")
-	}
-	userPrompt := strings.TrimSpace(runtimeCtx.UserMessage)
-	if userPrompt == "" {
-		return "", errorsx.InvalidParam("用户消息不能为空")
-	}
-	result, err := ai.LLM.ChatWithConfig(ctx, plan.AIConfig, systemPrompt, userPrompt)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(result.Content), nil
 }

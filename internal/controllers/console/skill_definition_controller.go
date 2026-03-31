@@ -2,6 +2,7 @@ package console
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -72,14 +73,16 @@ func (c *SkillDefinitionController) PostCreate() *web.JsonResult {
 	}
 
 	item := &models.SkillDefinition{
-		Code:        strings.TrimSpace(req.Code),
-		Name:        strings.TrimSpace(req.Name),
-		Description: strings.TrimSpace(req.Description),
-		Prompt:      strings.TrimSpace(req.Prompt),
-		Priority:    0,
-		Status:      enums.StatusOk,
-		Remark:      strings.TrimSpace(req.Remark),
-		AuditFields: utils.BuildAuditFields(operator),
+		Code:            strings.TrimSpace(req.Code),
+		Name:            strings.TrimSpace(req.Name),
+		Description:     strings.TrimSpace(req.Description),
+		Prompt:          strings.TrimSpace(req.Prompt),
+		ExecutionMode:   normalizeExecutionMode(req.ExecutionMode),
+		ExecutionConfig: normalizeExecutionConfig(req.ExecutionConfig),
+		Priority:        0,
+		Status:          enums.StatusOk,
+		Remark:          strings.TrimSpace(req.Remark),
+		AuditFields:     utils.BuildAuditFields(operator),
 	}
 	if err := services.SkillDefinitionService.Create(item); err != nil {
 		return web.JsonError(err)
@@ -118,6 +121,8 @@ func (c *SkillDefinitionController) PostUpdate() *web.JsonResult {
 		"name":             strings.TrimSpace(req.Name),
 		"description":      strings.TrimSpace(req.Description),
 		"prompt":           strings.TrimSpace(req.Prompt),
+		"execution_mode":   normalizeExecutionMode(req.ExecutionMode),
+		"execution_config": normalizeExecutionConfig(req.ExecutionConfig),
 		"remark":           strings.TrimSpace(req.Remark),
 		"update_user_id":   operator.UserID,
 		"update_user_name": operator.Username,
@@ -227,8 +232,34 @@ func validateSkillDefinitionRequest(req request.CreateSkillDefinitionRequest) er
 	if name == "" {
 		return errorsx.InvalidParam("Skill 名称不能为空")
 	}
+	mode := normalizeExecutionMode(req.ExecutionMode)
 	if prompt == "" {
 		return errorsx.InvalidParam("Prompt 不能为空")
 	}
+	switch mode {
+	case enums.SkillExecutionModePromptOnly:
+	case enums.SkillExecutionModeMCPTool:
+		configText := strings.TrimSpace(req.ExecutionConfig)
+		if configText == "" {
+			return errorsx.InvalidParam("MCP工具模式必须填写ExecutionConfig")
+		}
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(configText), &payload); err != nil {
+			return errorsx.InvalidParam("ExecutionConfig 必须是合法JSON")
+		}
+	default:
+		return errorsx.InvalidParam("Skill 执行模式不合法")
+	}
 	return nil
+}
+
+func normalizeExecutionMode(mode enums.SkillExecutionMode) enums.SkillExecutionMode {
+	if mode == "" {
+		return enums.SkillExecutionModePromptOnly
+	}
+	return mode
+}
+
+func normalizeExecutionConfig(raw string) string {
+	return strings.TrimSpace(raw)
 }

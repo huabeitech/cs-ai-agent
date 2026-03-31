@@ -27,6 +27,7 @@ func NewServer(configPath string) (*iris.Application, *config.Config, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	config.SetCurrent(cfg)
 
 	logx.Init(logx.Config{
 		Level:     cfg.Logger.Level,
