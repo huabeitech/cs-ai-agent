@@ -1,12 +1,10 @@
 package skills
 
 import (
-	"errors"
-
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/repositories"
-	"cs-agent/internal/services"
 
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
@@ -18,9 +16,14 @@ type intentTriggerConfig struct {
 
 // MatchSkill 对单个 SkillDefinition 执行命中判断。
 func MatchSkill(ctx RuntimeContext) (*models.SkillDefinition, error) {
-	// skills := loadCandidateSkills(ctx)
-	// TODO 待实现
-	return nil, errors.New("not support")
+	if strs.IsNotBlank(ctx.ManualSkillCode) {
+		skill := repositories.SkillDefinitionRepository.GetByCode(sqls.DB(), ctx.ManualSkillCode)
+		if skill == nil || skill.Status != enums.StatusOk {
+			return nil, errorsx.InvalidParam("Skill 不存在或未启用")
+		}
+		return skill, nil
+	}
+	return nil, nil
 }
 
 func loadCandidateSkills(ctx RuntimeContext) []models.SkillDefinition {
@@ -30,6 +33,6 @@ func loadCandidateSkills(ctx RuntimeContext) []models.SkillDefinition {
 		}
 		return nil
 	} else {
-		return services.SkillDefinitionService.Find(sqls.NewCnd().Eq("status", enums.StatusOk).Desc("priority").Desc("id"))
+		return repositories.SkillDefinitionRepository.Find(sqls.DB(), sqls.NewCnd().Eq("status", enums.StatusOk).Desc("priority").Desc("id"))
 	}
 }

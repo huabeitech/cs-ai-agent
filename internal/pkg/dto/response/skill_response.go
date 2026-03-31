@@ -17,3 +17,12 @@ type SkillDefinitionResponse struct {
 	CreateUserName string    `json:"createUserName"`
 	UpdateUserName string    `json:"updateUserName"`
 }
+
+type SkillDebugRunResponse struct {
+	SkillCode      string `json:"skillCode"`
+	SkillName      string `json:"skillName"`
+	ReplyText      string `json:"replyText"`
+	RunLogID       int64  `json:"runLogId"`
+	ConversationID int64  `json:"conversationId"`
+	AIAgentID      int64  `json:"aiAgentId"`
+}

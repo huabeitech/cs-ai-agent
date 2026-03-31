@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"cs-agent/internal/ai/skills"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/repositories"
@@ -42,7 +43,40 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 	if turnCtx.AIConfig == nil {
 		return nil, errorsx.InvalidParam("AI Agent 关联的 AI 配置不可用")
 	}
+	if strings.TrimSpace(turnCtx.ManualSkillCode) != "" {
+		return r.runManualSkill(ctx, turnCtx, question)
+	}
 	return r.ragExecutor.Execute(ctx, turnCtx, question)
+}
+
+func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, question string) (*TurnResult, error) {
+	result, err := skills.Execute(ctx, skills.RuntimeContext{
+		AIAgentID:       turnCtx.AIAgent.ID,
+		UserMessage:     question,
+		ConversationID:  conversationID(turnCtx.Conversation),
+		ManualSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+		IntentCode:      strings.TrimSpace(turnCtx.IntentCode),
+	})
+	if err != nil {
+		return &TurnResult{
+			Action:   ActionFallback,
+			Question: question,
+			Reason:   "Skill执行失败",
+		}, err
+	}
+	if result == nil || strings.TrimSpace(result.ReplyText) == "" {
+		return &TurnResult{
+			Action:   ActionFallback,
+			Question: question,
+			Reason:   "Skill未返回结果",
+		}, nil
+	}
+	return &TurnResult{
+		Action:    ActionReply,
+		Question:  question,
+		ReplyText: result.ReplyText,
+		Reason:    "manual_skill",
+	}, nil
 }
 
 func (r *Runtime) buildQuestion(message *models.Message, conversation *models.Conversation) string {
@@ -64,4 +98,11 @@ func findKnowledgeBase(turnCtx TurnContext, knowledgeBaseID int64) *models.Knowl
 		return nil
 	}
 	return repositories.KnowledgeBaseRepository.Get(sqls.DB(), knowledgeBaseID)
+}
+
+func conversationID(conversation *models.Conversation) int64 {
+	if conversation == nil {
+		return 0
+	}
+	return conversation.ID
 }

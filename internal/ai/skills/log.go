@@ -1,6 +1,10 @@
 package skills
 
-import "cs-agent/internal/models"
+import (
+	"time"
+
+	"cs-agent/internal/models"
+)
 
 // BuildRunLog 根据执行计划与运行结果构建 Skill 运行日志。
 func BuildRunLog(ctx RuntimeContext, plan *ExecutionPlan, err error) *models.SkillRunLog {
@@ -10,6 +14,7 @@ func BuildRunLog(ctx RuntimeContext, plan *ExecutionPlan, err error) *models.Ski
 		ManualSkillCode: ctx.ManualSkillCode,
 		IntentCode:      ctx.IntentCode,
 		UserMessage:     ctx.UserMessage,
+		CreatedAt:       time.Now(),
 	}
 	if plan != nil {
 		if plan.AIConfig != nil {
@@ -22,10 +27,13 @@ func BuildRunLog(ctx RuntimeContext, plan *ExecutionPlan, err error) *models.Ski
 			log.SkillCode = plan.Skill.Code
 			log.Matched = true
 			log.FinalSelected = true
+			log.MatchReason = "manual_skill_code"
 		}
 	}
 	if err != nil {
 		log.ErrorMessage = err.Error()
+	} else if !log.Matched {
+		log.MatchReason = "not_matched"
 	}
 	return log
 }

@@ -27,3 +27,10 @@ type UpdateSkillDefinitionStatusRequest struct {
 	ID     int64 `json:"id"`
 	Status int   `json:"status"`
 }
+
+type SkillDebugRunRequest struct {
+	AIAgentID      int64  `json:"aiAgentId"`
+	ConversationID int64  `json:"conversationId"`
+	SkillCode      string `json:"skillCode"`
+	UserMessage    string `json:"userMessage"`
+}

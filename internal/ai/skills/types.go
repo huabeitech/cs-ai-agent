@@ -17,3 +17,10 @@ type ExecutionPlan struct {
 	AIConfig *models.AIConfig        // AIConfig 为本次请求实际使用的模型配置。
 	Skill    *models.SkillDefinition // Skill 为最终命中的 Skill，未命中时为空。
 }
+
+// ExecutionResult 表示一次 Skill 执行的最终结果。
+type ExecutionResult struct {
+	Plan      *ExecutionPlan
+	ReplyText string
+	RunLog    *models.SkillRunLog
+}

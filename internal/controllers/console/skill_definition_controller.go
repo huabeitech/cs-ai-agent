@@ -1,6 +1,7 @@
 package console
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -198,6 +199,22 @@ func (c *SkillDefinitionController) PostUpdate_priority() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
+}
+
+func (c *SkillDefinitionController) PostDebug_run() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionView); err != nil {
+		return web.JsonError(err)
+	}
+
+	req := request.SkillDebugRunRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	resp, err := services.SkillRuntimeService.DebugRun(context.Background(), req)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(resp)
 }
 
 func validateSkillDefinitionRequest(req request.CreateSkillDefinitionRequest) error {
