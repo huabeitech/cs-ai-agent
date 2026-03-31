@@ -256,6 +256,9 @@ export type SkillDefinition = {
   name: string
   description: string
   prompt: string
+  executionMode?: string
+  executionModeName?: string
+  executionConfig?: string
   priority: number
   status: number
   statusName: string
@@ -271,6 +274,8 @@ export type CreateSkillDefinitionPayload = {
   name: string
   description: string
   prompt: string
+  executionMode?: string
+  executionConfig?: string
   remark: string
 }
 
@@ -313,6 +318,23 @@ export type MCPToolCallResult = {
   isError: boolean
   content: MCPToolResultContent[]
   structuredContent?: unknown
+}
+
+export type AgentRunLog = {
+  id: number
+  conversationId: number
+  messageId: number
+  aiAgentId: number
+  aiConfigId: number
+  userMessage: string
+  plannedAction: string
+  plannedSkillCode: string
+  planReason: string
+  finalAction: string
+  replyText: string
+  errorMessage: string
+  latencyMs: number
+  createdAt: string
 }
 
 export type AdminAgentProfile = {
@@ -765,6 +787,18 @@ export function updateSkillDefinition(payload: UpdateSkillDefinitionPayload) {
     method: "POST",
     body: JSON.stringify(payload),
   })
+}
+
+export function fetchAgentRunLogs(
+  query?: Record<string, string | number | undefined>
+) {
+  return request<PageResult<AgentRunLog>>(
+    `/api/console/agent-run-log/list${toQueryString(query)}`
+  )
+}
+
+export function fetchAgentRunLog(id: number) {
+  return request<AgentRunLog>(`/api/console/agent-run-log/${id}`)
 }
 
 export function updateSkillDefinitionStatus(id: number, status: number) {

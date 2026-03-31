@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import {
+  ActivitySquareIcon,
   BotMessageSquareIcon,
   BrainCircuitIcon,
   Building2Icon,
@@ -175,6 +176,12 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         url: "/dashboard/mcp",
         icon: <MessageSquareCodeIcon />,
         requiredPermission: "mcp.view",
+      },
+      {
+        title: "Agent日志",
+        url: "/dashboard/agent-run-logs",
+        icon: <ActivitySquareIcon />,
+        requiredPermission: "conversation.view",
       },
     ],
   },
