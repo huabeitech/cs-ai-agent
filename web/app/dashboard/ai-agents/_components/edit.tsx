@@ -230,6 +230,7 @@ function EditDialogBody({
   const [knowledgeToAdd, setKnowledgeToAdd] = useState("");
   const [teamToAdd, setTeamToAdd] = useState("");
   const [skillToAdd, setSkillToAdd] = useState("");
+  const [directToolServerCodeToAdd, setDirectToolServerCodeToAdd] = useState("");
   const [directToolToAdd, setDirectToolToAdd] = useState("");
   const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -253,6 +254,7 @@ function EditDialogBody({
         setKnowledgeToAdd("");
         setTeamToAdd("");
         setSkillToAdd("");
+        setDirectToolServerCodeToAdd("");
         setDirectToolToAdd("");
         return;
       }
@@ -267,6 +269,7 @@ function EditDialogBody({
         setKnowledgeToAdd("");
         setTeamToAdd("");
         setSkillToAdd("");
+        setDirectToolServerCodeToAdd("");
         setDirectToolToAdd("");
       } catch (error) {
         toast.error(
@@ -444,13 +447,43 @@ function EditDialogBody({
     () =>
       directToolOptions.filter(
         (option) =>
+          option.meta.serverCode === directToolServerCodeToAdd &&
           !directTools.some(
             (tool) =>
               `${tool.serverCode}/${tool.toolName}` === option.value,
           ),
       ),
-    [directToolOptions, directTools],
+    [directToolOptions, directToolServerCodeToAdd, directTools],
   );
+
+  const directToolServerOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          directToolOptions.map((option) => [
+            option.meta.serverCode,
+            {
+              value: option.meta.serverCode,
+              label: option.meta.serverCode,
+            },
+          ]),
+        ).values(),
+      ),
+    [directToolOptions],
+  );
+
+  const directToolsGroupedByServer = useMemo(() => {
+    const groups = new Map<
+      string,
+      CreateAIAgentPayload["directTools"]
+    >();
+    for (const tool of directTools) {
+      const current = groups.get(tool.serverCode) ?? [];
+      current.push(tool);
+      groups.set(tool.serverCode, current);
+    }
+    return Array.from(groups.entries());
+  }, [directTools]);
 
   const addableTeamOptions = useMemo(
     () =>
@@ -554,6 +587,7 @@ function EditDialogBody({
       }
       return [...prev, option.meta];
     });
+    setDirectToolServerCodeToAdd(option.meta.serverCode);
     setDirectToolToAdd("");
   }
 
@@ -951,11 +985,24 @@ function EditDialogBody({
             <FieldLabel>Direct MCP Tools</FieldLabel>
             <FieldContent className="space-y-3">
               <div className="flex items-center gap-2">
+                <div className="w-52">
+                  <OptionCombobox
+                    value={directToolServerCodeToAdd}
+                    options={directToolServerOptions}
+                    placeholder="选择 MCP Server"
+                    searchPlaceholder="搜索 MCP Server"
+                    emptyText="没有可用的 MCP Server"
+                    onChange={(value) => {
+                      setDirectToolServerCodeToAdd(value);
+                      setDirectToolToAdd("");
+                    }}
+                  />
+                </div>
                 <div className="flex-1">
                   <OptionCombobox
                     value={directToolToAdd}
                     options={addableDirectToolOptions}
-                    placeholder="选择并添加 Direct Tool"
+                    placeholder="选择该 Server 下的 Direct Tool"
                     searchPlaceholder="搜索 Direct Tool"
                     emptyText="没有可添加的 Direct Tool"
                     onChange={handleAddDirectTool}
@@ -964,41 +1011,50 @@ function EditDialogBody({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={!directToolToAdd}
+                  disabled={!directToolServerCodeToAdd || !directToolToAdd}
                   onClick={() => handleAddDirectTool(directToolToAdd)}
                 >
                   <PlusIcon />
                   添加
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-3">
                 {directTools.length === 0 ? (
                   <span className="text-sm text-muted-foreground">
                     不配置 Direct Tool 时，Agent 不会直接访问 MCP，只能通过 Skill 间接调用。
                   </span>
                 ) : (
-                  directTools.map((tool) => {
-                    const value = `${tool.serverCode}/${tool.toolName}`;
-                    return (
-                      <Badge
-                        key={value}
-                        variant="secondary"
-                        className="gap-1 pr-1"
-                      >
-                        {tool.title || value}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-5"
-                          onClick={() => handleRemoveDirectTool(value)}
-                          aria-label={`移除 Direct Tool ${value}`}
-                        >
-                          <Trash2Icon className="size-3" />
-                        </Button>
-                      </Badge>
-                    );
-                  })
+                  directToolsGroupedByServer.map(([serverCode, tools]) => (
+                    <div key={serverCode} className="rounded-md border p-3">
+                      <div className="mb-2 text-xs font-medium text-muted-foreground">
+                        {serverCode}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {tools.map((tool) => {
+                          const value = `${tool.serverCode}/${tool.toolName}`;
+                          return (
+                            <Badge
+                              key={value}
+                              variant="secondary"
+                              className="gap-1 pr-1"
+                            >
+                              {tool.title || value}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-5"
+                                onClick={() => handleRemoveDirectTool(value)}
+                                aria-label={`移除 Direct Tool ${value}`}
+                              >
+                                <Trash2Icon className="size-3" />
+                              </Button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </FieldContent>
