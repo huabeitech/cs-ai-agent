@@ -58,9 +58,12 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 		return r.runManualSkill(ctx, turnCtx, question)
 	case ActionHandoff:
 		return &TurnResult{
-			Action:   ActionHandoff,
-			Question: question,
-			Reason:   plan.Reason,
+			Action:           ActionHandoff,
+			Question:         question,
+			Reason:           plan.Reason,
+			PlannedAction:    plan.Action,
+			PlannedSkillCode: plan.SkillCode,
+			PlanReason:       plan.Reason,
 		}, nil
 	}
 	return r.ragExecutor.Execute(ctx, turnCtx, question)
@@ -76,23 +79,32 @@ func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, quest
 	})
 	if err != nil {
 		return &TurnResult{
-			Action:   ActionFallback,
-			Question: question,
-			Reason:   "Skill执行失败",
+			Action:           ActionFallback,
+			Question:         question,
+			Reason:           "Skill执行失败",
+			PlannedAction:    ActionSkill,
+			PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+			PlanReason:       "manual_skill",
 		}, err
 	}
 	if result == nil || strings.TrimSpace(result.ReplyText) == "" {
 		return &TurnResult{
-			Action:   ActionFallback,
-			Question: question,
-			Reason:   "Skill未返回结果",
+			Action:           ActionFallback,
+			Question:         question,
+			Reason:           "Skill未返回结果",
+			PlannedAction:    ActionSkill,
+			PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+			PlanReason:       "manual_skill",
 		}, nil
 	}
 	return &TurnResult{
-		Action:    ActionReply,
-		Question:  question,
-		ReplyText: result.ReplyText,
-		Reason:    "manual_skill",
+		Action:           ActionReply,
+		Question:         question,
+		ReplyText:        result.ReplyText,
+		Reason:           "manual_skill",
+		PlannedAction:    ActionSkill,
+		PlannedSkillCode: strings.TrimSpace(turnCtx.ManualSkillCode),
+		PlanReason:       "manual_skill",
 	}, nil
 }
 

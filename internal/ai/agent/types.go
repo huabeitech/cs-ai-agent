@@ -28,12 +28,15 @@ type TurnContext struct {
 
 // TurnResult 表示 Agent Runtime 对当前轮次给出的执行结果。
 type TurnResult struct {
-	Action        Action
-	Question      string
-	ReplyText     string
-	Reason        string
-	KnowledgeBase *models.KnowledgeBase
-	RetrieveHits  []rag.RetrieveResult
+	Action           Action
+	Question         string
+	ReplyText        string
+	Reason           string
+	PlannedAction    Action
+	PlannedSkillCode string
+	PlanReason       string
+	KnowledgeBase    *models.KnowledgeBase
+	RetrieveHits     []rag.RetrieveResult
 }
 
 type Plan struct {

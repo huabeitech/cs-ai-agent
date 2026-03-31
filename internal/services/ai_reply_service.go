@@ -76,7 +76,8 @@ func (s *aiReplyService) buildReplyTimeout(aiAgent *models.AIAgent) time.Duratio
 	return time.Duration(timeoutSeconds) * time.Second
 }
 
-func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) error {
+func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) (retErr error) {
+	startedAt := time.Now()
 	message := MessageService.Get(messageID)
 	if message == nil {
 		return errorsx.InvalidParam("消息不存在")
@@ -127,6 +128,10 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 	if aiConfig == nil || aiConfig.Status != enums.StatusOk {
 		return errorsx.InvalidParam("AI Agent 关联的 AI 配置不可用")
 	}
+	var result *agent.TurnResult
+	defer func() {
+		s.writeRunLog(startedAt, message, conversation, aiAgent, aiConfig, question, result, retErr)
+	}()
 	runtime := agent.NewRuntime()
 	result, err := runtime.RunConversationTurn(ctx, agent.TurnContext{
 		Message:      message,
@@ -141,28 +146,39 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 			"ai_agent_id", aiAgent.ID,
 			"error", err)
 		if result != nil && strings.TrimSpace(result.Reason) != "" {
-			return s.handleFallback(conversation, aiAgent, result.Reason)
+			retErr = s.handleFallback(conversation, aiAgent, result.Reason)
+			return retErr
 		}
-		return s.handleFallback(conversation, aiAgent, "AI生成失败")
+		retErr = s.handleFallback(conversation, aiAgent, "AI生成失败")
+		return retErr
 	}
 	if result == nil || result.Action == agent.ActionNoop {
 		return nil
 	}
+	refreshedConversation := s.recheckBeforeCommit(message.ID, conversation.ID)
+	if refreshedConversation == nil {
+		return nil
+	}
+	conversation = refreshedConversation
 	switch result.Action {
 	case agent.ActionReply:
 		if strings.TrimSpace(result.ReplyText) == "" {
-			return s.handleFallback(conversation, aiAgent, "AI回复为空")
+			retErr = s.handleFallback(conversation, aiAgent, "AI回复为空")
+			return retErr
 		}
 		if _, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_%d", message.ID), enums.IMMessageTypeText, result.ReplyText, "", s.buildAIPrincipal(aiAgent)); err != nil {
 			return err
 		}
-		return ConversationService.Updates(conversation.ID, map[string]any{
+		retErr = ConversationService.Updates(conversation.ID, map[string]any{
 			"ai_reply_rounds": conversation.AIReplyRounds + 1,
 		})
+		return retErr
 	case agent.ActionFallback:
-		return s.handleFallback(conversation, aiAgent, result.Reason)
+		retErr = s.handleFallback(conversation, aiAgent, result.Reason)
+		return retErr
 	case agent.ActionHandoff:
-		return s.handoffConversation(conversation, aiAgent, result.Reason)
+		retErr = s.handoffConversation(conversation, aiAgent, result.Reason)
+		return retErr
 	default:
 		return nil
 	}
@@ -195,6 +211,76 @@ func (s *aiReplyService) shouldHandoffByQuestion(question string, aiAgent *model
 		}
 	}
 	return false
+}
+
+func (s *aiReplyService) recheckBeforeCommit(messageID int64, conversationID int64) *models.Conversation {
+	if messageID <= 0 || conversationID <= 0 {
+		return nil
+	}
+	conversation := ConversationService.Get(conversationID)
+	if conversation == nil {
+		return nil
+	}
+	if conversation.LastMessageID != messageID {
+		return nil
+	}
+	if conversation.HandoffAt != nil || conversation.CurrentAssigneeID > 0 {
+		return nil
+	}
+	return conversation
+}
+
+func (s *aiReplyService) writeRunLog(startedAt time.Time, message *models.Message, conversation *models.Conversation, aiAgent *models.AIAgent, aiConfig *models.AIConfig, question string, result *agent.TurnResult, runErr error) {
+	if message == nil || aiAgent == nil || aiConfig == nil {
+		return
+	}
+	plannedAction := ""
+	plannedSkillCode := ""
+	planReason := ""
+	finalAction := ""
+	replyText := ""
+	if result != nil {
+		plannedAction = string(result.PlannedAction)
+		plannedSkillCode = strings.TrimSpace(result.PlannedSkillCode)
+		planReason = strings.TrimSpace(result.PlanReason)
+		finalAction = string(result.Action)
+		replyText = strings.TrimSpace(result.ReplyText)
+		if strings.TrimSpace(question) == "" {
+			question = strings.TrimSpace(result.Question)
+		}
+	}
+	errorMessage := ""
+	if runErr != nil {
+		errorMessage = runErr.Error()
+	}
+	if plannedAction == "" && finalAction != "" {
+		plannedAction = finalAction
+	}
+	logItem := &models.AgentRunLog{
+		ConversationID:   0,
+		MessageID:        message.ID,
+		AIAgentID:        aiAgent.ID,
+		AIConfigID:       aiConfig.ID,
+		UserMessage:      strings.TrimSpace(question),
+		PlannedAction:    plannedAction,
+		PlannedSkillCode: plannedSkillCode,
+		PlanReason:       planReason,
+		FinalAction:      finalAction,
+		ReplyText:        replyText,
+		ErrorMessage:     errorMessage,
+		LatencyMs:        time.Since(startedAt).Milliseconds(),
+		CreatedAt:        time.Now(),
+	}
+	if conversation != nil {
+		logItem.ConversationID = conversation.ID
+	}
+	if err := AgentRunLogService.Create(logItem); err != nil {
+		slog.Warn("create agent run log failed",
+			"message_id", message.ID,
+			"conversation_id", logItem.ConversationID,
+			"ai_agent_id", aiAgent.ID,
+			"error", err)
+	}
 }
 
 func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAgent *models.AIAgent, reason string) error {

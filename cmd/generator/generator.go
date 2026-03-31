@@ -49,6 +49,7 @@ func main() {
 		codegen.GetGenerateStruct(&models.AIConfig{}),
 		codegen.GetGenerateStruct(&models.SkillDefinition{}),
 		codegen.GetGenerateStruct(&models.SkillRunLog{}),
+		codegen.GetGenerateStruct(&models.AgentRunLog{}),
 		codegen.GetGenerateStruct(&models.SystemConfig{}),
 	)
 

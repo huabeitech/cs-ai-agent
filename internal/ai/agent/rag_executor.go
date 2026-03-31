@@ -33,9 +33,11 @@ func (e *ragExecutor) Execute(ctx context.Context, turnCtx TurnContext, question
 	}
 	if candidate == nil || len(candidate.results) == 0 {
 		return &TurnResult{
-			Action:   ActionFallback,
-			Question: question,
-			Reason:   "知识库未命中",
+			Action:        ActionFallback,
+			Question:      question,
+			Reason:        "知识库未命中",
+			PlannedAction: ActionRAG,
+			PlanReason:    "rag",
 		}, nil
 	}
 	replyText, err := e.generateReply(ctx, turnCtx, candidate, question)
@@ -44,6 +46,8 @@ func (e *ragExecutor) Execute(ctx context.Context, turnCtx TurnContext, question
 			Action:        ActionFallback,
 			Question:      question,
 			Reason:        "AI生成失败",
+			PlannedAction: ActionRAG,
+			PlanReason:    "rag",
 			KnowledgeBase: candidate.knowledgeBase,
 			RetrieveHits:  candidate.results,
 		}, err
@@ -53,6 +57,8 @@ func (e *ragExecutor) Execute(ctx context.Context, turnCtx TurnContext, question
 			Action:        ActionFallback,
 			Question:      question,
 			Reason:        "AI回复为空",
+			PlannedAction: ActionRAG,
+			PlanReason:    "rag",
 			KnowledgeBase: candidate.knowledgeBase,
 			RetrieveHits:  candidate.results,
 		}, nil
@@ -61,6 +67,8 @@ func (e *ragExecutor) Execute(ctx context.Context, turnCtx TurnContext, question
 		Action:        ActionReply,
 		Question:      question,
 		ReplyText:     replyText,
+		PlannedAction: ActionRAG,
+		PlanReason:    "rag",
 		KnowledgeBase: candidate.knowledgeBase,
 		RetrieveHits:  candidate.results,
 	}, nil

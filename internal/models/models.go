@@ -45,6 +45,7 @@ var Models = []any{
 	&KnowledgeFeedback{},
 	&SkillDefinition{},
 	&SkillRunLog{},
+	&AgentRunLog{},
 	&SystemConfig{},
 }
 
@@ -656,4 +657,22 @@ type SkillRunLog struct {
 	UsedProvider      enums.AIProvider `gorm:"type:varchar(50);not null;default:''"`        // UsedProvider 为本次实际调用的模型供应商。
 	ErrorMessage      string           `gorm:"type:text"`                                   // ErrorMessage 为运行过程中的错误信息。
 	CreatedAt         time.Time        `gorm:"type:datetime;not null;index"`                // CreatedAt 为运行日志创建时间。
+}
+
+// AgentRunLog 表示一次客服 Agent 自动运行的总链路日志。
+type AgentRunLog struct {
+	ID               int64     `gorm:"primaryKey;autoIncrement"`
+	ConversationID   int64     `gorm:"type:bigint;not null;default:0;index"`
+	MessageID        int64     `gorm:"type:bigint;not null;default:0;index"`
+	AIAgentID        int64     `gorm:"type:bigint;not null;default:0;index"`
+	AIConfigID       int64     `gorm:"type:bigint;not null;default:0;index"`
+	UserMessage      string    `gorm:"type:longtext"`
+	PlannedAction    string    `gorm:"type:varchar(30);not null;default:'';index"`
+	PlannedSkillCode string    `gorm:"type:varchar(100);not null;default:'';index"`
+	PlanReason       string    `gorm:"type:varchar(500);not null;default:''"`
+	FinalAction      string    `gorm:"type:varchar(30);not null;default:'';index"`
+	ReplyText        string    `gorm:"type:longtext"`
+	ErrorMessage     string    `gorm:"type:text"`
+	LatencyMs        int64     `gorm:"type:bigint;not null;default:0"`
+	CreatedAt        time.Time `gorm:"type:datetime;not null;index"`
 }
