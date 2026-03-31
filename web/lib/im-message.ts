@@ -43,18 +43,13 @@ export function renderIMMessageHTML(message: {
   if (message.messageType === "attachment") {
     if (asset?.url) {
       const title = escapeHTML(asset.filename || message.content || "附件")
-      const meta = [
-        asset.mimeType?.trim() || "",
-        formatFileSize(asset.fileSize ?? 0),
-      ]
-        .filter(Boolean)
-        .join(" · ")
+      const meta = formatFileSize(asset.fileSize ?? 0)
       const metaHTML = meta ? `<div class="im-attachment-meta">${escapeHTML(meta)}</div>` : ""
       return `<div class="im-attachment"><a href="${escapeHTMLAttr(
         asset.url
       )}" target="_blank" rel="noreferrer" download="${escapeHTMLAttr(
         asset.filename || ""
-      )}">${title}</a>${metaHTML}</div>`
+      )}" class="im-attachment-link"><span class="im-attachment-icon" aria-hidden="true">${getAttachmentIconSVG()}</span><span class="im-attachment-content"><span class="im-attachment-title">${title}</span>${metaHTML}</span></a></div>`
     }
     return `<p>${escapeHTML(message.content || "[附件]")}</p>`
   }
@@ -127,4 +122,8 @@ function escapeHTMLAttr(value: string) {
     .replaceAll('"', "&quot;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
+}
+
+function getAttachmentIconSVG() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 15h6"></path><path d="M9 11h2"></path></svg>`
 }

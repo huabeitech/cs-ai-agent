@@ -70,7 +70,7 @@ function ImMessageHTMLComponent({
   return (
     <div
       ref={containerRef}
-      className={`break-words text-sm [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain ${className}`}
+      className={`break-words text-sm [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain [&_.im-attachment]:min-w-0 [&_.im-attachment-link]:flex [&_.im-attachment-link]:min-w-0 [&_.im-attachment-link]:items-center [&_.im-attachment-link]:gap-3 [&_.im-attachment-link]:rounded-xl [&_.im-attachment-link]:no-underline [&_.im-attachment-link]:transition-colors hover:[&_.im-attachment-link]:bg-black/5 [&_.im-attachment-icon]:flex [&_.im-attachment-icon]:size-10 [&_.im-attachment-icon]:shrink-0 [&_.im-attachment-icon]:items-center [&_.im-attachment-icon]:justify-center [&_.im-attachment-icon]:rounded-xl [&_.im-attachment-icon]:bg-black/5 [&_.im-attachment-icon_svg]:size-5 [&_.im-attachment-content]:flex [&_.im-attachment-content]:min-w-0 [&_.im-attachment-content]:flex-col [&_.im-attachment-title]:truncate [&_.im-attachment-title]:font-medium [&_.im-attachment-meta]:text-xs [&_.im-attachment-meta]:opacity-70 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
