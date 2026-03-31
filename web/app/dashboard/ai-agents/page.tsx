@@ -111,6 +111,10 @@ function SortableAIAgentRow({
   const knowledgeIds = item.knowledgeIds ?? [];
   const knowledgeBaseNames = item.knowledgeBaseNames ?? [];
   const skills = item.skills ?? [];
+  const directTools = item.directTools ?? [];
+  const directToolServerCodes = Array.from(
+    new Set(directTools.map((tool) => tool.serverCode).filter(Boolean)),
+  );
   const {
     attributes,
     listeners,
@@ -194,6 +198,25 @@ function SortableAIAgentRow({
               </Badge>
             ))
           )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="secondary">{skills.length} Skills</Badge>
+            <Badge variant="secondary">{directTools.length} Tools</Badge>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {directToolServerCodes.length === 0 ? (
+              <span className="text-sm text-muted-foreground">未绑定 MCP Server</span>
+            ) : (
+              directToolServerCodes.map((serverCode) => (
+                <Badge key={serverCode} variant="outline">
+                  {serverCode}
+                </Badge>
+              ))
+            )}
+          </div>
         </div>
       </TableCell>
       <TableCell>
@@ -478,6 +501,7 @@ export default function DashboardAIAgentsPage() {
                   <TableHead>服务模式</TableHead>
                   <TableHead>知识库</TableHead>
                   <TableHead>Skills</TableHead>
+                  <TableHead>能力概览</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="w-[88px] text-right">操作</TableHead>
                 </TableRow>
@@ -486,7 +510,7 @@ export default function DashboardAIAgentsPage() {
                 {result.results.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="py-12 text-center text-muted-foreground"
                     >
                       {loading ? "正在加载 AI Agent..." : "暂无 AI Agent"}
