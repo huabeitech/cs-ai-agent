@@ -1139,16 +1139,19 @@ function EditDialogBody({
               </FieldContent>
             </Field>
 
-            <Field data-invalid={!!errors.fallbackMessage}>
-              <FieldLabel htmlFor="ai-agent-fallback-message">
-                兜底文案
-              </FieldLabel>
-              <FieldContent>
-                <Textarea
-                  id="ai-agent-fallback-message"
-                  rows={5}
-                  {...register("fallbackMessage")}
-                />
+              <Field data-invalid={!!errors.fallbackMessage}>
+                <FieldLabel htmlFor="ai-agent-fallback-message">
+                  兜底文案
+                </FieldLabel>
+                <FieldContent>
+                  <div className="text-xs text-muted-foreground mb-1">
+                    仅在兜底模式为“直接声明无答案”或“引导补充信息”时使用；如果兜底模式配置为转人工，这里的文案不会生效。
+                  </div>
+                  <Textarea
+                    id="ai-agent-fallback-message"
+                    rows={5}
+                    {...register("fallbackMessage")}
+                  />
                 <FieldError errors={[errors.fallbackMessage]} />
               </FieldContent>
             </Field>
