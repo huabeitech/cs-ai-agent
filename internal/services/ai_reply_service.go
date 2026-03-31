@@ -157,7 +157,7 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, messageID int64) erro
 		return s.handleFallback(conversation, aiAgent, "AI回复为空")
 	}
 
-	if _, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_%d", message.ID), enums.IMMessageTypeText, replyText, "", s.buildAIPrincipal(aiAgent)); err != nil {
+	if _, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_%d", message.ID), enums.IMMessageTypeText, replyText, "", s.buildAIPrincipal(aiAgent)); err != nil {
 		return err
 	}
 	return ConversationService.Updates(conversation.ID, map[string]any{
@@ -277,10 +277,10 @@ func (s *aiReplyService) handleFallback(conversation *models.Conversation, aiAge
 	case enums.AIAgentFallbackModeHandoff: // 转人工
 		return s.handoffConversation(conversation, aiAgent, reason)
 	case enums.AIAgentFallbackModeGuideRephrase: // 引导补充信息或换个问法
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
+		_, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
 	default: // 直接声明无答案
-		_, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
+		_, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_fallback_%d", conversation.LastMessageID), enums.IMMessageTypeText, s.buildFallbackMessage(aiAgent), "", s.buildAIPrincipal(aiAgent))
 		return err
 	}
 }
@@ -317,7 +317,7 @@ func (s *aiReplyService) handoffConversation(conversation *models.Conversation, 
 	}); err != nil {
 		return err
 	}
-	if _, err := MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_handoff_%d", conversation.LastMessageID), enums.IMMessageTypeText, "已为你转接人工客服，请稍候。", "", s.buildAIPrincipal(aiAgent)); err != nil {
+	if _, err := MessageService.SendAIMessage(nil, conversation.ID, aiAgent.ID, fmt.Sprintf("ai_handoff_%d", conversation.LastMessageID), enums.IMMessageTypeText, "已为你转接人工客服，请稍候。", "", s.buildAIPrincipal(aiAgent)); err != nil {
 		return err
 	}
 	if _, err := ConversationDispatchService.DispatchConversation(conversation.ID); err != nil {

@@ -13,6 +13,7 @@ import Image from "next/image";
 
 import { MessageHTML } from "@/components/im/message-html";
 import { useImageLightbox } from "@/components/image-lightbox";
+import { renderMessageHTML } from "@/lib/services/message-asset";
 import type { WidgetMessage } from "@/lib/services/types";
 import { cn, formatDateTime } from "@/lib/utils";
 
@@ -343,32 +344,5 @@ const MessageItem = memo(
 );
 
 function buildMessageHTML(message: WidgetMessage) {
-  if (message.messageType === "html") {
-    return message.content;
-  }
-  if (message.messageType === "image") {
-    try {
-      const payload = JSON.parse(message.payload || "{}") as {
-        url?: string;
-        filename?: string;
-      };
-      if (payload.url) {
-        return `<p><img src="${payload.url}" alt="${payload.filename || "image"}"></p>`;
-      }
-    } catch {
-      return "<p>[图片]</p>";
-    }
-    return "<p>[图片]</p>";
-  }
-  return `<p>${escapeHTML(message.content || "")}</p>`;
-}
-
-function escapeHTML(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;")
-    .replaceAll("\n", "<br>");
+  return renderMessageHTML(message);
 }

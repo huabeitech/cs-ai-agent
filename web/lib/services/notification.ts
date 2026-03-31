@@ -1,32 +1,13 @@
+import { summarizeIMMessage } from "@/lib/im-message"
+
 type NotificationMessage = {
   messageType: string
   content: string
+  payload?: string
 }
 
 export function getNotificationBody(message: NotificationMessage): string {
-  if (message.messageType === "image") {
-    return "[图片]"
-  }
-  if (message.messageType === "html") {
-    const text = extractTextFromHTML(message.content)
-    if (text.trim()) {
-      return text.substring(0, 100)
-    }
-    if (message.content.includes("<img")) {
-      return "[图片]"
-    }
-    return "[消息]"
-  }
-  return message.content?.substring(0, 100) || "[消息]"
-}
-
-function extractTextFromHTML(html: string): string {
-  if (typeof document === "undefined") {
-    return ""
-  }
-  const div = document.createElement("div")
-  div.innerHTML = html
-  return div.textContent || div.innerText || ""
+  return summarizeIMMessage(message)
 }
 
 export function showNotification(title: string, body: string, onClick?: () => void) {

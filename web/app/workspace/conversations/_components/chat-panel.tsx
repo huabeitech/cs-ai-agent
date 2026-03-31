@@ -28,6 +28,7 @@ import {
   type AgentMessage,
 } from "@/lib/api/agent";
 import { readSession } from "@/lib/auth";
+import { renderIMMessageHTML } from "@/lib/im-message";
 import {
   agentConversationSelectors,
   useAgentConversationsStore,
@@ -46,11 +47,12 @@ export function ChatPanel() {
     EMPTY_AGENT_MESSAGES;
   const loading = useAgentConversationsStore((state) => state.messagesLoading);
   const sending = useAgentConversationsStore((state) => state.sending);
-  const uploadingImage = useAgentConversationsStore(
-    (state) => state.uploadingImage,
+  const uploadingAsset = useAgentConversationsStore(
+    (state) => state.uploadingAsset,
   );
   const sendMessage = useAgentConversationsStore((state) => state.sendMessage);
   const uploadImage = useAgentConversationsStore((state) => state.uploadImage);
+  const sendAttachment = useAgentConversationsStore((state) => state.sendAttachment);
   const markSelectedConversationRead = useAgentConversationsStore(
     (state) => state.markSelectedConversationRead,
   );
@@ -402,7 +404,7 @@ export function ChatPanel() {
           <div className="min-h-0 flex-1">
             <ImMessageEditor
               disabled={!conversation || sending}
-              uploadingImage={uploadingImage}
+              uploadingAsset={uploadingAsset}
               onSend={handleSend}
               onUploadImage={async (file) => {
                 shouldStickToBottomRef.current = true;
@@ -410,6 +412,14 @@ export function ChatPanel() {
                 return uploaded
                   ? { url: uploaded.url, filename: uploaded.filename }
                   : null;
+              }}
+              onSendAttachment={async (file) => {
+                shouldStickToBottomRef.current = true;
+                try {
+                  await sendAttachment(file);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "发送附件失败");
+                }
               }}
             />
           </div>
@@ -607,32 +617,5 @@ function buildMessageHTML(message: {
   content: string;
   payload?: string;
 }) {
-  if (message.messageType === "html") {
-    return message.content;
-  }
-  if (message.messageType === "image") {
-    try {
-      const payload = JSON.parse(message.payload || "{}") as {
-        url?: string;
-        filename?: string;
-      };
-      if (payload.url) {
-        return `<p><img src="${payload.url}" alt="${payload.filename || "image"}"></p>`;
-      }
-    } catch {
-      return "<p>[图片]</p>";
-    }
-    return "<p>[图片]</p>";
-  }
-  return `<p>${escapeHTML(message.content || "")}</p>`;
-}
-
-function escapeHTML(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;")
-    .replaceAll("\n", "<br>");
+  return renderIMMessageHTML(message);
 }

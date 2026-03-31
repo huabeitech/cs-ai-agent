@@ -6,8 +6,10 @@ import (
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
+	"strconv"
 	"strings"
 
 	"github.com/kataras/iris/v12"
@@ -228,7 +230,7 @@ func (c *ConversationController) PostSend_message() *web.JsonResult {
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.MessageService.SendAgentMessage(req.ConversationID, 0, req.ClientMsgID, req.MessageType, req.Content, req.Payload, operator)
+	item, err := services.MessageService.SendAgentMessage(c.Cfg, req.ConversationID, 0, req.ClientMsgID, req.MessageType, req.Content, req.Payload, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -257,6 +259,18 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
+	rawConv := strings.TrimSpace(c.Ctx.FormValue("conversationId"))
+	if rawConv == "" {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	conversationID, err := strconv.ParseInt(rawConv, 10, 64)
+	if err != nil || conversationID <= 0 {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	if _, err := services.MessageService.ValidateConversationSender(conversationID, enums.IMSenderTypeAgent, operator, nil); err != nil {
+		return web.JsonError(err)
+	}
+
 	f, header, err := c.Ctx.FormFile("file")
 	if err != nil {
 		return web.JsonErrorMsg("请选择上传图片")
@@ -267,7 +281,7 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 		return web.JsonErrorMsg("仅支持上传图片文件")
 	}
 
-	item, err := services.AssetService.UploadFile(c.Cfg, header, "im-images", operator)
+	item, err := services.AssetService.UploadFile(c.Cfg, header, services.BuildIMConversationAssetPrefix(conversationID, "images"), operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -275,7 +289,42 @@ func (c *ConversationController) PostUpload_image() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildAssetResponse(item, provider))
+	return web.JsonData(builders.BuildAsset(item, provider))
+}
+
+func (c *ConversationController) PostUpload_attachment() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionConversationSend)
+	if err != nil {
+		return web.JsonError(err)
+	}
+
+	rawConv := strings.TrimSpace(c.Ctx.FormValue("conversationId"))
+	if rawConv == "" {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	conversationID, err := strconv.ParseInt(rawConv, 10, 64)
+	if err != nil || conversationID <= 0 {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	if _, err := services.MessageService.ValidateConversationSender(conversationID, enums.IMSenderTypeAgent, operator, nil); err != nil {
+		return web.JsonError(err)
+	}
+
+	f, header, err := c.Ctx.FormFile("file")
+	if err != nil {
+		return web.JsonErrorMsg("请选择上传附件")
+	}
+	_ = f.Close()
+
+	item, err := services.AssetService.UploadFile(c.Cfg, header, services.BuildIMConversationAssetPrefix(conversationID, "attachments"), operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	provider, err := storage.NewProvider(c.Cfg.Storage)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildAsset(item, provider))
 }
 
 func (c *ConversationController) PostAdd_tag() *web.JsonResult {

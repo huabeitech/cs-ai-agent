@@ -7,12 +7,15 @@ import {
   fetchMessagesPage,
   markMessageRead,
   sendMessage,
+  sendMessageWithPayload,
+  uploadAttachment,
   uploadImage,
 } from "@/lib/services/message";
 import {
   getNotificationBody,
   showNotification,
 } from "@/lib/services/notification";
+import { summarizeMessage } from "@/lib/services/message-asset";
 import {
   createRealtimeConnection,
   type RealtimeEnvelope,
@@ -110,6 +113,7 @@ export interface ChatStore {
   uploadMessageImage: (
     file: File,
   ) => Promise<{ url: string; filename?: string } | null>;
+  sendAttachment: (file: File) => Promise<void>;
   retry: () => void;
   disconnectSocket: () => void;
   refreshMessages: () => Promise<void>;
@@ -486,6 +490,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
                 customerLastReadMessageId: nextMessage.id,
                 customerLastReadSeqNo: nextMessage.seqNo,
                 customerUnreadCount: 0,
+                lastMessageAt: nextMessage.sentAt,
+                lastMessageSummary: summarizeMessage(nextMessage),
               }
             : null,
         }));
@@ -504,6 +510,40 @@ export const useChatStore = create<ChatStore>((set, get) => {
       } catch (e) {
         set({ error: e instanceof Error ? e.message : "发送图片失败" });
         return null;
+      }
+    },
+
+    sendAttachment: async (file: File) => {
+      const conversationId = get().conversation?.id;
+      if (!conversationId) return;
+      set({ error: "" });
+      try {
+        const asset = await uploadAttachment(conversationId, file);
+        const nextMessage = await sendMessageWithPayload(conversationId, {
+          messageType: "attachment",
+          content: asset.filename,
+          payload: JSON.stringify({ assetId: asset.assetId }),
+          clientMsgId: `widget_attachment_${crypto.randomUUID()}`,
+        });
+        set((state) => ({
+          messages: state.messages.some((m) => m.id === nextMessage.id)
+            ? state.messages.map((m) =>
+                m.id === nextMessage.id ? nextMessage : m,
+              )
+            : [...state.messages, nextMessage],
+          conversation: state.conversation
+            ? {
+                ...state.conversation,
+                customerLastReadMessageId: nextMessage.id,
+                customerLastReadSeqNo: nextMessage.seqNo,
+                customerUnreadCount: 0,
+                lastMessageAt: nextMessage.sentAt,
+                lastMessageSummary: summarizeMessage(nextMessage),
+              }
+            : null,
+        }));
+      } catch (e) {
+        set({ error: e instanceof Error ? e.message : "发送附件失败" });
       }
     },
 

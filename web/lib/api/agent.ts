@@ -94,7 +94,6 @@ export type AgentAsset = {
   id: number
   assetId: string
   provider: string
-  storageKey: string
   filename: string
   fileSize: number
   mimeType: string
@@ -164,10 +163,21 @@ export function markAgentMessageRead(conversationId: number, messageId = 0) {
   })
 }
 
-export function uploadAgentConversationImage(file: File) {
+export function uploadAgentConversationImage(conversationId: number, file: File) {
   const formData = new FormData()
+  formData.set("conversationId", String(conversationId))
   formData.set("file", file)
   return request<AgentAsset>("/api/console/conversation/upload_image", {
+    method: "POST",
+    body: formData,
+  })
+}
+
+export function uploadAgentConversationAttachment(conversationId: number, file: File) {
+  const formData = new FormData()
+  formData.set("conversationId", String(conversationId))
+  formData.set("file", file)
+  return request<AgentAsset>("/api/console/conversation/upload_attachment", {
     method: "POST",
     body: formData,
   })

@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 	"cs-agent/internal/services/storage"
 	"strconv"
@@ -68,7 +69,7 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	item, err := services.MessageService.SendCustomerMessage(req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, *external)
+	item, err := services.MessageService.SendCustomerMessage(c.Cfg, req.ConversationID, req.ClientMsgID, req.MessageType, req.Content, req.Payload, *external)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -118,6 +119,9 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 	if !services.ConversationService.IsCustomerConversationOwner(conversation, *external) {
 		return web.JsonErrorMsg("无权访问该会话")
 	}
+	if _, err := services.MessageService.ValidateConversationSender(conversationID, enums.IMSenderTypeCustomer, nil, external); err != nil {
+		return web.JsonError(err)
+	}
 
 	f, header, err := c.Ctx.FormFile("file")
 	if err != nil {
@@ -129,7 +133,7 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 		return web.JsonErrorMsg("仅支持上传图片文件")
 	}
 
-	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, "im-images", *external)
+	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, services.BuildIMConversationAssetPrefix(conversationID, "images"), *external)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -137,5 +141,43 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildAssetResponse(item, provider))
+	return web.JsonData(builders.BuildAsset(item, provider))
+}
+
+func (c *ImMessageController) PostUpload_attachment() *web.JsonResult {
+	if WidgetSiteFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入站点未初始化")
+	}
+	external := ExternalInfoFromCtx(c.Ctx)
+	if external == nil {
+		return web.JsonErrorMsg("外部身份未初始化")
+	}
+
+	rawConv := strings.TrimSpace(c.Ctx.FormValue("conversationId"))
+	if rawConv == "" {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	conversationID, err := strconv.ParseInt(rawConv, 10, 64)
+	if err != nil || conversationID <= 0 {
+		return web.JsonErrorMsg("conversationId不能为空")
+	}
+	if _, err := services.MessageService.ValidateConversationSender(conversationID, enums.IMSenderTypeCustomer, nil, external); err != nil {
+		return web.JsonError(err)
+	}
+
+	f, header, err := c.Ctx.FormFile("file")
+	if err != nil {
+		return web.JsonErrorMsg("请选择上传附件")
+	}
+	_ = f.Close()
+
+	item, err := services.AssetService.UploadFileForExternal(c.Cfg, header, services.BuildIMConversationAssetPrefix(conversationID, "attachments"), *external)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	provider, err := storage.NewProvider(c.Cfg.Storage)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildAsset(item, provider))
 }

@@ -28,6 +28,7 @@ export type WidgetConversation = {
   serviceMode?: number;
   currentAssigneeId?: number;
   lastMessageAt?: string;
+  lastMessageSummary?: string;
   customerUnreadCount?: number;
   agentUnreadCount?: number;
   customerLastReadMessageId?: number;
@@ -59,7 +60,6 @@ export type WidgetAsset = {
   id: number;
   assetId: string;
   provider: string;
-  storageKey: string;
   filename: string;
   fileSize: number;
   mimeType: string;

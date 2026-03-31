@@ -43,7 +43,7 @@ func (c *AssetController) AnyList() *web.JsonResult {
 	list, paging := services.AssetService.FindPageByCnd(cnd)
 	results := make([]response.AssetResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, builders.BuildAssetResponse(&item, provider))
+		results = append(results, builders.BuildAsset(&item, provider))
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
@@ -60,7 +60,7 @@ func (c *AssetController) GetBy(id int64) *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildAssetResponse(item, provider))
+	return web.JsonData(builders.BuildAsset(item, provider))
 }
 
 func (c *AssetController) PostCreate() *web.JsonResult {
@@ -87,7 +87,7 @@ func (c *AssetController) PostCreate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(builders.BuildAssetResponse(item, provider))
+	return web.JsonData(builders.BuildAsset(item, provider))
 }
 
 func (c *AssetController) PostDelete() *web.JsonResult {

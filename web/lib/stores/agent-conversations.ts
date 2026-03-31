@@ -7,11 +7,13 @@ import {
   fetchAgentMessages,
   markAgentMessageRead,
   sendAgentMessage,
+  uploadAgentConversationAttachment,
   uploadAgentConversationImage,
   type AgentAsset,
   type AgentConversation,
   type AgentMessage,
 } from "@/lib/api/agent"
+import { summarizeIMMessage } from "@/lib/im-message"
 
 export const agentConversationFilterOptions = [
   // { value: "mine", label: "我的" },
@@ -118,7 +120,7 @@ type AgentConversationsStore = {
   messagesHasMore: boolean
   messagesLoadedConversationId: number | null
   sending: boolean
-  uploadingImage: boolean
+  uploadingAsset: boolean
   readingMessageId: number
   setSearchKeyword: (keyword: string) => void
   setConversationFilter: (filter: AgentConversationFilterKey) => void
@@ -134,6 +136,7 @@ type AgentConversationsStore = {
   markSelectedConversationRead: () => Promise<void>
   sendMessage: (html: string) => Promise<AgentMessage | null>
   uploadImage: (file: File) => Promise<AgentAsset | null>
+  sendAttachment: (file: File) => Promise<AgentMessage | null>
 }
 
 let conversationsRequestSeq = 0
@@ -153,7 +156,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
   messagesHasMore: false,
   messagesLoadedConversationId: null,
   sending: false,
-  uploadingImage: false,
+  uploadingAsset: false,
   readingMessageId: 0,
 
   setSearchKeyword: (keyword) => {
@@ -461,7 +464,10 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
                   ...item,
                   lastMessageAt: message.sentAt,
                   lastActiveAt: message.sentAt,
-                  lastMessageSummary: summarizeHTML(trimmedContent),
+                  lastMessageSummary: summarizeIMMessage({
+                    messageType: "html",
+                    content: trimmedContent,
+                  }),
                   agentUnreadCount: 0,
                   customerUnreadCount: (item.customerUnreadCount ?? 0) + 1,
                   agentLastReadMessageId: message.id,
@@ -479,16 +485,61 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
   },
 
   uploadImage: async (file) => {
-    const { selectedConversationId, sending, uploadingImage } = get()
-    if (!selectedConversationId || sending || uploadingImage) {
+    const { selectedConversationId, sending, uploadingAsset } = get()
+    if (!selectedConversationId || sending || uploadingAsset) {
       return null
     }
 
-    set({ uploadingImage: true })
+    set({ uploadingAsset: true })
     try {
-      return await uploadAgentConversationImage(file)
+      return await uploadAgentConversationImage(selectedConversationId, file)
     } finally {
-      set({ uploadingImage: false })
+      set({ uploadingAsset: false })
+    }
+  },
+
+  sendAttachment: async (file) => {
+    const { selectedConversationId, sending, uploadingAsset } = get()
+    if (!selectedConversationId || sending || uploadingAsset) {
+      return null
+    }
+
+    set({ uploadingAsset: true })
+    try {
+      const asset = await uploadAgentConversationAttachment(selectedConversationId, file)
+      const message = await sendAgentMessage({
+        conversationId: selectedConversationId,
+        messageType: "attachment",
+        content: asset.filename,
+        payload: JSON.stringify({ assetId: asset.assetId }),
+        clientMsgId: `agent_attachment_${crypto.randomUUID()}`,
+      })
+
+      if (get().selectedConversationId === selectedConversationId) {
+        set((current) => ({
+          messages: current.messages.some((m) => m.id === message.id)
+            ? current.messages.map((m) => (m.id === message.id ? message : m))
+            : [...current.messages, message],
+          conversations: current.conversations.map((item) =>
+            item.id === selectedConversationId
+              ? {
+                  ...item,
+                  lastMessageAt: message.sentAt,
+                  lastActiveAt: message.sentAt,
+                  lastMessageSummary: summarizeIMMessage(message),
+                  agentUnreadCount: 0,
+                  customerUnreadCount: (item.customerUnreadCount ?? 0) + 1,
+                  agentLastReadMessageId: message.id,
+                  agentLastReadSeqNo: message.seqNo,
+                }
+              : item
+          ),
+        }))
+      }
+
+      return message
+    } finally {
+      set({ uploadingAsset: false })
     }
   },
 }))
@@ -496,10 +547,4 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
 export const agentConversationSelectors = {
   selectedConversation: (state: AgentConversationsStore) =>
     state.conversations.find((item) => item.id === state.selectedConversationId) ?? null,
-}
-
-function summarizeHTML(html: string) {
-  const withImagePlaceholder = html.replace(/<img[\s\S]*?>/gi, " [图片] ")
-  const plainText = withImagePlaceholder.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
-  return plainText || "[图片]"
 }

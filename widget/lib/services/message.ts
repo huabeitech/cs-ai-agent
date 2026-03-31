@@ -51,21 +51,37 @@ export async function fetchMessages(conversationId: number) {
   return page.results;
 }
 
-export async function sendMessage(conversationId: number, content: string) {
+export async function sendMessageWithPayload(
+  conversationId: number,
+  payload: {
+    messageType: string;
+    content: string;
+    payload?: string;
+    clientMsgId?: string;
+  },
+) {
   const result = await requestJson<JsonResult<WidgetMessage>>("/api/open/im/message/send", {
     method: "POST",
     body: JSON.stringify({
       conversationId,
-      clientMsgId: `client_${crypto.randomUUID()}`,
-      messageType: "html",
-      content,
-      payload: "",
+      clientMsgId: payload.clientMsgId || `client_${crypto.randomUUID()}`,
+      messageType: payload.messageType,
+      content: payload.content,
+      payload: payload.payload || "",
     }),
   });
   if (!result.data) {
     throw new Error(result.message || "send message failed");
   }
   return result.data;
+}
+
+export async function sendMessage(conversationId: number, content: string) {
+  return sendMessageWithPayload(conversationId, {
+    messageType: "html",
+    content,
+    payload: "",
+  });
 }
 
 export async function markMessageRead(conversationId: number, messageId = 0) {
@@ -88,6 +104,23 @@ export async function uploadImage(conversationId: number, file: File) {
   );
   if (!result.data) {
     throw new Error(result.message || "upload image failed");
+  }
+  return result.data;
+}
+
+export async function uploadAttachment(conversationId: number, file: File) {
+  const formData = new FormData();
+  formData.set("conversationId", String(conversationId));
+  formData.set("file", file);
+  const result = await requestJson<JsonResult<WidgetAsset>>(
+    "/api/open/im/message/upload_attachment",
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+  if (!result.data) {
+    throw new Error(result.message || "upload attachment failed");
   }
   return result.data;
 }

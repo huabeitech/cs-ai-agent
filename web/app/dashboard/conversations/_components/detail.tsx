@@ -21,6 +21,10 @@ import {
   type AdminConversationDetail,
   type AdminMessage,
 } from "@/lib/api/admin";
+import {
+  parseMessageAssetPayload,
+  renderIMMessageHTML,
+} from "@/lib/im-message";
 import { formatDateTime } from "@/lib/utils";
 
 type ConversationDetailDialogProps = {
@@ -90,19 +94,7 @@ function getMessageContent(message: AdminMessage) {
 }
 
 function getImageMessageUrl(message: AdminMessage) {
-  if (message.messageType === "image") {
-    try {
-      const payload = JSON.parse(message.payload || "{}") as {
-        url?: string;
-      };
-      if (payload.url) {
-        return payload.url;
-      }
-    } catch {
-      return message.content || "";
-    }
-  }
-  return "";
+  return parseMessageAssetPayload(message.payload)?.url || "";
 }
 
 function getParticipantIdentity(
@@ -439,7 +431,9 @@ export function ConversationDetailDialog({
                   {messages.length ? (
                     messages.map((message) => {
                       const layout = getMessageLayout(message);
-                      const isHtmlMessage = message.messageType === "html";
+                      const isHtmlMessage =
+                        message.messageType === "html" ||
+                        message.messageType === "attachment";
                       const isImageMessage = message.messageType === "image";
 
                       return (
@@ -460,7 +454,7 @@ export function ConversationDetailDialog({
                             >
                               {isHtmlMessage ? (
                                 <ImMessageHTML
-                                  html={message.content || "-"}
+                                  html={renderIMMessageHTML(message)}
                                   className="[&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in"
                                   onImageClick={openImageLightbox}
                                 />

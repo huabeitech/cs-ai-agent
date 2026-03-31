@@ -5,7 +5,7 @@ import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
-import { ImageIcon, MessageSquareTextIcon, SendIcon } from "lucide-react"
+import { ImageIcon, MessageSquareTextIcon, PaperclipIcon, SendIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -27,20 +27,24 @@ type UploadedImage = {
 
 type ImMessageEditorProps = {
   disabled?: boolean
-  uploadingImage?: boolean
+  uploadingAsset?: boolean
   onSend: (html: string) => Promise<void>
   onUploadImage: (file: File) => Promise<UploadedImage | null>
+  onSendAttachment: (file: File) => Promise<void>
 }
 
 export function ImMessageEditor({
   disabled = false,
-  uploadingImage = false,
+  uploadingAsset = false,
   onSend,
   onUploadImage,
+  onSendAttachment,
 }: ImMessageEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
   const onSendRef = useRef(onSend)
   const onUploadImageRef = useRef(onUploadImage)
+  const onSendAttachmentRef = useRef(onSendAttachment)
   const shouldRestoreFocusRef = useRef(false)
   const [quickReplies, setQuickReplies] = useState<AdminQuickReply[]>([])
   const [loadingQuickReplies, setLoadingQuickReplies] = useState(false)
@@ -53,6 +57,10 @@ export function ImMessageEditor({
   useEffect(() => {
     onUploadImageRef.current = onUploadImage
   }, [onUploadImage])
+
+  useEffect(() => {
+    onSendAttachmentRef.current = onSendAttachment
+  }, [onSendAttachment])
 
   useEffect(() => {
     let cancelled = false
@@ -109,7 +117,7 @@ export function ImMessageEditor({
         return false
       },
       handlePaste: (_view, event) => {
-        if (disabled || uploadingImage) {
+        if (disabled || uploadingAsset) {
           return false
         }
         const imageFile = getClipboardImageFile(event.clipboardData)
@@ -127,20 +135,20 @@ export function ImMessageEditor({
     if (!editor) {
       return
     }
-    editor.setEditable(!disabled && !uploadingImage)
-  }, [disabled, editor, uploadingImage])
+    editor.setEditable(!disabled && !uploadingAsset)
+  }, [disabled, editor, uploadingAsset])
 
   useEffect(() => {
-    if (!editor || disabled || uploadingImage || !shouldRestoreFocusRef.current) {
+    if (!editor || disabled || uploadingAsset || !shouldRestoreFocusRef.current) {
       return
     }
     requestAnimationFrame(() => {
       editor.commands.focus()
     })
-  }, [disabled, editor, uploadingImage])
+  }, [disabled, editor, uploadingAsset])
 
   const handleSend = async () => {
-    if (!editor || disabled || uploadingImage) {
+    if (!editor || disabled || uploadingAsset) {
       return
     }
     const html = editor.getHTML()
@@ -157,7 +165,7 @@ export function ImMessageEditor({
   const handleSelectImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ""
-    if (!file || !editor || disabled || uploadingImage) {
+    if (!file || !editor || disabled || uploadingAsset) {
       if (editor && shouldRestoreFocusRef.current) {
         requestAnimationFrame(() => {
           editor.commands.focus()
@@ -169,7 +177,7 @@ export function ImMessageEditor({
   }
 
   const insertUploadedImage = async (file: File) => {
-    if (!editor || disabled || uploadingImage) {
+    if (!editor || disabled || uploadingAsset) {
       return
     }
     shouldRestoreFocusRef.current = true
@@ -202,8 +210,28 @@ export function ImMessageEditor({
     }
   }
 
+  const handleSelectAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file || disabled || uploadingAsset) {
+      if (editor && shouldRestoreFocusRef.current) {
+        requestAnimationFrame(() => {
+          editor.commands.focus()
+        })
+      }
+      return
+    }
+    shouldRestoreFocusRef.current = editor?.isFocused ?? true
+    await onSendAttachmentRef.current(file)
+    requestAnimationFrame(() => {
+      if (editor && !disabled && shouldRestoreFocusRef.current) {
+        editor.commands.focus()
+      }
+    })
+  }
+
   const handleInsertQuickReply = (item: AdminQuickReply) => {
-    if (!editor || disabled || uploadingImage) {
+    if (!editor || disabled || uploadingAsset) {
       return
     }
     if (!item.content.trim()) {
@@ -222,6 +250,12 @@ export function ImMessageEditor({
         className="hidden"
         onChange={handleSelectImage}
       />
+      <input
+        ref={attachmentInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleSelectAttachment}
+      />
       <div className="flex h-full min-h-0 flex-col rounded-sm border border-border bg-card">
         <div className="min-h-0 flex-1 px-2 py-1">
           <EditorContent editor={editor} className="h-full" />
@@ -237,9 +271,22 @@ export function ImMessageEditor({
                 shouldRestoreFocusRef.current = editor?.isFocused ?? true
                 imageInputRef.current?.click()
               }}
-              disabled={disabled || uploadingImage}
+              disabled={disabled || uploadingAsset}
             >
               <ImageIcon className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                shouldRestoreFocusRef.current = editor?.isFocused ?? true
+                attachmentInputRef.current?.click()
+              }}
+              disabled={disabled || uploadingAsset}
+            >
+              <PaperclipIcon className="size-4" />
             </Button>
             <Popover open={quickReplyPickerOpen} onOpenChange={setQuickReplyPickerOpen}>
               <PopoverTrigger
@@ -248,7 +295,7 @@ export function ImMessageEditor({
                     variant="ghost"
                     size="icon"
                     className="size-8"
-                    disabled={disabled || uploadingImage || loadingQuickReplies}
+                    disabled={disabled || uploadingAsset || loadingQuickReplies}
                     onMouseDown={(event) => event.preventDefault()}
                   />
                 }
@@ -285,9 +332,9 @@ export function ImMessageEditor({
           </div>
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">Enter 发送</p>
-            <Button size="sm" onClick={() => void handleSend()} disabled={disabled || uploadingImage}>
+            <Button size="sm" onClick={() => void handleSend()} disabled={disabled || uploadingAsset}>
               <SendIcon className="mr-1 size-4" />
-              {uploadingImage ? "上传中..." : "发送"}
+              {uploadingAsset ? "上传中..." : "发送"}
             </Button>
           </div>
         </div>

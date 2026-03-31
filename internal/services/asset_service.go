@@ -35,6 +35,10 @@ func (s *assetService) Get(id int64) *models.Asset {
 	return repositories.AssetRepository.Get(sqls.DB(), id)
 }
 
+func (s *assetService) GetByAssetID(assetID string) *models.Asset {
+	return repositories.AssetRepository.GetByAssetID(sqls.DB(), strings.TrimSpace(assetID))
+}
+
 func (s *assetService) Take(where ...interface{}) *models.Asset {
 	return repositories.AssetRepository.Take(sqls.DB(), where...)
 }

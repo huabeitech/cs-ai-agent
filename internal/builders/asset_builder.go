@@ -7,12 +7,11 @@ import (
 	"cs-agent/internal/services/storage"
 )
 
-func BuildAssetResponse(item *models.Asset, provider storage.FileStorageProvider) response.AssetResponse {
+func BuildAsset(item *models.Asset, provider storage.FileStorageProvider) response.AssetResponse {
 	ret := response.AssetResponse{
 		ID:             item.ID,
 		AssetID:        item.AssetID,
 		Provider:       item.Provider,
-		StorageKey:     item.StorageKey,
 		Filename:       item.Filename,
 		FileSize:       item.FileSize,
 		MimeType:       item.MimeType,
@@ -28,12 +27,6 @@ func BuildAssetResponse(item *models.Asset, provider storage.FileStorageProvider
 		if url, err := provider.GetURL(item.StorageKey); err == nil {
 			ret.URL = url
 		}
-	}
-	if ret.CreatedAt == "0001-01-01 00:00:00" {
-		ret.CreatedAt = ""
-	}
-	if ret.UpdatedAt == "0001-01-01 00:00:00" {
-		ret.UpdatedAt = ""
 	}
 	return ret
 }

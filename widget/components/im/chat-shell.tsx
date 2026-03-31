@@ -50,6 +50,7 @@ export function ChatShell() {
     bootstrap,
     handleSendMessage,
     uploadMessageImage,
+    sendAttachment,
     retry,
     disconnectSocket,
     markConversationRead,
@@ -72,6 +73,7 @@ export function ChatShell() {
       bootstrap: state.bootstrap,
       handleSendMessage: state.handleSendMessage,
       uploadMessageImage: state.uploadMessageImage,
+      sendAttachment: state.sendAttachment,
       retry: state.retry,
       disconnectSocket: state.disconnectSocket,
       markConversationRead: state.markConversationRead,
@@ -266,6 +268,7 @@ export function ChatShell() {
             disabled={!conversation}
             onSend={handleSend}
             onUploadImage={uploadMessageImage}
+            onSendAttachment={sendAttachment}
           />
         </div>
 

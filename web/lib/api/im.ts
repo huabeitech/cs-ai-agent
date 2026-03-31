@@ -84,7 +84,6 @@ export type ImAsset = {
   id: number
   assetId: string
   provider: string
-  storageKey: string
   filename: string
   fileSize: number
   mimeType: string
@@ -210,6 +209,17 @@ export function uploadImImage(conversationId: number, file: File) {
   formData.set("conversationId", String(conversationId))
   formData.set("file", file)
   return request<ImAsset>("/api/open/im/message/upload_image", {
+    method: "POST",
+    headers: createImHeaders(),
+    body: formData,
+  })
+}
+
+export function uploadImAttachment(conversationId: number, file: File) {
+  const formData = new FormData()
+  formData.set("conversationId", String(conversationId))
+  formData.set("file", file)
+  return request<ImAsset>("/api/open/im/message/upload_attachment", {
     method: "POST",
     headers: createImHeaders(),
     body: formData,

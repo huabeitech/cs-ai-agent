@@ -25,6 +25,14 @@ func (r *assetRepository) Get(db *gorm.DB, id int64) *models.Asset {
 	return ret
 }
 
+func (r *assetRepository) GetByAssetID(db *gorm.DB, assetID string) *models.Asset {
+	ret := &models.Asset{}
+	if err := db.First(ret, "asset_id = ?", assetID).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *assetRepository) Take(db *gorm.DB, where ...interface{}) *models.Asset {
 	ret := &models.Asset{}
 	if err := db.Take(ret, where...).Error; err != nil {

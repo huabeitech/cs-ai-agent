@@ -5,7 +5,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import { ImageIcon, SendHorizonalIcon } from "lucide-react";
+import { ImageIcon, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
 
 type UploadedImage = {
   url: string;
@@ -14,23 +14,27 @@ type UploadedImage = {
 
 type MessageEditorProps = {
   disabled?: boolean;
-  uploadingImage?: boolean;
+  uploadingAsset?: boolean;
   onSend: (html: string) => Promise<void>;
   onUploadImage: (file: File) => Promise<UploadedImage | null>;
+  onSendAttachment: (file: File) => Promise<void>;
 };
 
 export function MessageEditor({
   disabled = false,
-  uploadingImage = false,
+  uploadingAsset = false,
   onSend,
   onUploadImage,
+  onSendAttachment,
 }: MessageEditorProps) {
   const [localUploading, setLocalUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const onSendRef = useRef(onSend);
   const onUploadImageRef = useRef(onUploadImage);
+  const onSendAttachmentRef = useRef(onSendAttachment);
   const shouldRestoreFocusRef = useRef(false);
-  const isUploading = uploadingImage || localUploading;
+  const isUploading = uploadingAsset || localUploading;
 
   useEffect(() => {
     onSendRef.current = onSend;
@@ -39,6 +43,10 @@ export function MessageEditor({
   useEffect(() => {
     onUploadImageRef.current = onUploadImage;
   }, [onUploadImage]);
+
+  useEffect(() => {
+    onSendAttachmentRef.current = onSendAttachment;
+  }, [onSendAttachment]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -168,6 +176,33 @@ export function MessageEditor({
     }
   }
 
+  async function handleSelectAttachment(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || disabled || isUploading) {
+      if (editor && shouldRestoreFocusRef.current) {
+        requestAnimationFrame(() => {
+          editor.commands.focus();
+        });
+      }
+      return;
+    }
+    shouldRestoreFocusRef.current = editor?.isFocused ?? true;
+    setLocalUploading(true);
+    try {
+      await onSendAttachmentRef.current(file);
+    } finally {
+      setLocalUploading(false);
+      requestAnimationFrame(() => {
+        if (editor && !disabled && shouldRestoreFocusRef.current) {
+          editor.commands.focus();
+        }
+      });
+    }
+  }
+
   return (
     <div className="px-3 pb-3 pt-2">
       <div className="rounded-3xl border border-white/60 bg-white/78 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur">
@@ -178,23 +213,44 @@ export function MessageEditor({
           className="hidden"
           onChange={handleSelectImage}
         />
+        <input
+          ref={attachmentInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleSelectAttachment}
+        />
         <div className="min-h-10">
           <EditorContent editor={editor} />
         </div>
         <div className="mt-1.5 flex items-center justify-between">
-          <button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              shouldRestoreFocusRef.current = editor?.isFocused ?? true;
-              imageInputRef.current?.click();
-            }}
-            disabled={disabled || isUploading}
-            aria-label={isUploading ? "图片上传中" : "发送图片"}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:text-slate-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
-          >
-            <ImageIcon className="size-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                shouldRestoreFocusRef.current = editor?.isFocused ?? true;
+                imageInputRef.current?.click();
+              }}
+              disabled={disabled || isUploading}
+              aria-label={isUploading ? "图片上传中" : "发送图片"}
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:text-slate-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
+            >
+              <ImageIcon className="size-4" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                shouldRestoreFocusRef.current = editor?.isFocused ?? true;
+                attachmentInputRef.current?.click();
+              }}
+              disabled={disabled || isUploading}
+              aria-label={isUploading ? "附件上传中" : "发送附件"}
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:text-slate-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
+            >
+              <PaperclipIcon className="size-4" />
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             <p className="text-[10px] text-slate-400">Enter 发送</p>
             <button

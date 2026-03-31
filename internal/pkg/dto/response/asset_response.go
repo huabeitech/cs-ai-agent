@@ -6,7 +6,6 @@ type AssetResponse struct {
 	ID             int64               `json:"id"`
 	AssetID        string              `json:"assetId"`
 	Provider       enums.AssetProvider `json:"provider"`
-	StorageKey     string              `json:"storageKey"`
 	Filename       string              `json:"filename"`
 	FileSize       int64               `json:"fileSize"`
 	MimeType       string              `json:"mimeType"`

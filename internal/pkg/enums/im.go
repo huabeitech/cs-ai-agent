@@ -123,15 +123,17 @@ func GetIMAssignmentStatusLabel(status IMAssignmentStatus) string {
 type IMMessageType string
 
 const (
-	IMMessageTypeText  IMMessageType = "text"
-	IMMessageTypeImage IMMessageType = "image"
-	IMMessageTypeHTML  IMMessageType = "html"
+	IMMessageTypeText       IMMessageType = "text"
+	IMMessageTypeImage      IMMessageType = "image"
+	IMMessageTypeAttachment IMMessageType = "attachment"
+	IMMessageTypeHTML       IMMessageType = "html"
 )
 
 var imMessageTypeLabelMap = map[IMMessageType]string{
-	IMMessageTypeText:  "文本",
-	IMMessageTypeImage: "图片",
-	IMMessageTypeHTML:  "富文本",
+	IMMessageTypeText:       "文本",
+	IMMessageTypeImage:      "图片",
+	IMMessageTypeAttachment: "附件",
+	IMMessageTypeHTML:       "富文本",
 }
 
 func GetIMMessageTypeLabel(messageType IMMessageType) string {

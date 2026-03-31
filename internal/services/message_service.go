@@ -2,6 +2,7 @@ package services
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
@@ -127,33 +128,33 @@ func (s *messageService) GetConversationReadTarget(conversationID, messageID int
 	return s.FindOne(sqls.NewCnd().Eq("conversation_id", conversationID).Desc("seq_no").Desc("id")), nil
 }
 
-func (s *messageService) SendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
+func (s *messageService) SendMessage(cfg *config.Config, conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
 	switch senderType {
 	case enums.IMSenderTypeAgent:
-		return s.sendMessage(conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
+		return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
 	case enums.IMSenderTypeAI:
-		return s.sendMessage(conversationID, enums.IMSenderTypeAI, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
+		return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAI, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
 	case enums.IMSenderTypeCustomer:
-		return s.sendMessage(conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, external)
+		return s.sendMessage(cfg, conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, external)
 	default:
 		return nil, errorsx.InvalidParam("不支持的发送人类型")
 	}
 }
 
-func (s *messageService) SendAgentMessage(conversationID int64, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal) (*models.Message, error) {
-	return s.sendMessage(conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
+func (s *messageService) SendAgentMessage(cfg *config.Config, conversationID int64, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal) (*models.Message, error) {
+	return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAgent, reqSenderID, clientMsgID, messageType, content, payload, operator, nil)
 }
 
-func (s *messageService) SendAIMessage(conversationID int64, aiAgentID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal) (*models.Message, error) {
-	return s.sendMessage(conversationID, enums.IMSenderTypeAI, aiAgentID, clientMsgID, messageType, content, payload, operator, nil)
+func (s *messageService) SendAIMessage(cfg *config.Config, conversationID int64, aiAgentID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal) (*models.Message, error) {
+	return s.sendMessage(cfg, conversationID, enums.IMSenderTypeAI, aiAgentID, clientMsgID, messageType, content, payload, operator, nil)
 }
 
-func (s *messageService) SendCustomerMessage(conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external openidentity.ExternalInfo) (*models.Message, error) {
+func (s *messageService) SendCustomerMessage(cfg *config.Config, conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external openidentity.ExternalInfo) (*models.Message, error) {
 	ext := external
-	return s.sendMessage(conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, &ext)
+	return s.sendMessage(cfg, conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, &ext)
 }
 
-func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
+func (s *messageService) sendMessage(cfg *config.Config, conversationID int64, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Message, error) {
 	if senderType == enums.IMSenderTypeCustomer {
 		if external == nil || strings.TrimSpace(external.ExternalID) == "" {
 			return nil, errorsx.Unauthorized("外部用户标识不能为空")
@@ -167,48 +168,19 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 	if strs.IsBlank(string(messageType)) {
 		messageType = enums.IMMessageTypeText
 	}
-	var summary string
-	var err error
-	content, summary, err = normalizeMessageContent(messageType, content, payload)
+	conversation, err := s.ValidateConversationSender(conversationID, senderType, operator, external)
 	if err != nil {
 		return nil, err
 	}
-	payload = strings.TrimSpace(payload)
+
+	var summary string
+	content, payload, summary, err = s.normalizeMessageContent(cfg, conversationID, messageType, content, payload)
+	if err != nil {
+		return nil, err
+	}
 	clientMsgID = strings.TrimSpace(clientMsgID)
 	if content == "" && payload == "" {
 		return nil, errorsx.InvalidParam("消息内容不能为空")
-	}
-
-	conversation := ConversationService.Get(conversationID)
-	if conversation == nil {
-		return nil, errorsx.InvalidParam("会话不存在")
-	}
-
-	if conversation.Status == enums.IMConversationStatusClosed {
-		return nil, errorsx.InvalidParam("会话已关闭")
-	}
-
-	switch senderType {
-	case enums.IMSenderTypeAgent:
-		if conversation.Status != enums.IMConversationStatusActive {
-			return nil, errorsx.InvalidParam("会话未分配客服，暂不允许发送消息")
-		}
-		if conversation.CurrentAssigneeID == 0 {
-			return nil, errorsx.InvalidParam("会话未分配客服，暂不允许发送消息")
-		}
-		if conversation.CurrentAssigneeID != 0 && conversation.CurrentAssigneeID != operator.UserID {
-			return nil, errorsx.Forbidden("当前会话已分配给其他客服")
-		}
-	case enums.IMSenderTypeAI:
-		if conversation.CurrentAssigneeID != 0 {
-			return nil, errorsx.Forbidden("当前会话已由人工客服接管")
-		}
-	case enums.IMSenderTypeCustomer:
-		if !ConversationService.IsCustomerConversationOwner(conversation, *external) {
-			return nil, errorsx.Forbidden("无权访问该会话")
-		}
-	default:
-		return nil, errorsx.InvalidParam("不支持的发送人类型")
 	}
 
 	var ret *models.Message
@@ -364,6 +336,8 @@ func buildMessageSummary(messageType enums.IMMessageType, content string) string
 	switch messageType {
 	case enums.IMMessageTypeImage:
 		return "[图片]"
+	case enums.IMMessageTypeAttachment:
+		return "[附件]"
 	case enums.IMMessageTypeHTML:
 		return buildHTMLSummary(content)
 	case "":
@@ -373,22 +347,85 @@ func buildMessageSummary(messageType enums.IMMessageType, content string) string
 	}
 }
 
-func normalizeMessageContent(messageType enums.IMMessageType, content, payload string) (string, string, error) {
+func (s *messageService) normalizeMessageContent(cfg *config.Config, conversationID int64, messageType enums.IMMessageType, content, payload string) (string, string, string, error) {
 	switch messageType {
 	case enums.IMMessageTypeHTML:
 		sanitized := sanitizeMessageHTML(content)
 		summary := buildHTMLSummary(sanitized)
 		if summary == "" {
-			return "", "", errorsx.InvalidParam("消息内容不能为空")
+			return "", "", "", errorsx.InvalidParam("消息内容不能为空")
 		}
-		return sanitized, summary, nil
+		return sanitized, "", summary, nil
+	case enums.IMMessageTypeImage, enums.IMMessageTypeAttachment:
+		assetPayload, err := parseIMMessageAssetPayload(payload)
+		if err != nil {
+			return "", "", "", err
+		}
+		asset := AssetService.GetByAssetID(assetPayload.AssetID)
+		if err := validateConversationAsset(asset, conversationID, messageType); err != nil {
+			return "", "", "", err
+		}
+		canonicalPayload, err := buildIMMessageAssetPayload(cfg, asset)
+		if err != nil {
+			return "", "", "", err
+		}
+		summary := "[附件]"
+		if messageType == enums.IMMessageTypeImage {
+			summary = "[图片]"
+		}
+		content = strings.TrimSpace(asset.Filename)
+		return content, canonicalPayload, summary + suffixFilenameForSummary(asset.Filename), nil
 	default:
 		content = strings.TrimSpace(content)
 		if content == "" && strings.TrimSpace(payload) == "" {
-			return "", "", errorsx.InvalidParam("消息内容不能为空")
+			return "", "", "", errorsx.InvalidParam("消息内容不能为空")
 		}
-		return content, buildMessageSummary(messageType, content), nil
+		return content, strings.TrimSpace(payload), buildMessageSummary(messageType, content), nil
 	}
+}
+
+func (s *messageService) ValidateConversationSender(conversationID int64, senderType enums.IMSenderType, operator *dto.AuthPrincipal, external *openidentity.ExternalInfo) (*models.Conversation, error) {
+	conversation := ConversationService.Get(conversationID)
+	if conversation == nil {
+		return nil, errorsx.InvalidParam("会话不存在")
+	}
+	if conversation.Status == enums.IMConversationStatusClosed {
+		return nil, errorsx.InvalidParam("会话已关闭")
+	}
+	switch senderType {
+	case enums.IMSenderTypeAgent:
+		if operator == nil {
+			return nil, errorsx.Unauthorized("未登录或登录已过期")
+		}
+		if conversation.Status != enums.IMConversationStatusActive || conversation.CurrentAssigneeID == 0 {
+			return nil, errorsx.InvalidParam("会话未分配客服，暂不允许发送消息")
+		}
+		if conversation.CurrentAssigneeID != operator.UserID {
+			return nil, errorsx.Forbidden("当前会话已分配给其他客服")
+		}
+	case enums.IMSenderTypeAI:
+		if operator == nil {
+			return nil, errorsx.Unauthorized("未登录或登录已过期")
+		}
+		if conversation.CurrentAssigneeID != 0 {
+			return nil, errorsx.Forbidden("当前会话已由人工客服接管")
+		}
+	case enums.IMSenderTypeCustomer:
+		if external == nil || !ConversationService.IsCustomerConversationOwner(conversation, *external) {
+			return nil, errorsx.Forbidden("无权访问该会话")
+		}
+	default:
+		return nil, errorsx.InvalidParam("不支持的发送人类型")
+	}
+	return conversation, nil
+}
+
+func suffixFilenameForSummary(filename string) string {
+	filename = strings.TrimSpace(filename)
+	if filename == "" {
+		return ""
+	}
+	return " " + filename
 }
 
 func readSeqNo(state *models.ConversationReadState) int64 {
