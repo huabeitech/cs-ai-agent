@@ -236,12 +236,14 @@ func (s *aiReplyService) writeRunLog(startedAt time.Time, message *models.Messag
 	}
 	plannedAction := ""
 	plannedSkillCode := ""
+	plannedToolCode := ""
 	planReason := ""
 	finalAction := ""
 	replyText := ""
 	if result != nil {
 		plannedAction = string(result.PlannedAction)
 		plannedSkillCode = strings.TrimSpace(result.PlannedSkillCode)
+		plannedToolCode = strings.TrimSpace(result.PlannedToolCode)
 		planReason = strings.TrimSpace(result.PlanReason)
 		finalAction = string(result.Action)
 		replyText = strings.TrimSpace(result.ReplyText)
@@ -264,6 +266,7 @@ func (s *aiReplyService) writeRunLog(startedAt time.Time, message *models.Messag
 		UserMessage:      strings.TrimSpace(question),
 		PlannedAction:    plannedAction,
 		PlannedSkillCode: plannedSkillCode,
+		PlannedToolCode:  plannedToolCode,
 		PlanReason:       planReason,
 		FinalAction:      finalAction,
 		ReplyText:        replyText,

@@ -1,11 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"slices"
 	"strings"
 	"time"
 
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
@@ -101,6 +103,7 @@ func (s *aIAgentService) UpdateAIAgent(req request.UpdateAIAgentRequest, operato
 		"fallback_message":      item.FallbackMessage,
 		"knowledge_ids":         item.KnowledgeIDs,
 		"skill_ids":             item.SkillIDs,
+		"allowed_mcp_tools":     item.AllowedMCPTools,
 		"remark":                item.Remark,
 		"update_user_id":        operator.UserID,
 		"update_user_name":      operator.Username,
@@ -175,6 +178,18 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 	if err != nil {
 		return nil, err
 	}
+	directTools, err := s.normalizeDirectTools(req.DirectTools)
+	if err != nil {
+		return nil, err
+	}
+	directToolsJSON := ""
+	if len(directTools) > 0 {
+		buf, marshalErr := json.Marshal(directTools)
+		if marshalErr != nil {
+			return nil, errorsx.InvalidParam("Direct Tools 配置格式不合法")
+		}
+		directToolsJSON = string(buf)
+	}
 	return &models.AIAgent{
 		Name:                name,
 		Description:         strings.TrimSpace(req.Description),
@@ -190,6 +205,7 @@ func (s *aIAgentService) buildAIAgentModel(id int64, req request.CreateAIAgentRe
 		FallbackMessage:     strings.TrimSpace(req.FallbackMessage),
 		KnowledgeIDs:        utils.JoinInt64s(knowledgeIDs),
 		SkillIDs:            utils.JoinInt64s(skillIDs),
+		AllowedMCPTools:     directToolsJSON,
 		Remark:              strings.TrimSpace(req.Remark),
 	}, nil
 }
@@ -260,6 +276,53 @@ func (s *aIAgentService) normalizeSkillIDs(input []int64) ([]int64, error) {
 		}
 		seen[id] = struct{}{}
 		ret = append(ret, id)
+	}
+	return ret, nil
+}
+
+func (s *aIAgentService) normalizeDirectTools(input []request.AIAgentMCPToolRequest) ([]request.AIAgentMCPToolRequest, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	cfg := config.Current()
+	if cfg == nil || !cfg.MCP.Enabled {
+		return nil, errorsx.InvalidParam("系统未启用 MCP，不能配置 Direct Tool")
+	}
+	ret := make([]request.AIAgentMCPToolRequest, 0, len(input))
+	seen := make(map[string]struct{})
+	for _, item := range input {
+		serverCode := strings.TrimSpace(item.ServerCode)
+		toolName := strings.TrimSpace(item.ToolName)
+		if serverCode == "" || toolName == "" {
+			return nil, errorsx.InvalidParam("Direct Tool 的 serverCode 和 toolName 不能为空")
+		}
+		server, ok := cfg.MCP.Servers[serverCode]
+		if !ok || !server.Enabled {
+			return nil, errorsx.InvalidParam("Direct Tool 绑定的 MCP 服务不存在或未启用")
+		}
+		key := serverCode + "/" + toolName
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		normalized := request.AIAgentMCPToolRequest{
+			ServerCode:  serverCode,
+			ToolName:    toolName,
+			Title:       strings.TrimSpace(item.Title),
+			Description: strings.TrimSpace(item.Description),
+		}
+		if len(item.Arguments) > 0 {
+			normalized.Arguments = make(map[string]string, len(item.Arguments))
+			for key, value := range item.Arguments {
+				key = strings.TrimSpace(key)
+				value = strings.TrimSpace(value)
+				if key == "" || value == "" {
+					continue
+				}
+				normalized.Arguments[key] = value
+			}
+		}
+		ret = append(ret, normalized)
 	}
 	return ret, nil
 }

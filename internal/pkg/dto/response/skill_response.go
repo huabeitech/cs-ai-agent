@@ -39,6 +39,7 @@ type AgentRunLogResponse struct {
 	UserMessage      string `json:"userMessage"`
 	PlannedAction    string `json:"plannedAction"`
 	PlannedSkillCode string `json:"plannedSkillCode"`
+	PlannedToolCode  string `json:"plannedToolCode"`
 	PlanReason       string `json:"planReason"`
 	FinalAction      string `json:"finalAction"`
 	ReplyText        string `json:"replyText"`

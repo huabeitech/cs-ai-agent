@@ -44,6 +44,7 @@ const actionOptions = [
   { value: "all", label: "全部动作" },
   { value: "rag", label: "RAG" },
   { value: "skill", label: "Skill" },
+  { value: "tool", label: "Tool" },
   { value: "handoff", label: "转人工" },
   { value: "reply", label: "回复" },
   { value: "fallback", label: "兜底" },
@@ -54,6 +55,8 @@ function actionBadgeVariant(action: string) {
     case "handoff":
       return "destructive" as const
     case "skill":
+      return "default" as const
+    case "tool":
       return "default" as const
     case "rag":
       return "secondary" as const
@@ -222,7 +225,7 @@ export default function DashboardAgentRunLogsPage() {
                 <TableHead className="w-[180px]">时间</TableHead>
                 <TableHead>用户问题</TableHead>
                 <TableHead className="w-[120px]">规划动作</TableHead>
-                <TableHead className="w-[140px]">Skill</TableHead>
+                <TableHead className="w-[180px]">Skill / Tool</TableHead>
                 <TableHead className="w-[120px]">最终动作</TableHead>
                 <TableHead className="w-[110px] text-right">耗时</TableHead>
                 <TableHead className="w-[96px] text-right">操作</TableHead>
@@ -257,8 +260,10 @@ export default function DashboardAgentRunLogsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {item.plannedSkillCode ? (
-                      <Badge variant="outline">{item.plannedSkillCode}</Badge>
+                    {item.plannedSkillCode || item.plannedToolCode ? (
+                      <Badge variant="outline">
+                        {item.plannedSkillCode || item.plannedToolCode}
+                      </Badge>
                     ) : (
                       "-"
                     )}
@@ -334,6 +339,7 @@ export default function DashboardAgentRunLogsPage() {
                     lines={[
                       `plannedAction: ${activeLog.plannedAction || "-"}`,
                       `plannedSkillCode: ${activeLog.plannedSkillCode || "-"}`,
+                      `plannedToolCode: ${activeLog.plannedToolCode || "-"}`,
                       `planReason: ${activeLog.planReason || "-"}`,
                     ]}
                   />

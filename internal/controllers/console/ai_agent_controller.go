@@ -1,6 +1,9 @@
 package console
 
 import (
+	"encoding/json"
+	"strings"
+
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
@@ -126,6 +129,10 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 		FallbackMessage:     item.FallbackMessage,
 		KnowledgeIDs:        utils.SplitInt64s(item.KnowledgeIDs),
 		SkillIDs:            utils.SplitInt64s(item.SkillIDs),
+		KnowledgeBaseNames:  make([]string, 0),
+		Skills:              make([]response.AIAgentSkillResponse, 0),
+		Teams:               make([]response.AIAgentTeamResponse, 0),
+		DirectTools:         make([]response.AIAgentMCPToolResponse, 0),
 		SortNo:              item.SortNo,
 		Remark:              item.Remark,
 		CreatedAt:           item.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -156,6 +163,20 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 				Code: skill.Code,
 				Name: skill.Name,
 			})
+		}
+	}
+	if raw := strings.TrimSpace(item.AllowedMCPTools); raw != "" {
+		var directTools []request.AIAgentMCPToolRequest
+		if err := json.Unmarshal([]byte(raw), &directTools); err == nil {
+			for _, tool := range directTools {
+				ret.DirectTools = append(ret.DirectTools, response.AIAgentMCPToolResponse{
+					ServerCode:  strings.TrimSpace(tool.ServerCode),
+					ToolName:    strings.TrimSpace(tool.ToolName),
+					Title:       strings.TrimSpace(tool.Title),
+					Description: strings.TrimSpace(tool.Description),
+					Arguments:   tool.Arguments,
+				})
+			}
 		}
 	}
 	return ret

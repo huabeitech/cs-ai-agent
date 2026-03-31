@@ -2,6 +2,14 @@ package request
 
 import "cs-agent/internal/pkg/enums"
 
+type AIAgentMCPToolRequest struct {
+	ServerCode  string            `json:"serverCode"`
+	ToolName    string            `json:"toolName"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Arguments   map[string]string `json:"arguments"`
+}
+
 type CreateAIConfigRequest struct {
 	Name             string            `json:"name"`
 	Provider         enums.AIProvider  `json:"provider"`
@@ -48,6 +56,7 @@ type CreateAIAgentRequest struct {
 	FallbackMessage     string                          `json:"fallbackMessage"`
 	KnowledgeIDs        []int64                         `json:"knowledgeIds"`
 	SkillIDs            []int64                         `json:"skillIds"`
+	DirectTools         []AIAgentMCPToolRequest         `json:"directTools"`
 	Remark              string                          `json:"remark"`
 }
 

@@ -16,6 +16,14 @@ type AIAgentSkillResponse struct {
 	Name string `json:"name"`
 }
 
+type AIAgentMCPToolResponse struct {
+	ServerCode  string            `json:"serverCode"`
+	ToolName    string            `json:"toolName"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Arguments   map[string]string `json:"arguments"`
+}
+
 type AIConfigResponse struct {
 	ID               int64             `json:"id"`
 	Name             string            `json:"name"`
@@ -82,6 +90,7 @@ type AIAgentResponse struct {
 	KnowledgeBaseNames  []string                        `json:"knowledgeBaseNames"`
 	SkillIDs            []int64                         `json:"skillIds"`
 	Skills              []AIAgentSkillResponse          `json:"skills"`
+	DirectTools         []AIAgentMCPToolResponse        `json:"directTools"`
 	SortNo              int                             `json:"sortNo"`
 	Remark              string                          `json:"remark"`
 	CreatedAt           string                          `json:"createdAt"`

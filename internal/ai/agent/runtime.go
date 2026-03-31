@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"strings"
 
@@ -15,14 +16,16 @@ import (
 )
 
 type Runtime struct {
-	ragExecutor *ragExecutor
-	planner     *planner
+	ragExecutor  *ragExecutor
+	toolExecutor *toolExecutor
+	planner      *planner
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
-		ragExecutor: newRAGExecutor(),
-		planner:     newPlanner(),
+		ragExecutor:  newRAGExecutor(),
+		toolExecutor: newToolExecutor(),
+		planner:      newPlanner(),
 	}
 }
 
@@ -57,6 +60,8 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 	switch plan.Action {
 	case ActionSkill:
 		return r.runPlannedSkillOrRAG(ctx, turnCtx, question, plan)
+	case ActionTool:
+		return r.runPlannedToolOrRAG(ctx, turnCtx, question, plan)
 	case ActionHandoff:
 		return &TurnResult{
 			Action:           ActionHandoff,
@@ -64,6 +69,7 @@ func (r *Runtime) RunConversationTurn(ctx context.Context, turnCtx TurnContext) 
 			Reason:           plan.Reason,
 			PlannedAction:    plan.Action,
 			PlannedSkillCode: plan.SkillCode,
+			PlannedToolCode:  plannedToolCode(plan),
 			PlanReason:       plan.Reason,
 		}, nil
 	}
@@ -83,6 +89,26 @@ func (r *Runtime) runPlannedSkillOrRAG(ctx context.Context, turnCtx TurnContext,
 	ragResult, ragErr := r.ragExecutor.Execute(ctx, turnCtx, question)
 	if ragResult != nil {
 		ragResult.PlanReason = normalizeReason(plan.Reason, "planner_skill")
+	}
+	if ragErr != nil {
+		return ragResult, ragErr
+	}
+	return ragResult, nil
+}
+
+func (r *Runtime) runPlannedToolOrRAG(ctx context.Context, turnCtx TurnContext, question string, plan *Plan) (*TurnResult, error) {
+	if plan == nil || plan.Tool == nil {
+		return r.ragExecutor.Execute(ctx, turnCtx, question)
+	}
+	result, err := r.runDirectTool(ctx, turnCtx, question, plan.Tool, normalizeReason(plan.Reason, "planner_tool"))
+	if err == nil && result != nil && result.Action == ActionReply {
+		return result, nil
+	}
+	ragResult, ragErr := r.ragExecutor.Execute(ctx, turnCtx, question)
+	if ragResult != nil {
+		ragResult.PlannedAction = ActionTool
+		ragResult.PlannedToolCode = plan.Tool.Code()
+		ragResult.PlanReason = normalizeReason(plan.Reason, "planner_tool")
 	}
 	if ragErr != nil {
 		return ragResult, ragErr
@@ -140,6 +166,20 @@ func (r *Runtime) runManualSkill(ctx context.Context, turnCtx TurnContext, quest
 	}, nil
 }
 
+func (r *Runtime) runDirectTool(ctx context.Context, turnCtx TurnContext, question string, tool *MCPTool, planReason string) (*TurnResult, error) {
+	if !isToolAllowed(turnCtx.AIAgent, tool) {
+		return &TurnResult{
+			Action:          ActionFallback,
+			Question:        question,
+			Reason:          "Tool未绑定到当前Agent",
+			PlannedAction:   ActionTool,
+			PlannedToolCode: tool.Code(),
+			PlanReason:      planReason,
+		}, errorsx.Forbidden("Tool 未绑定到当前 AI Agent")
+	}
+	return r.toolExecutor.Execute(ctx, turnCtx, question, tool, planReason)
+}
+
 func (r *Runtime) buildQuestion(message *models.Message, conversation *models.Conversation) string {
 	if message == nil {
 		return ""
@@ -178,4 +218,27 @@ func isSkillAllowed(agent *models.AIAgent, skillCode string) bool {
 		return false
 	}
 	return slices.Contains(utils.SplitInt64s(agent.SkillIDs), skill.ID)
+}
+
+func isToolAllowed(agent *models.AIAgent, tool *MCPTool) bool {
+	if agent == nil || tool == nil || strings.TrimSpace(agent.AllowedMCPTools) == "" {
+		return false
+	}
+	var allowedTools []MCPTool
+	if err := json.Unmarshal([]byte(agent.AllowedMCPTools), &allowedTools); err != nil {
+		return false
+	}
+	for _, item := range allowedTools {
+		if item.Code() == tool.Code() {
+			return true
+		}
+	}
+	return false
+}
+
+func plannedToolCode(plan *Plan) string {
+	if plan == nil || plan.Tool == nil {
+		return ""
+	}
+	return plan.Tool.Code()
 }

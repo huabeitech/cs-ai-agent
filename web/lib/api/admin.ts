@@ -211,6 +211,13 @@ export type AIAgent = {
   knowledgeBaseNames: string[]
   skillIds: number[]
   skills: { id: number; code: string; name: string }[]
+  directTools: {
+    serverCode: string
+    toolName: string
+    title: string
+    description: string
+    arguments?: Record<string, string>
+  }[]
   sortNo: number
   remark: string
   createdAt: string
@@ -234,6 +241,13 @@ export type CreateAIAgentPayload = {
   fallbackMessage: string
   knowledgeIds: number[]
   skillIds: number[]
+  directTools: {
+    serverCode: string
+    toolName: string
+    title: string
+    description: string
+    arguments?: Record<string, string>
+  }[]
   remark: string
 }
 
@@ -332,6 +346,7 @@ export type AgentRunLog = {
   userMessage: string
   plannedAction: string
   plannedSkillCode: string
+  plannedToolCode: string
   planReason: string
   finalAction: string
   replyText: string

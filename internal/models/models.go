@@ -407,6 +407,7 @@ type AIAgent struct {
 	FallbackMessage     string                          `gorm:"type:text"`                                   // FallbackMessage 为兜底回复文案。
 	KnowledgeIDs        string                          `gorm:"type:varchar(500);not null;default:''"`       // KnowledgeIDs 为绑定的知识库ID列表，按顺序表示优先级。
 	SkillIDs            string                          `gorm:"type:varchar(500);not null;default:''"`       // SkillIDs 为绑定的技能ID列表，按顺序表示允许路由的范围。
+	AllowedMCPTools     string                          `gorm:"type:text"`                                   // AllowedMCPTools 为允许 direct tool 路由的 MCP 工具白名单配置JSON。
 	SortNo              int                             `gorm:"type:int;not null;default:0;index"`           // SortNo 为后台展示排序号。
 	Remark              string                          `gorm:"type:text"`                                   // Remark 为备注。
 	AuditFields
@@ -670,6 +671,7 @@ type AgentRunLog struct {
 	UserMessage      string    `gorm:"type:longtext"`
 	PlannedAction    string    `gorm:"type:varchar(30);not null;default:'';index"`
 	PlannedSkillCode string    `gorm:"type:varchar(100);not null;default:'';index"`
+	PlannedToolCode  string    `gorm:"type:varchar(200);not null;default:'';index"`
 	PlanReason       string    `gorm:"type:varchar(500);not null;default:''"`
 	FinalAction      string    `gorm:"type:varchar(30);not null;default:'';index"`
 	ReplyText        string    `gorm:"type:longtext"`

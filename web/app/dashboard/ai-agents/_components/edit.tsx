@@ -43,6 +43,8 @@ import {
   fetchAgentTeamsAll,
   fetchKnowledgeBasesAll,
   fetchSkillDefinitionsAll,
+  listMCPServers,
+  listMCPTools,
 } from "@/lib/api/admin";
 import {
   AIAgentFallbackMode,
@@ -151,6 +153,7 @@ function buildPayload(
   knowledgeIds: number[],
   teamIds: number[],
   skillIds: number[],
+  directTools: CreateAIAgentPayload["directTools"],
 ): CreateAIAgentPayload {
   return {
     name: form.name.trim(),
@@ -167,6 +170,7 @@ function buildPayload(
     fallbackMessage: form.fallbackMessage.trim(),
     knowledgeIds,
     skillIds,
+    directTools,
     remark: form.remark.trim(),
   };
 }
@@ -226,10 +230,17 @@ function EditDialogBody({
   const [knowledgeToAdd, setKnowledgeToAdd] = useState("");
   const [teamToAdd, setTeamToAdd] = useState("");
   const [skillToAdd, setSkillToAdd] = useState("");
+  const [directToolToAdd, setDirectToolToAdd] = useState("");
   const [aiConfigs, setAIConfigs] = useState<AIConfig[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [agentTeams, setAgentTeams] = useState<AdminAgentTeam[]>([]);
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
+  const [directTools, setDirectTools] = useState<
+    CreateAIAgentPayload["directTools"]
+  >([]);
+  const [directToolOptions, setDirectToolOptions] = useState<
+    { value: string; label: string; meta: CreateAIAgentPayload["directTools"][number] }[]
+  >([]);
 
   useEffect(() => {
     async function loadDetail() {
@@ -238,9 +249,11 @@ function EditDialogBody({
         setSelectedKnowledgeIds([]);
         setSelectedTeamIds([]);
         setSelectedSkillIds([]);
+        setDirectTools([]);
         setKnowledgeToAdd("");
         setTeamToAdd("");
         setSkillToAdd("");
+        setDirectToolToAdd("");
         return;
       }
       setLoading(true);
@@ -250,9 +263,11 @@ function EditDialogBody({
         setSelectedKnowledgeIds(data.knowledgeIds ?? []);
         setSelectedTeamIds((data.teams ?? []).map((team) => team.id));
         setSelectedSkillIds(data.skillIds ?? []);
+        setDirectTools(data.directTools ?? []);
         setKnowledgeToAdd("");
         setTeamToAdd("");
         setSkillToAdd("");
+        setDirectToolToAdd("");
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "加载 AI Agent 详情失败",
@@ -318,6 +333,37 @@ function EditDialogBody({
       }
     }
     void loadSkills();
+  }, []);
+
+  useEffect(() => {
+    async function loadDirectToolOptions() {
+      try {
+        const servers = await listMCPServers();
+        const enabledServers = servers.filter((item) => item.enabled);
+        const toolGroups = await Promise.all(
+          enabledServers.map(async (server) => {
+            const tools = await listMCPTools(server.code);
+            return tools.map((tool) => ({
+              value: `${server.code}/${tool.name}`,
+              label: `${server.code} / ${tool.title || tool.name}`,
+              meta: {
+                serverCode: server.code,
+                toolName: tool.name,
+                title: tool.title || tool.name,
+                description: tool.description || "",
+                arguments: undefined,
+              },
+            }));
+          }),
+        );
+        setDirectToolOptions(toolGroups.flat());
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "加载 Direct Tools 失败",
+        );
+      }
+    }
+    void loadDirectToolOptions();
   }, []);
 
   const aiConfigOptions = useMemo(
@@ -394,6 +440,18 @@ function EditDialogBody({
     [selectedSkillIds, skillOptions],
   );
 
+  const addableDirectToolOptions = useMemo(
+    () =>
+      directToolOptions.filter(
+        (option) =>
+          !directTools.some(
+            (tool) =>
+              `${tool.serverCode}/${tool.toolName}` === option.value,
+          ),
+      ),
+    [directToolOptions, directTools],
+  );
+
   const addableTeamOptions = useMemo(
     () =>
       teamOptions.filter(
@@ -421,6 +479,7 @@ function EditDialogBody({
         selectedKnowledgeIds,
         selectedTeamIds,
         selectedSkillIds,
+        directTools,
       ),
     );
   }
@@ -476,6 +535,32 @@ function EditDialogBody({
 
   function handleRemoveSkill(id: number) {
     setSelectedSkillIds((prev) => prev.filter((item) => item !== id));
+  }
+
+  function handleAddDirectTool(value: string) {
+    const option = directToolOptions.find((item) => item.value === value);
+    if (!option) {
+      return;
+    }
+    setDirectTools((prev) => {
+      if (
+        prev.some(
+          (item) =>
+            item.serverCode === option.meta.serverCode &&
+            item.toolName === option.meta.toolName,
+        )
+      ) {
+        return prev;
+      }
+      return [...prev, option.meta];
+    });
+    setDirectToolToAdd("");
+  }
+
+  function handleRemoveDirectTool(value: string) {
+    setDirectTools((prev) =>
+      prev.filter((item) => `${item.serverCode}/${item.toolName}` !== value),
+    );
   }
 
   return (
@@ -857,6 +942,63 @@ function EditDialogBody({
                       </Button>
                     </Badge>
                   ))
+                )}
+              </div>
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel>Direct MCP Tools</FieldLabel>
+            <FieldContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <OptionCombobox
+                    value={directToolToAdd}
+                    options={addableDirectToolOptions}
+                    placeholder="选择并添加 Direct Tool"
+                    searchPlaceholder="搜索 Direct Tool"
+                    emptyText="没有可添加的 Direct Tool"
+                    onChange={handleAddDirectTool}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!directToolToAdd}
+                  onClick={() => handleAddDirectTool(directToolToAdd)}
+                >
+                  <PlusIcon />
+                  添加
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {directTools.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    不配置 Direct Tool 时，Agent 不会直接访问 MCP，只能通过 Skill 间接调用。
+                  </span>
+                ) : (
+                  directTools.map((tool) => {
+                    const value = `${tool.serverCode}/${tool.toolName}`;
+                    return (
+                      <Badge
+                        key={value}
+                        variant="secondary"
+                        className="gap-1 pr-1"
+                      >
+                        {tool.title || value}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-5"
+                          onClick={() => handleRemoveDirectTool(value)}
+                          aria-label={`移除 Direct Tool ${value}`}
+                        >
+                          <Trash2Icon className="size-3" />
+                        </Button>
+                      </Badge>
+                    );
+                  })
                 )}
               </div>
             </FieldContent>

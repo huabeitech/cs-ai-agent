@@ -19,9 +19,11 @@ import (
 type planner struct{}
 
 type plannerResult struct {
-	Action    string `json:"action"`
-	SkillCode string `json:"skillCode"`
-	Reason    string `json:"reason"`
+	Action     string `json:"action"`
+	SkillCode  string `json:"skillCode"`
+	ServerCode string `json:"serverCode"`
+	ToolName   string `json:"toolName"`
+	Reason     string `json:"reason"`
 }
 
 func newPlanner() *planner {
@@ -30,7 +32,8 @@ func newPlanner() *planner {
 
 func (p *planner) Plan(ctx context.Context, turnCtx TurnContext, question string) (*Plan, error) {
 	skills := p.loadCandidateSkills(turnCtx)
-	if len(skills) == 0 || turnCtx.AIConfig == nil {
+	tools := p.loadCandidateTools(turnCtx)
+	if (len(skills) == 0 && len(tools) == 0) || turnCtx.AIConfig == nil {
 		return &Plan{
 			Action: ActionReply,
 			Reason: "fallback_to_rag",
@@ -38,7 +41,7 @@ func (p *planner) Plan(ctx context.Context, turnCtx TurnContext, question string
 	}
 
 	systemPrompt := buildPlannerSystemPrompt()
-	userPrompt := buildPlannerUserPrompt(turnCtx, question, skills)
+	userPrompt := buildPlannerUserPrompt(turnCtx, question, skills, tools)
 	result, err := ai.LLM.ChatWithConfig(ctx, turnCtx.AIConfig, systemPrompt, userPrompt)
 	if err != nil {
 		return &Plan{
@@ -53,7 +56,7 @@ func (p *planner) Plan(ctx context.Context, turnCtx TurnContext, question string
 			Reason: "planner_invalid_fallback_to_rag",
 		}, nil
 	}
-	return p.normalizePlan(parsed, skills), nil
+	return p.normalizePlan(parsed, skills, tools), nil
 }
 
 func (p *planner) loadCandidateSkills(turnCtx TurnContext) []models.SkillDefinition {
@@ -84,7 +87,31 @@ func (p *planner) loadCandidateSkills(turnCtx TurnContext) []models.SkillDefinit
 	return ordered
 }
 
-func (p *planner) normalizePlan(parsed plannerResult, skills []models.SkillDefinition) *Plan {
+func (p *planner) loadCandidateTools(turnCtx TurnContext) []MCPTool {
+	if turnCtx.AIAgent == nil || strings.TrimSpace(turnCtx.AIAgent.AllowedMCPTools) == "" {
+		return nil
+	}
+	var tools []MCPTool
+	if err := json.Unmarshal([]byte(turnCtx.AIAgent.AllowedMCPTools), &tools); err != nil {
+		return nil
+	}
+	ret := make([]MCPTool, 0, len(tools))
+	seen := make(map[string]struct{})
+	for _, tool := range tools {
+		code := tool.Code()
+		if strings.TrimSpace(code) == "/" || strings.TrimSpace(code) == "" {
+			continue
+		}
+		if _, exists := seen[code]; exists {
+			continue
+		}
+		seen[code] = struct{}{}
+		ret = append(ret, tool)
+	}
+	return ret
+}
+
+func (p *planner) normalizePlan(parsed plannerResult, skills []models.SkillDefinition, tools []MCPTool) *Plan {
 	action := Action(strings.TrimSpace(strings.ToLower(parsed.Action)))
 	switch action {
 	case ActionSkill:
@@ -94,6 +121,15 @@ func (p *planner) normalizePlan(parsed plannerResult, skills []models.SkillDefin
 				Action:    ActionSkill,
 				SkillCode: skillCode,
 				Reason:    strings.TrimSpace(parsed.Reason),
+			}
+		}
+	case ActionTool:
+		tool := findTool(tools, parsed.ServerCode, parsed.ToolName)
+		if tool != nil {
+			return &Plan{
+				Action: ActionTool,
+				Tool:   tool,
+				Reason: normalizeReason(parsed.Reason, "planner_tool"),
 			}
 		}
 	case ActionHandoff:
@@ -114,20 +150,21 @@ func (p *planner) normalizePlan(parsed plannerResult, skills []models.SkillDefin
 }
 
 func buildPlannerSystemPrompt() string {
-	return strings.TrimSpace(`你是客服对话路由器。你的任务不是直接回答用户，而是在 rag、skill、handoff 三种动作中选择一个。
+	return strings.TrimSpace(`你是客服对话路由器。你的任务不是直接回答用户，而是在 rag、skill、tool、handoff 四种动作中选择一个。
 
 输出必须是 JSON，字段如下：
-{"action":"rag|skill|handoff","skillCode":"","reason":""}
+{"action":"rag|skill|tool|handoff","skillCode":"","serverCode":"","toolName":"","reason":""}
 
 规则：
 1. 如果问题适合由某个已提供的 skill 处理，返回 action=skill，并填写准确的 skillCode。
-2. 如果问题明显需要人工介入、投诉升级、超出机器人能力边界，返回 action=handoff。
-3. 其他情况返回 action=rag。
-4. 只能从给定 skill 列表中选择，不允许编造 skillCode。
-5. 不要输出 markdown，不要输出解释，只输出 JSON。`)
+2. 如果问题适合由某个已提供的 direct tool 直接处理，返回 action=tool，并填写准确的 serverCode 和 toolName。
+3. 如果问题明显需要人工介入、投诉升级、超出机器人能力边界，返回 action=handoff。
+4. 其他情况返回 action=rag。
+5. skillCode、serverCode、toolName 只能从给定列表中选择，不允许编造。
+6. 不要输出 markdown，不要输出解释，只输出 JSON。`)
 }
 
-func buildPlannerUserPrompt(turnCtx TurnContext, question string, skills []models.SkillDefinition) string {
+func buildPlannerUserPrompt(turnCtx TurnContext, question string, skills []models.SkillDefinition, tools []MCPTool) string {
 	var builder strings.Builder
 	builder.WriteString("AI Agent：\n")
 	if turnCtx.AIAgent != nil {
@@ -141,6 +178,15 @@ func buildPlannerUserPrompt(turnCtx TurnContext, question string, skills []model
 			skill.Name,
 			strings.TrimSpace(skill.Description),
 			skill.ExecutionMode,
+		))
+	}
+	builder.WriteString("\n可用 Direct Tools：\n")
+	for _, tool := range tools {
+		builder.WriteString(fmt.Sprintf("- serverCode=%s; toolName=%s; title=%s; description=%s\n",
+			tool.ServerCode,
+			tool.ToolName,
+			strings.TrimSpace(tool.Title),
+			strings.TrimSpace(tool.Description),
 		))
 	}
 	builder.WriteString("\n用户问题：\n")
@@ -176,6 +222,19 @@ func hasSkill(skills []models.SkillDefinition, skillCode string) bool {
 		}
 	}
 	return false
+}
+
+func findTool(tools []MCPTool, serverCode string, toolName string) *MCPTool {
+	serverCode = strings.TrimSpace(serverCode)
+	toolName = strings.TrimSpace(toolName)
+	index := slices.IndexFunc(tools, func(tool MCPTool) bool {
+		return tool.ServerCode == serverCode && tool.ToolName == toolName
+	})
+	if index < 0 {
+		return nil
+	}
+	tool := tools[index]
+	return &tool
 }
 
 func normalizeReason(reason string, fallback string) string {
