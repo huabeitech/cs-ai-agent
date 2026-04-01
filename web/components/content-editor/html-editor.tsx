@@ -34,6 +34,7 @@ import {
   UnderlineIcon,
 } from "lucide-react"
 
+import { EditorModeSwitch } from "./editor-mode-switch"
 import { EditorToolbar } from "./toolbar"
 import type { ContentMode, EditorToolbarAction, UploadImageHandler } from "./types"
 
@@ -174,20 +175,15 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
 
     const actions: EditorToolbarAction[] = [
       {
-        key: "mode-markdown",
-        label: "Markdown 模式",
-        content: "Markdown",
-        disabled,
-        pressed: mode === "markdown",
-        onClick: () => onModeChange("markdown"),
-      },
-      {
-        key: "mode-html",
-        label: "HTML 模式",
-        content: "HTML",
-        disabled,
-        pressed: mode === "html",
-        onClick: () => onModeChange("html"),
+        key: "mode-switch",
+        type: "custom",
+        content: (
+          <EditorModeSwitch
+            value={mode}
+            disabled={disabled}
+            onChange={onModeChange}
+          />
+        ),
       },
       { key: "separator-mode", type: "separator" },
       {

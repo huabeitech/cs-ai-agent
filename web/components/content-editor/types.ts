@@ -30,6 +30,13 @@ export type EditorToolbarSeparatorAction = {
   type: "separator"
 }
 
+export type EditorToolbarCustomAction = {
+  key: string
+  type: "custom"
+  content: ReactNode
+}
+
 export type EditorToolbarAction =
   | EditorToolbarButtonAction
   | EditorToolbarSeparatorAction
+  | EditorToolbarCustomAction

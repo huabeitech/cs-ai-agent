@@ -8,17 +8,12 @@ import {
   useRef,
 } from "react"
 import { Maximize2Icon, Minimize2Icon } from "lucide-react"
-import {
-  MdEditor,
-  NormalToolbar,
-  type ExposeParam,
-} from "md-editor-rt"
+import { MdEditor, NormalToolbar, type ExposeParam } from "md-editor-rt"
 import { useTheme } from "next-themes"
 
 import "./markdown-editor.css"
 
-import { cn } from "@/lib/utils"
-
+import { EditorModeSwitch } from "./editor-mode-switch"
 import type { ContentMode, UploadImageHandler } from "./types"
 
 export type MarkdownEditorRef = {
@@ -59,26 +54,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     const { resolvedTheme } = useTheme()
     const defToolbars = useMemo(
       () => [
-        <NormalToolbar
-          key="switch-markdown"
-          title="Markdown 模式"
+        <EditorModeSwitch
+          key="mode-switch"
+          value={mode}
           disabled={disabled}
-          onClick={() => {
-            onModeChange("markdown")
-          }}
-        >
-          <span className={cn("text-[12px] leading-none whitespace-nowrap")}>Markdown</span>
-        </NormalToolbar>,
-        <NormalToolbar
-          key="switch-html"
-          title="HTML 模式"
-          disabled={disabled}
-          onClick={() => {
-            onModeChange("html")
-          }}
-        >
-          <span className={cn("text-[12px] leading-none whitespace-nowrap")}>HTML</span>
-        </NormalToolbar>,
+          onChange={onModeChange}
+        />,
         <NormalToolbar
           key="toggle-fullscreen"
           title={fullscreen ? "退出全屏" : "全屏"}
@@ -115,7 +96,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             preview={false}
             toolbars={[
               0,
-              1,
               "-",
               "bold",
               "underline",
@@ -134,7 +114,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               "-",
               "revoke",
               "next",
-              2,
+              1,
               "=",
               "preview",
               "previewOnly",

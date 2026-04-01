@@ -18,6 +18,12 @@ function isSeparatorAction(
   return "type" in action && action.type === "separator"
 }
 
+function isCustomAction(
+  action: EditorToolbarAction
+): action is Extract<EditorToolbarAction, { type: "custom" }> {
+  return "type" in action && action.type === "custom"
+}
+
 export function EditorToolbar({ actions }: EditorToolbarProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const dragStateRef = useRef<{
@@ -91,6 +97,10 @@ export function EditorToolbar({ actions }: EditorToolbarProps) {
                   className="relative mx-2 inline-block h-[0.9em] w-px self-center bg-border"
                 />
               )
+            }
+
+            if (isCustomAction(action)) {
+              return <div key={action.key}>{action.content}</div>
             }
 
             const Icon = action.icon
