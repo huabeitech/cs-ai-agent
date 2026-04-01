@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
 
 export type ContentMode = "markdown" | "html"
 
@@ -18,7 +18,8 @@ export type UploadImageHandler = (file: File) => Promise<UploadImageResult | nul
 export type EditorToolbarButtonAction = {
   key: string
   label: string
-  icon: ComponentType<{ className?: string }>
+  icon?: ComponentType<{ className?: string }>
+  content?: ReactNode
   onClick: () => void
   disabled?: boolean
   pressed?: boolean

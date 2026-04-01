@@ -1,8 +1,9 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 import { htmlToMarkdown, markdownToHtml } from "./convert"
 import { HtmlEditor } from "./html-editor"
@@ -48,6 +49,33 @@ export function ContentEditor({
   height,
 }: ContentEditorProps) {
   const editorHeight = normalizeHeight(height)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!fullscreen) {
+      return
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFullscreen(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [fullscreen])
 
   const handleModeChange = useCallback(
     (nextMode: ContentMode) => {
@@ -75,50 +103,48 @@ export function ContentEditor({
     [disabled, onChange, value.mode, value.raw]
   )
 
-  return (
-    <div className="w-full space-y-3">
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant={value.mode === "markdown" ? "default" : "outline"}
-          size="sm"
-          disabled={disabled}
-          onClick={() => handleModeChange("markdown")}
-        >
-          Markdown
-        </Button>
-        <Button
-          type="button"
-          variant={value.mode === "html" ? "default" : "outline"}
-          size="sm"
-          disabled={disabled}
-          onClick={() => handleModeChange("html")}
-        >
-          HTML
-        </Button>
-      </div>
-
+  const content = (
+    <div
+      className={cn(
+        "w-full",
+        fullscreen && "fixed inset-0 z-[10000] overflow-hidden bg-background p-4"
+      )}
+    >
       {value.mode === "markdown" ? (
         <MarkdownEditor
           value={value.raw}
           onChange={(nextRaw) => onChange({ mode: "markdown", raw: nextRaw })}
+          mode={value.mode}
+          onModeChange={handleModeChange}
+          fullscreen={fullscreen}
+          onToggleFullscreen={() => setFullscreen((current) => !current)}
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
-          height={editorHeight}
+          height={fullscreen ? "calc(100vh - 5rem)" : editorHeight}
         />
       ) : (
         <HtmlEditor
           value={value.raw}
           onChange={(nextRaw) => onChange({ mode: "html", raw: nextRaw })}
+          mode={value.mode}
+          onModeChange={handleModeChange}
+          fullscreen={fullscreen}
+          onToggleFullscreen={() => setFullscreen((current) => !current)}
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
-          height={editorHeight}
+          height={fullscreen ? "calc(100vh - 5rem)" : editorHeight}
         />
       )}
     </div>
   )
+
+  if (fullscreen && mounted) {
+    return createPortal(content, document.body)
+  }
+
+  return content
 }
 
 export type { ContentMode, ContentValue, UploadImageHandler, UploadImageResult } from "./types"

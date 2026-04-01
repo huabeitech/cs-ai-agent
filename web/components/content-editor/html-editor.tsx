@@ -16,7 +16,6 @@ import Underline from "@tiptap/extension-underline"
 import {
   BoldIcon,
   Code2Icon,
-  UnderlineIcon,
   Heading1Icon,
   Heading2Icon,
   ImageIcon,
@@ -28,10 +27,13 @@ import {
   RedoIcon,
   RotateCcwIcon,
   StrikethroughIcon,
+  Maximize2Icon,
+  Minimize2Icon,
+  UnderlineIcon,
 } from "lucide-react"
 
 import { EditorToolbar } from "./toolbar"
-import type { EditorToolbarAction, UploadImageHandler } from "./types"
+import type { ContentMode, EditorToolbarAction, UploadImageHandler } from "./types"
 
 export type HtmlEditorRef = {
   focus: () => void
@@ -40,6 +42,10 @@ export type HtmlEditorRef = {
 type HtmlEditorProps = {
   value: string
   onChange: (nextValue: string) => void
+  mode: ContentMode
+  onModeChange: (nextMode: ContentMode) => void
+  fullscreen: boolean
+  onToggleFullscreen: () => void
   placeholder?: string
   disabled?: boolean
   onUploadImage?: UploadImageHandler
@@ -51,6 +57,10 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
     {
       value,
       onChange,
+      mode,
+      onModeChange,
+      fullscreen,
+      onToggleFullscreen,
       placeholder = "请输入内容...",
       disabled = false,
       onUploadImage,
@@ -155,6 +165,23 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
     }
 
     const actions: EditorToolbarAction[] = [
+      {
+        key: "mode-markdown",
+        label: "Markdown 模式",
+        content: "Markdown",
+        disabled,
+        pressed: mode === "markdown",
+        onClick: () => onModeChange("markdown"),
+      },
+      {
+        key: "mode-html",
+        label: "HTML 模式",
+        content: "HTML",
+        disabled,
+        pressed: mode === "html",
+        onClick: () => onModeChange("html"),
+      },
+      { key: "separator-mode", type: "separator" },
       {
         key: "bold",
         label: "粗体",
@@ -275,6 +302,15 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
         icon: RedoIcon,
         disabled: disabled || !editor?.can().redo(),
         onClick: () => editor?.chain().focus().redo().run(),
+      },
+      { key: "separator-fullscreen", type: "separator" },
+      {
+        key: "fullscreen",
+        label: fullscreen ? "退出全屏" : "全屏",
+        icon: fullscreen ? Minimize2Icon : Maximize2Icon,
+        disabled,
+        pressed: fullscreen,
+        onClick: onToggleFullscreen,
       },
     ]
 
