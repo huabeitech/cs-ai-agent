@@ -80,7 +80,7 @@ export function EditorToolbar({ actions }: EditorToolbarProps) {
   return (
     <div
       ref={containerRef}
-      className="content-editor-toolbar overflow-x-auto overflow-y-hidden border-b border-border px-1 py-1"
+      className="content-editor-toolbar overflow-x-auto overflow-y-hidden border-b border-border px-1 py-1 h-9.25"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}

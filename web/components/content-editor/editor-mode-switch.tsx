@@ -21,8 +21,8 @@ export function EditorModeSwitch({
   onChange,
 }: EditorModeSwitchProps) {
   return (
-    <div className="mx-[2px] rounded-[3px] border border-border/80 bg-transparent p-0">
-      <div className="flex items-center gap-[2px]">
+    <div className="mx-0.5 rounded-[3px] border border-border/80 bg-transparent p-0">
+      <div className="flex items-center">
         {MODE_OPTIONS.map((option) => {
           const active = option.value === value
           return (
@@ -32,7 +32,7 @@ export function EditorModeSwitch({
               disabled={disabled}
               onClick={() => onChange(option.value)}
               className={cn(
-                "rounded-[3px] px-[6px] py-0 text-[12px] leading-6 whitespace-nowrap transition-colors",
+                "px-1.5 py-0 text-[12px] leading-6 whitespace-nowrap transition-colors",
                 "hover:bg-[#f2f2f2] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#333]",
                 active
                   ? "bg-[#f2f2f2] text-[#3f4a54] dark:bg-[#333] dark:text-[#999]"
