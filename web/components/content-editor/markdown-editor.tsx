@@ -4,6 +4,8 @@ import { forwardRef, useId, useImperativeHandle, useRef } from "react"
 import { MdEditor, type ExposeParam } from "md-editor-rt"
 import { useTheme } from "next-themes"
 
+import "./markdown-editor.css"
+
 import type { UploadImageHandler } from "./types"
 
 export type MarkdownEditorRef = {
