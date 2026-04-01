@@ -18,6 +18,7 @@ type MarkdownEditorProps = {
   placeholder?: string
   disabled?: boolean
   onUploadImage?: UploadImageHandler
+  height: string
 }
 
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
@@ -28,6 +29,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
       placeholder = "请输入 Markdown 内容...",
       disabled = false,
       onUploadImage,
+      height,
     },
     ref
   ) {
@@ -42,8 +44,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     }))
 
     return (
-      <div className="rounded-lg border bg-background">
-        <div className="content-editor-markdown">
+      <div
+        className="rounded-lg border bg-background"
+        style={{ height }}
+      >
+        <div className="content-editor-markdown h-full">
           <MdEditor
             ref={editorRef}
             id={editorId}
@@ -78,6 +83,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             noHighlight
             placeholder={placeholder}
             disabled={disabled}
+            style={{ height: "100%" }}
             onUploadImg={
               onUploadImage
                 ? async (files, callback) => {

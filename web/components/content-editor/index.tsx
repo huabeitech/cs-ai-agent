@@ -15,6 +15,17 @@ type ContentEditorProps = {
   placeholder?: string
   disabled?: boolean
   onUploadImage?: UploadImageHandler
+  height?: number | string
+}
+
+function normalizeHeight(height?: number | string) {
+  if (typeof height === "number") {
+    return `${height}px`
+  }
+  if (typeof height === "string" && height.trim()) {
+    return height
+  }
+  return "400px"
 }
 
 function getModeLabel(mode: ContentMode) {
@@ -34,7 +45,10 @@ export function ContentEditor({
   placeholder,
   disabled = false,
   onUploadImage,
+  height,
 }: ContentEditorProps) {
+  const editorHeight = normalizeHeight(height)
+
   const handleModeChange = useCallback(
     (nextMode: ContentMode) => {
       if (disabled || nextMode === value.mode) {
@@ -91,6 +105,7 @@ export function ContentEditor({
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
+          height={editorHeight}
         />
       ) : (
         <HtmlEditor
@@ -99,6 +114,7 @@ export function ContentEditor({
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
+          height={editorHeight}
         />
       )}
     </div>

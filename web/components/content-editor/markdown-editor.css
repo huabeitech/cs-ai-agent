@@ -1,4 +1,9 @@
+.content-editor-markdown {
+  height: 100%;
+}
+
 .content-editor-markdown .md-editor {
+  height: 100%;
   border: 0;
   box-shadow: none;
   background: transparent;
@@ -13,7 +18,12 @@
 }
 
 .content-editor-markdown .md-editor-content {
-  height: auto;
+  height: calc(100% - 37px);
+}
+
+.content-editor-markdown .md-editor-content-wrapper,
+.content-editor-markdown .md-editor-input-wrapper {
+  height: 100%;
 }
 
 .content-editor-markdown .md-editor-input-wrapper {
@@ -21,13 +31,12 @@
 }
 
 .content-editor-markdown .cm-editor {
-  min-height: 18rem;
+  height: 100%;
   background: transparent;
 }
 
 .content-editor-markdown .cm-scroller {
-  min-height: 18rem;
-  max-height: 32rem;
+  height: 100%;
   overflow: auto;
 }
 
