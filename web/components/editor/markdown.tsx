@@ -26,7 +26,7 @@ export type MarkdownEditorProps = BaseEditorProps & {
 export function MarkdownEditor({
   value,
   onChange,
-  placeholder = "请输入 Markdown 内容...",
+  placeholder = ".",
   disabled = false,
   rows = 16,
   className,

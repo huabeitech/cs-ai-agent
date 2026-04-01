@@ -211,9 +211,9 @@ function DocumentFormDialogBody({
                   <ContentEditor
                     value={{
                       mode:
-                        contentType === KnowledgeDocumentContentType.Markdown
-                          ? KnowledgeDocumentContentType.Markdown
-                          : KnowledgeDocumentContentType.HTML,
+                        contentType === KnowledgeDocumentContentType.HTML
+                          ? KnowledgeDocumentContentType.HTML
+                          : KnowledgeDocumentContentType.Markdown,
                       raw: field.value ?? "",
                     }}
                     onChange={(next) => {
@@ -223,11 +223,7 @@ function DocumentFormDialogBody({
                         shouldValidate: true,
                       })
                     }}
-                    placeholder={
-                      contentType === KnowledgeDocumentContentType.Markdown
-                        ? "输入 Markdown 内容..."
-                        : "输入 HTML 内容..."
-                    }
+                    placeholder="请输入文档内容"
                     disabled={saving}
                   />
                 )}

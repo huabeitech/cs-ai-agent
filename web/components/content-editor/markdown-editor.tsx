@@ -42,7 +42,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
       onModeChange,
       fullscreen,
       onToggleFullscreen,
-      placeholder = "请输入 Markdown 内容...",
+      placeholder = "",
       disabled = false,
       onUploadImage,
       height,

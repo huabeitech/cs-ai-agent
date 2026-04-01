@@ -64,7 +64,7 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       onModeChange,
       fullscreen,
       onToggleFullscreen,
-      placeholder = "请输入内容...",
+      placeholder = "",
       disabled = false,
       onUploadImage,
       height,
