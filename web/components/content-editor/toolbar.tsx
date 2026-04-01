@@ -1,5 +1,7 @@
 "use client"
 
+import "./toolbar.css"
+
 import { cn } from "@/lib/utils"
 
 import type { EditorToolbarAction } from "./types"
@@ -16,7 +18,7 @@ function isSeparatorAction(
 
 export function EditorToolbar({ actions }: EditorToolbarProps) {
   return (
-    <div className="overflow-x-auto overflow-y-hidden border-b border-border px-1 py-1 scrollbar-none">
+    <div className="content-editor-toolbar overflow-x-auto overflow-y-hidden border-b border-border px-1 py-1">
       <div className="flex min-w-max items-center justify-between">
         <div className="flex items-center">
           {actions.map((action) => {

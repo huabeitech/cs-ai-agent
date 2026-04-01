@@ -1,0 +1,7 @@
+.content-editor-toolbar {
+  scrollbar-width: none;
+}
+
+.content-editor-toolbar::-webkit-scrollbar {
+  height: 0 !important;
+}
