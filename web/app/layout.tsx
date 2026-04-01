@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 
 import "./globals.css"
+import "md-editor-rt/lib/style.css"
 import "@/styles/main.scss"
 
 const geistSans = Geist({

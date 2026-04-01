@@ -127,3 +127,45 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .content-editor-markdown .md-editor {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .content-editor-markdown .md-editor-footer {
+    display: none;
+  }
+
+  .content-editor-markdown .md-editor-toolbar {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .content-editor-markdown .md-editor-content {
+    height: auto;
+  }
+
+  .content-editor-markdown .md-editor-input-wrapper {
+    border-right: 0;
+  }
+
+  .content-editor-markdown .cm-editor {
+    min-height: 18rem;
+    background: transparent;
+  }
+
+  .content-editor-markdown .cm-scroller {
+    min-height: 18rem;
+    max-height: 32rem;
+    overflow: auto;
+  }
+
+  .content-editor-markdown .cm-content,
+  .content-editor-markdown .cm-line {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.875rem;
+    line-height: 1.75;
+  }
+}

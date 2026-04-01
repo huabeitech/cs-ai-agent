@@ -6,6 +6,7 @@ import { Controller, Resolver, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 
 import { ProjectDialog } from "@/components/project-dialog"
+import { ContentEditor } from "@/components/content-editor"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -15,23 +16,13 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { UnifiedEditor } from "@/components/editor"
-import {
   type KnowledgeDocument,
   type CreateKnowledgeDocumentPayload,
   fetchKnowledgeDocument,
 } from "@/lib/api/admin"
 import {
   KnowledgeDocumentContentType,
-  KnowledgeDocumentContentTypeLabels,
 } from "@/lib/generated/enums"
-import { getEnumLabel, getEnumOptions } from "@/lib/enums"
 
 type DocumentEditDialogProps = {
   open: boolean
@@ -210,38 +201,6 @@ function DocumentFormDialogBody({
             </FieldContent>
           </Field>
 
-          <Field data-invalid={!!errors.contentType}>
-            <FieldLabel htmlFor="doc-content-type">内容类型</FieldLabel>
-            <FieldContent>
-              <Controller
-                control={control}
-                name="contentType"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="doc-content-type" aria-invalid={!!errors.contentType}>
-                      <SelectValue>
-                        {field.value
-                          ? getEnumLabel(
-                              KnowledgeDocumentContentTypeLabels,
-                              field.value as KnowledgeDocumentContentType
-                            )
-                          : "选择内容类型"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getEnumOptions(KnowledgeDocumentContentTypeLabels).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError errors={[errors.contentType]} />
-            </FieldContent>
-          </Field>
-
           <Field data-invalid={!!errors.content}>
             <FieldLabel htmlFor="doc-content">内容</FieldLabel>
             <FieldContent>
@@ -249,7 +208,7 @@ function DocumentFormDialogBody({
                 control={control}
                 name="content"
                 render={({ field }) => (
-                  <UnifiedEditor
+                  <ContentEditor
                     value={{
                       mode:
                         contentType === KnowledgeDocumentContentType.Markdown
@@ -259,9 +218,10 @@ function DocumentFormDialogBody({
                     }}
                     onChange={(next) => {
                       field.onChange(next.raw)
-                      if (next.mode !== contentType) {
-                        setValue("contentType", next.mode)
-                      }
+                      setValue("contentType", next.mode, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
                     }}
                     placeholder={
                       contentType === KnowledgeDocumentContentType.Markdown
@@ -269,7 +229,6 @@ function DocumentFormDialogBody({
                         : "输入 HTML 内容..."
                     }
                     disabled={saving}
-                    markdownRows={16}
                   />
                 )}
               />
