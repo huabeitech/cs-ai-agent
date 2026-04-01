@@ -35,7 +35,7 @@ type DocumentEditDialogProps = {
 
 const emptyForm: EditForm = {
   title: "",
-  contentType: KnowledgeDocumentContentType.HTML,
+  contentType: KnowledgeDocumentContentType.Markdown,
   content: "",
 }
 
@@ -59,7 +59,7 @@ function buildForm(item: KnowledgeDocument | null): EditForm {
 
   return {
     title: item.title,
-    contentType: item.contentType || KnowledgeDocumentContentType.HTML,
+    contentType: item.contentType || KnowledgeDocumentContentType.Markdown,
     content: item.content || "",
   }
 }
