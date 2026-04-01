@@ -150,6 +150,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               "next",
               2,
               "=",
+              "preview",
               "previewOnly",
             ]}
             defToolbars={defToolbars}
