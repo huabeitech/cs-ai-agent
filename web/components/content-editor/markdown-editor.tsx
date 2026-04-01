@@ -45,7 +45,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 
     return (
       <div
-        className="rounded-lg border bg-background"
+        className="w-full rounded-lg border bg-background"
         style={{ height }}
       >
         <div className="content-editor-markdown h-full">

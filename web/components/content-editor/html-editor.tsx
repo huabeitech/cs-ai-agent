@@ -284,7 +284,7 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
 
     return (
       <div
-        className="flex flex-col rounded-lg border bg-background"
+        className="flex w-full flex-col rounded-lg border bg-background"
         style={{ height }}
       >
         <input
