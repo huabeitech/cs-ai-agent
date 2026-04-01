@@ -2,6 +2,7 @@
 
 import { forwardRef, useId, useImperativeHandle, useRef } from "react"
 import { MdEditor, type ExposeParam } from "md-editor-rt"
+import { useTheme } from "next-themes"
 
 import type { UploadImageHandler } from "./types"
 
@@ -30,6 +31,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   ) {
     const editorId = useId()
     const editorRef = useRef<ExposeParam>(null)
+    const { resolvedTheme } = useTheme()
 
     useImperativeHandle(ref, () => ({
       focus() {
@@ -45,7 +47,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             id={editorId}
             value={value}
             onChange={onChange}
-            theme="light"
+            theme={resolvedTheme === "dark" ? "dark" : "light"}
             preview={false}
             toolbars={[
               "bold",
