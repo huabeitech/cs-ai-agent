@@ -9,7 +9,7 @@
 }
 
 .content-editor-markdown .md-editor-toolbar {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
 }
 
 .content-editor-markdown .md-editor-content {
