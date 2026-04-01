@@ -1,8 +1,5 @@
 "use client"
 
-import { Separator } from "@/components/ui/separator"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-
 import type { EditorToolbarAction } from "./types"
 
 type EditorToolbarProps = {
@@ -17,36 +14,38 @@ function isSeparatorAction(
 
 export function EditorToolbar({ actions }: EditorToolbarProps) {
   return (
-    <div className="border-b bg-[#f7f7f7] px-2 py-1 dark:bg-muted/25">
-      <ToggleGroup className="flex flex-wrap items-center justify-start gap-1">
+    <div className="overflow-x-auto overflow-y-hidden border-b border-border px-1 py-1 scrollbar-none">
+      <div className="flex min-w-max items-center justify-between">
+        <div className="flex items-center">
         {actions.map((action) => {
           if (isSeparatorAction(action)) {
             return (
-              <Separator
+              <span
                 key={action.key}
-                orientation="vertical"
-                className="mx-1 h-5 bg-border/80"
+                aria-hidden="true"
+                className="relative mx-2 inline-block h-[0.9em] w-px self-center bg-border"
               />
             )
           }
 
           const Icon = action.icon
           return (
-            <ToggleGroupItem
+            <button
               key={action.key}
-              value={action.key}
+              type="button"
               aria-label={action.label}
               title={action.label}
               disabled={action.disabled}
-              pressed={action.pressed}
               onClick={action.onClick}
-              className="size-7 rounded-sm border border-transparent bg-transparent text-[#555] shadow-none hover:border-[#d9d9d9] hover:bg-white hover:text-foreground data-[state=on]:border-[#d9d9d9] data-[state=on]:bg-white data-[state=on]:text-foreground dark:text-muted-foreground dark:hover:border-input dark:hover:bg-background dark:data-[state=on]:border-input dark:data-[state=on]:bg-background"
+              data-pressed={action.pressed ? "true" : "false"}
+              className="mx-[2px] flex cursor-pointer list-none flex-col items-center rounded-[3px] border-none bg-transparent px-[2px] py-0 text-[#3f4a54] transition-all duration-300 select-none hover:bg-[#f2f2f2] disabled:cursor-not-allowed disabled:opacity-60 data-[pressed=true]:bg-[#f2f2f2] dark:text-[#999] dark:hover:bg-[#333] dark:data-[pressed=true]:bg-[#333]"
             >
-              <Icon className="size-4" />
-            </ToggleGroupItem>
+              <Icon className="box-content size-4 p-1" />
+            </button>
           )
         })}
-      </ToggleGroup>
+        </div>
+      </div>
     </div>
   )
 }
