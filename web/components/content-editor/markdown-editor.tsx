@@ -67,31 +67,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             onModeChange("markdown")
           }}
         >
-          <span
-            className={cn(
-              "px-1 text-xs",
-              mode === "markdown" && "font-semibold text-foreground"
-            )}
-          >
-            Markdown
-          </span>
+          <span className={cn("text-[12px] leading-none whitespace-nowrap")}>Markdown</span>
         </NormalToolbar>,
         <NormalToolbar
           key="switch-html"
           title="HTML 模式"
-          disabled={disabled || mode === "html"}
+          disabled={disabled}
           onClick={() => {
             onModeChange("html")
           }}
         >
-          <span
-            className={cn(
-              "px-1 text-xs",
-              mode === "html" && "font-semibold text-foreground"
-            )}
-          >
-            HTML
-          </span>
+          <span className={cn("text-[12px] leading-none whitespace-nowrap")}>HTML</span>
         </NormalToolbar>,
         <NormalToolbar
           key="toggle-fullscreen"

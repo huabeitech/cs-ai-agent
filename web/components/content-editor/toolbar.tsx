@@ -1,5 +1,7 @@
 "use client"
 
+import { cn } from "@/lib/utils"
+
 import type { EditorToolbarAction } from "./types"
 
 type EditorToolbarProps = {
@@ -38,11 +40,18 @@ export function EditorToolbar({ actions }: EditorToolbarProps) {
                 disabled={action.disabled}
                 onClick={action.onClick}
                 data-pressed={action.pressed ? "true" : "false"}
-                className="mx-[2px] flex min-h-8 cursor-pointer list-none items-center rounded-[3px] border-none bg-transparent px-[6px] py-0 text-[#3f4a54] transition-all duration-300 select-none hover:bg-[#f2f2f2] disabled:cursor-not-allowed disabled:opacity-60 data-[pressed=true]:bg-[#f2f2f2] dark:text-[#999] dark:hover:bg-[#333] dark:data-[pressed=true]:bg-[#333]"
+                className={cn(
+                  "mx-[2px] cursor-pointer list-none rounded-[3px] border-none bg-transparent text-[#3f4a54] transition-all duration-300 select-none hover:bg-[#f2f2f2] disabled:cursor-not-allowed disabled:opacity-60 data-[pressed=true]:bg-[#f2f2f2] dark:text-[#999] dark:hover:bg-[#333] dark:data-[pressed=true]:bg-[#333]",
+                  action.icon && !action.content
+                    ? "flex flex-col items-center px-[2px] py-0"
+                    : "flex flex-col items-center px-[6px] py-0"
+                )}
               >
                 {Icon ? <Icon className="box-content size-4 p-1" /> : null}
                 {action.content ? (
-                  <span className="px-[2px] text-xs leading-none">{action.content}</span>
+                  <span className="text-[12px] leading-none whitespace-nowrap">
+                    {action.content}
+                  </span>
                 ) : null}
               </button>
             )
