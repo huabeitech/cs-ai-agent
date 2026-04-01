@@ -121,7 +121,7 @@ export function ContentEditor({
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
-          height={fullscreen ? "calc(100vh - 5rem)" : editorHeight}
+          height={fullscreen ? "calc(100vh - 2rem)" : editorHeight}
         />
       ) : (
         <HtmlEditor
@@ -134,7 +134,7 @@ export function ContentEditor({
           placeholder={placeholder}
           disabled={disabled}
           onUploadImage={onUploadImage}
-          height={fullscreen ? "calc(100vh - 5rem)" : editorHeight}
+          height={fullscreen ? "calc(100vh - 2rem)" : editorHeight}
         />
       )}
     </div>

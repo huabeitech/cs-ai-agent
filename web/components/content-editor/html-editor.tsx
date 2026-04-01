@@ -24,7 +24,6 @@ import {
   LinkIcon,
   ListIcon,
   ListOrderedIcon,
-  Columns2Icon,
   QuoteIcon,
   RedoIcon,
   RotateCcwIcon,
@@ -72,7 +71,6 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
     ref
   ) {
     const imageInputRef = useRef<HTMLInputElement>(null)
-    const [showPreview, setShowPreview] = useState(false)
     const [previewOnly, setPreviewOnly] = useState(false)
     const proseClassName =
       "h-full overflow-y-auto px-4 py-3 text-sm leading-7 text-foreground outline-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p]:mb-2 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-3 [&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_img]:my-2 [&_img]:max-h-80 [&_img]:rounded-md [&_img]:object-contain [&_p.is-editor-empty:first-child]:before:text-muted-foreground"
@@ -133,17 +131,8 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       }
     }, [disabled, editor])
 
-    const handleTogglePreview = () => {
-      setPreviewOnly(false)
-      setShowPreview((current) => !current)
-    }
-
     const handleTogglePreviewOnly = () => {
-      setPreviewOnly((current) => {
-        const next = !current
-        setShowPreview(next)
-        return next
-      })
+      setPreviewOnly((current: boolean) => !current)
     }
 
     const handleInsertLink = () => {
@@ -333,14 +322,6 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       },
       { key: "separator-preview", type: "separator" },
       {
-        key: "preview",
-        label: "分屏预览",
-        icon: Columns2Icon,
-        disabled,
-        pressed: showPreview && !previewOnly,
-        onClick: handleTogglePreview,
-      },
-      {
         key: "preview-only",
         label: "仅预览",
         icon: EyeIcon,
@@ -375,18 +356,6 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
               className={proseClassName}
               dangerouslySetInnerHTML={{ __html: value }}
             />
-          ) : showPreview ? (
-            <div className="flex h-full overflow-hidden rounded-md border border-border">
-              <div className="min-w-0 flex-1 border-r border-border">
-                <EditorContent editor={editor} className="h-full" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div
-                  className={proseClassName}
-                  dangerouslySetInnerHTML={{ __html: value }}
-                />
-              </div>
-            </div>
           ) : (
             <EditorContent editor={editor} className="h-full" />
           )}
