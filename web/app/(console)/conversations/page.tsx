@@ -205,11 +205,11 @@ export default function ConversationsPage() {
             </>
           ) : (
             <div className="min-w-0">
-              <p className="truncate font-medium leading-tight">会话工作台</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm lg:hidden">
+              <p className="truncate font-medium text-[14px] leading-tight">会话工作台</p>
+              <p className="mt-0.5 truncate text-[14px] text-muted-foreground sm:text-[14px] lg:hidden">
                 打开菜单选择会话
               </p>
-              <p className="mt-0.5 hidden truncate text-sm text-muted-foreground lg:block">
+              <p className="mt-0.5 hidden truncate text-[12px] text-muted-foreground lg:block">
                 请选择左侧会话开始处理消息
               </p>
             </div>
