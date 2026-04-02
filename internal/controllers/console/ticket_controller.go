@@ -45,6 +45,9 @@ func (c *TicketController) AnyList() *web.JsonResult {
 	if mine, _ := params.Get(c.Ctx, "mine"); mine == "1" || strings.EqualFold(mine, "true") {
 		cnd.Eq("current_assignee_id", operator.UserID)
 	}
+	if unassigned, _ := params.Get(c.Ctx, "unassigned"); unassigned == "1" || strings.EqualFold(unassigned, "true") {
+		cnd.Eq("current_assignee_id", 0)
+	}
 	if overdue, _ := params.Get(c.Ctx, "overdue"); overdue == "1" || strings.EqualFold(overdue, "true") {
 		cnd.In("status", []string{"new", "open", "pending_customer", "pending_internal"})
 		cnd.Where("resolve_deadline_at IS NOT NULL")

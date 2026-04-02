@@ -38,7 +38,9 @@ type TicketSummaryAggregate struct {
 	All             int64
 	Mine            int64
 	Watching        int64
+	Unassigned      int64
 	PendingCustomer int64
+	PendingInternal int64
 	Overdue         int64
 }
 
@@ -132,8 +134,21 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		Watching: s.Count(
 			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID),
 		),
+		Unassigned: s.Count(
+			sqls.NewCnd().
+				In("status", []enums.TicketStatus{
+					enums.TicketStatusNew,
+					enums.TicketStatusOpen,
+					enums.TicketStatusPendingCustomer,
+					enums.TicketStatusPendingInternal,
+				}).
+				Eq("current_assignee_id", 0),
+		),
 		PendingCustomer: s.Count(
 			sqls.NewCnd().Eq("status", enums.TicketStatusPendingCustomer),
+		),
+		PendingInternal: s.Count(
+			sqls.NewCnd().Eq("status", enums.TicketStatusPendingInternal),
 		),
 		Overdue: s.Count(
 			sqls.NewCnd().
