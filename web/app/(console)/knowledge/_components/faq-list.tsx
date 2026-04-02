@@ -140,7 +140,19 @@ export function FAQList({
     page: { page: 1, limit: 20, total: 0 },
   });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(
+    async (options?: {
+      keyword?: string;
+      indexStatusFilter?: string;
+      page?: number;
+      limit?: number;
+    }) => {
+      const nextKeyword = options?.keyword ?? keyword;
+      const nextIndexStatusFilter =
+        options?.indexStatusFilter ?? indexStatusFilter;
+      const nextPage = options?.page ?? page;
+      const nextLimit = options?.limit ?? limit;
+
     if (!knowledgeBaseId) {
       setResult({
         results: [],
@@ -152,11 +164,11 @@ export function FAQList({
     try {
       const data = await fetchKnowledgeFAQs({
         knowledgeBaseId,
-        question: keyword.trim() || undefined,
+        question: nextKeyword.trim() || undefined,
         indexStatus:
-          indexStatusFilter === "all" ? undefined : indexStatusFilter,
-        page,
-        limit,
+          nextIndexStatusFilter === "all" ? undefined : nextIndexStatusFilter,
+        page: nextPage,
+        limit: nextLimit,
       });
       setResult(data);
     } catch (error) {
@@ -164,11 +176,13 @@ export function FAQList({
     } finally {
       setLoading(false);
     }
-  }, [indexStatusFilter, keyword, knowledgeBaseId, limit, page]);
+    },
+    [indexStatusFilter, keyword, knowledgeBaseId, limit, page],
+  );
 
   useEffect(() => {
     void loadData();
-  }, [loadData]);
+  }, [knowledgeBaseId, loadData]);
 
   useEffect(() => {
     onActionStateChange?.({
@@ -182,6 +196,19 @@ export function FAQList({
       importing,
     });
   }, [importing, loadData, loading, onActionStateChange]);
+
+  function applyFilters() {
+    const nextKeyword = keywordInput;
+    const nextIndexStatusFilter = indexStatusFilterInput;
+    setKeyword(nextKeyword);
+    setIndexStatusFilter(nextIndexStatusFilter);
+    setPage(1);
+    void loadData({
+      keyword: nextKeyword,
+      indexStatusFilter: nextIndexStatusFilter,
+      page: 1,
+    });
+  }
 
   async function handleSubmit(payload: CreateKnowledgeFAQPayload) {
     setSaving(true);
@@ -259,8 +286,7 @@ export function FAQList({
               onChange={(event) => setKeywordInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
-                  setKeyword(keywordInput);
-                  setPage(1);
+                  applyFilters();
                 }
               }}
               placeholder="按问题搜索FAQ"
@@ -291,11 +317,7 @@ export function FAQList({
           </Select>
           <Button
             variant="outline"
-            onClick={() => {
-              setKeyword(keywordInput);
-              setIndexStatusFilter(indexStatusFilterInput);
-              setPage(1);
-            }}
+            onClick={applyFilters}
             disabled={loading}
           >
             查询
@@ -392,10 +414,14 @@ export function FAQList({
           page={result.page.page}
           limit={result.page.limit}
           total={result.page.total}
-          onPageChange={setPage}
+          onPageChange={(nextPage: number) => {
+            setPage(nextPage);
+            void loadData({ page: nextPage });
+          }}
           onLimitChange={(next: number) => {
             setLimit(next);
             setPage(1);
+            void loadData({ limit: next, page: 1 });
           }}
         />
       </div>
