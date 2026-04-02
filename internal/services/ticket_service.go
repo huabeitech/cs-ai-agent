@@ -661,9 +661,86 @@ func (s *ticketService) UnwatchTicket(ticketID int64, operator *dto.AuthPrincipa
 	return nil
 }
 
+func (s *ticketService) BatchAssignTickets(req request.BatchAssignTicketRequest, operator *dto.AuthPrincipal) error {
+	ticketIDs := normalizeBatchTicketIDs(req.TicketIDs)
+	if len(ticketIDs) == 0 {
+		return errorsx.InvalidParam("请选择工单")
+	}
+	for _, ticketID := range ticketIDs {
+		if err := s.AssignTicket(request.AssignTicketRequest{
+			TicketID: ticketID,
+			ToUserID: req.ToUserID,
+			ToTeamID: req.ToTeamID,
+			Reason:   req.Reason,
+		}, operator); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *ticketService) BatchChangeStatus(req request.BatchChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {
+	ticketIDs := normalizeBatchTicketIDs(req.TicketIDs)
+	if len(ticketIDs) == 0 {
+		return errorsx.InvalidParam("请选择工单")
+	}
+	for _, ticketID := range ticketIDs {
+		if err := s.ChangeStatus(request.ChangeTicketStatusRequest{
+			TicketID:          ticketID,
+			Status:            req.Status,
+			PendingReason:     req.PendingReason,
+			CloseReason:       req.CloseReason,
+			ResolutionCode:    req.ResolutionCode,
+			ResolutionSummary: req.ResolutionSummary,
+			Reason:            req.Reason,
+		}, operator); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *ticketService) BatchWatchTickets(req request.BatchWatchTicketRequest, operator *dto.AuthPrincipal) error {
+	ticketIDs := normalizeBatchTicketIDs(req.TicketIDs)
+	if len(ticketIDs) == 0 {
+		return errorsx.InvalidParam("请选择工单")
+	}
+	for _, ticketID := range ticketIDs {
+		var err error
+		if req.Watched {
+			err = s.WatchTicket(ticketID, operator)
+		} else {
+			err = s.UnwatchTicket(ticketID, operator)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *ticketService) nextTicketNo() string {
 	now := time.Now()
 	return fmt.Sprintf("TK%s%03d", now.Format("20060102150405"), now.Nanosecond()/1e6)
+}
+
+func normalizeBatchTicketIDs(ticketIDs []int64) []int64 {
+	if len(ticketIDs) == 0 {
+		return nil
+	}
+	results := make([]int64, 0, len(ticketIDs))
+	exists := make(map[int64]struct{}, len(ticketIDs))
+	for _, ticketID := range ticketIDs {
+		if ticketID <= 0 {
+			continue
+		}
+		if _, ok := exists[ticketID]; ok {
+			continue
+		}
+		exists[ticketID] = struct{}{}
+		results = append(results, ticketID)
+	}
+	return results
 }
 
 func (s *ticketService) normalizeAssignment(teamID, assigneeID int64) (int64, int64, error) {

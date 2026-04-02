@@ -21,11 +21,12 @@ import {
   fetchTicketResolutionCodesAll,
   type TicketResolutionCode,
 } from "@/lib/api/ticket-config"
-import { changeTicketStatus } from "@/lib/api/ticket"
+import { batchChangeTicketStatus, changeTicketStatus } from "@/lib/api/ticket"
 
 const schema = z.object({
   status: z.string().trim().min(1, "请选择状态"),
   pendingReason: z.string().trim(),
+  closeReason: z.string().trim(),
   resolutionCode: z.string().trim(),
   resolutionSummary: z.string().trim(),
   reason: z.string().trim(),
@@ -42,6 +43,7 @@ const resolver = zodResolver(schema as never) as Resolver<
 type TicketStatusDialogProps = {
   open: boolean
   ticketId: number | null
+  ticketIds?: number[]
   currentStatus?: string
   onOpenChange: (open: boolean) => void
   onSuccess?: () => Promise<void> | void
@@ -50,6 +52,7 @@ type TicketStatusDialogProps = {
 export function TicketStatusDialog({
   open,
   ticketId,
+  ticketIds,
   currentStatus,
   onOpenChange,
   onSuccess,
@@ -63,6 +66,7 @@ export function TicketStatusDialog({
     defaultValues: {
       status: "",
       pendingReason: "",
+      closeReason: "",
       resolutionCode: "",
       resolutionSummary: "",
       reason: "",
@@ -85,6 +89,7 @@ export function TicketStatusDialog({
     reset({
       status: currentStatus || "",
       pendingReason: "",
+      closeReason: "",
       resolutionCode: "",
       resolutionSummary: "",
       reason: "",
@@ -111,20 +116,35 @@ export function TicketStatusDialog({
   }))
 
   async function onFormSubmit(values: FormValues) {
-    if (!ticketId) {
-      toast.error("工单不存在")
+    const validTicketIds = (ticketIds ?? []).filter((item) => item > 0)
+    if (!ticketId && validTicketIds.length === 0) {
+      toast.error("请选择工单")
       return
     }
     try {
-      await changeTicketStatus({
-        ticketId,
-        status: values.status,
-        pendingReason: values.pendingReason || undefined,
-        resolutionCode: values.resolutionCode || undefined,
-        resolutionSummary: values.resolutionSummary || undefined,
-        reason: values.reason || undefined,
-      })
-      toast.success("状态已更新")
+      if (validTicketIds.length > 0) {
+        await batchChangeTicketStatus({
+          ticketIds: validTicketIds,
+          status: values.status,
+          pendingReason: values.pendingReason || undefined,
+          closeReason: values.status === "closed" ? values.closeReason || undefined : undefined,
+          resolutionCode: values.resolutionCode || undefined,
+          resolutionSummary: values.resolutionSummary || undefined,
+          reason: values.reason || undefined,
+        })
+        toast.success(`已批量更新 ${validTicketIds.length} 张工单`)
+      } else {
+        await changeTicketStatus({
+          ticketId: ticketId!,
+          status: values.status,
+          pendingReason: values.pendingReason || undefined,
+          closeReason: values.status === "closed" ? values.closeReason || undefined : undefined,
+          resolutionCode: values.resolutionCode || undefined,
+          resolutionSummary: values.resolutionSummary || undefined,
+          reason: values.reason || undefined,
+        })
+        toast.success("状态已更新")
+      }
       onOpenChange(false)
       await onSuccess?.()
     } catch (error) {
@@ -136,7 +156,7 @@ export function TicketStatusDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg gap-0 p-0 sm:max-w-lg">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle>变更工单状态</DialogTitle>
+          <DialogTitle>{ticketIds?.length ? `批量变更状态（${ticketIds.length}）` : "变更工单状态"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onFormSubmit)}>
           <div className="space-y-4 p-6">
@@ -207,10 +227,23 @@ export function TicketStatusDialog({
               </>
             )}
 
+            {targetStatus === "closed" && (
+              <Field>
+                <FieldLabel>关闭原因</FieldLabel>
+                <FieldContent>
+                  <Textarea rows={3} placeholder="请输入关闭原因" {...register("closeReason")} />
+                </FieldContent>
+              </Field>
+            )}
+
             <Field>
               <FieldLabel>操作说明</FieldLabel>
               <FieldContent>
-                <Textarea rows={3} placeholder="填写本次状态变更说明" {...register("reason")} />
+                <Textarea
+                  rows={3}
+                  placeholder={targetStatus === "closed" ? "可补充本次批量关闭说明" : "填写本次状态变更说明"}
+                  {...register("reason")}
+                />
               </FieldContent>
             </Field>
           </div>

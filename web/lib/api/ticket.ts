@@ -239,6 +239,18 @@ export function assignTicket(payload: {
   })
 }
 
+export function batchAssignTickets(payload: {
+  ticketIds: number[]
+  toUserId: number
+  toTeamId?: number
+  reason?: string
+}) {
+  return request<void>("/api/console/ticket/batch_assign", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export function changeTicketStatus(payload: {
   ticketId: number
   status: string
@@ -249,6 +261,21 @@ export function changeTicketStatus(payload: {
   reason?: string
 }) {
   return request<void>("/api/console/ticket/change_status", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function batchChangeTicketStatus(payload: {
+  ticketIds: number[]
+  status: string
+  pendingReason?: string
+  closeReason?: string
+  resolutionCode?: string
+  resolutionSummary?: string
+  reason?: string
+}) {
+  return request<void>("/api/console/ticket/batch_change_status", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -303,5 +330,12 @@ export function unwatchTicket(ticketId: number) {
   return request<void>("/api/console/ticket/unwatch", {
     method: "POST",
     body: JSON.stringify({ ticketId }),
+  })
+}
+
+export function batchWatchTickets(payload: { ticketIds: number[]; watched: boolean }) {
+  return request<void>("/api/console/ticket/batch_watch", {
+    method: "POST",
+    body: JSON.stringify(payload),
   })
 }

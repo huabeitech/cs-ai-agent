@@ -88,3 +88,25 @@ type ReopenTicketRequest struct {
 type WatchTicketRequest struct {
 	TicketID int64 `json:"ticketId"`
 }
+
+type BatchAssignTicketRequest struct {
+	TicketIDs []int64 `json:"ticketIds"`
+	ToUserID  int64   `json:"toUserId"`
+	ToTeamID  int64   `json:"toTeamId"`
+	Reason    string  `json:"reason"`
+}
+
+type BatchChangeTicketStatusRequest struct {
+	TicketIDs         []int64 `json:"ticketIds"`
+	Status            string  `json:"status"`
+	PendingReason     string  `json:"pendingReason"`
+	CloseReason       string  `json:"closeReason"`
+	ResolutionCode    string  `json:"resolutionCode"`
+	ResolutionSummary string  `json:"resolutionSummary"`
+	Reason            string  `json:"reason"`
+}
+
+type BatchWatchTicketRequest struct {
+	TicketIDs []int64 `json:"ticketIds"`
+	Watched   bool    `json:"watched"`
+}

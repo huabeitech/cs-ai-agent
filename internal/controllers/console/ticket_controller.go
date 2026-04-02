@@ -144,6 +144,21 @@ func (c *TicketController) PostAssign() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *TicketController) PostBatch_assign() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketAssign)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.BatchAssignTicketRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.BatchAssignTickets(req, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *TicketController) PostChange_status() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketChangeStatus)
 	if err != nil {
@@ -154,6 +169,21 @@ func (c *TicketController) PostChange_status() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	if err := services.TicketService.ChangeStatus(req, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *TicketController) PostBatch_change_status() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketChangeStatus)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.BatchChangeTicketStatusRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.BatchChangeStatus(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
@@ -246,6 +276,21 @@ func (c *TicketController) PostUnwatch() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	if err := services.TicketService.UnwatchTicket(req.TicketID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *TicketController) PostBatch_watch() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.BatchWatchTicketRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.BatchWatchTickets(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

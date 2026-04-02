@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -35,6 +36,7 @@ import {
 import { fetchTicketCategoriesAll, type TicketCategory } from "@/lib/api/ticket-config"
 import {
   createTicket,
+  batchWatchTickets,
   fetchTicketSummary,
   fetchTickets,
   updateTicket,
@@ -77,6 +79,47 @@ function isClosedStatus(status: string) {
   return status === "resolved" || status === "closed" || status === "cancelled"
 }
 
+function getResolveDeadlineTime(ticket: TicketItem) {
+  if (!ticket.resolveDeadlineAt) {
+    return null
+  }
+  const deadline = new Date(ticket.resolveDeadlineAt.replace(" ", "T"))
+  if (Number.isNaN(deadline.getTime())) {
+    return null
+  }
+  return deadline.getTime()
+}
+
+function isOverdueTicket(ticket: TicketItem) {
+  const deadline = getResolveDeadlineTime(ticket)
+  if (deadline === null || isClosedStatus(ticket.status)) {
+    return false
+  }
+  return deadline < Date.now()
+}
+
+function isRiskTicket(ticket: TicketItem) {
+  const deadline = getResolveDeadlineTime(ticket)
+  if (deadline === null || isClosedStatus(ticket.status)) {
+    return false
+  }
+  const remainingMinutes = Math.floor((deadline - Date.now()) / 60000)
+  return remainingMinutes >= 0 && remainingMinutes <= 240
+}
+
+function getTicketRowClassName(ticket: TicketItem) {
+  if (isOverdueTicket(ticket)) {
+    return "bg-red-50/80 hover:bg-red-50"
+  }
+  if (ticket.currentAssigneeId <= 0 && !isClosedStatus(ticket.status)) {
+    return "bg-amber-50/70 hover:bg-amber-50"
+  }
+  if (isRiskTicket(ticket)) {
+    return "bg-orange-50/60 hover:bg-orange-50"
+  }
+  return ""
+}
+
 export default function TicketsPage() {
   const [result, setResult] = useState<{ results: TicketItem[]; page: Paging }>({
     results: [],
@@ -102,6 +145,7 @@ export default function TicketsPage() {
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const [categories, setCategories] = useState<TicketCategory[]>([])
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
+  const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([])
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -180,6 +224,12 @@ export default function TicketsPage() {
   useEffect(() => {
     void loadTickets()
   }, [loadTickets])
+
+  useEffect(() => {
+    setSelectedTicketIds((current) =>
+      current.filter((ticketId) => result.results.some((item) => item.id === ticketId)),
+    )
+  }, [result.results])
 
   useEffect(() => {
     void loadSummary()
@@ -305,6 +355,40 @@ export default function TicketsPage() {
     }
   }
 
+  function toggleSelectTicket(ticketId: number, checked: boolean) {
+    setSelectedTicketIds((current) => {
+      if (checked) {
+        if (current.includes(ticketId)) {
+          return current
+        }
+        return current.concat(ticketId)
+      }
+      return current.filter((item) => item !== ticketId)
+    })
+  }
+
+  function handleSelectAll(checked: boolean) {
+    setSelectedTicketIds(checked ? result.results.map((item) => item.id) : [])
+  }
+
+  async function handleBatchWatch(watched: boolean) {
+    if (selectedTicketIds.length === 0) {
+      toast.error("请先选择工单")
+      return
+    }
+    setSaving(true)
+    try {
+      await batchWatchTickets({ ticketIds: selectedTicketIds, watched })
+      toast.success(watched ? `已批量关注 ${selectedTicketIds.length} 张工单` : `已批量取消关注 ${selectedTicketIds.length} 张工单`)
+      setSelectedTicketIds([])
+      await refreshAll()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "批量更新关注失败")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const categoryOptions = [{ value: "all", label: "全部分类" }].concat(
     categories.map((category) => ({
       value: String(category.id),
@@ -346,7 +430,50 @@ export default function TicketsPage() {
       count: summary.pendingInternal,
     },
     { key: "overdue", label: "已超时", description: "解决 SLA 已超时", count: summary.overdue },
-  ]
+  ] 
+
+  const allSelected =
+    result.results.length > 0 && selectedTicketIds.length === result.results.length
+
+  const displayResults = useMemo(() => {
+    const list = [...result.results]
+    list.sort((left, right) => {
+      const leftOverdue = isOverdueTicket(left)
+      const rightOverdue = isOverdueTicket(right)
+      if (leftOverdue !== rightOverdue) {
+        return leftOverdue ? -1 : 1
+      }
+
+      if (quickView === "unassigned") {
+        const leftUnassigned = left.currentAssigneeId <= 0 ? 1 : 0
+        const rightUnassigned = right.currentAssigneeId <= 0 ? 1 : 0
+        if (leftUnassigned !== rightUnassigned) {
+          return rightUnassigned - leftUnassigned
+        }
+      }
+
+      const leftDeadline = getResolveDeadlineTime(left)
+      const rightDeadline = getResolveDeadlineTime(right)
+      if (leftDeadline !== null || rightDeadline !== null) {
+        if (leftDeadline === null) {
+          return 1
+        }
+        if (rightDeadline === null) {
+          return -1
+        }
+        if (leftDeadline !== rightDeadline) {
+          return leftDeadline - rightDeadline
+        }
+      }
+
+      if (left.priority !== right.priority) {
+        return right.priority - left.priority
+      }
+
+      return (right.id ?? 0) - (left.id ?? 0)
+    })
+    return list
+  }, [quickView, result.results])
 
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4 md:p-6">
@@ -387,6 +514,12 @@ export default function TicketsPage() {
               </button>
             )
           })}
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="rounded bg-red-50 px-2 py-1 text-red-700">红色：已超时</span>
+          <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">黄色：待分配</span>
+          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(7,minmax(0,1fr))_auto]">
@@ -508,9 +641,66 @@ export default function TicketsPage() {
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-background">
+          {selectedTicketIds.length > 0 ? (
+            <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="text-sm text-muted-foreground">
+                已选择 <span className="font-medium text-foreground">{selectedTicketIds.length}</span> 张工单
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActionTicket(null)
+                    setAssignDialogOpen(true)
+                  }}
+                  disabled={saving}
+                >
+                  批量指派
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActionTicket(null)
+                    setStatusDialogOpen(true)
+                  }}
+                  disabled={saving}
+                >
+                  批量改状态
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleBatchWatch(true)}
+                  disabled={saving}
+                >
+                  批量关注
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleBatchWatch(false)}
+                  disabled={saving}
+                >
+                  取消关注
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedTicketIds([])} disabled={saving}>
+                  清空选择
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <Table>
             <TableHeader className="bg-muted/35">
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                    aria-label="全选工单"
+                  />
+                </TableHead>
                 <TableHead>工单</TableHead>
                 <TableHead>客户</TableHead>
                 <TableHead>分类</TableHead>
@@ -527,19 +717,31 @@ export default function TicketsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
                     加载中...
                   </TableCell>
                 </TableRow>
               ) : result.results.length > 0 ? (
-                result.results.map((item) => (
-                  <TableRow key={item.id}>
+                displayResults.map((item) => (
+                  <TableRow key={item.id} className={getTicketRowClassName(item)}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedTicketIds.includes(item.id)}
+                        onCheckedChange={(checked) => toggleSelectTicket(item.id, Boolean(checked))}
+                        aria-label={`选择工单 ${item.ticketNo}`}
+                      />
+                    </TableCell>
                     <TableCell className="min-w-64">
                       <div className="space-y-1">
                         <div className="font-medium">{item.title}</div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>{item.ticketNo}</span>
                           <span>{item.source || "manual"}</span>
+                          {item.currentAssigneeId <= 0 && !isClosedStatus(item.status) ? (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">
+                              待分配
+                            </span>
+                          ) : null}
                           {item.pendingReason && !isClosedStatus(item.status) ? (
                             <span className="rounded bg-muted px-1.5 py-0.5">{item.pendingReason}</span>
                           ) : null}
@@ -608,7 +810,7 @@ export default function TicketsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
                     暂无符合当前筛选条件的工单
                   </TableCell>
                 </TableRow>
@@ -647,19 +849,25 @@ export default function TicketsPage() {
       <TicketAssignDialog
         open={assignDialogOpen}
         ticketId={actionTicket?.id ?? null}
+        ticketIds={actionTicket ? undefined : selectedTicketIds}
         currentTeamId={actionTicket?.currentTeamId}
         currentAssigneeId={actionTicket?.currentAssigneeId}
         onOpenChange={(open) => {
           setAssignDialogOpen(open)
           if (!open) {
             setActionTicket(null)
+            setSelectedTicketIds((current) => current)
           }
         }}
-        onSuccess={refreshAll}
+        onSuccess={async () => {
+          setSelectedTicketIds([])
+          await refreshAll()
+        }}
       />
       <TicketStatusDialog
         open={statusDialogOpen}
         ticketId={actionTicket?.id ?? null}
+        ticketIds={actionTicket ? undefined : selectedTicketIds}
         currentStatus={actionTicket?.status}
         onOpenChange={(open) => {
           setStatusDialogOpen(open)
@@ -667,7 +875,10 @@ export default function TicketsPage() {
             setActionTicket(null)
           }
         }}
-        onSuccess={refreshAll}
+        onSuccess={async () => {
+          setSelectedTicketIds([])
+          await refreshAll()
+        }}
       />
       <TicketReasonDialog
         open={closeDialogOpen}
