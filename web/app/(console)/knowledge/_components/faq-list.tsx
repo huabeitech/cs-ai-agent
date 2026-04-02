@@ -26,6 +26,7 @@ import {
 } from "@/lib/api/admin";
 import { formatDateTime } from "@/lib/utils";
 import { FAQEditDialog } from "./faq-edit";
+import { FAQImportDialog } from "./faq-import-dialog";
 
 type FAQListProps = {
   knowledgeBaseId: number | null;
@@ -35,7 +36,9 @@ type FAQListProps = {
 export type FAQListActionState = {
   onRefresh: () => void;
   onCreate: () => void;
+  onImport: () => void;
   loading: boolean;
+  importing: boolean;
 };
 
 export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) {
@@ -45,7 +48,9 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
   const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<KnowledgeFAQ | null>(null);
   const [result, setResult] = useState<PageResult<KnowledgeFAQ>>({
     results: [],
@@ -87,9 +92,11 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
         setEditingItem(null);
         setDialogOpen(true);
       },
+      onImport: () => setImportDialogOpen(true),
       loading,
+      importing,
     });
-  }, [loadData, loading, onActionStateChange]);
+  }, [importing, loadData, loading, onActionStateChange]);
 
   async function handleSubmit(payload: CreateKnowledgeFAQPayload) {
     setSaving(true);
@@ -223,10 +230,10 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
 
         <ListPagination
           page={result.page.page}
-          pageSize={result.page.limit}
+          limit={result.page.limit}
           total={result.page.total}
           onPageChange={setPage}
-          onPageSizeChange={(next) => {
+          onLimitChange={(next: number) => {
             setLimit(next);
             setPage(1);
           }}
@@ -245,6 +252,15 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
           setDialogOpen(open);
         }}
         onSubmit={handleSubmit}
+      />
+
+      <FAQImportDialog
+        open={importDialogOpen}
+        knowledgeBaseId={knowledgeBaseId}
+        importing={importing}
+        onOpenChange={setImportDialogOpen}
+        onImportingChange={setImporting}
+        onImported={loadData}
       />
     </>
   );

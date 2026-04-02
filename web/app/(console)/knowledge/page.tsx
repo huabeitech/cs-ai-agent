@@ -9,6 +9,7 @@ import { RetrieveLogList } from "./_components/retrieve-log-list"
 import { Button } from "@/components/ui/button"
 import {
   Bug,
+  DownloadIcon,
   LayoutGridIcon,
   LayoutListIcon,
   PanelLeftCloseIcon,
@@ -131,6 +132,16 @@ export default function DashboardKnowledgeDocumentsPage() {
                     aria-label="刷新FAQ"
                   >
                     <RefreshCwIcon className={faqActionState.loading ? "size-4 animate-spin" : "size-4"} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={faqActionState.onImport}
+                    disabled={faqActionState.importing}
+                    aria-label="导入FAQ"
+                  >
+                    <DownloadIcon className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"
