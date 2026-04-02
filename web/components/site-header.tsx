@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 
 import { getPageTitle } from "@/lib/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { WorkspaceToggle } from "@/components/workspace-toggle"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -65,7 +64,6 @@ export function SiteHeader() {
           </div>
         </div>
         <div className="flex items-center justify-end gap-3">
-          <WorkspaceToggle />
           <ThemeToggle />
         </div>
       </div>

@@ -84,16 +84,32 @@ export function filterDashboardSecondaryNavForSession(
 
 export const dashboardNavSections: DashboardNavSectionConfig[] = [
   {
-    title: "工作台",
+    title: "总览",
     items: [
       {
         title: "总览",
         url: "/dashboard",
         icon: <LayoutDashboardIcon />,
       },
+    ],
+  },
+  {
+    title: "接待中心",
+    items: [
       {
-        title: "会话管理",
+        title: "会话",
         url: "/dashboard/conversations",
+        icon: <BotMessageSquareIcon />,
+        requiredPermission: "conversation.view",
+      },
+      {
+        title: "工单",
+        url: "/dashboard/tickets",
+        icon: <FileTextIcon />,
+      },
+      {
+        title: "会话监控",
+        url: "/dashboard/conversation-monitor",
         icon: <BotMessageSquareIcon />,
         requiredPermission: "conversation.view",
       },
@@ -110,12 +126,6 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         requiredPermission: "tag.view",
       },
       {
-        title: "公司管理",
-        url: "/dashboard/companies",
-        icon: <Building2Icon />,
-        requiredPermission: "company.view",
-      },
-      {
         title: "客户管理",
         url: "/dashboard/customers",
         icon: <UsersIcon />,
@@ -126,6 +136,12 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
   {
     title: "客服管理",
     items: [
+      {
+        title: "公司管理",
+        url: "/dashboard/companies",
+        icon: <Building2Icon />,
+        requiredPermission: "company.view",
+      },
       {
         title: "客服档案",
         url: "/dashboard/agents",
