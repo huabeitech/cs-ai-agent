@@ -58,11 +58,12 @@ package-platform:
 	goos=$${platform%-*}; \
 	goarch=$${platform#*-}; \
 	stage_dir="$(TMP_DIR)/$$platform"; \
-	archive_base="$$(cd "$(DIST_DIR)" && pwd)/$(APP_NAME)-$$platform"; \
+	dist_dir="$(CURDIR)/$(DIST_DIR)"; \
+	archive_base="$$dist_dir/$(APP_NAME)-$$platform"; \
 	binary_name="$(APP_NAME)"; \
 	if [ "$$goos" = "windows" ]; then binary_name="$(APP_NAME).exe"; fi; \
 	rm -rf "$$stage_dir"; \
-	mkdir -p "$$stage_dir/web" "$$stage_dir/widget" "$$stage_dir/config" "$(DIST_DIR)"; \
+	mkdir -p "$$stage_dir/web" "$$stage_dir/widget" "$$stage_dir/config" "$$dist_dir"; \
 	GOOS=$$goos GOARCH=$$goarch go build -o "$$stage_dir/$$binary_name" $(APP_ENTRY); \
 	cp -R web/out "$$stage_dir/web/out"; \
 	cp -R widget/out "$$stage_dir/widget/out"; \
