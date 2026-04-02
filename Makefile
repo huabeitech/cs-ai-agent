@@ -1,6 +1,7 @@
-.PHONY: run run-server run-web build test tidy generator enums migration
+.PHONY: run run-server run-web build build-server build-web build-widget dist clean-dist test tidy generator enums migration
 
 BIN_DIR ?= bin
+DIST_DIR ?= dist
 APP_NAME ?= cs-agent
 APP_ENTRY ?= ./cmd/server
 
@@ -27,9 +28,31 @@ run-server:
 run-web:
 	cd web && pnpm dev
 
-build:
+build: build-web build-widget build-server
+
+build-server:
 	mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/$(APP_NAME) $(APP_ENTRY)
+
+build-web:
+	cd web && pnpm build
+
+build-widget:
+	cd widget && pnpm build:sdk && pnpm build
+
+dist: build clean-dist
+	mkdir -p $(DIST_DIR)/bin
+	mkdir -p $(DIST_DIR)/web
+	mkdir -p $(DIST_DIR)/widget
+	mkdir -p $(DIST_DIR)/config
+	cp $(BIN_DIR)/$(APP_NAME) $(DIST_DIR)/bin/$(APP_NAME)
+	cp -R web/out $(DIST_DIR)/web/out
+	cp -R widget/out $(DIST_DIR)/widget/out
+	cp config/config.yaml $(DIST_DIR)/config/config.yaml
+	cp config/config.example.yaml $(DIST_DIR)/config/config.example.yaml
+
+clean-dist:
+	rm -rf $(DIST_DIR)
 
 test:
 	go test ./...

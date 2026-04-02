@@ -7,6 +7,7 @@ data/
 config/config.yaml
 
 bin/
+dist/
 __debug_bin*
 server
 node_modules/
