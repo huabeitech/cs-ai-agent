@@ -158,7 +158,8 @@ function FAQEditDialogBody({
       open={open}
       onOpenChange={onOpenChange}
       title={itemId ? "编辑FAQ" : "新建FAQ"}
-      size="lg"
+      allowFullscreen
+      size="xl"
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
@@ -191,12 +192,12 @@ function FAQEditDialogBody({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="faq-similar-questions">相似问</FieldLabel>
+            <FieldLabel htmlFor="faq-similar-questions">相似问题</FieldLabel>
             <FieldContent>
               <Textarea
                 id="faq-similar-questions"
                 rows={5}
-                placeholder={"一行一个相似问"}
+                placeholder={"一行一个相似问题"}
                 {...register("similarQuestionsText")}
               />
             </FieldContent>
