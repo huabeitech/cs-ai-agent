@@ -15,6 +15,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchKnowledgeBase,
@@ -31,7 +38,7 @@ import {
   KnowledgeFallbackMode,
   KnowledgeFallbackModeLabels,
 } from "@/lib/generated/enums";
-import { getEnumOptions } from "@/lib/enums";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 
 type KnowledgeBaseEditDialogProps = {
   open: boolean;
