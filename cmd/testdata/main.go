@@ -75,7 +75,14 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("init knowledge base failed: %w", err)
 	}
-	slog.Info("knowledge base init success", slog.Int("created", kbResult.CreatedDocuments))
+	slog.Info("knowledge base init success",
+		slog.Int64("documentKnowledgeBaseID", kbResult.DocumentKnowledgeBaseID),
+		slog.Int("createdDocuments", kbResult.CreatedDocuments),
+		slog.Int("updatedDocuments", kbResult.UpdatedDocuments),
+		slog.Int64("faqKnowledgeBaseID", kbResult.FAQKnowledgeBaseID),
+		slog.Int("createdFAQs", kbResult.CreatedFAQs),
+		slog.Int("updatedFAQs", kbResult.UpdatedFAQs),
+	)
 
 	skillResult, err := skill.Init()
 	if err != nil {
