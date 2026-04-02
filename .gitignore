@@ -8,6 +8,7 @@ config/config.yaml
 
 bin/
 __debug_bin*
+server
 node_modules/
 .next/
 *.tsbuildinfo

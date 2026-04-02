@@ -74,6 +74,7 @@ export type TicketItem = {
   currentTeamName?: string
   currentAssigneeId: number
   currentAssigneeName?: string
+  watchedByMe: boolean
   pendingReason?: string
   closeReason?: string
   resolutionCode?: string
@@ -102,6 +103,14 @@ export type TicketDetail = {
   events?: TicketEvent[]
 }
 
+export type TicketSummary = {
+  all: number
+  mine: number
+  watching: number
+  pendingCustomer: number
+  overdue: number
+}
+
 export type TicketListQuery = {
   page?: number
   limit?: number
@@ -115,6 +124,9 @@ export type TicketListQuery = {
   customerId?: number
   conversationId?: number
   source?: string
+  watching?: number
+  mine?: number
+  overdue?: number
 }
 
 export type CreateTicketPayload = {
@@ -183,6 +195,10 @@ export function fetchTickets(query?: TicketListQuery) {
 
 export function fetchTicketDetail(id: number) {
   return request<TicketDetail>(`/api/console/ticket/${id}`)
+}
+
+export function fetchTicketSummary() {
+  return request<TicketSummary>("/api/console/ticket/summary")
 }
 
 export function createTicket(payload: CreateTicketPayload) {

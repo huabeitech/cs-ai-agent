@@ -64,6 +64,7 @@ type TicketResponse struct {
 	CurrentTeamName     string               `json:"currentTeamName,omitempty"`
 	CurrentAssigneeID   int64                `json:"currentAssigneeId"`
 	CurrentAssigneeName string               `json:"currentAssigneeName,omitempty"`
+	WatchedByMe         bool                 `json:"watchedByMe"`
 	PendingReason       string               `json:"pendingReason,omitempty"`
 	CloseReason         string               `json:"closeReason,omitempty"`
 	ResolutionCode      string               `json:"resolutionCode,omitempty"`
@@ -86,4 +87,12 @@ type TicketDetailResponse struct {
 	Watchers []TicketWatcherResponse  `json:"watchers,omitempty"`
 	Comments []TicketCommentResponse  `json:"comments,omitempty"`
 	Events   []TicketEventLogResponse `json:"events,omitempty"`
+}
+
+type TicketSummaryResponse struct {
+	All             int64 `json:"all"`
+	Mine            int64 `json:"mine"`
+	Watching        int64 `json:"watching"`
+	PendingCustomer int64 `json:"pendingCustomer"`
+	Overdue         int64 `json:"overdue"`
 }

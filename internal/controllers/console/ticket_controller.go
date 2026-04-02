@@ -2,6 +2,7 @@ package console
 
 import (
 	"strings"
+	"time"
 
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
@@ -9,6 +10,7 @@ import (
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -18,7 +20,8 @@ type TicketController struct {
 }
 
 func (c *TicketController) AnyList() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView); err != nil {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
 		return web.JsonError(err)
 	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
@@ -36,8 +39,33 @@ func (c *TicketController) AnyList() *web.JsonResult {
 		keyword = "%" + strings.TrimSpace(keyword) + "%"
 		cnd.Where("ticket_no LIKE ? OR title LIKE ? OR description LIKE ?", keyword, keyword, keyword)
 	}
+	if watching, _ := params.Get(c.Ctx, "watching"); watching == "1" || strings.EqualFold(watching, "true") {
+		cnd.Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID)
+	}
+	if mine, _ := params.Get(c.Ctx, "mine"); mine == "1" || strings.EqualFold(mine, "true") {
+		cnd.Eq("current_assignee_id", operator.UserID)
+	}
+	if overdue, _ := params.Get(c.Ctx, "overdue"); overdue == "1" || strings.EqualFold(overdue, "true") {
+		cnd.In("status", []string{"new", "open", "pending_customer", "pending_internal"})
+		cnd.Where("resolve_deadline_at IS NOT NULL")
+		cnd.Where("resolve_deadline_at < ?", time.Now())
+	}
 	list, paging := services.TicketService.FindPageByCnd(cnd)
-	return web.JsonData(&web.PageResult{Results: builders.BuildTicketList(list), Page: paging})
+	results := builders.BuildTicketList(list)
+	for i := range results {
+		results[i].WatchedByMe = services.TicketWatcherService.FindOne(
+			sqls.NewCnd().Eq("ticket_id", results[i].ID).Eq("user_id", operator.UserID),
+		) != nil
+	}
+	return web.JsonData(&web.PageResult{Results: results, Page: paging})
+}
+
+func (c *TicketController) AnySummary() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildTicketSummary(services.TicketService.GetSummary(operator)))
 }
 
 func (c *TicketController) GetBy(id int64) *web.JsonResult {

@@ -34,6 +34,14 @@ type TicketDetailAggregate struct {
 	Events   []models.TicketEventLog
 }
 
+type TicketSummaryAggregate struct {
+	All             int64
+	Mine            int64
+	Watching        int64
+	PendingCustomer int64
+	Overdue         int64
+}
+
 type ticketService struct {
 }
 
@@ -109,6 +117,36 @@ func (s *ticketService) GetDetail(id int64) (*TicketDetailAggregate, error) {
 		aggregate.Customer = CustomerService.Get(ticket.CustomerID)
 	}
 	return aggregate, nil
+}
+
+func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAggregate {
+	if operator == nil {
+		return &TicketSummaryAggregate{}
+	}
+	now := time.Now()
+	return &TicketSummaryAggregate{
+		All: s.Count(sqls.NewCnd()),
+		Mine: s.Count(
+			sqls.NewCnd().Eq("current_assignee_id", operator.UserID),
+		),
+		Watching: s.Count(
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID),
+		),
+		PendingCustomer: s.Count(
+			sqls.NewCnd().Eq("status", enums.TicketStatusPendingCustomer),
+		),
+		Overdue: s.Count(
+			sqls.NewCnd().
+				In("status", []enums.TicketStatus{
+					enums.TicketStatusNew,
+					enums.TicketStatusOpen,
+					enums.TicketStatusPendingCustomer,
+					enums.TicketStatusPendingInternal,
+				}).
+				Where("resolve_deadline_at IS NOT NULL").
+				Where("resolve_deadline_at < ?", now),
+		),
+	}
 }
 
 func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *dto.AuthPrincipal) (*models.Ticket, error) {

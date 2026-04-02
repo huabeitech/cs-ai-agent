@@ -183,6 +183,19 @@ func BuildTicketDetail(aggregate *services.TicketDetailAggregate) *response.Tick
 	return ret
 }
 
+func BuildTicketSummary(summary *services.TicketSummaryAggregate) *response.TicketSummaryResponse {
+	if summary == nil {
+		return nil
+	}
+	return &response.TicketSummaryResponse{
+		All:             summary.All,
+		Mine:            summary.Mine,
+		Watching:        summary.Watching,
+		PendingCustomer: summary.PendingCustomer,
+		Overdue:         summary.Overdue,
+	}
+}
+
 func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatcherResponse {
 	if len(list) == 0 {
 		return nil

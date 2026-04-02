@@ -50,6 +50,7 @@ export function CreateTicketFromConversationDialog({
               status: "new",
               currentTeamId: 0,
               currentAssigneeId: conversation.currentAssigneeId || 0,
+              watchedByMe: false,
               reopenedCount: 0,
             }
           : null
