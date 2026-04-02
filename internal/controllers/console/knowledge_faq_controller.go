@@ -24,6 +24,7 @@ func (c *KnowledgeFAQController) AnyList() *web.JsonResult {
 	cnd := params.NewPagedSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "knowledgeBaseId"},
 		params.QueryFilter{ParamName: "question", Op: params.Like},
+		params.QueryFilter{ParamName: "indexStatus"},
 	).Desc("id")
 	list, paging := services.KnowledgeFAQService.FindPageByCnd(cnd)
 	results := make([]response.KnowledgeFAQResponse, 0, len(list))

@@ -53,21 +53,33 @@ func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
 }
 
 func (c *KnowledgeRetrieveController) PostBuild() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
-		return web.JsonError(err)
-	}
-
 	req := struct {
 		DocumentID int64 `json:"documentId"`
+		FAQID      int64 `json:"faqId"`
 	}{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if req.DocumentID <= 0 {
-		return web.JsonErrorMsg("documentId不能为空")
+
+	if req.DocumentID > 0 {
+		if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
+			return web.JsonError(err)
+		}
+		if err := rag.Answer.BuildDocumentIndex(context.Background(), req.DocumentID); err != nil {
+			return web.JsonError(err)
+		}
+		return web.JsonSuccess()
 	}
-	if err := rag.Answer.BuildDocumentIndex(context.Background(), req.DocumentID); err != nil {
-		return web.JsonError(err)
+
+	if req.FAQID > 0 {
+		if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeFAQUpdate); err != nil {
+			return web.JsonError(err)
+		}
+		if err := rag.Index.IndexFAQByID(context.Background(), req.FAQID); err != nil {
+			return web.JsonError(err)
+		}
+		return web.JsonSuccess()
 	}
-	return web.JsonSuccess()
+
+	return web.JsonErrorMsg("documentId或faqId不能为空")
 }

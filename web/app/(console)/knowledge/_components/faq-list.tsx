@@ -5,6 +5,7 @@ import {
   PencilIcon,
   SearchIcon,
   Trash2Icon,
+  WrenchIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +21,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   TableBody,
   TableCell,
   TableHead,
@@ -27,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  buildKnowledgeFAQIndex,
   createKnowledgeFAQ,
   deleteKnowledgeFAQ,
   fetchKnowledgeFAQs,
@@ -35,6 +44,11 @@ import {
   type KnowledgeFAQ,
   type PageResult,
 } from "@/lib/api/admin";
+import {
+  KnowledgeDocumentIndexStatus,
+  KnowledgeDocumentIndexStatusLabels,
+} from "@/lib/generated/enums";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import { formatDateTime } from "@/lib/utils";
 import { FAQEditDialog } from "./faq-edit";
 import { FAQImportDialog } from "./faq-import-dialog";
@@ -53,17 +67,38 @@ export type FAQListActionState = {
   importing: boolean;
 };
 
+const indexStatusOptions = [
+  { value: "all", label: "全部索引状态" },
+  ...getEnumOptions(KnowledgeDocumentIndexStatusLabels),
+] as const;
+
+function getIndexStatusBadgeVariant(status: string) {
+  switch (status) {
+    case KnowledgeDocumentIndexStatus.Indexed:
+      return "secondary" as const;
+    case KnowledgeDocumentIndexStatus.Failed:
+      return "destructive" as const;
+    default:
+      return "outline" as const;
+  }
+}
+
 export function FAQList({
   knowledgeBaseId,
   onActionStateChange,
 }: FAQListProps) {
   const [keywordInput, setKeywordInput] = useState("");
+  const [indexStatusFilterInput, setIndexStatusFilterInput] = useState("all");
   const [keyword, setKeyword] = useState("");
+  const [indexStatusFilter, setIndexStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [actionLoadingMap, setActionLoadingMap] = useState<
+    Record<number, { rebuildIndex: boolean; delete: boolean }>
+  >({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<KnowledgeFAQ | null>(null);
@@ -85,6 +120,7 @@ export function FAQList({
       const data = await fetchKnowledgeFAQs({
         knowledgeBaseId,
         question: keyword.trim() || undefined,
+        indexStatus: indexStatusFilter === "all" ? undefined : indexStatusFilter,
         page,
         limit,
       });
@@ -94,7 +130,7 @@ export function FAQList({
     } finally {
       setLoading(false);
     }
-  }, [keyword, knowledgeBaseId, limit, page]);
+  }, [indexStatusFilter, keyword, knowledgeBaseId, limit, page]);
 
   useEffect(() => {
     void loadData();
@@ -133,12 +169,40 @@ export function FAQList({
   }
 
   async function handleDelete(item: KnowledgeFAQ) {
+    setActionLoadingMap((prev) => ({
+      ...prev,
+      [item.id]: { ...prev[item.id], delete: true },
+    }));
     try {
       await deleteKnowledgeFAQ(item.id);
       toast.success("FAQ已删除");
       await loadData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "删除FAQ失败");
+    } finally {
+      setActionLoadingMap((prev) => ({
+        ...prev,
+        [item.id]: { ...prev[item.id], delete: false },
+      }));
+    }
+  }
+
+  async function handleBuildIndex(item: KnowledgeFAQ) {
+    setActionLoadingMap((prev) => ({
+      ...prev,
+      [item.id]: { ...prev[item.id], rebuildIndex: true },
+    }));
+    try {
+      await buildKnowledgeFAQIndex(item.id);
+      toast.success("FAQ索引已重建");
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "重建FAQ索引失败");
+    } finally {
+      setActionLoadingMap((prev) => ({
+        ...prev,
+        [item.id]: { ...prev[item.id], rebuildIndex: false },
+      }));
     }
   }
 
@@ -169,10 +233,33 @@ export function FAQList({
               className="pl-9"
             />
           </div>
+          <Select
+            value={indexStatusFilterInput}
+            onValueChange={(value) => setIndexStatusFilterInput(value ?? "all")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue>
+                {indexStatusFilterInput === "all"
+                  ? "全部索引状态"
+                  : getEnumLabel(
+                      KnowledgeDocumentIndexStatusLabels,
+                      indexStatusFilterInput as KnowledgeDocumentIndexStatus
+                    )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {indexStatusOptions.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             onClick={() => {
               setKeyword(keywordInput);
+              setIndexStatusFilter(indexStatusFilterInput);
               setPage(1);
             }}
             disabled={loading}
@@ -203,15 +290,7 @@ export function FAQList({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          item.indexStatus === "failed"
-                            ? "destructive"
-                            : item.indexStatus === "indexed"
-                              ? "secondary"
-                              : "outline"
-                        }
-                      >
+                      <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
                         {item.indexStatusName}
                       </Badge>
                     </TableCell>
@@ -242,11 +321,21 @@ export function FAQList({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
+                              onClick={() => void handleBuildIndex(item)}
+                            >
+                              <WrenchIcon className="mr-2 size-4" />
+                              {actionLoadingMap[item.id]?.rebuildIndex
+                                ? "重建中..."
+                                : "重建索引"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => void handleDelete(item)}
                             >
                               <Trash2Icon className="mr-2 size-4" />
-                              删除
+                              {actionLoadingMap[item.id]?.delete
+                                ? "删除中..."
+                                : "删除"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

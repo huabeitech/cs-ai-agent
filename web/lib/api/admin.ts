@@ -1473,6 +1473,13 @@ export function deleteKnowledgeFAQ(id: number) {
   })
 }
 
+export function buildKnowledgeFAQIndex(faqId: number) {
+  return request<void>("/api/console/knowledge-retrieve/build", {
+    method: "POST",
+    body: JSON.stringify({ faqId }),
+  })
+}
+
 export function debugKnowledgeSearch(payload: KnowledgeSearchPayload) {
   return request<KnowledgeSearchResponse>("/api/console/knowledge-retrieve/debug/search", {
     method: "POST",
