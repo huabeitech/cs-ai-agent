@@ -10,6 +10,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
@@ -51,6 +52,9 @@ func (s *knowledgeFAQService) CreateKnowledgeFAQ(req request.CreateKnowledgeFAQR
 		return nil, err
 	}
 	item.Status = kb.Status
+	item.IndexStatus = enums.KnowledgeDocumentIndexStatusPending
+	item.IndexError = ""
+	item.IndexedAt = nil
 	item.AuditFields = utils.BuildAuditFields(operator)
 	if err := repositories.KnowledgeFAQRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
@@ -82,6 +86,9 @@ func (s *knowledgeFAQService) UpdateKnowledgeFAQ(req request.UpdateKnowledgeFAQR
 		"question":          item.Question,
 		"answer":            item.Answer,
 		"similar_questions": item.SimilarQuestions,
+		"index_status":      enums.KnowledgeDocumentIndexStatusPending,
+		"indexed_at":        nil,
+		"index_error":       "",
 		"remark":            item.Remark,
 		"update_user_id":    operator.UserID,
 		"update_user_name":  operator.Username,

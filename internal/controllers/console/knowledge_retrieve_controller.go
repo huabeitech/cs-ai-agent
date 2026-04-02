@@ -52,23 +52,6 @@ func (c *KnowledgeRetrieveController) PostDebugAnswer() *web.JsonResult {
 	return web.JsonData(resp)
 }
 
-func (c *KnowledgeRetrieveController) PostDebugCompare() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentView); err != nil {
-		return web.JsonError(err)
-	}
-
-	req := request.KnowledgeCompareRequest{}
-	if err := params.ReadJSON(c.Ctx, &req); err != nil {
-		return web.JsonError(err)
-	}
-
-	resp, err := rag.Evaluate.DebugCompareProviders(context.Background(), req)
-	if err != nil {
-		return web.JsonError(err)
-	}
-	return web.JsonData(resp)
-}
-
 func (c *KnowledgeRetrieveController) PostBuild() *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionKnowledgeDocumentUpdate); err != nil {
 		return web.JsonError(err)

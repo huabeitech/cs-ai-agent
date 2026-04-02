@@ -1168,6 +1168,10 @@ export type KnowledgeFAQ = {
   similarQuestions: string[]
   status: number
   statusName: string
+  indexStatus: string
+  indexStatusName: string
+  indexedAt?: string | null
+  indexError: string
   remark: string
   createdAt: string
   updatedAt: string
@@ -1226,23 +1230,6 @@ export type KnowledgeCitation = {
   sectionPath: string
   snippet: string
   score: number
-}
-
-export type KnowledgeCompareProviderResult = {
-  provider: string
-  hitCount: number
-  buildMs: number
-  retrieveMs: number
-  top1Matched: boolean
-  top3Matched: boolean
-  matchedDocumentIds: number[]
-  results: KnowledgeSearchResult[]
-}
-
-export type KnowledgeCompareResponse = {
-  question: string
-  providers: KnowledgeCompareProviderResult[]
-  latencyMs: number
 }
 
 export type KnowledgeRetrieveLog = {
@@ -1333,15 +1320,6 @@ export type KnowledgeSearchPayload = {
 export type KnowledgeAnswerPayload = KnowledgeSearchPayload & {
   answerMode?: number
   fallbackMode?: number
-}
-
-export type KnowledgeComparePayload = {
-  knowledgeBaseId: number
-  question: string
-  topK?: number
-  scoreThreshold?: number
-  providers?: string[]
-  expectedDocIds?: number[]
 }
 
 export type CreateKnowledgeDocumentPayload = {
@@ -1504,13 +1482,6 @@ export function debugKnowledgeSearch(payload: KnowledgeSearchPayload) {
 
 export function debugKnowledgeAnswer(payload: KnowledgeAnswerPayload) {
   return request<KnowledgeAnswerResponse>("/api/console/knowledge-retrieve/debug/answer", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function debugKnowledgeCompare(payload: KnowledgeComparePayload) {
-  return request<KnowledgeCompareResponse>("/api/console/knowledge-retrieve/debug/compare", {
     method: "POST",
     body: JSON.stringify(payload),
   })

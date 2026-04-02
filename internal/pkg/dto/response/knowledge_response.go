@@ -54,19 +54,23 @@ type KnowledgeDocumentResponse struct {
 }
 
 type KnowledgeFAQResponse struct {
-	ID                int64        `json:"id"`
-	KnowledgeBaseID   int64        `json:"knowledgeBaseId"`
-	KnowledgeBaseName string       `json:"knowledgeBaseName,omitempty"`
-	Question          string       `json:"question"`
-	Answer            string       `json:"answer"`
-	SimilarQuestions  []string     `json:"similarQuestions"`
-	Status            enums.Status `json:"status"`
-	StatusName        string       `json:"statusName"`
-	Remark            string       `json:"remark"`
-	CreatedAt         time.Time    `json:"createdAt"`
-	UpdatedAt         time.Time    `json:"updatedAt"`
-	CreateUserName    string       `json:"createUserName"`
-	UpdateUserName    string       `json:"updateUserName"`
+	ID                int64                              `json:"id"`
+	KnowledgeBaseID   int64                              `json:"knowledgeBaseId"`
+	KnowledgeBaseName string                             `json:"knowledgeBaseName,omitempty"`
+	Question          string                             `json:"question"`
+	Answer            string                             `json:"answer"`
+	SimilarQuestions  []string                           `json:"similarQuestions"`
+	Status            enums.Status                       `json:"status"`
+	StatusName        string                             `json:"statusName"`
+	IndexStatus       enums.KnowledgeDocumentIndexStatus `json:"indexStatus"`
+	IndexStatusName   string                             `json:"indexStatusName"`
+	IndexedAt         *time.Time                         `json:"indexedAt"`
+	IndexError        string                             `json:"indexError"`
+	Remark            string                             `json:"remark"`
+	CreatedAt         time.Time                          `json:"createdAt"`
+	UpdatedAt         time.Time                          `json:"updatedAt"`
+	CreateUserName    string                             `json:"createUserName"`
+	UpdateUserName    string                             `json:"updateUserName"`
 }
 
 type KnowledgeSearchResult struct {
@@ -120,23 +124,6 @@ type KnowledgeCitation struct {
 	SectionPath   string  `json:"sectionPath"`
 	Snippet       string  `json:"snippet"`
 	Score         float64 `json:"score"`
-}
-
-type KnowledgeCompareProviderResult struct {
-	Provider           string                  `json:"provider"`
-	HitCount           int                     `json:"hitCount"`
-	BuildMs            int64                   `json:"buildMs"`
-	RetrieveMs         int64                   `json:"retrieveMs"`
-	Top1Matched        bool                    `json:"top1Matched"`
-	Top3Matched        bool                    `json:"top3Matched"`
-	MatchedDocumentIDs []int64                 `json:"matchedDocumentIds"`
-	Results            []KnowledgeSearchResult `json:"results"`
-}
-
-type KnowledgeCompareResponse struct {
-	Question  string                           `json:"question"`
-	Providers []KnowledgeCompareProviderResult `json:"providers"`
-	LatencyMs int64                            `json:"latencyMs"`
 }
 
 type KnowledgeRetrieveLogResponse struct {

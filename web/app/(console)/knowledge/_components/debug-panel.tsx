@@ -5,11 +5,9 @@ import { BotIcon, SearchIcon, SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  debugKnowledgeCompare,
   debugKnowledgeAnswer,
   debugKnowledgeSearch,
   type KnowledgeAnswerResponse,
-  type KnowledgeCompareResponse,
   type KnowledgeSearchResponse,
 } from "@/lib/api/admin";
 import { Badge } from "@/components/ui/badge";
@@ -26,15 +24,12 @@ type DebugPanelProps = {
 
 export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
   const [question, setQuestion] = useState("");
-  const [expectedDocIds, setExpectedDocIds] = useState("");
   const [topK, setTopK] = useState("5");
   const [scoreThreshold, setScoreThreshold] = useState("0.2");
   const [rerankLimit, setRerankLimit] = useState("5");
   const [searching, setSearching] = useState(false);
-  const [comparing, setComparing] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [searchResult, setSearchResult] = useState<KnowledgeSearchResponse | null>(null);
-  const [compareResult, setCompareResult] = useState<KnowledgeCompareResponse | null>(null);
   const [answerResult, setAnswerResult] = useState<KnowledgeAnswerResponse | null>(null);
 
   async function handleSearch() {
@@ -62,34 +57,6 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
       toast.error(error instanceof Error ? error.message : "检索失败");
     } finally {
       setSearching(false);
-    }
-  }
-
-  async function handleCompare() {
-    if (!knowledgeBaseId) {
-      toast.error("请先选择知识库");
-      return;
-    }
-    if (!question.trim()) {
-      toast.error("请输入调试问题");
-      return;
-    }
-
-    setComparing(true);
-    try {
-      const data = await debugKnowledgeCompare({
-        knowledgeBaseId,
-        question: question.trim(),
-        expectedDocIds: parseExpectedDocIds(expectedDocIds),
-        topK: Number(topK) || undefined,
-        scoreThreshold: Number(scoreThreshold) || undefined,
-      });
-      setCompareResult(data);
-      toast.success(`对比完成，输出 ${data.providers.length} 组结果`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "对比失败");
-    } finally {
-      setComparing(false);
     }
   }
 
@@ -145,24 +112,10 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
             <Input id="rerank" value={rerankLimit} onChange={(event) => setRerankLimit(event.target.value)} placeholder="重排条数" className="h-8" />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="expected-doc-ids" className="text-xs">期望文档ID</Label>
-          <Input
-            id="expected-doc-ids"
-            value={expectedDocIds}
-            onChange={(event) => setExpectedDocIds(event.target.value)}
-            placeholder="例如：12,35,78"
-            className="h-8"
-          />
-        </div>
         <div className="flex gap-2">
           <Button className="flex-1" variant="outline" onClick={() => void handleSearch()} disabled={searching}>
             <SearchIcon className="mr-2 size-4" />
             {searching ? "检索中..." : "调试检索"}
-          </Button>
-          <Button className="flex-1" variant="outline" onClick={() => void handleCompare()} disabled={comparing}>
-            <SearchIcon className="mr-2 size-4" />
-            {comparing ? "对比中..." : "对比 Provider"}
           </Button>
           <Button className="flex-1" onClick={() => void handleAnswer()} disabled={answering}>
             <SparklesIcon className="mr-2 size-4" />
@@ -247,66 +200,10 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
               </CardContent>
             </Card>
           ) : null}
-
-          {compareResult ? (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Provider 对比</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-xs text-muted-foreground">
-                  总耗时 {compareResult.latencyMs}ms
-                </div>
-                {compareResult.providers.map((provider) => (
-                  <div key={provider.provider} className="rounded-md border bg-background p-3 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-medium">{provider.provider}</div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>构建 {provider.buildMs}ms · 检索 {provider.retrieveMs}ms · 命中 {provider.hitCount}</span>
-                        {provider.top1Matched ? <Badge variant="secondary">Top1命中</Badge> : null}
-                        {provider.top3Matched ? <Badge variant="secondary">Top3命中</Badge> : null}
-                      </div>
-                    </div>
-                    {provider.matchedDocumentIds.length > 0 ? (
-                      <div className="text-xs text-muted-foreground">
-                        命中文档ID：{provider.matchedDocumentIds.join(", ")}
-                      </div>
-                    ) : null}
-                    <div className="space-y-2">
-                      {provider.results.map((item) => (
-                        <div key={`${provider.provider}-${item.documentId}-${item.chunkNo}`} className="rounded border p-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="truncate text-xs font-medium">
-                              {getSearchResultLabel(item)}
-                            </div>
-                            <Badge variant="outline">{item.score.toFixed(4)}</Badge>
-                          </div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {item.sectionPath || item.title || `Chunk #${item.chunkNo}`}
-                          </div>
-                          <div className="mt-2 text-xs leading-5 text-muted-foreground whitespace-pre-wrap">
-                            {item.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
         </div>
       </ScrollArea>
     </div>
   );
-}
-
-function parseExpectedDocIds(value: string): number[] | undefined {
-  const ids = value
-    .split(",")
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isFinite(item) && item > 0)
-  return ids.length > 0 ? ids : undefined
 }
 
 function getSearchResultLabel(item: {

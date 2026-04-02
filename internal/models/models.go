@@ -641,13 +641,16 @@ type KnowledgeDocument struct {
 
 // KnowledgeFAQ FAQ 条目主表。
 type KnowledgeFAQ struct {
-	ID               int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为 FAQ 主键。
-	KnowledgeBaseID  int64        `gorm:"type:bigint;not null;index"`                  // KnowledgeBaseID 为所属 FAQ 知识库 ID。
-	Question         string       `gorm:"type:varchar(500);not null;default:'';index"` // Question 为标准问题。
-	Answer           string       `gorm:"type:text"`                                   // Answer 为标准答案。
-	SimilarQuestions string       `gorm:"type:text"`                                   // SimilarQuestions 为相似问 JSON 数组。
-	Status           enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为状态。
-	Remark           string       `gorm:"type:text"`                                   // Remark 为备注。
+	ID               int64                              `gorm:"primaryKey;autoIncrement"`                          // ID 为 FAQ 主键。
+	KnowledgeBaseID  int64                              `gorm:"type:bigint;not null;index"`                        // KnowledgeBaseID 为所属 FAQ 知识库 ID。
+	Question         string                             `gorm:"type:varchar(500);not null;default:'';index"`       // Question 为标准问题。
+	Answer           string                             `gorm:"type:text"`                                         // Answer 为标准答案。
+	SimilarQuestions string                             `gorm:"type:text"`                                         // SimilarQuestions 为相似问 JSON 数组。
+	Status           enums.Status                       `gorm:"type:int;not null;default:0;index"`                 // Status 为状态。
+	IndexStatus      enums.KnowledgeDocumentIndexStatus `gorm:"type:varchar(20);not null;default:'pending';index"` // IndexStatus 为索引状态：pending/indexed/failed。
+	IndexedAt        *time.Time                         `gorm:"type:datetime;index"`                               // IndexedAt 为最近一次索引成功时间。
+	IndexError       string                             `gorm:"type:text"`                                         // IndexError 为最近一次索引失败信息。
+	Remark           string                             `gorm:"type:text"`                                         // Remark 为备注。
 	AuditFields
 }
 
@@ -675,7 +678,6 @@ type KnowledgeChunk struct {
 // KnowledgeRetrieveLog 检索日志表。
 type KnowledgeRetrieveLog struct {
 	ID                 int64     `gorm:"primaryKey;autoIncrement"`                   // ID 为日志主键。
-	TenantID           int64     `gorm:"type:bigint;not null;default:0;index"`       // TenantID 为租户ID。
 	KnowledgeBaseID    int64     `gorm:"type:bigint;not null;index"`                 // KnowledgeBaseID 为知识库ID。
 	Channel            string    `gorm:"type:varchar(30);not null;default:'';index"` // Channel 为渠道：im会话, agent_assist坐席辅助, api开放接口, debug调试。
 	Scene              string    `gorm:"type:varchar(50);not null;default:'';index"` // Scene 为场景：first_response首响, assist辅助, qa问答。

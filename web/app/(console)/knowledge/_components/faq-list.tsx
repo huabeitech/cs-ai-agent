@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   createKnowledgeFAQ,
@@ -159,6 +160,7 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
             <TableHeader>
               <TableRow>
                 <TableHead>问题</TableHead>
+                <TableHead>索引状态</TableHead>
                 <TableHead>相似问</TableHead>
                 <TableHead>更新时间</TableHead>
                 <TableHead className="w-[80px] text-right">操作</TableHead>
@@ -171,14 +173,20 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
                     <div className="font-medium">{item.question}</div>
                     <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.answer}</div>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={item.indexStatus === "failed" ? "destructive" : item.indexStatus === "indexed" ? "secondary" : "outline"}>
+                      {item.indexStatusName}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{item.similarQuestions.length}</TableCell>
                   <TableCell>{formatDateTime(item.updatedAt)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontalIcon className="size-4" />
-                        </Button>
+                      <DropdownMenuTrigger
+                        render={<Button variant="ghost" size="icon" />}
+                        aria-label={`更多操作 ${item.question}`}
+                      >
+                        <MoreHorizontalIcon className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
@@ -204,7 +212,7 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
               ))}
               {!loading && result.results.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-12 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
                     当前知识库还没有FAQ
                   </TableCell>
                 </TableRow>
@@ -241,4 +249,3 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
     </>
   );
 }
-

@@ -74,15 +74,6 @@ type KnowledgeAnswerRequest struct {
 	FallbackMode     int     `json:"fallbackMode"`
 }
 
-type KnowledgeCompareRequest struct {
-	KnowledgeBaseID int64    `json:"knowledgeBaseId"`
-	Question        string   `json:"question"`
-	Providers       []string `json:"providers"`
-	ExpectedDocIDs  []int64  `json:"expectedDocIds"`
-	TopK            int      `json:"topK"`
-	ScoreThreshold  float64  `json:"scoreThreshold"`
-}
-
 type CreateKnowledgeFeedbackRequest struct {
 	RetrieveLogID  int64  `json:"retrieveLogId"`
 	FeedbackType   int    `json:"feedbackType"`
