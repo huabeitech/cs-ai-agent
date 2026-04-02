@@ -111,6 +111,7 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         title: "工单",
         url: "/tickets",
         icon: <FileTextIcon />,
+        requiredPermission: "ticket.view",
       },
       {
         title: "会话监控",
@@ -226,6 +227,24 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         url: "/permissions",
         icon: <KeyRoundIcon />,
         requiredPermission: "permission.view",
+      },
+      {
+        title: "工单分类",
+        url: "/ticket-categories",
+        icon: <TagsIcon />,
+        requiredPermission: "ticketCategory.view",
+      },
+      {
+        title: "解决码",
+        url: "/ticket-resolution-codes",
+        icon: <KeyRoundIcon />,
+        requiredPermission: "ticketResolutionCode.view",
+      },
+      {
+        title: "工单SLA",
+        url: "/ticket-sla-configs",
+        icon: <Settings2Icon />,
+        requiredPermission: "ticketSLAConfig.view",
       },
     ],
   },

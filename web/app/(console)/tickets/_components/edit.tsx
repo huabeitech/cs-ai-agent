@@ -25,6 +25,10 @@ import {
   type AdminAgentTeam,
 } from "@/lib/api/admin"
 import {
+  fetchTicketCategoriesAll,
+  type TicketCategory,
+} from "@/lib/api/ticket-config"
+import {
   fetchTicketDetail,
   type CreateTicketPayload,
   type TicketItem,
@@ -47,6 +51,7 @@ type EditDialogProps = {
 const ticketFormSchema = z.object({
   title: z.string().trim().min(1, "标题不能为空"),
   description: z.string().trim(),
+  categoryId: z.string().trim(),
   priority: z.enum(["1", "2", "3", "4"], { message: "请选择优先级" }),
   severity: z.enum(["1", "2", "3"], { message: "请选择严重度" }),
   currentTeamId: z.string().trim(),
@@ -65,6 +70,7 @@ const editFormResolver = zodResolver(ticketFormSchema as never) as Resolver<
 const emptyForm: EditForm = {
   title: "",
   description: "",
+  categoryId: "",
   priority: "2",
   severity: "1",
   currentTeamId: "",
@@ -79,6 +85,7 @@ function buildForm(item: TicketItem | null): EditForm {
   return {
     title: item.title ?? "",
     description: item.description ?? "",
+    categoryId: item.categoryId ? String(item.categoryId) : "",
     priority: String(item.priority || 2) as EditForm["priority"],
     severity: String(item.severity || 1) as EditForm["severity"],
     currentTeamId: item.currentTeamId ? String(item.currentTeamId) : "",
@@ -91,6 +98,7 @@ function buildInitialForm(initialValues?: Partial<CreateTicketPayload>): EditFor
   return {
     title: initialValues?.title?.trim() ?? "",
     description: initialValues?.description?.trim() ?? "",
+    categoryId: initialValues?.categoryId ? String(initialValues.categoryId) : "",
     priority: String(initialValues?.priority ?? 2) as EditForm["priority"],
     severity: String(initialValues?.severity ?? 1) as EditForm["severity"],
     currentTeamId: initialValues?.currentTeamId ? String(initialValues.currentTeamId) : "",
@@ -105,6 +113,7 @@ function buildPayload(form: EditForm): CreateTicketPayload {
   return {
     title: form.title.trim(),
     description: form.description.trim(),
+    categoryId: form.categoryId ? Number(form.categoryId) : undefined,
     priority: Number(form.priority),
     severity: Number(form.severity),
     currentTeamId: form.currentTeamId ? Number(form.currentTeamId) : undefined,
@@ -161,6 +170,7 @@ function TicketEditDialogBody({
 }: TicketEditDialogBodyProps) {
   const formId = "ticket-edit-form"
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<TicketCategory[]>([])
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const form = useForm<
@@ -201,14 +211,25 @@ function TicketEditDialogBody({
       return
     }
     void (async () => {
-      const [teamData, agentData] = await Promise.all([
+      const [categoryData, teamData, agentData] = await Promise.all([
+        fetchTicketCategoriesAll(),
         fetchAgentTeamsAll(),
         fetchAgentProfilesAll(),
       ])
+      setCategories(Array.isArray(categoryData) ? categoryData : [])
       setTeams(Array.isArray(teamData) ? teamData : [])
       setAgents(Array.isArray(agentData) ? agentData : [])
     })()
   }, [open])
+
+  const categoryOptions = [{ value: "", label: "不指定分类" }].concat(
+    categories.map((category) => ({
+      value: String(category.id),
+      label: category.parentName
+        ? `${category.parentName} / ${category.name}`
+        : category.name,
+    })),
+  )
 
   const teamOptions = [{ value: "", label: "不指定团队" }].concat(
     teams.map((team) => ({
@@ -299,6 +320,24 @@ function TicketEditDialogBody({
                   {...register("description")}
                 />
                 <FieldError errors={[errors.description]} />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>工单分类</FieldLabel>
+              <FieldContent>
+                <Controller
+                  control={control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <OptionCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="请选择工单分类"
+                      options={categoryOptions}
+                    />
+                  )}
+                />
               </FieldContent>
             </Field>
 

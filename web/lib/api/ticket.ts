@@ -66,6 +66,7 @@ export type TicketItem = {
   customerId: number
   conversationId: number
   categoryId: number
+  categoryName?: string
   type: string
   priority: number
   severity: number
@@ -78,6 +79,7 @@ export type TicketItem = {
   pendingReason?: string
   closeReason?: string
   resolutionCode?: string
+  resolutionCodeName?: string
   resolutionSummary?: string
   firstResponseAt?: string
   resolvedAt?: string

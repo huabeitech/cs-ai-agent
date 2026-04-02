@@ -413,6 +413,7 @@ export default function TicketsPage() {
               <TableRow>
                 <TableHead>工单</TableHead>
                 <TableHead>客户</TableHead>
+                <TableHead>分类</TableHead>
                 <TableHead>优先级</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>处理人</TableHead>
@@ -425,7 +426,7 @@ export default function TicketsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     加载中...
                   </TableCell>
                 </TableRow>
@@ -446,6 +447,7 @@ export default function TicketsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{item.customer?.name || "未绑定客户"}</TableCell>
+                    <TableCell>{item.categoryName || "未分类"}</TableCell>
                     <TableCell>
                       <TicketPriorityBadge priority={item.priority} />
                     </TableCell>
@@ -488,7 +490,7 @@ export default function TicketsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     暂无工单
                   </TableCell>
                 </TableRow>

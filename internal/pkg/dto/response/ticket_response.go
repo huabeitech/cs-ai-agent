@@ -56,6 +56,7 @@ type TicketResponse struct {
 	CustomerID          int64                `json:"customerId"`
 	ConversationID      int64                `json:"conversationId"`
 	CategoryID          int64                `json:"categoryId"`
+	CategoryName        string               `json:"categoryName,omitempty"`
 	Type                string               `json:"type"`
 	Priority            enums.TicketPriority `json:"priority"`
 	Severity            enums.TicketSeverity `json:"severity"`
@@ -68,6 +69,7 @@ type TicketResponse struct {
 	PendingReason       string               `json:"pendingReason,omitempty"`
 	CloseReason         string               `json:"closeReason,omitempty"`
 	ResolutionCode      string               `json:"resolutionCode,omitempty"`
+	ResolutionCodeName  string               `json:"resolutionCodeName,omitempty"`
 	ResolutionSummary   string               `json:"resolutionSummary,omitempty"`
 	FirstResponseAt     string               `json:"firstResponseAt,omitempty"`
 	ResolvedAt          string               `json:"resolvedAt,omitempty"`

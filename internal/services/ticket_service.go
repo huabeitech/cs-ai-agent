@@ -165,6 +165,12 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 	if req.ConversationID > 0 && ConversationService.Get(req.ConversationID) == nil {
 		return nil, errorsx.InvalidParam("会话不存在")
 	}
+	if req.CategoryID > 0 {
+		category := TicketCategoryService.Get(req.CategoryID)
+		if category == nil || category.Status != enums.StatusOk {
+			return nil, errorsx.InvalidParam("工单分类不存在")
+		}
+	}
 
 	source := enums.TicketSource(strings.TrimSpace(req.Source))
 	if source == "" {
@@ -314,6 +320,12 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 	if !enums.IsValidTicketSeverity(req.Severity) {
 		return errorsx.InvalidParam("工单严重度不合法")
 	}
+	if req.CategoryID > 0 {
+		category := TicketCategoryService.Get(req.CategoryID)
+		if category == nil || category.Status != enums.StatusOk {
+			return errorsx.InvalidParam("工单分类不存在")
+		}
+	}
 	teamID, assigneeID, err := s.normalizeAssignment(req.CurrentTeamID, req.CurrentAssigneeID)
 	if err != nil {
 		return err
@@ -419,7 +431,14 @@ func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, oper
 	case enums.TicketStatusPendingCustomer, enums.TicketStatusPendingInternal:
 		values["pending_reason"] = strings.TrimSpace(req.PendingReason)
 	case enums.TicketStatusResolved:
-		values["resolution_code"] = strings.TrimSpace(req.ResolutionCode)
+		resolutionCode := strings.TrimSpace(req.ResolutionCode)
+		if resolutionCode != "" {
+			code := TicketResolutionCodeService.Take("code = ? AND status = ?", resolutionCode, enums.StatusOk)
+			if code == nil {
+				return errorsx.InvalidParam("解决码不存在")
+			}
+		}
+		values["resolution_code"] = resolutionCode
 		values["resolution_summary"] = strings.TrimSpace(req.ResolutionSummary)
 		values["resolved_at"] = now
 	case enums.TicketStatusClosed:
@@ -653,6 +672,10 @@ func (s *ticketService) normalizeAssignment(teamID, assigneeID int64) (int64, in
 
 func (s *ticketService) initSLAs(tx *gorm.DB, ticket *models.Ticket, now time.Time) error {
 	firstResponseTarget, resolutionTarget := ticketSLATargetMinutes(ticket.Priority)
+	if config := TicketSLAConfigService.GetActiveByPriority(ticket.Priority); config != nil {
+		firstResponseTarget = config.FirstResponseMinutes
+		resolutionTarget = config.ResolutionMinutes
+	}
 	records := []*models.TicketSLARecord{
 		{
 			TicketID:      ticket.ID,

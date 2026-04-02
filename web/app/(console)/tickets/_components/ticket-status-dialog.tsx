@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -17,6 +17,10 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  fetchTicketResolutionCodesAll,
+  type TicketResolutionCode,
+} from "@/lib/api/ticket-config"
 import { changeTicketStatus } from "@/lib/api/ticket"
 
 const schema = z.object({
@@ -73,6 +77,7 @@ export function TicketStatusDialog({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = form
+  const [resolutionCodes, setResolutionCodes] = useState<TicketResolutionCode[]>([])
 
   const targetStatus = watch("status")
 
@@ -85,6 +90,25 @@ export function TicketStatusDialog({
       reason: "",
     })
   }, [currentStatus, reset, ticketId])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    void (async () => {
+      try {
+        const data = await fetchTicketResolutionCodesAll()
+        setResolutionCodes(Array.isArray(data) ? data : [])
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "加载解决码失败")
+      }
+    })()
+  }, [open])
+
+  const resolutionCodeOptions = resolutionCodes.map((item) => ({
+    value: item.code,
+    label: item.name,
+  }))
 
   async function onFormSubmit(values: FormValues) {
     if (!ticketId) {
@@ -159,7 +183,19 @@ export function TicketStatusDialog({
                 <Field>
                   <FieldLabel>解决编码</FieldLabel>
                   <FieldContent>
-                    <Textarea rows={2} placeholder="可选：填写解决编码" {...register("resolutionCode")} />
+                    <Controller
+                      control={control}
+                      name="resolutionCode"
+                      render={({ field }) => (
+                        <OptionCombobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="请选择解决编码"
+                          options={resolutionCodeOptions}
+                          emptyText="暂无可选解决码"
+                        />
+                      )}
+                    />
                   </FieldContent>
                 </Field>
                 <Field>

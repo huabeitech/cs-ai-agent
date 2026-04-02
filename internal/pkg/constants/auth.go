@@ -74,14 +74,26 @@ var (
 	PermissionConversationLinkCustomer = Permission{Name: "关联会话客户", Code: "conversation.linkCustomer", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/link_customer", SortNo: 495}
 
 	// 工单相关权限
-	PermissionTicketView         = Permission{Name: "查看工单", Code: "ticket.view", Type: "api", GroupName: "ticket", Method: "ANY", APIPath: "/api/console/ticket/list", SortNo: 500}
-	PermissionTicketCreate       = Permission{Name: "创建工单", Code: "ticket.create", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/create", SortNo: 510}
-	PermissionTicketUpdate       = Permission{Name: "更新工单", Code: "ticket.update", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/update", SortNo: 520}
-	PermissionTicketAssign       = Permission{Name: "指派工单", Code: "ticket.assign", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/assign", SortNo: 530}
-	PermissionTicketChangeStatus = Permission{Name: "变更工单状态", Code: "ticket.changeStatus", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/change_status", SortNo: 540}
-	PermissionTicketReply        = Permission{Name: "回复工单", Code: "ticket.reply", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reply", SortNo: 550}
-	PermissionTicketClose        = Permission{Name: "关闭工单", Code: "ticket.close", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/close", SortNo: 560}
-	PermissionTicketReopen       = Permission{Name: "重开工单", Code: "ticket.reopen", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reopen", SortNo: 570}
+	PermissionTicketView                 = Permission{Name: "查看工单", Code: "ticket.view", Type: "api", GroupName: "ticket", Method: "ANY", APIPath: "/api/console/ticket/list", SortNo: 500}
+	PermissionTicketCreate               = Permission{Name: "创建工单", Code: "ticket.create", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/create", SortNo: 510}
+	PermissionTicketUpdate               = Permission{Name: "更新工单", Code: "ticket.update", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/update", SortNo: 520}
+	PermissionTicketAssign               = Permission{Name: "指派工单", Code: "ticket.assign", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/assign", SortNo: 530}
+	PermissionTicketChangeStatus         = Permission{Name: "变更工单状态", Code: "ticket.changeStatus", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/change_status", SortNo: 540}
+	PermissionTicketReply                = Permission{Name: "回复工单", Code: "ticket.reply", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reply", SortNo: 550}
+	PermissionTicketClose                = Permission{Name: "关闭工单", Code: "ticket.close", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/close", SortNo: 560}
+	PermissionTicketReopen               = Permission{Name: "重开工单", Code: "ticket.reopen", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reopen", SortNo: 570}
+	PermissionTicketCategoryView         = Permission{Name: "查看工单分类", Code: "ticketCategory.view", Type: "api", GroupName: "ticketCategory", Method: "ANY", APIPath: "/api/console/ticket-category/list", SortNo: 580}
+	PermissionTicketCategoryCreate       = Permission{Name: "创建工单分类", Code: "ticketCategory.create", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/create", SortNo: 590}
+	PermissionTicketCategoryUpdate       = Permission{Name: "更新工单分类", Code: "ticketCategory.update", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/update", SortNo: 600}
+	PermissionTicketCategoryDelete       = Permission{Name: "删除工单分类", Code: "ticketCategory.delete", Type: "api", GroupName: "ticketCategory", Method: "POST", APIPath: "/api/console/ticket-category/delete", SortNo: 610}
+	PermissionTicketResolutionCodeView   = Permission{Name: "查看工单解决码", Code: "ticketResolutionCode.view", Type: "api", GroupName: "ticketResolutionCode", Method: "ANY", APIPath: "/api/console/ticket-resolution-code/list", SortNo: 620}
+	PermissionTicketResolutionCodeCreate = Permission{Name: "创建工单解决码", Code: "ticketResolutionCode.create", Type: "api", GroupName: "ticketResolutionCode", Method: "POST", APIPath: "/api/console/ticket-resolution-code/create", SortNo: 630}
+	PermissionTicketResolutionCodeUpdate = Permission{Name: "更新工单解决码", Code: "ticketResolutionCode.update", Type: "api", GroupName: "ticketResolutionCode", Method: "POST", APIPath: "/api/console/ticket-resolution-code/update", SortNo: 640}
+	PermissionTicketResolutionCodeDelete = Permission{Name: "删除工单解决码", Code: "ticketResolutionCode.delete", Type: "api", GroupName: "ticketResolutionCode", Method: "POST", APIPath: "/api/console/ticket-resolution-code/delete", SortNo: 650}
+	PermissionTicketSLAConfigView        = Permission{Name: "查看工单SLA配置", Code: "ticketSLAConfig.view", Type: "api", GroupName: "ticketSLAConfig", Method: "ANY", APIPath: "/api/console/ticket-sla-config/list", SortNo: 660}
+	PermissionTicketSLAConfigCreate      = Permission{Name: "创建工单SLA配置", Code: "ticketSLAConfig.create", Type: "api", GroupName: "ticketSLAConfig", Method: "POST", APIPath: "/api/console/ticket-sla-config/create", SortNo: 670}
+	PermissionTicketSLAConfigUpdate      = Permission{Name: "更新工单SLA配置", Code: "ticketSLAConfig.update", Type: "api", GroupName: "ticketSLAConfig", Method: "POST", APIPath: "/api/console/ticket-sla-config/update", SortNo: 680}
+	PermissionTicketSLAConfigDelete      = Permission{Name: "删除工单SLA配置", Code: "ticketSLAConfig.delete", Type: "api", GroupName: "ticketSLAConfig", Method: "POST", APIPath: "/api/console/ticket-sla-config/delete", SortNo: 690}
 
 	// 快捷回复相关权限
 	PermissionQuickReplyView   = Permission{Name: "查看快捷回复", Code: "quickReply.view", Type: "api", GroupName: "quickReply", Method: "ANY", APIPath: "/api/console/quick-reply/list", SortNo: 610}
@@ -199,6 +211,18 @@ var Permissions = []Permission{
 	PermissionTicketReply,
 	PermissionTicketClose,
 	PermissionTicketReopen,
+	PermissionTicketCategoryView,
+	PermissionTicketCategoryCreate,
+	PermissionTicketCategoryUpdate,
+	PermissionTicketCategoryDelete,
+	PermissionTicketResolutionCodeView,
+	PermissionTicketResolutionCodeCreate,
+	PermissionTicketResolutionCodeUpdate,
+	PermissionTicketResolutionCodeDelete,
+	PermissionTicketSLAConfigView,
+	PermissionTicketSLAConfigCreate,
+	PermissionTicketSLAConfigUpdate,
+	PermissionTicketSLAConfigDelete,
 	PermissionQuickReplyView,
 	PermissionQuickReplyCreate,
 	PermissionQuickReplyUpdate,
@@ -289,6 +313,9 @@ var RolePermissions = map[string][]Permission{
 		PermissionSessionView, PermissionSessionRevoke,
 		PermissionConversationView, PermissionConversationAssign, PermissionConversationTransfer, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
+		PermissionTicketCategoryView, PermissionTicketCategoryCreate, PermissionTicketCategoryUpdate, PermissionTicketCategoryDelete,
+		PermissionTicketResolutionCodeView, PermissionTicketResolutionCodeCreate, PermissionTicketResolutionCodeUpdate, PermissionTicketResolutionCodeDelete,
+		PermissionTicketSLAConfigView, PermissionTicketSLAConfigCreate, PermissionTicketSLAConfigUpdate, PermissionTicketSLAConfigDelete,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
@@ -307,6 +334,9 @@ var RolePermissions = map[string][]Permission{
 		PermissionSessionView,
 		PermissionConversationView, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
+		PermissionTicketCategoryView, PermissionTicketCategoryCreate, PermissionTicketCategoryUpdate, PermissionTicketCategoryDelete,
+		PermissionTicketResolutionCodeView, PermissionTicketResolutionCodeCreate, PermissionTicketResolutionCodeUpdate, PermissionTicketResolutionCodeDelete,
+		PermissionTicketSLAConfigView, PermissionTicketSLAConfigCreate, PermissionTicketSLAConfigUpdate, PermissionTicketSLAConfigDelete,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView,
@@ -324,6 +354,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionPermissionView,
 		PermissionConversationView,
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketReply,
+		PermissionTicketCategoryView, PermissionTicketResolutionCodeView, PermissionTicketSLAConfigView,
 		PermissionQuickReplyView,
 		PermissionTagView,
 		PermissionCompanyView,

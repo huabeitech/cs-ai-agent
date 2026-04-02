@@ -311,6 +311,7 @@ export default function TicketDetailPage() {
                 <CardContent className="space-y-3 text-sm">
                   <InfoRow label="工单号" value={ticket.ticketNo} />
                   <InfoRow label="状态" value={ticketStatusLabel(ticket.status)} />
+                  <InfoRow label="分类" value={ticket.categoryName || "未分类"} />
                   <InfoRow label="优先级" value={String(ticket.priority)} />
                   <InfoRow label="处理人" value={ticket.currentAssigneeName || "未指派"} />
                   <InfoRow label="处理团队" value={ticket.currentTeamName || "未分组"} />
@@ -337,6 +338,26 @@ export default function TicketDetailPage() {
                   <InfoRow label="客户" value={ticket.customer?.name || "未绑定客户"} />
                   <InfoRow label="手机号" value={ticket.customer?.primaryMobile || "—"} />
                   <InfoRow label="邮箱" value={ticket.customer?.primaryEmail || "—"} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">解决信息</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <InfoRow
+                    label="解决码"
+                    value={ticket.resolutionCodeName || ticket.resolutionCode || "—"}
+                  />
+                  <InfoRow
+                    label="解决说明"
+                    value={ticket.resolutionSummary || "—"}
+                  />
+                  <InfoRow
+                    label="关闭原因"
+                    value={ticket.closeReason || "—"}
+                  />
                 </CardContent>
               </Card>
 

@@ -32,6 +32,9 @@ var Models = []any{
 	&QuickReply{},
 	&ConversationEventLog{},
 	&Ticket{},
+	&TicketCategory{},
+	&TicketResolutionCode{},
+	&TicketSLAConfig{},
 	&TicketComment{},
 	&TicketWatcher{},
 	&TicketEventLog{},
@@ -473,6 +476,41 @@ type Ticket struct {
 	ReopenedCount       int                  `gorm:"type:int;not null;default:0"`
 	CustomFieldsJSON    string               `gorm:"type:text"`
 	ExtraJSON           string               `gorm:"type:text"`
+	AuditFields
+}
+
+// TicketCategory 工单分类。
+type TicketCategory struct {
+	ID       int64        `gorm:"primaryKey;autoIncrement"`
+	Name     string       `gorm:"type:varchar(100);not null;default:'';index"`
+	Code     string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"`
+	ParentID int64        `gorm:"type:bigint;not null;default:0;index"`
+	SortNo   int          `gorm:"type:int;not null;default:0;index"`
+	Status   enums.Status `gorm:"type:int;not null;default:0;index"`
+	Remark   string       `gorm:"type:text"`
+	AuditFields
+}
+
+// TicketResolutionCode 工单解决码。
+type TicketResolutionCode struct {
+	ID     int64        `gorm:"primaryKey;autoIncrement"`
+	Name   string       `gorm:"type:varchar(100);not null;default:'';index"`
+	Code   string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"`
+	SortNo int          `gorm:"type:int;not null;default:0;index"`
+	Status enums.Status `gorm:"type:int;not null;default:0;index"`
+	Remark string       `gorm:"type:text"`
+	AuditFields
+}
+
+// TicketSLAConfig 工单 SLA 配置。
+type TicketSLAConfig struct {
+	ID                   int64                `gorm:"primaryKey;autoIncrement"`
+	Name                 string               `gorm:"type:varchar(100);not null;default:'';index"`
+	Priority             enums.TicketPriority `gorm:"type:int;not null;default:2;uniqueIndex"`
+	FirstResponseMinutes int                  `gorm:"type:int;not null;default:0"`
+	ResolutionMinutes    int                  `gorm:"type:int;not null;default:0"`
+	Status               enums.Status         `gorm:"type:int;not null;default:0;index"`
+	Remark               string               `gorm:"type:text"`
 	AuditFields
 }
 

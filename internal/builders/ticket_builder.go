@@ -44,6 +44,16 @@ func BuildTicket(item *models.Ticket) *response.TicketResponse {
 		CreatedAt:           utils.FormatTime(item.CreatedAt),
 		UpdatedAt:           utils.FormatTime(item.UpdatedAt),
 	}
+	if item.CategoryID > 0 {
+		if category := services.TicketCategoryService.Get(item.CategoryID); category != nil {
+			ret.CategoryName = category.Name
+		}
+	}
+	if item.ResolutionCode != "" {
+		if code := services.TicketResolutionCodeService.Take("code = ? AND status <> ?", item.ResolutionCode, enums.StatusDeleted); code != nil {
+			ret.ResolutionCodeName = code.Name
+		}
+	}
 	if item.CurrentAssigneeID > 0 {
 		if user := services.UserService.Get(item.CurrentAssigneeID); user != nil {
 			ret.CurrentAssigneeName = user.Nickname
