@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertCircleIcon,
   FileTextIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -92,6 +91,34 @@ function getIndexStatusBadgeVariant(status: string) {
     default:
       return "outline" as const;
   }
+}
+
+function renderIndexStatusBadge(item: KnowledgeDocument) {
+  const badge = (
+    <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
+      {item.indexStatusName}
+    </Badge>
+  )
+
+  if (
+    item.indexStatus !== KnowledgeDocumentIndexStatus.Failed ||
+    !item.indexError
+  ) {
+    return badge
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <span className="inline-flex">{badge}</span>
+        </TooltipTrigger>
+        <TooltipContent align="start" className="max-w-sm whitespace-normal">
+          {item.indexError}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
 }
 
 function getDocumentPreview(content: string, contentType: string) {
@@ -369,34 +396,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium">{item.title}</div>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
-                                      {item.indexStatusName}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent align="start">
-                                    <div className="space-y-1">
-                                      <div>索引状态：{item.indexStatusName}</div>
-                                      <div>索引时间：{formatDateTime(item.indexedAt)}</div>
-                                      {item.indexError ? <div>失败原因：{item.indexError}</div> : null}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              {item.indexError ? (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <AlertCircleIcon className="size-3.5 text-destructive" />
-                                    </TooltipTrigger>
-                                    <TooltipContent align="start">
-                                      {item.indexError}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              ) : null}
+                              {renderIndexStatusBadge(item)}
                             </div>
                             <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
                               {getDocumentPreview(item.content, item.contentType)}
@@ -475,24 +475,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <div className="truncate text-sm font-medium">{item.title}</div>
-                          <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
-                            {item.indexStatusName}
-                          </Badge>
-                          {item.indexError ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <AlertCircleIcon className="size-3.5 text-destructive" />
-                                </TooltipTrigger>
-                                <TooltipContent align="start">
-                                  <div className="space-y-1">
-                                    <div>索引时间：{formatDateTime(item.indexedAt)}</div>
-                                    <div>失败原因：{item.indexError}</div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : null}
+                          {renderIndexStatusBadge(item)}
                         </div>
                         <div className="mt-0.5 truncate text-xs text-muted-foreground">
                           {getDocumentPreview(item.content, item.contentType)}

@@ -2,7 +2,6 @@
 
 import {
   MoreHorizontalIcon,
-  PencilIcon,
   SearchIcon,
   Trash2Icon,
   WrenchIcon,
@@ -11,7 +10,9 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { ListPagination } from "@/components/list-pagination";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -35,6 +35,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   buildKnowledgeFAQIndex,
   createKnowledgeFAQ,
   deleteKnowledgeFAQ,
@@ -44,15 +50,14 @@ import {
   type KnowledgeFAQ,
   type PageResult,
 } from "@/lib/api/admin";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import {
   KnowledgeDocumentIndexStatus,
   KnowledgeDocumentIndexStatusLabels,
 } from "@/lib/generated/enums";
-import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import { formatDateTime } from "@/lib/utils";
 import { FAQEditDialog } from "./faq-edit";
 import { FAQImportDialog } from "./faq-import-dialog";
-import { ButtonGroup } from "@/components/ui/button-group";
 
 type FAQListProps = {
   knowledgeBaseId: number | null;
@@ -81,6 +86,34 @@ function getIndexStatusBadgeVariant(status: string) {
     default:
       return "outline" as const;
   }
+}
+
+function renderIndexStatusBadge(item: KnowledgeFAQ) {
+  const badge = (
+    <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
+      {item.indexStatusName}
+    </Badge>
+  );
+
+  if (
+    item.indexStatus !== KnowledgeDocumentIndexStatus.Failed ||
+    !item.indexError
+  ) {
+    return badge;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <span className="inline-flex">{badge}</span>
+        </TooltipTrigger>
+        <TooltipContent align="start" className="max-w-sm whitespace-normal">
+          {item.indexError}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 export function FAQList({
@@ -120,7 +153,8 @@ export function FAQList({
       const data = await fetchKnowledgeFAQs({
         knowledgeBaseId,
         question: keyword.trim() || undefined,
-        indexStatus: indexStatusFilter === "all" ? undefined : indexStatusFilter,
+        indexStatus:
+          indexStatusFilter === "all" ? undefined : indexStatusFilter,
         page,
         limit,
       });
@@ -243,7 +277,7 @@ export function FAQList({
                   ? "全部索引状态"
                   : getEnumLabel(
                       KnowledgeDocumentIndexStatusLabels,
-                      indexStatusFilterInput as KnowledgeDocumentIndexStatus
+                      indexStatusFilterInput as KnowledgeDocumentIndexStatus,
                     )}
               </SelectValue>
             </SelectTrigger>
@@ -289,11 +323,7 @@ export function FAQList({
                         {item.answer}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
-                        {item.indexStatusName}
-                      </Badge>
-                    </TableCell>
+                    <TableCell>{renderIndexStatusBadge(item)}</TableCell>
                     <TableCell>
                       {Array.isArray(item.similarQuestions)
                         ? item.similarQuestions.length
