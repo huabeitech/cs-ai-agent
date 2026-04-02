@@ -203,7 +203,7 @@ export function ConversationInfoPanel({
         "flex h-full min-h-0 flex-col overflow-hidden",
         embedded
           ? "bg-background text-foreground"
-          : "border-l border-border bg-card text-card-foreground",
+          : "border-border bg-card text-card-foreground",
         className,
       )}
     >
