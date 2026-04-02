@@ -5,6 +5,7 @@ import { AlertTriangleIcon, CircleDashedIcon, RefreshCcwIcon, TimerResetIcon, Wr
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { OptionCombobox } from "@/components/option-combobox"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,21 +22,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { fetchTicketSummary, fetchTickets, type TicketItem, type TicketSummary } from "@/lib/api/ticket"
+import {
+  fetchAgentTeamsAll,
+  type AdminAgentTeam,
+} from "@/lib/api/admin"
+import { fetchTickets, type TicketItem } from "@/lib/api/ticket"
 import { formatDateTime } from "@/lib/utils"
 import { TicketPriorityBadge } from "../tickets/_components/ticket-priority-badge"
 import { TicketSLABadge } from "../tickets/_components/ticket-sla-badge"
 import { TicketStatusBadge } from "../tickets/_components/ticket-status-badge"
-
-const emptySummary: TicketSummary = {
-  all: 0,
-  mine: 0,
-  watching: 0,
-  unassigned: 0,
-  pendingCustomer: 0,
-  pendingInternal: 0,
-  overdue: 0,
-}
 
 function getResolveDeadlineTime(ticket: TicketItem) {
   if (!ticket.resolveDeadlineAt) {
@@ -52,13 +47,13 @@ function isClosedStatus(status: string) {
   return status === "resolved" || status === "closed" || status === "cancelled"
 }
 
-function isHighRiskTicket(ticket: TicketItem) {
+function isHighRiskTicket(ticket: TicketItem, riskMinutes: number) {
   const deadline = getResolveDeadlineTime(ticket)
   if (deadline === null || isClosedStatus(ticket.status)) {
     return false
   }
   const remainingMinutes = Math.floor((deadline - Date.now()) / 60000)
-  return remainingMinutes >= 0 && remainingMinutes <= 240
+  return remainingMinutes >= 0 && remainingMinutes <= riskMinutes
 }
 
 function compareTicketRisk(left: TicketItem, right: TicketItem) {
@@ -155,42 +150,68 @@ function RiskTable({ title, description, items, emptyText }: RiskTableProps) {
 }
 
 export default function TicketRiskPage() {
-  const [summary, setSummary] = useState<TicketSummary>(emptySummary)
   const [loading, setLoading] = useState(true)
   const [overdueTickets, setOverdueTickets] = useState<TicketItem[]>([])
   const [highRiskTickets, setHighRiskTickets] = useState<TicketItem[]>([])
   const [unassignedTickets, setUnassignedTickets] = useState<TicketItem[]>([])
   const [pendingInternalTickets, setPendingInternalTickets] = useState<TicketItem[]>([])
+  const [overdueTotal, setOverdueTotal] = useState(0)
+  const [highRiskTotal, setHighRiskTotal] = useState(0)
+  const [unassignedTotal, setUnassignedTotal] = useState(0)
+  const [pendingInternalTotal, setPendingInternalTotal] = useState(0)
+  const [teams, setTeams] = useState<AdminAgentTeam[]>([])
+  const [teamFilter, setTeamFilter] = useState("all")
+  const [riskWindow, setRiskWindow] = useState("240")
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await fetchAgentTeamsAll()
+        setTeams(Array.isArray(data) ? data : [])
+      } catch {
+        setTeams([])
+      }
+    })()
+  }, [])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [summaryData, overdueData, openData, unassignedData, pendingInternalData] =
+      const currentTeamId = teamFilter === "all" ? undefined : Number(teamFilter)
+      const riskMinutes = Number(riskWindow)
+      const [overdueData, activeData, unassignedData, pendingInternalData] =
         await Promise.all([
-          fetchTicketSummary(),
-          fetchTickets({ overdue: 1, page: 1, limit: 10 }),
-          fetchTickets({ status: "open", page: 1, limit: 100 }),
-          fetchTickets({ unassigned: 1, page: 1, limit: 10 }),
-          fetchTickets({ status: "pending_internal", page: 1, limit: 10 }),
+          fetchTickets({ overdue: 1, currentTeamId, page: 1, limit: 10 }),
+          fetchTickets({ currentTeamId, page: 1, limit: 200 }),
+          fetchTickets({ unassigned: 1, currentTeamId, page: 1, limit: 10 }),
+          fetchTickets({ status: "pending_internal", currentTeamId, page: 1, limit: 10 }),
         ])
 
-      setSummary(summaryData)
       setOverdueTickets(Array.isArray(overdueData.results) ? overdueData.results : [])
+      setOverdueTotal(overdueData.page?.total ?? 0)
       setUnassignedTickets(Array.isArray(unassignedData.results) ? unassignedData.results : [])
+      setUnassignedTotal(unassignedData.page?.total ?? 0)
       setPendingInternalTickets(
         Array.isArray(pendingInternalData.results) ? pendingInternalData.results : [],
       )
+      setPendingInternalTotal(pendingInternalData.page?.total ?? 0)
 
-      const openTickets = Array.isArray(openData.results) ? openData.results : []
+      const activeTickets = (Array.isArray(activeData.results) ? activeData.results : []).filter(
+        (item) => !isClosedStatus(item.status),
+      )
+      const filteredHighRiskTickets = activeTickets
+        .filter((item) => isHighRiskTicket(item, riskMinutes))
+        .sort(compareTicketRisk)
+      setHighRiskTotal(filteredHighRiskTickets.length)
       setHighRiskTickets(
-        openTickets.filter(isHighRiskTicket).sort(compareTicketRisk).slice(0, 10),
+        filteredHighRiskTickets.slice(0, 10),
       )
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载 SLA 风险页失败")
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [riskWindow, teamFilter])
 
   useEffect(() => {
     void loadData()
@@ -201,33 +222,33 @@ export default function TicketRiskPage() {
       {
         title: "已超时",
         description: "解决 SLA 已经 breach 的工单",
-        value: summary.overdue,
+        value: overdueTotal,
         icon: AlertTriangleIcon,
         tone: "text-red-700 bg-red-500/10",
       },
       {
-        title: "4 小时内到期",
+        title: `${Number(riskWindow) / 60} 小时内到期`,
         description: "建议组长优先盯防的风险队列",
-        value: highRiskTickets.length,
+        value: highRiskTotal,
         icon: TimerResetIcon,
         tone: "text-orange-700 bg-orange-500/10",
       },
       {
         title: "待分配",
         description: "目前还没有明确负责人的工单",
-        value: summary.unassigned,
+        value: unassignedTotal,
         icon: CircleDashedIcon,
         tone: "text-amber-700 bg-amber-500/10",
       },
       {
         title: "待内部处理",
         description: "等待内部团队协作处理的工单",
-        value: summary.pendingInternal,
+        value: pendingInternalTotal,
         icon: WrenchIcon,
         tone: "text-blue-700 bg-blue-500/10",
       },
     ],
-    [highRiskTickets.length, summary.overdue, summary.pendingInternal, summary.unassigned],
+    [highRiskTotal, overdueTotal, pendingInternalTotal, riskWindow, unassignedTotal],
   )
 
   return (
@@ -241,6 +262,29 @@ export default function TicketRiskPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <div className="w-44">
+              <OptionCombobox
+                value={teamFilter}
+                onChange={setTeamFilter}
+                placeholder="全部团队"
+                options={[
+                  { value: "all", label: "全部团队" },
+                  ...teams.map((team) => ({ value: String(team.id), label: team.name })),
+                ]}
+              />
+            </div>
+            <div className="w-44">
+              <OptionCombobox
+                value={riskWindow}
+                onChange={setRiskWindow}
+                placeholder="风险时间窗"
+                options={[
+                  { value: "60", label: "1 小时内" },
+                  { value: "240", label: "4 小时内" },
+                  { value: "1440", label: "24 小时内" },
+                ]}
+              />
+            </div>
             <Link href="/tickets">
               <Button variant="outline">前往工单工作台</Button>
             </Link>
