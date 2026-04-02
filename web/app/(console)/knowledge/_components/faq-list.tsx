@@ -1,6 +1,11 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import {
+  MoreHorizontalIcon,
+  PencilIcon,
+  SearchIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +19,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   createKnowledgeFAQ,
   deleteKnowledgeFAQ,
@@ -41,7 +52,10 @@ export type FAQListActionState = {
   importing: boolean;
 };
 
-export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) {
+export function FAQList({
+  knowledgeBaseId,
+  onActionStateChange,
+}: FAQListProps) {
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
@@ -128,7 +142,11 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
   }
 
   if (!knowledgeBaseId) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">请选择一个FAQ知识库查看FAQ</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        请选择一个FAQ知识库查看FAQ
+      </div>
+    );
   }
 
   return (
@@ -162,70 +180,89 @@ export function FAQList({ knowledgeBaseId, onActionStateChange }: FAQListProps) 
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>问题</TableHead>
-                <TableHead>索引状态</TableHead>
-                <TableHead>相似问</TableHead>
-                <TableHead>更新时间</TableHead>
-                <TableHead className="w-[80px] text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {result.results.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.question}</div>
-                    <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.answer}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={item.indexStatus === "failed" ? "destructive" : item.indexStatus === "indexed" ? "secondary" : "outline"}>
-                      {item.indexStatusName}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{item.similarQuestions.length}</TableCell>
-                  <TableCell>{formatDateTime(item.updatedAt)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={<Button variant="ghost" size="icon" />}
-                        aria-label={`更多操作 ${item.question}`}
-                      >
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingItem(item);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <PencilIcon className="mr-2 size-4" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => void handleDelete(item)}
-                        >
-                          <Trash2Icon className="mr-2 size-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!loading && result.results.length === 0 ? (
+        <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
+          <div className="h-full overflow-auto">
+            <table className="w-full min-w-max caption-bottom text-sm">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                    当前知识库还没有FAQ
-                  </TableCell>
+                  <TableHead>问题</TableHead>
+                  <TableHead>索引状态</TableHead>
+                  <TableHead>相似问题</TableHead>
+                  <TableHead>更新时间</TableHead>
+                  <TableHead className="w-20 text-right">操作</TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {result.results.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="max-w-sm">
+                      <div className="font-medium">{item.question}</div>
+                      <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {item.answer}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          item.indexStatus === "failed"
+                            ? "destructive"
+                            : item.indexStatus === "indexed"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {item.indexStatusName}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {Array.isArray(item.similarQuestions)
+                        ? item.similarQuestions.length
+                        : 0}
+                    </TableCell>
+                    <TableCell>{formatDateTime(item.updatedAt)}</TableCell>
+                    <TableCell className="w-20 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="icon" />}
+                          aria-label={`更多操作 ${item.question}`}
+                        >
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingItem(item);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <PencilIcon className="mr-2 size-4" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => void handleDelete(item)}
+                          >
+                            <Trash2Icon className="mr-2 size-4" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!loading && result.results.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-12 text-center text-sm text-muted-foreground"
+                    >
+                      当前知识库还没有FAQ
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </table>
+          </div>
         </div>
 
         <ListPagination
