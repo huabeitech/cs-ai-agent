@@ -38,6 +38,7 @@ import {
 import { formatDateTime } from "@/lib/utils";
 import { FAQEditDialog } from "./faq-edit";
 import { FAQImportDialog } from "./faq-import-dialog";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 type FAQListProps = {
   knowledgeBaseId: number | null;
@@ -221,32 +222,35 @@ export function FAQList({
                     </TableCell>
                     <TableCell>{formatDateTime(item.updatedAt)}</TableCell>
                     <TableCell className="w-20 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={<Button variant="ghost" size="icon" />}
-                          aria-label={`更多操作 ${item.question}`}
+                      <ButtonGroup className="ml-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingItem(item);
+                            setDialogOpen(true);
+                          }}
                         >
-                          <MoreHorizontalIcon className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingItem(item);
-                              setDialogOpen(true);
-                            }}
+                          编辑
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={<Button variant="outline" size="icon-sm" />}
+                            aria-label={`更多操作 ${item.question}`}
                           >
-                            <PencilIcon className="mr-2 size-4" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => void handleDelete(item)}
-                          >
-                            <Trash2Icon className="mr-2 size-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <MoreHorizontalIcon className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => void handleDelete(item)}
+                            >
+                              <Trash2Icon className="mr-2 size-4" />
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </ButtonGroup>
                     </TableCell>
                   </TableRow>
                 ))}
