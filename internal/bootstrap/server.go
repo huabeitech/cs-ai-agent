@@ -143,6 +143,7 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Party("/session").Handle(new(console.SessionController))
 		m.Party("/tag").Handle(new(console.TagController))
 		m.Party("/conversation").Handle(new(console.ConversationController))
+		m.Party("/ticket").Handle(new(console.TicketController))
 		m.Party("/quick-reply").Handle(new(console.QuickReplyController))
 		m.Party("/widget-site").Handle(new(console.WidgetSiteController))
 		m.Party("/agent").Handle(new(console.AgentController))

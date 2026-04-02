@@ -73,11 +73,21 @@ var (
 	PermissionConversationRecycle      = Permission{Name: "回收会话", Code: "conversation.recycle", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/recycle", SortNo: 490}
 	PermissionConversationLinkCustomer = Permission{Name: "关联会话客户", Code: "conversation.linkCustomer", Type: "api", GroupName: "conversation", Method: "POST", APIPath: "/api/console/conversation/link_customer", SortNo: 495}
 
+	// 工单相关权限
+	PermissionTicketView         = Permission{Name: "查看工单", Code: "ticket.view", Type: "api", GroupName: "ticket", Method: "ANY", APIPath: "/api/console/ticket/list", SortNo: 500}
+	PermissionTicketCreate       = Permission{Name: "创建工单", Code: "ticket.create", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/create", SortNo: 510}
+	PermissionTicketUpdate       = Permission{Name: "更新工单", Code: "ticket.update", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/update", SortNo: 520}
+	PermissionTicketAssign       = Permission{Name: "指派工单", Code: "ticket.assign", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/assign", SortNo: 530}
+	PermissionTicketChangeStatus = Permission{Name: "变更工单状态", Code: "ticket.changeStatus", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/change_status", SortNo: 540}
+	PermissionTicketReply        = Permission{Name: "回复工单", Code: "ticket.reply", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reply", SortNo: 550}
+	PermissionTicketClose        = Permission{Name: "关闭工单", Code: "ticket.close", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/close", SortNo: 560}
+	PermissionTicketReopen       = Permission{Name: "重开工单", Code: "ticket.reopen", Type: "api", GroupName: "ticket", Method: "POST", APIPath: "/api/console/ticket/reopen", SortNo: 570}
+
 	// 快捷回复相关权限
-	PermissionQuickReplyView   = Permission{Name: "查看快捷回复", Code: "quickReply.view", Type: "api", GroupName: "quickReply", Method: "ANY", APIPath: "/api/console/quick-reply/list", SortNo: 510}
-	PermissionQuickReplyCreate = Permission{Name: "创建快捷回复", Code: "quickReply.create", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/create", SortNo: 520}
-	PermissionQuickReplyUpdate = Permission{Name: "更新快捷回复", Code: "quickReply.update", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/update", SortNo: 530}
-	PermissionQuickReplyDelete = Permission{Name: "删除快捷回复", Code: "quickReply.delete", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/delete", SortNo: 540}
+	PermissionQuickReplyView   = Permission{Name: "查看快捷回复", Code: "quickReply.view", Type: "api", GroupName: "quickReply", Method: "ANY", APIPath: "/api/console/quick-reply/list", SortNo: 610}
+	PermissionQuickReplyCreate = Permission{Name: "创建快捷回复", Code: "quickReply.create", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/create", SortNo: 620}
+	PermissionQuickReplyUpdate = Permission{Name: "更新快捷回复", Code: "quickReply.update", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/update", SortNo: 630}
+	PermissionQuickReplyDelete = Permission{Name: "删除快捷回复", Code: "quickReply.delete", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/console/quick-reply/delete", SortNo: 640}
 
 	// 标签相关权限
 	PermissionTagView   = Permission{Name: "查看标签", Code: "tag.view", Type: "api", GroupName: "tag", Method: "ANY", APIPath: "/api/console/tag/list", SortNo: 550}
@@ -177,6 +187,14 @@ var Permissions = []Permission{
 	PermissionConversationHandover,
 	PermissionConversationRecycle,
 	PermissionConversationLinkCustomer,
+	PermissionTicketView,
+	PermissionTicketCreate,
+	PermissionTicketUpdate,
+	PermissionTicketAssign,
+	PermissionTicketChangeStatus,
+	PermissionTicketReply,
+	PermissionTicketClose,
+	PermissionTicketReopen,
 	PermissionQuickReplyView,
 	PermissionQuickReplyCreate,
 	PermissionQuickReplyUpdate,
@@ -262,6 +280,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionPermissionView, PermissionPermissionSync,
 		PermissionSessionView, PermissionSessionRevoke,
 		PermissionConversationView, PermissionConversationAssign, PermissionConversationTransfer, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
+		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
@@ -279,6 +298,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionPermissionView,
 		PermissionSessionView,
 		PermissionConversationView, PermissionConversationClose, PermissionConversationSend, PermissionConversationTag, PermissionConversationHandover, PermissionConversationRecycle, PermissionConversationLinkCustomer,
+		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView,
@@ -295,6 +315,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionRoleView,
 		PermissionPermissionView,
 		PermissionConversationView,
+		PermissionTicketView, PermissionTicketCreate, PermissionTicketReply,
 		PermissionQuickReplyView,
 		PermissionTagView,
 		PermissionCompanyView,

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 
 import {
   BotMessageSquareIcon,
+  ClipboardListIcon,
   // UsersIcon,
   // BookOpenTextIcon,
   // SettingsIcon,
@@ -15,6 +16,11 @@ const agentNavItems = [
     title: "会话",
     url: "/workspace/conversations",
     icon: <BotMessageSquareIcon className="size-4" />,
+  },
+  {
+    title: "工单",
+    url: "/workspace/tickets",
+    icon: <ClipboardListIcon className="size-4" />,
   },
   // {
   //   title: "客户",

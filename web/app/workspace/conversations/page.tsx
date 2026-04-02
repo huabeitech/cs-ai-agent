@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CircleUserRoundIcon,
   CircleXIcon,
+  FilePlus2Icon,
   Menu,
   MoreHorizontalIcon,
   X,
@@ -38,6 +39,7 @@ import {
   type AgentConversationFilterKey,
   useAgentConversationsStore,
 } from "@/lib/stores/agent-conversations";
+import { CreateTicketFromConversationDialog } from "../tickets/_components/create-ticket-from-conversation-dialog";
 import { ChatPanel } from "./_components/chat-panel";
 import { ConversationInfoPanel } from "./_components/conversation-info-panel";
 import { ConversationList } from "./_components/conversation-list";
@@ -64,6 +66,7 @@ export default function ConversationsPage() {
   const [mobileCustomerSheetOpen, setMobileCustomerSheetOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
+  const [createTicketOpen, setCreateTicketOpen] = useState(false);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const infoPanelRef = useRef<PanelImperativeHandle | null>(null);
   useEffect(() => {
@@ -191,6 +194,12 @@ export default function ConversationsPage() {
                   <span>{conversation.externalSource}</span>
                   <span className="text-muted-foreground/60"> / </span>
                   <span>{conversation.externalId}</span>
+                  {conversation.customerId ? (
+                    <>
+                      <span className="text-muted-foreground/60"> / </span>
+                      <span>已关联客户</span>
+                    </>
+                  ) : null}
                 </p>
               </div>
             </>
@@ -226,6 +235,13 @@ export default function ConversationsPage() {
               <MoreHorizontalIcon className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44 min-w-44">
+              <DropdownMenuItem
+                onClick={() => setCreateTicketOpen(true)}
+                disabled={!conversation}
+              >
+                <FilePlus2Icon />
+                转工单
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setTransferOpen(true)}
                 disabled={!conversation || conversation.status !== 2}
@@ -350,6 +366,24 @@ export default function ConversationsPage() {
           if (conversation?.id) {
             await handleConversationChanged(conversation.id);
           }
+        }}
+      />
+      <CreateTicketFromConversationDialog
+        open={createTicketOpen}
+        onOpenChange={setCreateTicketOpen}
+        conversation={
+          conversation
+            ? {
+                id: conversation.id,
+                subject: conversation.subject,
+                customerId: conversation.customerId ?? 0,
+                lastMessageSummary: conversation.lastMessageSummary,
+                currentAssigneeId: conversation.currentAssigneeId,
+              }
+            : null
+        }
+        onSuccess={() => {
+          setCreateTicketOpen(false);
         }}
       />
 

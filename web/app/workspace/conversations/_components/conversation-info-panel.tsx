@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Building2Icon,
   Link2Icon,
@@ -32,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { AgentConversation } from "@/lib/api/agent";
 import { type TagTree, fetchTagsAll } from "@/lib/api/admin";
 import { updateCompany, type AdminCompany } from "@/lib/api/company";
+import { fetchTickets, type TicketItem } from "@/lib/api/ticket";
 import {
   fetchCustomer,
   saveCustomerProfile,
@@ -53,6 +55,8 @@ import {
   ConversationTagBadges,
   ConversationTagPicker,
 } from "./conversation-tag-picker";
+import { TicketPriorityBadge } from "../../tickets/_components/ticket-priority-badge";
+import { TicketStatusBadge } from "../../tickets/_components/ticket-status-badge";
 
 function contactTypeLabel(contactType: ContactType | string) {
   return ContactTypeLabels[contactType as ContactType] ?? contactType;
@@ -542,6 +546,8 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         </section>
       ) : null}
 
+      <RelatedTicketsSection conversation={conversation} />
+
       <ConversationTagSection conversation={conversation} />
 
       <CustomerFormDialog
@@ -577,6 +583,79 @@ function CustomerLinkedBody({ conversation, customerId }: CustomerLinkedBodyProp
         />
       ) : null}
     </div>
+  );
+}
+
+function RelatedTicketsSection({ conversation }: { conversation: AgentConversation }) {
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTickets() {
+      setLoading(true);
+      try {
+        const data = await fetchTickets({
+          conversationId: conversation.id,
+          page: 1,
+          limit: 5,
+        });
+        if (!cancelled) {
+          setTickets(Array.isArray(data.results) ? data.results : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "加载关联工单失败");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    void loadTickets();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.id]);
+
+  return (
+    <section className="space-y-2 border-t pt-2">
+      <SectionHeading>关联工单</SectionHeading>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">加载工单中…</p>
+      ) : tickets.length > 0 ? (
+        <div className="space-y-2">
+          {tickets.map((ticket) => (
+            <Link
+              key={ticket.id}
+              href={`/workspace/tickets/${ticket.id}`}
+              className="block rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-muted/40"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-foreground">
+                    {ticket.title}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {ticket.ticketNo}
+                  </div>
+                </div>
+                <TicketPriorityBadge priority={ticket.priority} />
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <TicketStatusBadge status={ticket.status} />
+                <span className="text-xs text-muted-foreground">
+                  {ticket.updatedAt ? formatDateTime(ticket.updatedAt) : "—"}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">当前会话暂无关联工单</p>
+      )}
+    </section>
   );
 }
 
