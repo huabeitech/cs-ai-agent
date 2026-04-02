@@ -630,6 +630,8 @@ function RelatedTicketsSection({ conversation }: { conversation: AgentConversati
             <Link
               key={ticket.id}
               href={`/workspace/tickets/${ticket.id}`}
+              target="_blank"
+              rel="noreferrer"
               className="block rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-muted/40"
             >
               <div className="flex items-start justify-between gap-3">

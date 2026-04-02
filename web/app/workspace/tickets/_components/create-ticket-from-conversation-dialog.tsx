@@ -3,7 +3,7 @@
 import { toast } from "sonner"
 
 import { createTicketFromConversation } from "@/lib/api/ticket"
-import { TicketEditDialog } from "./ticket-edit-dialog"
+import { EditDialog } from "./edit"
 
 type ConversationSeed = {
   id: number
@@ -26,35 +26,25 @@ export function CreateTicketFromConversationDialog({
   onOpenChange,
   onSuccess,
 }: CreateTicketFromConversationDialogProps) {
+  const initialValues = conversation
+    ? {
+        title: conversation.subject || "",
+        description: conversation.lastMessageSummary || "",
+        priority: 2,
+        severity: 1,
+        currentAssigneeId: conversation.currentAssigneeId || undefined,
+      }
+    : undefined
+
   return (
-    <TicketEditDialog
+    <EditDialog
       open={open}
+      saving={false}
+      itemId={null}
       onOpenChange={onOpenChange}
       fixedConversationId={conversation?.id}
       fixedCustomerId={conversation?.customerId}
-      item={
-        conversation
-          ? {
-              id: 0,
-              ticketNo: "",
-              title: conversation.subject || "",
-              description: conversation.lastMessageSummary || "",
-              source: "conversation",
-              channel: "",
-              customerId: conversation.customerId || 0,
-              conversationId: conversation.id,
-              categoryId: 0,
-              type: "",
-              priority: 2,
-              severity: 1,
-              status: "new",
-              currentTeamId: 0,
-              currentAssigneeId: conversation.currentAssigneeId || 0,
-              watchedByMe: false,
-              reopenedCount: 0,
-            }
-          : null
-      }
+      initialValues={initialValues}
       titleOverride="会话转工单"
       descriptionOverride="从当前会话上下文创建正式工单"
       onSubmit={async (payload) => {

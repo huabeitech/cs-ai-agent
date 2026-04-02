@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -36,7 +35,7 @@ import {
   type TicketSummary,
 } from "@/lib/api/ticket"
 import { formatDateTime } from "@/lib/utils"
-import { TicketEditDialog } from "./_components/ticket-edit-dialog"
+import { EditDialog } from "./_components/edit"
 import { TicketPriorityBadge } from "./_components/ticket-priority-badge"
 import { TicketStatusBadge } from "./_components/ticket-status-badge"
 
@@ -51,12 +50,15 @@ const emptySummary: TicketSummary = {
 type QuickViewKey = "all" | "mine" | "watching" | "pending_customer" | "overdue"
 
 export default function TicketsPage() {
-  const [items, setItems] = useState<TicketItem[]>([])
-  const [paging, setPaging] = useState<Paging>(emptyPaging)
+  const [result, setResult] = useState<{ results: TicketItem[]; page: Paging }>({
+    results: [],
+    page: emptyPaging,
+  })
   const [summary, setSummary] = useState<TicketSummary>(emptySummary)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<TicketItem | null>(null)
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
   const [keywordInput, setKeywordInput] = useState("")
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -92,8 +94,8 @@ export default function TicketsPage() {
     setLoading(true)
     try {
       const data = await fetchTickets({
-        page: paging.page,
-        limit: paging.limit,
+        page: result.page.page,
+        limit: result.page.limit,
         keyword: keyword.trim() || undefined,
         status: activeStatusFilter,
         priority: priorityFilter === "all" ? undefined : Number(priorityFilter),
@@ -104,8 +106,10 @@ export default function TicketsPage() {
         mine: activeMineFilter,
         overdue: activeOverdueFilter,
       })
-      setItems(Array.isArray(data.results) ? data.results : [])
-      setPaging(data.page ?? emptyPaging)
+      setResult({
+        results: Array.isArray(data.results) ? data.results : [],
+        page: data.page ?? emptyPaging,
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载工单失败")
     } finally {
@@ -114,15 +118,14 @@ export default function TicketsPage() {
   }, [
     assigneeFilter,
     keyword,
-    paging.limit,
-    paging.page,
+    result.page.limit,
+    result.page.page,
     priorityFilter,
     activeStatusFilter,
     activeWatchFilter,
     activeMineFilter,
     activeOverdueFilter,
     teamFilter,
-    watchFilter,
   ])
 
   useEffect(() => {
@@ -144,16 +147,66 @@ export default function TicketsPage() {
     })()
   }, [])
 
-  async function handleSubmit(payload: Parameters<typeof createTicket>[0] | Parameters<typeof updateTicket>[0]) {
-    if ("ticketId" in payload) {
-      await updateTicket(payload)
-      toast.success("工单已更新")
-    } else {
-      await createTicket(payload)
-      toast.success("工单已创建")
+  function applyFilters() {
+    setKeyword(keywordInput)
+    setResult((current) => ({
+      ...current,
+      page: { ...current.page, page: 1 },
+    }))
+  }
+
+  function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") {
+      return
     }
-    await loadSummary()
-    await loadTickets()
+    event.preventDefault()
+    applyFilters()
+  }
+
+  function openCreateDialog() {
+    setEditingItemId(null)
+    setDialogOpen(true)
+  }
+
+  function openEditDialog(item: TicketItem) {
+    setEditingItemId(item.id)
+    setDialogOpen(true)
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    if (saving) {
+      return
+    }
+    if (!open) {
+      setEditingItemId(null)
+    }
+    setDialogOpen(open)
+  }
+
+  async function handleSubmit(
+    payload: Parameters<typeof createTicket>[0] | Parameters<typeof updateTicket>[0],
+  ) {
+    if (saving) {
+      return
+    }
+    setSaving(true)
+    try {
+      if ("ticketId" in payload) {
+        await updateTicket(payload)
+        toast.success("工单已更新")
+      } else {
+        await createTicket(payload)
+        toast.success("工单已创建")
+      }
+      setDialogOpen(false)
+      setEditingItemId(null)
+      await loadSummary()
+      await loadTickets()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "保存工单失败")
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleWatchToggle(item: TicketItem) {
@@ -208,264 +261,267 @@ export default function TicketsPage() {
 
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4 md:p-6">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
-            <div>
-              <CardTitle>工单</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                集中处理异步问题、转派、回复与关闭
-              </p>
-            </div>
-            <Button
-              onClick={() => {
-                setEditingItem(null)
-                setDialogOpen(true)
-              }}
-            >
-              <PlusIcon className="size-4" />
-              新建工单
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              {quickViews.map((view) => {
-                const active = quickView === view.key
-                return (
-                  <button
-                    key={view.key}
-                    type="button"
-                    className={`rounded-xl border p-4 text-left transition ${
-                      active
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border bg-background hover:border-primary/40"
-                    }`}
-                    onClick={() => {
-                      setQuickView(view.key)
-                      setPaging((current) => ({ ...current, page: 1 }))
-                    }}
-                  >
-                    <div className="text-sm font-medium">{view.label}</div>
-                    <div className="mt-1 text-2xl font-semibold">{view.count}</div>
-                    <div className="mt-2 text-xs text-muted-foreground">{view.description}</div>
-                  </button>
-                )
-              })}
-            </div>
+      <div className="flex w-full flex-col gap-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold">工单</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              集中处理异步问题、转派、回复与关闭
+            </p>
+          </div>
+          <Button onClick={openCreateDialog}>
+            <PlusIcon className="size-4" />
+            新建工单
+          </Button>
+        </div>
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))_auto]">
-              <div className="relative">
-                <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  value={keywordInput}
-                  placeholder="搜索工单号、标题或描述"
-                  onChange={(event) => setKeywordInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      setPaging((current) => ({ ...current, page: 1 }))
-                      setKeyword(keywordInput)
-                    }
-                  }}
-                />
-              </div>
-              <OptionCombobox
-                value={statusFilter}
-                onChange={(value) => {
-                  setStatusFilter(value)
-                  setQuickView("all")
-                  setPaging((current) => ({ ...current, page: 1 }))
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {quickViews.map((view) => {
+            const active = quickView === view.key
+            return (
+              <button
+                key={view.key}
+                type="button"
+                className={`rounded-xl border p-4 text-left transition ${
+                  active
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border bg-background hover:border-primary/40"
+                }`}
+                onClick={() => {
+                  setQuickView(view.key)
+                  setResult((current) => ({
+                    ...current,
+                    page: { ...current.page, page: 1 },
+                  }))
                 }}
-                placeholder="全部状态"
-                options={[
-                  { value: "all", label: "全部状态" },
-                  { value: "new", label: "新建" },
-                  { value: "open", label: "处理中" },
-                  { value: "pending_customer", label: "待客户反馈" },
-                  { value: "pending_internal", label: "待内部处理" },
-                  { value: "resolved", label: "已解决" },
-                  { value: "closed", label: "已关闭" },
-                  { value: "cancelled", label: "已取消" },
-                ]}
-              />
-              <OptionCombobox
-                value={priorityFilter}
-                onChange={(value) => {
-                  setPriorityFilter(value)
-                  setQuickView("all")
-                  setPaging((current) => ({ ...current, page: 1 }))
-                }}
-                placeholder="全部优先级"
-                options={[
-                  { value: "all", label: "全部优先级" },
-                  { value: "1", label: "低" },
-                  { value: "2", label: "普通" },
-                  { value: "3", label: "高" },
-                  { value: "4", label: "紧急" },
-                ]}
-              />
-              <OptionCombobox
-                value={teamFilter}
-                onChange={(value) => {
-                  setTeamFilter(value)
-                  setQuickView("all")
-                  setPaging((current) => ({ ...current, page: 1 }))
-                }}
-                placeholder="全部团队"
-                options={teamOptions}
-              />
-              <OptionCombobox
-                value={assigneeFilter}
-                onChange={(value) => {
-                  setAssigneeFilter(value)
-                  setQuickView("all")
-                  setPaging((current) => ({ ...current, page: 1 }))
-                }}
-                placeholder="全部处理人"
-                options={agentOptions}
-              />
-              <OptionCombobox
-                value={watchFilter}
-                onChange={(value) => {
-                  setWatchFilter(value)
-                  setQuickView("all")
-                  setPaging((current) => ({ ...current, page: 1 }))
-                }}
-                placeholder="全部工单"
-                options={[
-                  { value: "all", label: "全部工单" },
-                  { value: "watching", label: "我的关注" },
-                ]}
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setPaging((current) => ({ ...current, page: 1 }))
-                    setKeyword(keywordInput)
-                  }}
-                >
-                  查询
-                </Button>
-                <Button variant="outline" onClick={() => void loadTickets()}>
-                  <RefreshCcwIcon className="size-4" />
-                </Button>
-              </div>
-            </div>
+              >
+                <div className="text-sm font-medium">{view.label}</div>
+                <div className="mt-1 text-2xl font-semibold">{view.count}</div>
+                <div className="mt-2 text-xs text-muted-foreground">{view.description}</div>
+              </button>
+            )
+          })}
+        </div>
 
-            <div className="rounded-lg border bg-background">
-              <Table>
-                <TableHeader className="bg-muted/35">
-                  <TableRow>
-                    <TableHead>工单</TableHead>
-                    <TableHead>客户</TableHead>
-                    <TableHead>优先级</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>处理人</TableHead>
-                    <TableHead>团队</TableHead>
-                    <TableHead>关注</TableHead>
-                    <TableHead>更新时间</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                        加载中...
-                      </TableCell>
-                    </TableRow>
-                  ) : items.length > 0 ? (
-                    items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">{item.title}</div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{item.ticketNo}</span>
-                              {quickView !== "all" ? (
-                                <span className="rounded bg-muted px-1.5 py-0.5">
-                                  {quickViews.find((view) => view.key === quickView)?.label}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.customer?.name || "未绑定客户"}</TableCell>
-                        <TableCell>
-                          <TicketPriorityBadge priority={item.priority} />
-                        </TableCell>
-                        <TableCell>
-                          <TicketStatusBadge status={item.status} />
-                        </TableCell>
-                        <TableCell>{item.currentAssigneeName || "未指派"}</TableCell>
-                        <TableCell>{item.currentTeamName || "未分组"}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={actionLoadingId === item.id}
-                            onClick={() => void handleWatchToggle(item)}
-                          >
-                            <StarIcon
-                              className={`size-4 ${
-                                item.watchedByMe ? "fill-current text-amber-500" : ""
-                              }`}
-                            />
-                            {item.watchedByMe ? "已关注" : "关注"}
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          {item.updatedAt ? formatDateTime(item.updatedAt) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Link href={`/workspace/tickets/${item.id}`}>
-                              <Button variant="outline" size="sm">详情</Button>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingItem(item)
-                                setDialogOpen(true)
-                              }}
-                            >
-                              编辑
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                        暂无工单
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            <ListPagination
-              page={paging.page}
-              total={paging.total}
-              limit={paging.limit}
-              loading={loading}
-              onPageChange={(page) => setPaging((current) => ({ ...current, page }))}
-              onLimitChange={(limit) =>
-                setPaging((current) => ({ ...current, page: 1, limit }))
-              }
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))_auto]">
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              value={keywordInput}
+              placeholder="搜索工单号、标题或描述"
+              onChange={(event) => setKeywordInput(event.target.value)}
+              onKeyDown={handleFilterKeyDown}
             />
-          </CardContent>
-        </Card>
+          </div>
+          <OptionCombobox
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value)
+              setQuickView("all")
+              setResult((current) => ({
+                ...current,
+                page: { ...current.page, page: 1 },
+              }))
+            }}
+            placeholder="全部状态"
+            options={[
+              { value: "all", label: "全部状态" },
+              { value: "new", label: "新建" },
+              { value: "open", label: "处理中" },
+              { value: "pending_customer", label: "待客户反馈" },
+              { value: "pending_internal", label: "待内部处理" },
+              { value: "resolved", label: "已解决" },
+              { value: "closed", label: "已关闭" },
+              { value: "cancelled", label: "已取消" },
+            ]}
+          />
+          <OptionCombobox
+            value={priorityFilter}
+            onChange={(value) => {
+              setPriorityFilter(value)
+              setQuickView("all")
+              setResult((current) => ({
+                ...current,
+                page: { ...current.page, page: 1 },
+              }))
+            }}
+            placeholder="全部优先级"
+            options={[
+              { value: "all", label: "全部优先级" },
+              { value: "1", label: "低" },
+              { value: "2", label: "普通" },
+              { value: "3", label: "高" },
+              { value: "4", label: "紧急" },
+            ]}
+          />
+          <OptionCombobox
+            value={teamFilter}
+            onChange={(value) => {
+              setTeamFilter(value)
+              setQuickView("all")
+              setResult((current) => ({
+                ...current,
+                page: { ...current.page, page: 1 },
+              }))
+            }}
+            placeholder="全部团队"
+            options={teamOptions}
+          />
+          <OptionCombobox
+            value={assigneeFilter}
+            onChange={(value) => {
+              setAssigneeFilter(value)
+              setQuickView("all")
+              setResult((current) => ({
+                ...current,
+                page: { ...current.page, page: 1 },
+              }))
+            }}
+            placeholder="全部处理人"
+            options={agentOptions}
+          />
+          <OptionCombobox
+            value={watchFilter}
+            onChange={(value) => {
+              setWatchFilter(value)
+              setQuickView("all")
+              setResult((current) => ({
+                ...current,
+                page: { ...current.page, page: 1 },
+              }))
+            }}
+            placeholder="全部工单"
+            options={[
+              { value: "all", label: "全部工单" },
+              { value: "watching", label: "我的关注" },
+            ]}
+          />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={applyFilters}>
+              查询
+            </Button>
+            <Button variant="outline" onClick={() => void loadTickets()}>
+              <RefreshCcwIcon className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border bg-background">
+          <Table>
+            <TableHeader className="bg-muted/35">
+              <TableRow>
+                <TableHead>工单</TableHead>
+                <TableHead>客户</TableHead>
+                <TableHead>优先级</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>处理人</TableHead>
+                <TableHead>团队</TableHead>
+                <TableHead>关注</TableHead>
+                <TableHead>更新时间</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    加载中...
+                  </TableCell>
+                </TableRow>
+              ) : result.results.length > 0 ? (
+                result.results.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">{item.title}</div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{item.ticketNo}</span>
+                          {quickView !== "all" ? (
+                            <span className="rounded bg-muted px-1.5 py-0.5">
+                              {quickViews.find((view) => view.key === quickView)?.label}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{item.customer?.name || "未绑定客户"}</TableCell>
+                    <TableCell>
+                      <TicketPriorityBadge priority={item.priority} />
+                    </TableCell>
+                    <TableCell>
+                      <TicketStatusBadge status={item.status} />
+                    </TableCell>
+                    <TableCell>{item.currentAssigneeName || "未指派"}</TableCell>
+                    <TableCell>{item.currentTeamName || "未分组"}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={actionLoadingId === item.id}
+                        onClick={() => void handleWatchToggle(item)}
+                      >
+                        <StarIcon
+                          className={`size-4 ${
+                            item.watchedByMe ? "fill-current text-amber-500" : ""
+                          }`}
+                        />
+                        {item.watchedByMe ? "已关注" : "关注"}
+                      </Button>
+                    </TableCell>
+                    <TableCell>{item.updatedAt ? formatDateTime(item.updatedAt) : "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/workspace/tickets/${item.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Button variant="outline" size="sm">详情</Button>
+                        </Link>
+                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(item)}>
+                          编辑
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    暂无工单
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <ListPagination
+          page={result.page.page}
+          total={result.page.total}
+          limit={result.page.limit}
+          loading={loading}
+          onPageChange={(page) =>
+            setResult((current) => ({
+              ...current,
+              page: { ...current.page, page },
+            }))
+          }
+          onLimitChange={(limit) =>
+            setResult((current) => ({
+              ...current,
+              page: { ...current.page, page: 1, limit },
+            }))
+          }
+        />
       </div>
 
-      <TicketEditDialog
+      <EditDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        item={editingItem}
+        saving={saving}
+        itemId={editingItemId}
+        onOpenChange={handleDialogOpenChange}
         onSubmit={handleSubmit}
       />
     </div>
