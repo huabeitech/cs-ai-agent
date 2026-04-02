@@ -15,13 +15,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchKnowledgeBase,
@@ -29,6 +22,8 @@ import {
   type KnowledgeBase,
 } from "@/lib/api/admin";
 import {
+  KnowledgeBaseType,
+  KnowledgeBaseTypeLabels,
   KnowledgeChunkProvider,
   KnowledgeChunkProviderLabels,
   KnowledgeAnswerMode,
@@ -36,7 +31,7 @@ import {
   KnowledgeFallbackMode,
   KnowledgeFallbackModeLabels,
 } from "@/lib/generated/enums";
-import { getEnumLabel, getEnumOptions } from "@/lib/enums";
+import { getEnumOptions } from "@/lib/enums";
 
 type KnowledgeBaseEditDialogProps = {
   open: boolean;
@@ -49,6 +44,7 @@ type KnowledgeBaseEditDialogProps = {
 const emptyForm: EditForm = {
   name: "",
   description: "",
+  knowledgeType: KnowledgeBaseType.Document,
   defaultTopK: "5",
   defaultScoreThreshold: "0.2",
   defaultRerankLimit: "10",
@@ -64,6 +60,7 @@ const emptyForm: EditForm = {
 const knowledgeBaseFormSchema = z.object({
   name: z.string().trim().min(1, "名称不能为空").max(100, "名称最多100个字符"),
   description: z.string().trim().max(500, "描述最多500个字符"),
+  knowledgeType: z.string().trim().min(1, "请选择知识库类型"),
   defaultTopK: z.string().trim().min(1, "请输入TopK值"),
   defaultScoreThreshold: z.string().trim().min(1, "请输入分数阈值"),
   defaultRerankLimit: z.string().trim().min(1, "请输入重排序限制"),
@@ -93,6 +90,7 @@ function buildForm(item: KnowledgeBase | null): EditForm {
   return {
     name: item.name,
     description: item.description || "",
+    knowledgeType: item.knowledgeType || KnowledgeBaseType.Document,
     defaultTopK: String(item.defaultTopK),
     defaultScoreThreshold: String(item.defaultScoreThreshold),
     defaultRerankLimit: String(item.defaultRerankLimit),
@@ -110,6 +108,7 @@ function buildPayload(form: EditForm): CreateKnowledgeBasePayload {
   return {
     name: form.name.trim(),
     description: form.description.trim(),
+    knowledgeType: form.knowledgeType,
     defaultTopK: Number(form.defaultTopK),
     defaultScoreThreshold: Number(form.defaultScoreThreshold),
     defaultRerankLimit: Number(form.defaultRerankLimit),
@@ -176,8 +175,11 @@ function KnowledgeBaseFormDialogBody({
     handleSubmit,
     reset,
     register,
+    watch,
     formState: { errors },
   } = form;
+  const knowledgeType = watch("knowledgeType");
+  const isFAQKnowledgeBase = knowledgeType === KnowledgeBaseType.FAQ;
 
   useEffect(() => {
     if (!open) {
@@ -280,7 +282,32 @@ function KnowledgeBaseFormDialogBody({
             </FieldContent>
           </Field>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <Field data-invalid={!!errors.knowledgeType}>
+            <FieldLabel htmlFor="kb-knowledge-type">知识库类型</FieldLabel>
+            <FieldContent>
+              <Controller
+                control={control}
+                name="knowledgeType"
+                render={({ field }) => (
+                  <OptionCombobox
+                    value={field.value}
+                    options={getEnumOptions(KnowledgeBaseTypeLabels).map((option) => ({
+                      value: String(option.value),
+                      label: option.label,
+                    }))}
+                    placeholder="选择知识库类型"
+                    searchPlaceholder="搜索知识库类型"
+                    emptyText="没有匹配的知识库类型"
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.knowledgeType]} />
+            </FieldContent>
+          </Field>
+
+          {!isFAQKnowledgeBase ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <Field data-invalid={!!errors.chunkProvider}>
               <FieldLabel htmlFor="kb-chunk-provider">分块策略</FieldLabel>
               <FieldContent>
@@ -290,12 +317,12 @@ function KnowledgeBaseFormDialogBody({
                   render={({ field }) => (
                     <OptionCombobox
                       value={field.value}
-                      options={getEnumOptions(KnowledgeChunkProviderLabels).map(
-                        (option) => ({
+                      options={getEnumOptions(KnowledgeChunkProviderLabels)
+                        .filter((option) => option.value !== KnowledgeChunkProvider.FAQ)
+                        .map((option) => ({
                           value: String(option.value),
                           label: option.label,
-                        }),
-                      )}
+                        }))}
                       placeholder="选择分块策略"
                       searchPlaceholder="搜索分块策略"
                       emptyText="没有匹配的分块策略"
@@ -352,7 +379,8 @@ function KnowledgeBaseFormDialogBody({
                 <FieldError errors={[errors.chunkOverlapTokens]} />
               </FieldContent>
             </Field>
-          </div>
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field data-invalid={!!errors.defaultTopK}>

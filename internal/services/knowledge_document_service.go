@@ -86,6 +86,9 @@ func (s *knowledgeDocumentService) CreateKnowledgeDocument(req request.CreateKno
 	if kb == nil {
 		return nil, errorsx.InvalidParam("知识库不存在")
 	}
+	if kb.KnowledgeType == string(enums.KnowledgeBaseTypeFAQ) {
+		return nil, errorsx.InvalidParam("FAQ知识库不支持文档")
+	}
 	item, err := s.buildKnowledgeDocumentModel(req)
 	if err != nil {
 		return nil, err
@@ -121,6 +124,9 @@ func (s *knowledgeDocumentService) UpdateKnowledgeDocument(req request.UpdateKno
 	kb := KnowledgeBaseService.Get(req.KnowledgeBaseID)
 	if kb == nil {
 		return errorsx.InvalidParam("知识库不存在")
+	}
+	if kb.KnowledgeType == string(enums.KnowledgeBaseTypeFAQ) {
+		return errorsx.InvalidParam("FAQ知识库不支持文档")
 	}
 	item, err := s.buildKnowledgeDocumentModel(req.CreateKnowledgeDocumentRequest)
 	if err != nil {

@@ -99,14 +99,29 @@ func (r *knowledgeChunkRepository) DeleteByDocumentID(db *gorm.DB, documentID in
 	db.Delete(&models.KnowledgeChunk{}, "document_id = ?", documentID)
 }
 
+func (r *knowledgeChunkRepository) DeleteByFaqID(db *gorm.DB, faqID int64) {
+	db.Delete(&models.KnowledgeChunk{}, "faq_id = ?", faqID)
+}
+
 func (r *knowledgeChunkRepository) FindByDocumentID(db *gorm.DB, documentID int64) (list []models.KnowledgeChunk) {
 	db.Where("document_id = ?", documentID).Order("chunk_no asc").Find(&list)
+	return
+}
+
+func (r *knowledgeChunkRepository) FindByFaqID(db *gorm.DB, faqID int64) (list []models.KnowledgeChunk) {
+	db.Where("faq_id = ?", faqID).Order("chunk_no asc").Find(&list)
 	return
 }
 
 func (r *knowledgeChunkRepository) CountByDocumentID(db *gorm.DB, documentID int64) int64 {
 	var count int64
 	db.Model(&models.KnowledgeChunk{}).Where("document_id = ?", documentID).Count(&count)
+	return count
+}
+
+func (r *knowledgeChunkRepository) CountByFaqID(db *gorm.DB, faqID int64) int64 {
+	var count int64
+	db.Model(&models.KnowledgeChunk{}).Where("faq_id = ?", faqID).Count(&count)
 	return count
 }
 

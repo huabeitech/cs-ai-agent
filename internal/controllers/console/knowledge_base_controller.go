@@ -35,8 +35,10 @@ func (c *KnowledgeBaseController) AnyList() *web.JsonResult {
 	results := make([]response.KnowledgeBaseResponse, 0, len(list))
 	for _, item := range list {
 		docCount := repositories.KnowledgeDocumentRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
+		faqCount := repositories.KnowledgeFAQRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
 		resp := builders.BuildKnowledgeBase(&item)
 		resp.DocumentCount = docCount
+		resp.FAQCount = faqCount
 		results = append(results, resp)
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
@@ -69,6 +71,7 @@ func (c *KnowledgeBaseController) GetBy(id int64) *web.JsonResult {
 	}
 	resp := builders.BuildKnowledgeBase(item)
 	resp.DocumentCount = repositories.KnowledgeDocumentRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
+	resp.FAQCount = repositories.KnowledgeFAQRepository.CountByKnowledgeBaseID(sqls.DB(), item.ID)
 	return web.JsonData(resp)
 }
 

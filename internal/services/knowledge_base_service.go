@@ -103,6 +103,7 @@ func (s *knowledgeBaseService) UpdateKnowledgeBase(req request.UpdateKnowledgeBa
 	return repositories.KnowledgeBaseRepository.Updates(sqls.DB(), req.ID, map[string]any{
 		"name":                    item.Name,
 		"description":             item.Description,
+		"knowledge_type":          item.KnowledgeType,
 		"default_top_k":           item.DefaultTopK,
 		"default_score_threshold": item.DefaultScoreThreshold,
 		"default_rerank_limit":    item.DefaultRerankLimit,
@@ -128,6 +129,10 @@ func (s *knowledgeBaseService) DeleteKnowledgeBase(id int64) error {
 	if docCount > 0 {
 		return errorsx.InvalidParam("知识库下存在文档，无法删除")
 	}
+	faqCount := repositories.KnowledgeFAQRepository.CountByKnowledgeBaseID(sqls.DB(), id)
+	if faqCount > 0 {
+		return errorsx.InvalidParam("知识库下存在FAQ，无法删除")
+	}
 	repositories.KnowledgeBaseRepository.Delete(sqls.DB(), id)
 	return nil
 }
@@ -147,6 +152,7 @@ func (s *knowledgeBaseService) buildKnowledgeBaseModel(req request.CreateKnowled
 	item := &models.KnowledgeBase{
 		Name:                  req.Name,
 		Description:           req.Description,
+		KnowledgeType:         req.KnowledgeType,
 		DefaultTopK:           req.DefaultTopK,
 		DefaultScoreThreshold: req.DefaultScoreThreshold,
 		DefaultRerankLimit:    req.DefaultRerankLimit,
@@ -161,6 +167,12 @@ func (s *knowledgeBaseService) buildKnowledgeBaseModel(req request.CreateKnowled
 	if item.DefaultTopK == 0 {
 		item.DefaultTopK = 10
 	}
+	if item.KnowledgeType == "" {
+		item.KnowledgeType = string(enums.KnowledgeBaseTypeDocument)
+	}
+	if !isValidKnowledgeType(item.KnowledgeType) {
+		return nil, errorsx.InvalidParam("知识库类型不支持")
+	}
 	if item.DefaultScoreThreshold == 0 {
 		item.DefaultScoreThreshold = 0.2
 	}
@@ -170,19 +182,27 @@ func (s *knowledgeBaseService) buildKnowledgeBaseModel(req request.CreateKnowled
 	if item.ChunkProvider == "" {
 		item.ChunkProvider = string(enums.KnowledgeChunkProviderStructured)
 	}
+	if item.KnowledgeType == string(enums.KnowledgeBaseTypeFAQ) {
+		item.ChunkProvider = string(enums.KnowledgeChunkProviderFAQ)
+		item.ChunkTargetTokens = 0
+		item.ChunkMaxTokens = 0
+		item.ChunkOverlapTokens = 0
+	} else if item.ChunkProvider == string(enums.KnowledgeChunkProviderFAQ) {
+		return nil, errorsx.InvalidParam("文档知识库不能使用FAQ分块策略")
+	}
 	if !isValidChunkProvider(item.ChunkProvider) {
 		return nil, errorsx.InvalidParam("分块策略不支持")
 	}
-	if item.ChunkTargetTokens == 0 {
+	if item.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) && item.ChunkTargetTokens == 0 {
 		item.ChunkTargetTokens = 300
 	}
-	if item.ChunkMaxTokens == 0 {
+	if item.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) && item.ChunkMaxTokens == 0 {
 		item.ChunkMaxTokens = 400
 	}
-	if item.ChunkMaxTokens < item.ChunkTargetTokens {
+	if item.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) && item.ChunkMaxTokens < item.ChunkTargetTokens {
 		item.ChunkMaxTokens = item.ChunkTargetTokens
 	}
-	if item.ChunkOverlapTokens == 0 {
+	if item.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) && item.ChunkOverlapTokens == 0 {
 		item.ChunkOverlapTokens = 40
 	}
 	if item.AnswerMode == 0 {
@@ -200,6 +220,15 @@ func isValidChunkProvider(provider string) bool {
 		string(enums.KnowledgeChunkProviderStructured),
 		string(enums.KnowledgeChunkProviderFAQ),
 		string(enums.KnowledgeChunkProviderSemantic):
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidKnowledgeType(knowledgeType string) bool {
+	switch knowledgeType {
+	case string(enums.KnowledgeBaseTypeDocument), string(enums.KnowledgeBaseTypeFAQ):
 		return true
 	default:
 		return false

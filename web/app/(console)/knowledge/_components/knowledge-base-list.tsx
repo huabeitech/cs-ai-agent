@@ -143,7 +143,7 @@ function SortableKnowledgeBaseCard({
         <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">{item.name}</span>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {item.documentCount}
+          {item.knowledgeType === "faq" ? item.faqCount : item.documentCount}
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger

@@ -180,6 +180,8 @@ func (s *evaluate) compareProvider(ctx context.Context, knowledgeBase *models.Kn
 			ChunkID:         0,
 			DocumentID:      item.Payload.DocumentID,
 			DocumentTitle:   item.Payload.DocumentTitle,
+			FaqID:           item.Payload.FaqID,
+			FaqQuestion:     item.Payload.FaqQuestion,
 			ChunkNo:         item.Payload.ChunkNo,
 			Title:           item.Payload.Title,
 			SectionPath:     item.Payload.SectionPath,

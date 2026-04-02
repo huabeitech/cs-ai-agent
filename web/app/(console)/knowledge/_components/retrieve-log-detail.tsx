@@ -47,7 +47,7 @@ function CitationList({ hits }: { hits: KnowledgeRetrieveHit[] }) {
       {citations.map((item) => (
         <div key={item.id} className="rounded-lg border p-3">
           <div className="flex items-center gap-2">
-            <span className="font-medium">{item.documentTitle || `文档 #${item.documentId}`}</span>
+            <span className="font-medium">{getHitSourceLabel(item)}</span>
             <Badge variant="outline">Chunk #{item.chunkNo}</Badge>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -193,7 +193,7 @@ export function RetrieveLogDetailDrawer({
                     <div key={item.id} className="rounded-lg border p-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">#{item.rankNo}</Badge>
-                        <span className="font-medium">{item.documentTitle || `文档 #${item.documentId}`}</span>
+                        <span className="font-medium">{getHitSourceLabel(item)}</span>
                         <Badge variant={item.usedInAnswer ? "default" : "secondary"}>
                           {item.usedInAnswer ? "已入上下文" : "未入上下文"}
                         </Badge>
@@ -229,6 +229,19 @@ export function RetrieveLogDetailDrawer({
       </DrawerContent>
     </Drawer>
   )
+}
+
+function getHitSourceLabel(item: KnowledgeRetrieveHit) {
+  if (item.faqQuestion) {
+    return item.faqQuestion
+  }
+  if (item.documentTitle) {
+    return item.documentTitle
+  }
+  if (item.faqId > 0) {
+    return `FAQ #${item.faqId}`
+  }
+  return `文档 #${item.documentId}`
 }
 
 function Metric({

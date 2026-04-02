@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
+	"encoding/json"
 )
 
 func BuildKnowledgeBase(item *models.KnowledgeBase) response.KnowledgeBaseResponse {
@@ -11,6 +12,8 @@ func BuildKnowledgeBase(item *models.KnowledgeBase) response.KnowledgeBaseRespon
 		ID:                    item.ID,
 		Name:                  item.Name,
 		Description:           item.Description,
+		KnowledgeType:         item.KnowledgeType,
+		KnowledgeTypeName:     enums.GetKnowledgeBaseTypeLabel(enums.KnowledgeBaseType(item.KnowledgeType)),
 		Status:                item.Status,
 		StatusName:            enums.GetStatusLabel(item.Status),
 		DefaultTopK:           item.DefaultTopK,
@@ -50,6 +53,23 @@ func BuildKnowledgeDocument(item *models.KnowledgeDocument) response.KnowledgeDo
 		UpdatedAt:       item.UpdatedAt,
 		CreateUserName:  item.CreateUserName,
 		UpdateUserName:  item.UpdateUserName,
+	}
+}
+
+func BuildKnowledgeFAQ(item *models.KnowledgeFAQ) response.KnowledgeFAQResponse {
+	return response.KnowledgeFAQResponse{
+		ID:               item.ID,
+		KnowledgeBaseID:  item.KnowledgeBaseID,
+		Question:         item.Question,
+		Answer:           item.Answer,
+		SimilarQuestions: parseSimilarQuestions(item.SimilarQuestions),
+		Status:           item.Status,
+		StatusName:       enums.GetStatusLabel(item.Status),
+		Remark:           item.Remark,
+		CreatedAt:        item.CreatedAt,
+		UpdatedAt:        item.UpdatedAt,
+		CreateUserName:   item.CreateUserName,
+		UpdateUserName:   item.UpdateUserName,
 	}
 }
 
@@ -98,6 +118,8 @@ func BuildKnowledgeRetrieveHitResponse(item *models.KnowledgeRetrieveHit) respon
 		ChunkID:         item.ChunkID,
 		DocumentID:      item.DocumentID,
 		DocumentTitle:   item.DocumentTitle,
+		FaqID:           item.FaqID,
+		FaqQuestion:     item.FaqQuestion,
 		ChunkNo:         item.ChunkNo,
 		Title:           item.Title,
 		SectionPath:     item.SectionPath,
@@ -112,4 +134,15 @@ func BuildKnowledgeRetrieveHitResponse(item *models.KnowledgeRetrieveHit) respon
 		Snippet:         item.Snippet,
 		CreatedAt:       item.CreatedAt,
 	}
+}
+
+func parseSimilarQuestions(raw string) []string {
+	if raw == "" {
+		return []string{}
+	}
+	var items []string
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []string{}
+	}
+	return items
 }
