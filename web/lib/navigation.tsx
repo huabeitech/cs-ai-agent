@@ -5,6 +5,7 @@ import {
   BrainCircuitIcon,
   Building2Icon,
   CalendarClockIcon,
+  ChartColumnIncreasingIcon,
   FileTextIcon,
   GlobeIcon,
   KeyRoundIcon,
@@ -111,6 +112,12 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         title: "工单",
         url: "/tickets",
         icon: <FileTextIcon />,
+        requiredPermission: "ticket.view",
+      },
+      {
+        title: "SLA风险",
+        url: "/ticket-risk",
+        icon: <ChartColumnIncreasingIcon />,
         requiredPermission: "ticket.view",
       },
       {
