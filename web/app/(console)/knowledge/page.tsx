@@ -1,23 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { KnowledgeBaseList } from "./_components/knowledge-base-list"
-import { DebugPanel } from "./_components/debug-panel"
-import { DocumentList, type DocumentListActionState } from "./_components/document-list"
-import { FAQList, type FAQListActionState } from "./_components/faq-list"
-import { RetrieveLogList } from "./_components/retrieve-log-list"
 import { Button } from "@/components/ui/button"
-import {
-  Bug,
-  DownloadIcon,
-  LayoutGridIcon,
-  LayoutListIcon,
-  PanelLeftCloseIcon,
-  PanelLeftOpenIcon,
-  PlusIcon,
-  RefreshCwIcon,
-  WrenchIcon,
-} from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -26,6 +9,22 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { KnowledgeBase } from "@/lib/api/admin"
+import {
+  Bug,
+  DownloadIcon,
+  LayoutGridIcon,
+  LayoutListIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PlusIcon,
+  RefreshCwIcon
+} from "lucide-react"
+import { useState } from "react"
+import { DebugPanel } from "./_components/debug-panel"
+import { DocumentList, type DocumentListActionState } from "./_components/document-list"
+import { FAQList, type FAQListActionState } from "./_components/faq-list"
+import { KnowledgeBaseList } from "./_components/knowledge-base-list"
+import { RetrieveLogList } from "./_components/retrieve-log-list"
 
 export default function DashboardKnowledgeDocumentsPage() {
   const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBase | null>(null)
@@ -186,14 +185,6 @@ export default function DashboardKnowledgeDocumentsPage() {
         </Tabs>
       </div>
       <Sheet open={debugPanelOpen} onOpenChange={setDebugPanelOpen}>
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute bottom-4 right-4 z-10"
-          onClick={() => setDebugPanelOpen(true)}
-        >
-          <WrenchIcon className="size-4" />
-        </Button>
         <SheetContent side="right" className="min-w-170">
           <SheetHeader>
             <SheetTitle>RAG 调试</SheetTitle>
