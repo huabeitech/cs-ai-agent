@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -62,12 +63,12 @@ func (r *aIConfigRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []m
 	return
 }
 
-func (r *aIConfigRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.AIConfig) {
+func (r *aIConfigRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.AIConfig) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *aIConfigRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *aIConfigRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -100,3 +101,10 @@ func (r *aIConfigRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.AIConfig{}, "id = ?", id)
 }
 
+func (r *aIConfigRepository) GetEnabled(db *gorm.DB, modelType enums.AIModelType) *models.AIConfig {
+	return r.FindOne(db, sqls.NewCnd().
+		Eq("model_type", modelType).
+		Eq("status", enums.StatusOk).
+		Desc("sort_no").
+		Desc("id"))
+}

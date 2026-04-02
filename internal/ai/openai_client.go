@@ -28,12 +28,8 @@ func newOpenAIClient(config *models.AIConfig) openai.Client {
 	return openai.NewClient(opts...)
 }
 
-func GetAIConfig(modelType enums.AIModelType) (*models.AIConfig, error) {
-	item := repositories.AIConfigRepository.FindOne(sqls.DB(), sqls.NewCnd().
-		Eq("model_type", string(modelType)).
-		Eq("status", enums.StatusOk).
-		Desc("sort_no").
-		Desc("id"))
+func GetEnabledAIConfig(modelType enums.AIModelType) (*models.AIConfig, error) {
+	item := repositories.AIConfigRepository.GetEnabled(sqls.DB(), modelType)
 	if item == nil {
 		return nil, errorsx.BusinessError(2005, "未配置可用的 AI 配置")
 	}

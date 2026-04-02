@@ -161,7 +161,7 @@ func (s *aIConfigService) UpdateStatus(id int64, status enums.Status, operator *
 
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if status == enums.StatusOk {
-			if err := s.disableOthersByModelTypeWithTx(ctx, current.ModelType, id); err != nil {
+			if err := s.disableOthersByModelType(ctx, current.ModelType, id); err != nil {
 				return err
 			}
 		}
@@ -172,6 +172,17 @@ func (s *aIConfigService) UpdateStatus(id int64, status enums.Status, operator *
 			"updated_at":       time.Now(),
 		})
 	})
+}
+
+func (s *aIConfigService) disableOthersByModelType(ctx *sqls.TxContext, modelType enums.AIModelType, excludeID int64) error {
+	query := ctx.Tx.Model(&models.AIConfig{}).Where("model_type = ?", modelType)
+	if excludeID > 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	return query.Updates(map[string]any{
+		"status":     int(enums.StatusDisabled),
+		"updated_at": time.Now(),
+	}).Error
 }
 
 func (s *aIConfigService) UpdateSort(ids []int64) error {
@@ -250,15 +261,4 @@ func (s *aIConfigService) nextSortNo() int {
 		return latest.SortNo + 1
 	}
 	return 1
-}
-
-func (s *aIConfigService) disableOthersByModelTypeWithTx(ctx *sqls.TxContext, modelType enums.AIModelType, excludeID int64) error {
-	query := ctx.Tx.Model(&models.AIConfig{}).Where("model_type = ?", modelType)
-	if excludeID > 0 {
-		query = query.Where("id <> ?", excludeID)
-	}
-	return query.Updates(map[string]any{
-		"status":     int(enums.StatusDisabled),
-		"updated_at": time.Now(),
-	}).Error
 }

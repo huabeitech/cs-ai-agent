@@ -36,7 +36,7 @@ func (s *rerank) Rerank(ctx context.Context, query string, documents []string, t
 }
 
 func (s *rerank) callRerankAPI(ctx context.Context, query string, documents []string, topN int) ([]RerankResult, error) {
-	config, err := ai.GetAIConfig(enums.AIModelTypeRerank)
+	config, err := ai.GetEnabledAIConfig(enums.AIModelTypeRerank)
 	if err != nil {
 		return nil, err
 	}

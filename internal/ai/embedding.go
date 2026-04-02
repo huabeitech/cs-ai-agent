@@ -23,7 +23,7 @@ type embedding struct{}
 var Embedding = &embedding{}
 
 func (s *embedding) GetModel(ctx context.Context) (*models.AIConfig, error) {
-	config, err := GetAIConfig(enums.AIModelTypeEmbedding)
+	config, err := GetEnabledAIConfig(enums.AIModelTypeEmbedding)
 	if err != nil {
 		return nil, errorsx.BusinessError(2001, "未配置可用的 Embedding 模型")
 	}
@@ -61,7 +61,7 @@ func (s *embedding) GenerateBatchEmbeddings(ctx context.Context, texts []string)
 }
 
 func (s *embedding) callEmbeddingAPI(ctx context.Context, text string) (*EmbeddingResult, error) {
-	config, err := GetAIConfig(enums.AIModelTypeEmbedding)
+	config, err := GetEnabledAIConfig(enums.AIModelTypeEmbedding)
 	if err != nil {
 		return nil, err
 	}
