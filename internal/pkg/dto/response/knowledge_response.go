@@ -9,6 +9,8 @@ type KnowledgeBaseResponse struct {
 	ID                    int64        `json:"id"`
 	Name                  string       `json:"name"`
 	Description           string       `json:"description"`
+	KnowledgeType         string       `json:"knowledgeType"`
+	KnowledgeTypeName     string       `json:"knowledgeTypeName"`
 	Status                enums.Status `json:"status"`
 	StatusName            string       `json:"statusName"`
 	DefaultTopK           int          `json:"defaultTopK"`
@@ -23,6 +25,7 @@ type KnowledgeBaseResponse struct {
 	FallbackMode          int          `json:"fallbackMode"`
 	FallbackModeName      string       `json:"fallbackModeName"`
 	DocumentCount         int64        `json:"documentCount"`
+	FAQCount              int64        `json:"faqCount"`
 	Remark                string       `json:"remark"`
 	CreatedAt             time.Time    `json:"createdAt"`
 	UpdatedAt             time.Time    `json:"updatedAt"`
@@ -50,11 +53,29 @@ type KnowledgeDocumentResponse struct {
 	UpdateUserName    string                             `json:"updateUserName"`
 }
 
+type KnowledgeFAQResponse struct {
+	ID                int64        `json:"id"`
+	KnowledgeBaseID   int64        `json:"knowledgeBaseId"`
+	KnowledgeBaseName string       `json:"knowledgeBaseName,omitempty"`
+	Question          string       `json:"question"`
+	Answer            string       `json:"answer"`
+	SimilarQuestions  []string     `json:"similarQuestions"`
+	Status            enums.Status `json:"status"`
+	StatusName        string       `json:"statusName"`
+	Remark            string       `json:"remark"`
+	CreatedAt         time.Time    `json:"createdAt"`
+	UpdatedAt         time.Time    `json:"updatedAt"`
+	CreateUserName    string       `json:"createUserName"`
+	UpdateUserName    string       `json:"updateUserName"`
+}
+
 type KnowledgeSearchResult struct {
 	KnowledgeBaseID int64   `json:"knowledgeBaseId"`
 	ChunkID         int64   `json:"chunkId"`
 	DocumentID      int64   `json:"documentId"`
 	DocumentTitle   string  `json:"documentTitle"`
+	FaqID           int64   `json:"faqId"`
+	FaqQuestion     string  `json:"faqQuestion"`
 	ChunkNo         int     `json:"chunkNo"`
 	Title           string  `json:"title"`
 	SectionPath     string  `json:"sectionPath"`
@@ -92,6 +113,8 @@ type KnowledgeAnswerResponse struct {
 type KnowledgeCitation struct {
 	DocumentID    int64   `json:"documentId"`
 	DocumentTitle string  `json:"documentTitle"`
+	FaqID         int64   `json:"faqId"`
+	FaqQuestion   string  `json:"faqQuestion"`
 	ChunkNo       int     `json:"chunkNo"`
 	Title         string  `json:"title"`
 	SectionPath   string  `json:"sectionPath"`
@@ -159,6 +182,8 @@ type KnowledgeRetrieveHitResponse struct {
 	ChunkID         int64     `json:"chunkId"`
 	DocumentID      int64     `json:"documentId"`
 	DocumentTitle   string    `json:"documentTitle"`
+	FaqID           int64     `json:"faqId"`
+	FaqQuestion     string    `json:"faqQuestion"`
 	ChunkNo         int       `json:"chunkNo"`
 	Title           string    `json:"title"`
 	SectionPath     string    `json:"sectionPath"`

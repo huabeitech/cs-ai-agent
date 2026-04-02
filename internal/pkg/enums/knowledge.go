@@ -21,6 +21,22 @@ const (
 	KnowledgeDocumentContentTypeMarkdown KnowledgeDocumentContentType = "markdown"
 )
 
+type KnowledgeBaseType string
+
+const (
+	KnowledgeBaseTypeDocument KnowledgeBaseType = "document"
+	KnowledgeBaseTypeFAQ      KnowledgeBaseType = "faq"
+)
+
+var knowledgeBaseTypeLabelMap = map[KnowledgeBaseType]string{
+	KnowledgeBaseTypeDocument: "文档知识库",
+	KnowledgeBaseTypeFAQ:      "FAQ知识库",
+}
+
+func GetKnowledgeBaseTypeLabel(knowledgeType KnowledgeBaseType) string {
+	return knowledgeBaseTypeLabelMap[knowledgeType]
+}
+
 var knowledgeDocumentContentTypeLabelMap = map[KnowledgeDocumentContentType]string{
 	KnowledgeDocumentContentTypeHTML:     "HTML",
 	KnowledgeDocumentContentTypeMarkdown: "Markdown",

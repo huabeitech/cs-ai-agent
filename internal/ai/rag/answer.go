@@ -40,6 +40,8 @@ func (s *answer) DebugSearch(ctx context.Context, req request.KnowledgeSearchReq
 			ChunkID:         item.ChunkID,
 			DocumentID:      item.DocumentID,
 			DocumentTitle:   item.DocumentTitle,
+			FaqID:           item.FaqID,
+			FaqQuestion:     item.FaqQuestion,
 			ChunkNo:         item.ChunkNo,
 			Title:           item.Title,
 			SectionPath:     item.SectionPath,
@@ -89,6 +91,8 @@ func (s *answer) DebugAnswer(ctx context.Context, req request.KnowledgeAnswerReq
 			ChunkID:         item.ChunkID,
 			DocumentID:      item.DocumentID,
 			DocumentTitle:   item.DocumentTitle,
+			FaqID:           item.FaqID,
+			FaqQuestion:     item.FaqQuestion,
 			ChunkNo:         item.ChunkNo,
 			Title:           item.Title,
 			SectionPath:     item.SectionPath,
@@ -221,6 +225,8 @@ func buildContextHits(results []RetrieveResult) []response.KnowledgeSearchResult
 			ChunkID:         item.ChunkID,
 			DocumentID:      item.DocumentID,
 			DocumentTitle:   item.DocumentTitle,
+			FaqID:           item.FaqID,
+			FaqQuestion:     item.FaqQuestion,
 			ChunkNo:         item.ChunkNo,
 			Title:           item.Title,
 			SectionPath:     item.SectionPath,
@@ -238,7 +244,7 @@ func buildKnowledgeCitations(hits []response.KnowledgeSearchResult, limit int) [
 	citations := make([]response.KnowledgeCitation, 0, limit)
 	seen := make(map[string]struct{})
 	for _, item := range hits {
-		key := fmt.Sprintf("%d|%s|%d", item.DocumentID, item.SectionPath, item.ChunkNo)
+		key := fmt.Sprintf("%d|%d|%s|%d", item.DocumentID, item.FaqID, item.SectionPath, item.ChunkNo)
 		if _, ok := seen[key]; ok {
 			continue
 		}
@@ -246,6 +252,8 @@ func buildKnowledgeCitations(hits []response.KnowledgeSearchResult, limit int) [
 		citations = append(citations, response.KnowledgeCitation{
 			DocumentID:    item.DocumentID,
 			DocumentTitle: item.DocumentTitle,
+			FaqID:         item.FaqID,
+			FaqQuestion:   item.FaqQuestion,
 			ChunkNo:       item.ChunkNo,
 			Title:         item.Title,
 			SectionPath:   item.SectionPath,

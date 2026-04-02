@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -144,6 +145,9 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 			ContentHash:     buildChunkContentHash(chunk.Content),
 			CharCount:       chunk.CharCount,
 			TokenCount:      chunk.TokenCount,
+			ChunkType:       string(chunk.ChunkType),
+			SectionPath:     chunk.SectionPath,
+			Provider:        providerName,
 			VectorID:        chunkID,
 			Status:          enums.StatusOk,
 			CreatedAt:       time.Now(),
@@ -221,6 +225,103 @@ func (s *index) IndexDocument(ctx context.Context, document *models.KnowledgeDoc
 	return nil
 }
 
+func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
+	faq := repositories.KnowledgeFAQRepository.Get(sqls.DB(), faqID)
+	if faq == nil {
+		return fmt.Errorf("faq not found: %d", faqID)
+	}
+	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), faq.KnowledgeBaseID)
+	if knowledgeBase == nil {
+		return fmt.Errorf("knowledge base not found: %d", faq.KnowledgeBaseID)
+	}
+	if knowledgeBase.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) {
+		return fmt.Errorf("knowledge base %d is not faq type", knowledgeBase.ID)
+	}
+	existingChunks := repositories.KnowledgeChunkRepository.FindByFaqID(sqls.DB(), faq.ID)
+	content := buildFAQChunkContent(faq)
+	if content == "" {
+		return fmt.Errorf("faq content is empty")
+	}
+
+	provider := vectordb.GetProvider()
+	if provider == nil {
+		return fmt.Errorf("vectordb provider not initialized")
+	}
+	if _, err := ai.Embedding.GetModel(ctx); err != nil {
+		return fmt.Errorf("failed to get embedding model: %w", err)
+	}
+	embeddingResult, err := ai.Embedding.GenerateEmbedding(ctx, content)
+	if err != nil {
+		return fmt.Errorf("failed to generate embedding for faq %d: %w", faq.ID, err)
+	}
+
+	chunkID := buildKnowledgeFAQChunkVectorID(knowledgeBase.ID, faq.ID, 0)
+	chunkModel := models.KnowledgeChunk{
+		KnowledgeBaseID: knowledgeBase.ID,
+		FaqID:           faq.ID,
+		ChunkNo:         0,
+		Title:           faq.Question,
+		Content:         content,
+		ContentHash:     buildChunkContentHash(content),
+		CharCount:       len([]rune(content)),
+		TokenCount:      len([]rune(content)) / 2,
+		ChunkType:       string(enums.KnowledgeChunkTypeFAQ),
+		Provider:        string(enums.KnowledgeChunkProviderFAQ),
+		VectorID:        chunkID,
+		Status:          enums.StatusOk,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	collectionName := s.getCollectionName()
+	collectionInfo, err := provider.GetCollection(ctx, collectionName)
+	if err != nil || collectionInfo == nil {
+		if err := provider.CreateCollection(ctx, collectionName, embeddingResult.Dimension); err != nil {
+			return fmt.Errorf("failed to create collection: %w", err)
+		}
+	}
+
+	existingVectorIDs := make([]string, 0, len(existingChunks))
+	for _, chunk := range existingChunks {
+		if strs.IsNotBlank(chunk.VectorID) {
+			existingVectorIDs = append(existingVectorIDs, chunk.VectorID)
+		}
+	}
+	if len(existingVectorIDs) > 0 {
+		if err := provider.DeleteVectors(ctx, collectionName, existingVectorIDs); err != nil {
+			return fmt.Errorf("failed to delete old vectors: %w", err)
+		}
+	}
+
+	if err := provider.UpsertVectors(ctx, collectionName, []vectordb.Vector{{
+		ID:     chunkID,
+		Vector: embeddingResult.Vector,
+		Payload: vectordb.ChunkPayload{
+			KnowledgeBaseID: knowledgeBase.ID,
+			FaqID:           faq.ID,
+			FaqQuestion:     faq.Question,
+			ChunkNo:         0,
+			ChunkType:       string(enums.KnowledgeChunkTypeFAQ),
+			Content:         content,
+			Title:           faq.Question,
+			Provider:        string(enums.KnowledgeChunkProviderFAQ),
+		},
+	}}); err != nil {
+		return fmt.Errorf("failed to upsert vectors: %w", err)
+	}
+
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if err := ctx.Tx.Where("faq_id = ?", faq.ID).Delete(&models.KnowledgeChunk{}).Error; err != nil {
+			return err
+		}
+		return ctx.Tx.Create(&chunkModel).Error
+	}); err != nil {
+		return fmt.Errorf("failed to save faq chunk: %w", err)
+	}
+
+	return nil
+}
+
 func (s *index) RemoveDocumentIndex(ctx context.Context, documentID int64) error {
 	document := repositories.KnowledgeDocumentRepository.Get(sqls.DB(), documentID)
 	if document == nil {
@@ -273,12 +374,59 @@ func (s *index) removeDocumentIndexByChunks(ctx context.Context, knowledgeBaseID
 	return nil
 }
 
+func (s *index) RemoveFAQIndex(ctx context.Context, faqID int64) error {
+	faq := repositories.KnowledgeFAQRepository.Get(sqls.DB(), faqID)
+	if faq == nil {
+		return nil
+	}
+	chunks := repositories.KnowledgeChunkRepository.FindByFaqID(sqls.DB(), faqID)
+	return s.removeFAQIndexByChunks(ctx, faq.KnowledgeBaseID, faqID, chunks)
+}
+
+func (s *index) RemoveFAQIndexByChunkModels(ctx context.Context, knowledgeBaseID int64, faqID int64, chunks []models.KnowledgeChunk) error {
+	return s.removeFAQIndexByChunks(ctx, knowledgeBaseID, faqID, chunks)
+}
+
+func (s *index) removeFAQIndexByChunks(ctx context.Context, knowledgeBaseID int64, faqID int64, chunks []models.KnowledgeChunk) error {
+	if len(chunks) == 0 {
+		return nil
+	}
+	collectionName := s.getCollectionName()
+	provider := vectordb.GetProvider()
+	if provider == nil {
+		return fmt.Errorf("vectordb provider not initialized")
+	}
+	vectorIDs := make([]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		if chunk.VectorID != "" {
+			vectorIDs = append(vectorIDs, chunk.VectorID)
+		}
+	}
+	if len(vectorIDs) > 0 {
+		if err := provider.DeleteVectors(ctx, collectionName, vectorIDs); err != nil {
+			slog.Error("Failed to delete faq vectors", "error", err)
+		}
+	}
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		return ctx.Tx.Where("faq_id = ?", faqID).Delete(&models.KnowledgeChunk{}).Error
+	}); err != nil {
+		return fmt.Errorf("failed to delete faq chunks: %w", err)
+	}
+	slog.Info("FAQ index removed", "faq_id", faqID, "chunks_removed", len(chunks))
+	return nil
+}
+
 func (s *index) getCollectionName() string {
 	return knowledgeCollectionName
 }
 
 func buildKnowledgeChunkVectorID(knowledgeBaseID int64, documentID int64, chunkNo int) string {
 	raw := fmt.Sprintf("kb:%d:doc:%d:chunk:%d", knowledgeBaseID, documentID, chunkNo)
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(raw)).String()
+}
+
+func buildKnowledgeFAQChunkVectorID(knowledgeBaseID int64, faqID int64, chunkNo int) string {
+	raw := fmt.Sprintf("kb:%d:faq:%d:chunk:%d", knowledgeBaseID, faqID, chunkNo)
 	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(raw)).String()
 }
 
@@ -335,32 +483,50 @@ func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID i
 		return err
 	}
 
-	documents := repositories.KnowledgeDocumentRepository.Find(sqls.DB(), sqls.NewCnd().
-		Eq("knowledge_base_id", knowledgeBaseID).
-		Where("status != ?", enums.StatusDeleted))
-	if len(documents) == 0 {
-		slog.Info("No documents found in knowledge base, nothing to rebuild", "knowledge_base_id", knowledgeBaseID)
-		return nil
-	}
-
-	documentIDs := make([]int64, 0, len(documents))
-	for _, doc := range documents {
-		documentIDs = append(documentIDs, doc.ID)
-	}
-	if err := s.markKnowledgeBaseDocumentsIndexPending(knowledgeBaseID, documentIDs); err != nil {
-		slog.Error("Failed to mark knowledge base documents index as pending", "knowledge_base_id", knowledgeBaseID, "error", err)
-	}
-
-	slog.Info("Rebuilding knowledge base index", "knowledge_base_id", knowledgeBaseID, "document_count", len(documents))
-
 	successCount := 0
 	failedCount := 0
-	for _, doc := range documents {
-		if err := s.IndexDocumentByID(ctx, doc.ID); err != nil {
-			slog.Error("Failed to index document", "document_id", doc.ID, "error", err)
-			failedCount++
-		} else {
-			successCount++
+	if knowledgeBase.KnowledgeType == string(enums.KnowledgeBaseTypeFAQ) {
+		faqs := repositories.KnowledgeFAQRepository.Find(sqls.DB(), sqls.NewCnd().
+			Eq("knowledge_base_id", knowledgeBaseID).
+			Where("status != ?", enums.StatusDeleted))
+		if len(faqs) == 0 {
+			slog.Info("No faqs found in knowledge base, nothing to rebuild", "knowledge_base_id", knowledgeBaseID)
+			return nil
+		}
+		slog.Info("Rebuilding faq knowledge base index", "knowledge_base_id", knowledgeBaseID, "faq_count", len(faqs))
+		for _, faq := range faqs {
+			if err := s.IndexFAQByID(ctx, faq.ID); err != nil {
+				slog.Error("Failed to index faq", "faq_id", faq.ID, "error", err)
+				failedCount++
+			} else {
+				successCount++
+			}
+		}
+	} else {
+		documents := repositories.KnowledgeDocumentRepository.Find(sqls.DB(), sqls.NewCnd().
+			Eq("knowledge_base_id", knowledgeBaseID).
+			Where("status != ?", enums.StatusDeleted))
+		if len(documents) == 0 {
+			slog.Info("No documents found in knowledge base, nothing to rebuild", "knowledge_base_id", knowledgeBaseID)
+			return nil
+		}
+
+		documentIDs := make([]int64, 0, len(documents))
+		for _, doc := range documents {
+			documentIDs = append(documentIDs, doc.ID)
+		}
+		if err := s.markKnowledgeBaseDocumentsIndexPending(knowledgeBaseID, documentIDs); err != nil {
+			slog.Error("Failed to mark knowledge base documents index as pending", "knowledge_base_id", knowledgeBaseID, "error", err)
+		}
+
+		slog.Info("Rebuilding knowledge base index", "knowledge_base_id", knowledgeBaseID, "document_count", len(documents))
+		for _, doc := range documents {
+			if err := s.IndexDocumentByID(ctx, doc.ID); err != nil {
+				slog.Error("Failed to index document", "document_id", doc.ID, "error", err)
+				failedCount++
+			} else {
+				successCount++
+			}
 		}
 	}
 
@@ -370,6 +536,46 @@ func (s *index) RebuildKnowledgeBaseIndex(ctx context.Context, knowledgeBaseID i
 		"failed_count", failedCount)
 
 	return nil
+}
+
+func buildFAQChunkContent(faq *models.KnowledgeFAQ) string {
+	if faq == nil {
+		return ""
+	}
+	parts := []string{fmt.Sprintf("问题：%s", faq.Question)}
+	var similarQuestions []string
+	if faq.SimilarQuestions != "" {
+		_ = json.Unmarshal([]byte(faq.SimilarQuestions), &similarQuestions)
+	}
+	if len(similarQuestions) > 0 {
+		parts = append(parts, fmt.Sprintf("相似问：%s", joinSimilarQuestions(similarQuestions)))
+	}
+	parts = append(parts, fmt.Sprintf("回答：%s", faq.Answer))
+	content := ""
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if content != "" {
+			content += "\n"
+		}
+		content += part
+	}
+	return content
+}
+
+func joinSimilarQuestions(items []string) string {
+	result := ""
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+		if result != "" {
+			result += "；"
+		}
+		result += item
+	}
+	return result
 }
 
 func (s *index) markDocumentIndexPending(documentID int64) error {

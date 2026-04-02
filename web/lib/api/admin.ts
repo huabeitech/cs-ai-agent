@@ -1095,6 +1095,8 @@ export type KnowledgeBase = {
   id: number
   name: string
   description: string
+  knowledgeType: string
+  knowledgeTypeName: string
   status: number
   statusName: string
   defaultTopK: number
@@ -1109,6 +1111,7 @@ export type KnowledgeBase = {
   fallbackMode: number
   fallbackModeName: string
   documentCount: number
+  faqCount: number
   remark: string
   createdAt: string
   updatedAt: string
@@ -1119,6 +1122,7 @@ export type KnowledgeBase = {
 export type CreateKnowledgeBasePayload = {
   name: string
   description: string
+  knowledgeType: string
   defaultTopK: number
   defaultScoreThreshold: number
   defaultRerankLimit: number
@@ -1155,11 +1159,29 @@ export type KnowledgeDocument = {
   updateUserName: string
 }
 
+export type KnowledgeFAQ = {
+  id: number
+  knowledgeBaseId: number
+  knowledgeBaseName?: string
+  question: string
+  answer: string
+  similarQuestions: string[]
+  status: number
+  statusName: string
+  remark: string
+  createdAt: string
+  updatedAt: string
+  createUserName: string
+  updateUserName: string
+}
+
 export type KnowledgeSearchResult = {
   knowledgeBaseId: number
   chunkId: number
   documentId: number
   documentTitle: string
+  faqId: number
+  faqQuestion: string
   chunkNo: number
   title: string
   sectionPath: string
@@ -1197,6 +1219,8 @@ export type KnowledgeAnswerResponse = {
 export type KnowledgeCitation = {
   documentId: number
   documentTitle: string
+  faqId: number
+  faqQuestion: string
   chunkNo: number
   title: string
   sectionPath: string
@@ -1264,6 +1288,8 @@ export type KnowledgeRetrieveHit = {
   chunkId: number
   documentId: number
   documentTitle: string
+  faqId: number
+  faqQuestion: string
   chunkNo: number
   title: string
   sectionPath: string
@@ -1326,6 +1352,18 @@ export type CreateKnowledgeDocumentPayload = {
 }
 
 export type UpdateKnowledgeDocumentPayload = CreateKnowledgeDocumentPayload & {
+  id: number
+}
+
+export type CreateKnowledgeFAQPayload = {
+  knowledgeBaseId: number
+  question: string
+  answer: string
+  similarQuestions: string[]
+  remark: string
+}
+
+export type UpdateKnowledgeFAQPayload = CreateKnowledgeFAQPayload & {
   id: number
 }
 
@@ -1421,6 +1459,39 @@ export function buildKnowledgeDocumentIndex(documentId: number) {
   return request<void>("/api/console/knowledge-retrieve/build", {
     method: "POST",
     body: JSON.stringify({ documentId }),
+  })
+}
+
+export function fetchKnowledgeFAQs(
+  query?: Record<string, string | number | undefined>
+) {
+  return request<PageResult<KnowledgeFAQ>>(
+    `/api/console/knowledge-faq/list${toQueryString(query)}`
+  )
+}
+
+export function fetchKnowledgeFAQ(id: number) {
+  return request<KnowledgeFAQ>(`/api/console/knowledge-faq/${id}`)
+}
+
+export function createKnowledgeFAQ(payload: CreateKnowledgeFAQPayload) {
+  return request<KnowledgeFAQ>("/api/console/knowledge-faq/create", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateKnowledgeFAQ(payload: UpdateKnowledgeFAQPayload) {
+  return request<void>("/api/console/knowledge-faq/update", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteKnowledgeFAQ(id: number) {
+  return request<void>("/api/console/knowledge-faq/delete", {
+    method: "POST",
+    body: JSON.stringify({ id }),
   })
 }
 

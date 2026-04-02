@@ -201,7 +201,7 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="truncate text-xs font-medium">
-                            {citation.documentTitle || `文档 ${citation.documentId}`}
+                            {getSearchResultLabel(citation)}
                           </div>
                           <Badge variant="outline">{citation.score.toFixed(4)}</Badge>
                         </div>
@@ -232,7 +232,7 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
                   <div key={`${item.chunkId}-${item.documentId}`} className="rounded-md border bg-background p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="truncate text-sm font-medium">
-                        {item.documentTitle || `文档 ${item.documentId}`}
+                        {getSearchResultLabel(item)}
                       </div>
                       <Badge variant="outline">{item.score.toFixed(4)}</Badge>
                     </div>
@@ -277,7 +277,7 @@ export function DebugPanel({ knowledgeBaseId }: DebugPanelProps) {
                         <div key={`${provider.provider}-${item.documentId}-${item.chunkNo}`} className="rounded border p-2">
                           <div className="flex items-center justify-between gap-2">
                             <div className="truncate text-xs font-medium">
-                              {item.documentTitle || `文档 ${item.documentId}`}
+                              {getSearchResultLabel(item)}
                             </div>
                             <Badge variant="outline">{item.score.toFixed(4)}</Badge>
                           </div>
@@ -307,4 +307,22 @@ function parseExpectedDocIds(value: string): number[] | undefined {
     .map((item) => Number(item.trim()))
     .filter((item) => Number.isFinite(item) && item > 0)
   return ids.length > 0 ? ids : undefined
+}
+
+function getSearchResultLabel(item: {
+  faqQuestion?: string
+  faqId?: number
+  documentTitle?: string
+  documentId?: number
+}) {
+  if (item.faqQuestion) {
+    return item.faqQuestion
+  }
+  if (item.documentTitle) {
+    return item.documentTitle
+  }
+  if (item.faqId && item.faqId > 0) {
+    return `FAQ ${item.faqId}`
+  }
+  return `文档 ${item.documentId ?? 0}`
 }

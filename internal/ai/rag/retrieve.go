@@ -89,20 +89,33 @@ func (s *retrieve) Retrieve(ctx context.Context, req RetrieveRequest) ([]Retriev
 			continue
 		}
 
-		document := repositories.KnowledgeDocumentRepository.Get(sqls.DB(), chunk.DocumentID)
-		if document == nil || document.Status != enums.StatusOk {
-			continue
+		documentTitle := ""
+		faqQuestion := ""
+		if chunk.DocumentID > 0 {
+			document := repositories.KnowledgeDocumentRepository.Get(sqls.DB(), chunk.DocumentID)
+			if document == nil || document.Status != enums.StatusOk {
+				continue
+			}
+			documentTitle = document.Title
 		}
-		documentTitle := document.Title
+		if chunk.FaqID > 0 {
+			faq := repositories.KnowledgeFAQRepository.Get(sqls.DB(), chunk.FaqID)
+			if faq == nil || faq.Status != enums.StatusOk {
+				continue
+			}
+			faqQuestion = faq.Question
+		}
 
 		results = append(results, RetrieveResult{
 			KnowledgeBaseID: chunk.KnowledgeBaseID,
 			ChunkID:         chunk.ID,
 			DocumentID:      chunk.DocumentID,
 			DocumentTitle:   documentTitle,
+			FaqID:           chunk.FaqID,
+			FaqQuestion:     faqQuestion,
 			ChunkNo:         chunk.ChunkNo,
 			Title:           chunk.Title,
-			SectionPath:     sr.Payload.SectionPath,
+			SectionPath:     chunk.SectionPath,
 			Content:         chunk.Content,
 			Score:           sr.Score,
 			ChunkType:       extractChunkType(sr.Payload),
@@ -287,6 +300,9 @@ func mergeAdjacentResults(results []RetrieveResult) []RetrieveResult {
 }
 
 func canMergeContextResult(left, right RetrieveResult) bool {
+	if left.FaqID > 0 || right.FaqID > 0 {
+		return false
+	}
 	if left.DocumentID != right.DocumentID {
 		return false
 	}
@@ -300,6 +316,9 @@ func canMergeContextResult(left, right RetrieveResult) bool {
 }
 
 func buildSectionKey(item RetrieveResult) string {
+	if item.FaqID > 0 {
+		return fmt.Sprintf("faq:%d", item.FaqID)
+	}
 	sectionPath := strings.TrimSpace(item.SectionPath)
 	if sectionPath != "" {
 		return fmt.Sprintf("%d|%s", item.DocumentID, sectionPath)
@@ -312,6 +331,16 @@ func buildSectionKey(item RetrieveResult) string {
 }
 
 func buildContextChunkText(item RetrieveResult) string {
+	if item.FaqID > 0 {
+		title := strings.TrimSpace(item.FaqQuestion)
+		if title == "" {
+			title = strings.TrimSpace(item.Title)
+		}
+		if title == "" {
+			title = fmt.Sprintf("FAQ#%d", item.FaqID)
+		}
+		return fmt.Sprintf("【FAQ：%s】\n%s\n\n", title, item.Content)
+	}
 	title := strings.TrimSpace(item.DocumentTitle)
 	if title == "" {
 		title = fmt.Sprintf("文档#%d", item.DocumentID)

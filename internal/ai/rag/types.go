@@ -12,6 +12,8 @@ type RetrieveResult struct {
 	ChunkID         int64   `json:"chunkId"`
 	DocumentID      int64   `json:"documentId"`
 	DocumentTitle   string  `json:"documentTitle"`
+	FaqID           int64   `json:"faqId"`
+	FaqQuestion     string  `json:"faqQuestion"`
 	ChunkNo         int     `json:"chunkNo"`
 	Title           string  `json:"title"`
 	SectionPath     string  `json:"sectionPath"`

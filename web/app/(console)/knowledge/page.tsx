@@ -4,6 +4,7 @@ import { useState } from "react"
 import { KnowledgeBaseList } from "./_components/knowledge-base-list"
 import { DebugPanel } from "./_components/debug-panel"
 import { DocumentList, type DocumentListActionState } from "./_components/document-list"
+import { FAQList, type FAQListActionState } from "./_components/faq-list"
 import { RetrieveLogList } from "./_components/retrieve-log-list"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +32,8 @@ export default function DashboardKnowledgeDocumentsPage() {
   const [debugPanelOpen, setDebugPanelOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("documents")
   const [documentActionState, setDocumentActionState] = useState<DocumentListActionState | null>(null)
+  const [faqActionState, setFAQActionState] = useState<FAQListActionState | null>(null)
+  const isFAQKnowledgeBase = selectedKnowledgeBase?.knowledgeType === "faq"
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
@@ -64,10 +67,10 @@ export default function DashboardKnowledgeDocumentsPage() {
           <div className="border-b px-6 py-4">
             <div className="flex items-center gap-2">
               <TabsList>
-                <TabsTrigger value="documents">文档</TabsTrigger>
+                <TabsTrigger value="documents">{isFAQKnowledgeBase ? "FAQ" : "文档"}</TabsTrigger>
                 <TabsTrigger value="retrieveLogs">检索日志</TabsTrigger>
               </TabsList>
-              {activeTab === "documents" && documentActionState ? (
+              {activeTab === "documents" && !isFAQKnowledgeBase && documentActionState ? (
                 <div className="ml-auto flex items-center gap-1">
                   <Button
                     variant="ghost"
@@ -117,13 +120,52 @@ export default function DashboardKnowledgeDocumentsPage() {
                   </Button>
                 </div>
               ) : null}
+              {activeTab === "documents" && isFAQKnowledgeBase && faqActionState ? (
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={faqActionState.onRefresh}
+                    disabled={faqActionState.loading}
+                    aria-label="刷新FAQ"
+                  >
+                    <RefreshCwIcon className={faqActionState.loading ? "size-4 animate-spin" : "size-4"} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => setDebugPanelOpen(true)}
+                    aria-label="打开调试面板"
+                  >
+                    <Bug className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={faqActionState.onCreate}
+                    aria-label="新增FAQ"
+                  >
+                    <PlusIcon className="size-4" />
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
           <TabsContent value="documents" className="min-h-0 flex-1">
-            <DocumentList 
-              knowledgeBaseId={selectedKnowledgeBase?.id ?? null}
-              onActionStateChange={setDocumentActionState}
-            />
+            {isFAQKnowledgeBase ? (
+              <FAQList
+                knowledgeBaseId={selectedKnowledgeBase?.id ?? null}
+                onActionStateChange={setFAQActionState}
+              />
+            ) : (
+              <DocumentList 
+                knowledgeBaseId={selectedKnowledgeBase?.id ?? null}
+                onActionStateChange={setDocumentActionState}
+              />
+            )}
           </TabsContent>
           <TabsContent value="retrieveLogs" className="min-h-0 flex-1">
             <RetrieveLogList

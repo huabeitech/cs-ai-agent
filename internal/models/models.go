@@ -45,6 +45,7 @@ var Models = []any{
 	&AIConfig{},
 	&KnowledgeBase{},
 	&KnowledgeDocument{},
+	&KnowledgeFAQ{},
 	&KnowledgeChunk{},
 	&KnowledgeRetrieveLog{},
 	&KnowledgeRetrieveHit{},
@@ -604,29 +605,28 @@ type AIConfig struct {
 
 // KnowledgeBase 知识库主表。
 type KnowledgeBase struct {
-	ID                    int64        `gorm:"primaryKey;autoIncrement"`                       // ID 为知识库主键。
-	TenantID              int64        `gorm:"type:bigint;not null;default:0;index"`           // TenantID 为租户ID。
-	Name                  string       `gorm:"type:varchar(100);not null;default:'';index"`    // Name 为知识库名称。
-	Description           string       `gorm:"type:text"`                                      // Description 为知识库描述。
-	Status                enums.Status `gorm:"type:int;not null;index"`                        // Status 为状态
-	DefaultTopK           int          `gorm:"type:int;not null;default:10"`                   // DefaultTopK 为默认召回数量。
-	DefaultScoreThreshold float64      `gorm:"type:decimal(5,4);not null;default:0.5"`         // DefaultScoreThreshold 为默认相似度阈值。
-	DefaultRerankLimit    int          `gorm:"type:int;not null;default:5"`                    // DefaultRerankLimit 为默认重排后保留数量。
-	ChunkProvider         string       `gorm:"type:varchar(30);not null;default:'structured'"` // ChunkProvider 为知识库分块策略 provider。
-	ChunkTargetTokens     int          `gorm:"type:int;not null;default:300"`                  // ChunkTargetTokens 为目标 chunk token 数。
-	ChunkMaxTokens        int          `gorm:"type:int;not null;default:400"`                  // ChunkMaxTokens 为单 chunk 最大 token 数。
-	ChunkOverlapTokens    int          `gorm:"type:int;not null;default:40"`                   // ChunkOverlapTokens 为相邻 chunk 重叠 token 数。
-	AnswerMode            int          `gorm:"type:int;not null;default:1"`                    // AnswerMode 为回答模式：1严格知识库模式 2辅助解释模式。
-	FallbackMode          int          `gorm:"type:int;not null;default:1"`                    // FallbackMode 为兜底模式：1声明无答案 2引导换问法 3转人工。
-	SortNo                int          `gorm:"type:int;not null;default:0;index"`              // SortNo 为排序号，用于后台展示和知识库的人工排序管理。
-	Remark                string       `gorm:"type:text"`                                      // Remark 为备注。
+	ID                    int64        `gorm:"primaryKey;autoIncrement"`                           // ID 为知识库主键。
+	Name                  string       `gorm:"type:varchar(100);not null;default:'';index"`        // Name 为知识库名称。
+	Description           string       `gorm:"type:text"`                                          // Description 为知识库描述。
+	KnowledgeType         string       `gorm:"type:varchar(20);not null;default:'document';index"` // KnowledgeType 为知识库类型：document/faq。
+	Status                enums.Status `gorm:"type:int;not null;index"`                            // Status 为状态
+	DefaultTopK           int          `gorm:"type:int;not null;default:10"`                       // DefaultTopK 为默认召回数量。
+	DefaultScoreThreshold float64      `gorm:"type:decimal(5,4);not null;default:0.5"`             // DefaultScoreThreshold 为默认相似度阈值。
+	DefaultRerankLimit    int          `gorm:"type:int;not null;default:5"`                        // DefaultRerankLimit 为默认重排后保留数量。
+	ChunkProvider         string       `gorm:"type:varchar(30);not null;default:'structured'"`     // ChunkProvider 为知识库分块策略 provider。
+	ChunkTargetTokens     int          `gorm:"type:int;not null;default:300"`                      // ChunkTargetTokens 为目标 chunk token 数。
+	ChunkMaxTokens        int          `gorm:"type:int;not null;default:400"`                      // ChunkMaxTokens 为单 chunk 最大 token 数。
+	ChunkOverlapTokens    int          `gorm:"type:int;not null;default:40"`                       // ChunkOverlapTokens 为相邻 chunk 重叠 token 数。
+	AnswerMode            int          `gorm:"type:int;not null;default:1"`                        // AnswerMode 为回答模式：1严格知识库模式 2辅助解释模式。
+	FallbackMode          int          `gorm:"type:int;not null;default:1"`                        // FallbackMode 为兜底模式：1声明无答案 2引导换问法 3转人工。
+	SortNo                int          `gorm:"type:int;not null;default:0;index"`                  // SortNo 为排序号，用于后台展示和知识库的人工排序管理。
+	Remark                string       `gorm:"type:text"`                                          // Remark 为备注。
 	AuditFields
 }
 
 // KnowledgeDocument 知识文档主表。
 type KnowledgeDocument struct {
 	ID              int64                              `gorm:"primaryKey;autoIncrement"`                          // ID 为文档主键。
-	TenantID        int64                              `gorm:"type:bigint;not null;default:0;index"`              // TenantID 为租户ID。
 	KnowledgeBaseID int64                              `gorm:"type:bigint;not null;index"`                        // KnowledgeBaseID 为所属知识库ID。
 	Title           string                             `gorm:"type:varchar(255);not null;default:'';index"`       // Title 为文档标题。
 	ContentType     enums.KnowledgeDocumentContentType `gorm:"type:varchar(20);not null;default:'html'"`          // ContentType 为内容类型：html/markdown。
@@ -639,18 +639,33 @@ type KnowledgeDocument struct {
 	AuditFields
 }
 
+// KnowledgeFAQ FAQ 条目主表。
+type KnowledgeFAQ struct {
+	ID               int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为 FAQ 主键。
+	KnowledgeBaseID  int64        `gorm:"type:bigint;not null;index"`                  // KnowledgeBaseID 为所属 FAQ 知识库 ID。
+	Question         string       `gorm:"type:varchar(500);not null;default:'';index"` // Question 为标准问题。
+	Answer           string       `gorm:"type:text"`                                   // Answer 为标准答案。
+	SimilarQuestions string       `gorm:"type:text"`                                   // SimilarQuestions 为相似问 JSON 数组。
+	Status           enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为状态。
+	Remark           string       `gorm:"type:text"`                                   // Remark 为备注。
+	AuditFields
+}
+
 // KnowledgeChunk 切片元数据表。
 type KnowledgeChunk struct {
 	ID              int64        `gorm:"primaryKey;autoIncrement"`                    // ID 为切片主键。
-	TenantID        int64        `gorm:"type:bigint;not null;default:0;index"`        // TenantID 为租户ID。
 	KnowledgeBaseID int64        `gorm:"type:bigint;not null;index"`                  // KnowledgeBaseID 为知识库ID。
-	DocumentID      int64        `gorm:"type:bigint;not null;index"`                  // DocumentID 为文档ID。
+	DocumentID      int64        `gorm:"type:bigint;not null;default:0;index"`        // DocumentID 为文档ID。
+	FaqID           int64        `gorm:"type:bigint;not null;default:0;index"`        // FaqID 为 FAQ ID。
 	ChunkNo         int          `gorm:"type:int;not null;default:0;index"`           // ChunkNo 为切片序号。
 	Title           string       `gorm:"type:varchar(255);not null;default:''"`       // Title 为切片标题。
 	Content         string       `gorm:"type:text"`                                   // Content 为切片内容。
 	ContentHash     string       `gorm:"type:varchar(64);not null;default:'';index"`  // ContentHash 为内容哈希。
 	CharCount       int          `gorm:"type:int;not null;default:0"`                 // CharCount 为字符数。
 	TokenCount      int          `gorm:"type:int;not null;default:0"`                 // TokenCount 为token数。
+	ChunkType       string       `gorm:"type:varchar(30);not null;default:''"`        // ChunkType 为切片类型。
+	SectionPath     string       `gorm:"type:text"`                                   // SectionPath 为章节路径。
+	Provider        string       `gorm:"type:varchar(30);not null;default:''"`        // Provider 为分块 provider。
 	Status          enums.Status `gorm:"type:int;not null;default:0;index"`           // Status 为状态：1有效 2已删除。
 	VectorID        string       `gorm:"type:varchar(100);not null;default:'';index"` // VectorID 为向量库中的point ID。
 	CreatedAt       time.Time    `gorm:"type:datetime;not null;index"`
@@ -699,6 +714,8 @@ type KnowledgeRetrieveHit struct {
 	ChunkID         int64     `gorm:"type:bigint;not null;index"`            // ChunkID 为切片ID。
 	DocumentID      int64     `gorm:"type:bigint;not null;index"`            // DocumentID 为文档ID。
 	DocumentTitle   string    `gorm:"type:varchar(255);not null;default:''"` // DocumentTitle 为文档标题。
+	FaqID           int64     `gorm:"type:bigint;not null;default:0;index"`  // FaqID 为 FAQ ID。
+	FaqQuestion     string    `gorm:"type:varchar(500);not null;default:''"` // FaqQuestion 为 FAQ 问题。
 	ChunkNo         int       `gorm:"type:int;not null;default:0"`           // ChunkNo 为切片序号。
 	Title           string    `gorm:"type:varchar(255);not null;default:''"` // Title 为切片标题。
 	SectionPath     string    `gorm:"type:text"`                             // SectionPath 为章节路径。

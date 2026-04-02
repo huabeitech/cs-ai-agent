@@ -137,6 +137,7 @@ export enum IMEventType {
   Transfer = "transfer",
   Close = "close",
   MessageSend = "message_send",
+  MessageRecall = "message_recall",
 }
 export const IMEventTypeLabels: Record<IMEventType, string> = {
   [IMEventType.Create]: "创建会话",
@@ -144,6 +145,7 @@ export const IMEventTypeLabels: Record<IMEventType, string> = {
   [IMEventType.Transfer]: "转接会话",
   [IMEventType.Close]: "关闭会话",
   [IMEventType.MessageSend]: "发送消息",
+  [IMEventType.MessageRecall]: "撤回消息",
 }
 
 export enum IMMessageStatus {
@@ -166,11 +168,13 @@ export const IMMessageStatusLabels: Record<IMMessageStatus, string> = {
 export enum IMMessageType {
   Text = "text",
   Image = "image",
+  Attachment = "attachment",
   HTML = "html",
 }
 export const IMMessageTypeLabels: Record<IMMessageType, string> = {
   [IMMessageType.Text]: "文本",
   [IMMessageType.Image]: "图片",
+  [IMMessageType.Attachment]: "附件",
   [IMMessageType.HTML]: "富文本",
 }
 
@@ -220,6 +224,15 @@ export const KnowledgeAnswerStatusLabels: Record<KnowledgeAnswerStatus, string> 
   [KnowledgeAnswerStatus.NoAnswer]: "无答案",
   [KnowledgeAnswerStatus.Fallback]: "兜底回复",
   [KnowledgeAnswerStatus.Blocked]: "已屏蔽",
+}
+
+export enum KnowledgeBaseType {
+  Document = "document",
+  FAQ = "faq",
+}
+export const KnowledgeBaseTypeLabels: Record<KnowledgeBaseType, string> = {
+  [KnowledgeBaseType.Document]: "文档知识库",
+  [KnowledgeBaseType.FAQ]: "FAQ知识库",
 }
 
 export enum KnowledgeChunkProvider {
@@ -327,6 +340,15 @@ export const ServiceStatusLabels: Record<ServiceStatus, string> = {
   [ServiceStatus.Busy]: "忙碌",
 }
 
+export enum SkillExecutionMode {
+  PromptOnly = "prompt_only",
+  MCPTool = "mcp_tool",
+}
+export const SkillExecutionModeLabels: Record<SkillExecutionMode, string> = {
+  [SkillExecutionMode.PromptOnly]: "Prompt直出",
+  [SkillExecutionMode.MCPTool]: "MCP工具",
+}
+
 export enum Status {
   Ok = 0,
   Disabled = 1,
@@ -345,6 +367,49 @@ export enum ThirdProvider {
 export const ThirdProviderLabels: Record<ThirdProvider, string> = {
   [ThirdProvider.WxWork]: "企业微信",
   [ThirdProvider.Dingtalk]: "钉钉",
+}
+
+export enum TicketPriority {
+  Low = 1,
+  Normal = 2,
+  High = 3,
+  Urgent = 4,
+}
+export const TicketPriorityLabels: Record<TicketPriority, string> = {
+  [TicketPriority.Low]: "低",
+  [TicketPriority.Normal]: "普通",
+  [TicketPriority.High]: "高",
+  [TicketPriority.Urgent]: "紧急",
+}
+
+export enum TicketSeverity {
+  Minor = 1,
+  Major = 2,
+  Critical = 3,
+}
+export const TicketSeverityLabels: Record<TicketSeverity, string> = {
+  [TicketSeverity.Minor]: "轻微",
+  [TicketSeverity.Major]: "严重",
+  [TicketSeverity.Critical]: "致命",
+}
+
+export enum TicketStatus {
+  New = "new",
+  Open = "open",
+  PendingCustomer = "pending_customer",
+  PendingInternal = "pending_internal",
+  Resolved = "resolved",
+  Closed = "closed",
+  Cancelled = "cancelled",
+}
+export const TicketStatusLabels: Record<TicketStatus, string> = {
+  [TicketStatus.New]: "新建",
+  [TicketStatus.Open]: "处理中",
+  [TicketStatus.PendingCustomer]: "待客户反馈",
+  [TicketStatus.PendingInternal]: "待内部处理",
+  [TicketStatus.Resolved]: "已解决",
+  [TicketStatus.Closed]: "已关闭",
+  [TicketStatus.Cancelled]: "已取消",
 }
 
 export enum VectorDBType {

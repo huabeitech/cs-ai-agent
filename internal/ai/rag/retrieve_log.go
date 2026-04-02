@@ -153,6 +153,8 @@ func (s *retrieveLog) CreateRetrieveLog(req *CreateRetrieveLogRequest, _ *dto.Au
 				ChunkID:         hit.ChunkID,
 				DocumentID:      hit.DocumentID,
 				DocumentTitle:   hit.DocumentTitle,
+				FaqID:           hit.FaqID,
+				FaqQuestion:     hit.FaqQuestion,
 				ChunkNo:         hit.ChunkNo,
 				Title:           hit.Title,
 				SectionPath:     hit.SectionPath,
@@ -279,10 +281,16 @@ func distinctSectionPaths(hits []response.KnowledgeSearchResult) []string {
 }
 
 func buildKnowledgeSearchResultKey(item response.KnowledgeSearchResult) string {
+	if item.FaqID > 0 {
+		return fmt.Sprintf("faq:%d|%d", item.FaqID, item.ChunkNo)
+	}
 	return fmt.Sprintf("%d|%s|%d", item.DocumentID, item.SectionPath, item.ChunkNo)
 }
 
 func buildKnowledgeCitationKey(item response.KnowledgeCitation) string {
+	if item.FaqID > 0 {
+		return fmt.Sprintf("faq:%d|%d", item.FaqID, item.ChunkNo)
+	}
 	return fmt.Sprintf("%d|%s|%d", item.DocumentID, item.SectionPath, item.ChunkNo)
 }
 

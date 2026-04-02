@@ -150,6 +150,10 @@ var (
 	PermissionKnowledgeDocumentCreate = Permission{Name: "创建知识文档", Code: "knowledgeDocument.create", Type: "api", GroupName: "knowledgeDocument", Method: "POST", APIPath: "/api/console/knowledge-document/create", SortNo: 1520}
 	PermissionKnowledgeDocumentUpdate = Permission{Name: "更新知识文档", Code: "knowledgeDocument.update", Type: "api", GroupName: "knowledgeDocument", Method: "POST", APIPath: "/api/console/knowledge-document/update", SortNo: 1530}
 	PermissionKnowledgeDocumentDelete = Permission{Name: "删除知识文档", Code: "knowledgeDocument.delete", Type: "api", GroupName: "knowledgeDocument", Method: "POST", APIPath: "/api/console/knowledge-document/delete", SortNo: 1540}
+	PermissionKnowledgeFAQView        = Permission{Name: "查看知识FAQ", Code: "knowledgeFAQ.view", Type: "api", GroupName: "knowledgeFAQ", Method: "ANY", APIPath: "/api/console/knowledge-faq/list", SortNo: 1550}
+	PermissionKnowledgeFAQCreate      = Permission{Name: "创建知识FAQ", Code: "knowledgeFAQ.create", Type: "api", GroupName: "knowledgeFAQ", Method: "POST", APIPath: "/api/console/knowledge-faq/create", SortNo: 1560}
+	PermissionKnowledgeFAQUpdate      = Permission{Name: "更新知识FAQ", Code: "knowledgeFAQ.update", Type: "api", GroupName: "knowledgeFAQ", Method: "POST", APIPath: "/api/console/knowledge-faq/update", SortNo: 1570}
+	PermissionKnowledgeFAQDelete      = Permission{Name: "删除知识FAQ", Code: "knowledgeFAQ.delete", Type: "api", GroupName: "knowledgeFAQ", Method: "POST", APIPath: "/api/console/knowledge-faq/delete", SortNo: 1580}
 
 	// Skill 定义相关权限
 	PermissionSkillDefinitionView   = Permission{Name: "查看技能定义", Code: "skillDefinition.view", Type: "api", GroupName: "skillDefinition", Method: "ANY", APIPath: "/api/console/skill-definition/list", SortNo: 1610}
@@ -241,6 +245,10 @@ var Permissions = []Permission{
 	PermissionKnowledgeDocumentCreate,
 	PermissionKnowledgeDocumentUpdate,
 	PermissionKnowledgeDocumentDelete,
+	PermissionKnowledgeFAQView,
+	PermissionKnowledgeFAQCreate,
+	PermissionKnowledgeFAQUpdate,
+	PermissionKnowledgeFAQDelete,
 	PermissionSkillDefinitionView,
 	PermissionSkillDefinitionCreate,
 	PermissionSkillDefinitionUpdate,
