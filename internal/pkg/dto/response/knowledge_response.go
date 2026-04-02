@@ -126,23 +126,6 @@ type KnowledgeCitation struct {
 	Score         float64 `json:"score"`
 }
 
-type KnowledgeCompareProviderResult struct {
-	Provider           string                  `json:"provider"`
-	HitCount           int                     `json:"hitCount"`
-	BuildMs            int64                   `json:"buildMs"`
-	RetrieveMs         int64                   `json:"retrieveMs"`
-	Top1Matched        bool                    `json:"top1Matched"`
-	Top3Matched        bool                    `json:"top3Matched"`
-	MatchedDocumentIDs []int64                 `json:"matchedDocumentIds"`
-	Results            []KnowledgeSearchResult `json:"results"`
-}
-
-type KnowledgeCompareResponse struct {
-	Question  string                           `json:"question"`
-	Providers []KnowledgeCompareProviderResult `json:"providers"`
-	LatencyMs int64                            `json:"latencyMs"`
-}
-
 type KnowledgeRetrieveLogResponse struct {
 	ID                 int64     `json:"id"`
 	KnowledgeBaseID    int64     `json:"knowledgeBaseId"`
