@@ -46,7 +46,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/dashboard" />}
+              render={<Link href="/" />}
             >
               <BotMessageSquareIcon className="size-5!" />
               <span className="text-base font-semibold">贝壳AGENT</span>

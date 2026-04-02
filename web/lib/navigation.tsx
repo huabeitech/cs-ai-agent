@@ -88,7 +88,7 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     items: [
       {
         title: "总览",
-        url: "/dashboard",
+        url: "/",
         icon: <LayoutDashboardIcon />,
       },
     ],
@@ -98,36 +98,36 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     items: [
       {
         title: "会话",
-        url: "/dashboard/conversations",
+        url: "/conversations",
         icon: <BotMessageSquareIcon />,
         requiredPermission: "conversation.view",
       },
       {
         title: "工单",
-        url: "/dashboard/tickets",
+        url: "/tickets",
         icon: <FileTextIcon />,
       },
       {
         title: "会话监控",
-        url: "/dashboard/conversation-monitor",
+        url: "/conversation-monitor",
         icon: <BotMessageSquareIcon />,
         requiredPermission: "conversation.view",
       },
       {
         title: "快捷回复",
-        url: "/dashboard/quick-replies",
+        url: "/quick-replies",
         icon: <MessageSquareMoreIcon />,
         requiredPermission: "quickReply.view",
       },
       {
         title: "会话标签",
-        url: "/dashboard/tags",
+        url: "/tags",
         icon: <TagsIcon />,
         requiredPermission: "tag.view",
       },
       {
         title: "客户管理",
-        url: "/dashboard/customers",
+        url: "/customers",
         icon: <UsersIcon />,
         requiredPermission: "customer.view",
       },
@@ -138,25 +138,25 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     items: [
       {
         title: "公司管理",
-        url: "/dashboard/companies",
+        url: "/companies",
         icon: <Building2Icon />,
         requiredPermission: "company.view",
       },
       {
         title: "客服档案",
-        url: "/dashboard/agents",
+        url: "/agents",
         icon: <UserCogIcon />,
         requiredPermission: "agent.view",
       },
       {
         title: "客服组排班",
-        url: "/dashboard/agent-team-schedules",
+        url: "/agent-team-schedules",
         icon: <CalendarClockIcon />,
         requiredPermission: "agentTeamSchedule.view",
       },
       {
         title: "接入站点",
-        url: "/dashboard/widget-sites",
+        url: "/widget-sites",
         icon: <GlobeIcon />,
       },
     ],
@@ -166,36 +166,36 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     items: [
       {
         title: "知识库",
-        url: "/dashboard/knowledge",
+        url: "/knowledge",
         icon: <FileTextIcon />,
         requiredPermission: "knowledgeBase.view",
       },
       {
         title: "AI配置",
-        url: "/dashboard/ai-configs",
+        url: "/ai-configs",
         icon: <BrainCircuitIcon />,
         requiredPermission: "aiConfig.view",
       },
       {
         title: "AI Agent",
-        url: "/dashboard/ai-agents",
+        url: "/ai-agents",
         icon: <MessageSquareMoreIcon />,
       },
       {
         title: "Skills",
-        url: "/dashboard/skill-definition",
+        url: "/skill-definition",
         icon: <MessageSquareCodeIcon />,
         requiredPermission: "skillDefinition.view",
       },
       {
         title: "MCP调试",
-        url: "/dashboard/mcp",
+        url: "/mcp",
         icon: <MessageSquareCodeIcon />,
         requiredPermission: "mcp.view",
       },
       {
         title: "Agent日志",
-        url: "/dashboard/agent-run-logs",
+        url: "/agent-run-logs",
         icon: <ActivitySquareIcon />,
         requiredPermission: "conversation.view",
       },
@@ -206,19 +206,19 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     items: [
       {
         title: "用户管理",
-        url: "/dashboard/users",
+        url: "/users",
         icon: <UsersIcon />,
         requiredPermission: "user.view",
       },
       {
         title: "角色管理",
-        url: "/dashboard/roles",
+        url: "/roles",
         icon: <ShieldCheckIcon />,
         requiredPermission: "role.view",
       },
       {
         title: "权限管理",
-        url: "/dashboard/permissions",
+        url: "/permissions",
         icon: <KeyRoundIcon />,
         requiredPermission: "permission.view",
       },
@@ -229,12 +229,12 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
 export const dashboardSecondaryNav: DashboardNavItemConfig[] = [
   {
     title: "系统设置",
-    url: "/dashboard/settings",
+    url: "/settings",
     icon: <Settings2Icon />,
   },
   {
     title: "帮助中心",
-    url: "/dashboard/help",
+    url: "/help",
     icon: <LifeBuoyIcon />,
   },
 ]

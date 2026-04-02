@@ -26,7 +26,7 @@ export function NavMain({
   const pathname = usePathname()
 
   const isActive = (itemUrl: string) => {
-    if (itemUrl === "/dashboard") {
+    if (itemUrl === "/") {
       return pathname === itemUrl
     }
     return pathname === itemUrl || pathname.startsWith(itemUrl + "/")

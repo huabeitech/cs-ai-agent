@@ -130,7 +130,7 @@ export default function TicketDetailPage() {
       <div className="flex w-full flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard/tickets">
+            <Link href="/tickets">
               <Button variant="outline" size="sm">
                 <ArrowLeftIcon className="size-4" />
                 返回工单列表
@@ -396,7 +396,7 @@ export default function TicketDetailPage() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => router.push("/dashboard/conversations")}
+                      onClick={() => router.push("/conversations")}
                     >
                       <RotateCcwIcon className="size-4" />
                       前往会话工作台

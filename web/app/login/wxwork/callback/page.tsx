@@ -19,7 +19,7 @@ export default function WxWorkLoginCallbackPage() {
 
     const ticket = searchParams.get("ticket")?.trim() ?? ""
     const next = searchParams.get("next")
-    const nextPath = next && next.startsWith("/") ? next : "/dashboard"
+    const nextPath = next && next.startsWith("/") ? next : "/"
 
     if (!ticket) {
       toast.error("企业微信登录票据不存在")

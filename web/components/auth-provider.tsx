@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       clearSession()
       setSession(null)
-      if (pathname?.startsWith("/dashboard")) {
+      if (pathname && !pathname.startsWith("/login")) {
         startTransition(() => {
           router.replace("/login")
         })
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setReady(true)
-    if (pathname?.startsWith("/dashboard")) {
+    if (pathname && !pathname.startsWith("/login")) {
       startTransition(() => {
         router.replace("/login")
       })

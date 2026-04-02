@@ -629,7 +629,7 @@ function RelatedTicketsSection({ conversation }: { conversation: AgentConversati
           {tickets.map((ticket) => (
             <Link
               key={ticket.id}
-              href={`/dashboard/tickets/detail?id=${ticket.id}`}
+              href={`/tickets/detail?id=${ticket.id}`}
               target="_blank"
               rel="noreferrer"
               className="block rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-muted/40"
