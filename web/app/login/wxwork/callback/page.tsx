@@ -1,12 +1,20 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef } from "react"
 import { toast } from "sonner"
 
 import { exchangeWxWorkTicket } from "@/lib/api/auth"
 
 export default function WxWorkLoginCallbackPage() {
+  return (
+    <Suspense fallback={<WxWorkLoginCallbackFallback />}>
+      <WxWorkLoginCallbackContent />
+    </Suspense>
+  )
+}
+
+function WxWorkLoginCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const ranRef = useRef(false)
@@ -38,6 +46,12 @@ export default function WxWorkLoginCallbackPage() {
       })
   }, [router, searchParams])
 
+  return (
+    <WxWorkLoginCallbackFallback />
+  )
+}
+
+function WxWorkLoginCallbackFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-[linear-gradient(145deg,#fff7ed_0%,#ffffff_32%,#ecfeff_100%)] px-6">
       <div className="w-full max-w-md rounded-[28px] border border-white/70 bg-white/90 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
