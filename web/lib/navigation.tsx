@@ -83,19 +83,24 @@ export function filterDashboardSecondaryNavForSession(
 }
 
 export const dashboardNavSections: DashboardNavSectionConfig[] = [
+  // {
+  //   title: "总览",
+  //   items: [
+  //     {
+  //       title: "总览",
+  //       url: "/",
+  //       icon: <LayoutDashboardIcon />,
+  //     },
+  //   ],
+  // },
   {
-    title: "总览",
+    title: "接待中心",
     items: [
       {
         title: "总览",
         url: "/",
         icon: <LayoutDashboardIcon />,
       },
-    ],
-  },
-  {
-    title: "接待中心",
-    items: [
       {
         title: "会话",
         url: "/conversations",
@@ -227,16 +232,16 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
 ]
 
 export const dashboardSecondaryNav: DashboardNavItemConfig[] = [
-  {
-    title: "系统设置",
-    url: "/settings",
-    icon: <Settings2Icon />,
-  },
-  {
-    title: "帮助中心",
-    url: "/help",
-    icon: <LifeBuoyIcon />,
-  },
+  // {
+  //   title: "系统设置",
+  //   url: "/settings",
+  //   icon: <Settings2Icon />,
+  // },
+  // {
+  //   title: "帮助中心",
+  //   url: "/help",
+  //   icon: <LifeBuoyIcon />,
+  // },
 ]
 
 export const dashboardQuickActions = [
