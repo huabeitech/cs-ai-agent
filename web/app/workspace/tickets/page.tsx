@@ -473,7 +473,7 @@ export default function TicketsPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Link
-                          href={`/workspace/tickets/${item.id}`}
+                          href={`/workspace/tickets/detail?id=${item.id}`}
                           target="_blank"
                           rel="noreferrer"
                         >

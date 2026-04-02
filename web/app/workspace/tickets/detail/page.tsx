@@ -8,7 +8,7 @@ import {
   RotateCcwIcon,
   SaveIcon,
 } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -34,10 +34,10 @@ import {
   ticketStatusLabel,
 } from "../_components/ticket-status-badge"
 
-export function TicketDetailPageClient() {
-  const params = useParams<{ id: string }>()
+export default function TicketDetailPage() {
+  const searchParams = useSearchParams()
   const router = useRouter()
-  const ticketId = Number(params.id)
+  const ticketId = Number(searchParams.get("id") || 0)
   const [detail, setDetail] = useState<TicketDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -54,6 +54,8 @@ export function TicketDetailPageClient() {
 
   const loadDetail = useCallback(async () => {
     if (!ticketId) {
+      setDetail(null)
+      setLoading(false)
       return
     }
     setLoading(true)
