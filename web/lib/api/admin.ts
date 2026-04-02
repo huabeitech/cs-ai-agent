@@ -1168,6 +1168,10 @@ export type KnowledgeFAQ = {
   similarQuestions: string[]
   status: number
   statusName: string
+  indexStatus: string
+  indexStatusName: string
+  indexedAt?: string | null
+  indexError: string
   remark: string
   createdAt: string
   updatedAt: string

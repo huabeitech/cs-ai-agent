@@ -54,19 +54,23 @@ type KnowledgeDocumentResponse struct {
 }
 
 type KnowledgeFAQResponse struct {
-	ID                int64        `json:"id"`
-	KnowledgeBaseID   int64        `json:"knowledgeBaseId"`
-	KnowledgeBaseName string       `json:"knowledgeBaseName,omitempty"`
-	Question          string       `json:"question"`
-	Answer            string       `json:"answer"`
-	SimilarQuestions  []string     `json:"similarQuestions"`
-	Status            enums.Status `json:"status"`
-	StatusName        string       `json:"statusName"`
-	Remark            string       `json:"remark"`
-	CreatedAt         time.Time    `json:"createdAt"`
-	UpdatedAt         time.Time    `json:"updatedAt"`
-	CreateUserName    string       `json:"createUserName"`
-	UpdateUserName    string       `json:"updateUserName"`
+	ID                int64                              `json:"id"`
+	KnowledgeBaseID   int64                              `json:"knowledgeBaseId"`
+	KnowledgeBaseName string                             `json:"knowledgeBaseName,omitempty"`
+	Question          string                             `json:"question"`
+	Answer            string                             `json:"answer"`
+	SimilarQuestions  []string                           `json:"similarQuestions"`
+	Status            enums.Status                       `json:"status"`
+	StatusName        string                             `json:"statusName"`
+	IndexStatus       enums.KnowledgeDocumentIndexStatus `json:"indexStatus"`
+	IndexStatusName   string                             `json:"indexStatusName"`
+	IndexedAt         *time.Time                         `json:"indexedAt"`
+	IndexError        string                             `json:"indexError"`
+	Remark            string                             `json:"remark"`
+	CreatedAt         time.Time                          `json:"createdAt"`
+	UpdatedAt         time.Time                          `json:"updatedAt"`
+	CreateUserName    string                             `json:"createUserName"`
+	UpdateUserName    string                             `json:"updateUserName"`
 }
 
 type KnowledgeSearchResult struct {

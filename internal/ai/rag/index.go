@@ -230,29 +230,38 @@ func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
 	if faq == nil {
 		return fmt.Errorf("faq not found: %d", faqID)
 	}
+	if err := s.markFAQIndexPending(faq.ID); err != nil {
+		slog.Error("Failed to mark knowledge faq index as pending", "faq_id", faq.ID, "error", err)
+	}
+	fail := func(err error) error {
+		if updateErr := s.markFAQIndexFailed(faq.ID, err); updateErr != nil {
+			slog.Error("Failed to mark knowledge faq index as failed", "faq_id", faq.ID, "error", updateErr)
+		}
+		return err
+	}
 	knowledgeBase := repositories.KnowledgeBaseRepository.Get(sqls.DB(), faq.KnowledgeBaseID)
 	if knowledgeBase == nil {
-		return fmt.Errorf("knowledge base not found: %d", faq.KnowledgeBaseID)
+		return fail(fmt.Errorf("knowledge base not found: %d", faq.KnowledgeBaseID))
 	}
 	if knowledgeBase.KnowledgeType != string(enums.KnowledgeBaseTypeFAQ) {
-		return fmt.Errorf("knowledge base %d is not faq type", knowledgeBase.ID)
+		return fail(fmt.Errorf("knowledge base %d is not faq type", knowledgeBase.ID))
 	}
 	existingChunks := repositories.KnowledgeChunkRepository.FindByFaqID(sqls.DB(), faq.ID)
 	content := buildFAQChunkContent(faq)
 	if content == "" {
-		return fmt.Errorf("faq content is empty")
+		return fail(fmt.Errorf("faq content is empty"))
 	}
 
 	provider := vectordb.GetProvider()
 	if provider == nil {
-		return fmt.Errorf("vectordb provider not initialized")
+		return fail(fmt.Errorf("vectordb provider not initialized"))
 	}
 	if _, err := ai.Embedding.GetModel(ctx); err != nil {
-		return fmt.Errorf("failed to get embedding model: %w", err)
+		return fail(fmt.Errorf("failed to get embedding model: %w", err))
 	}
 	embeddingResult, err := ai.Embedding.GenerateEmbedding(ctx, content)
 	if err != nil {
-		return fmt.Errorf("failed to generate embedding for faq %d: %w", faq.ID, err)
+		return fail(fmt.Errorf("failed to generate embedding for faq %d: %w", faq.ID, err))
 	}
 
 	chunkID := buildKnowledgeFAQChunkVectorID(knowledgeBase.ID, faq.ID, 0)
@@ -277,7 +286,7 @@ func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
 	collectionInfo, err := provider.GetCollection(ctx, collectionName)
 	if err != nil || collectionInfo == nil {
 		if err := provider.CreateCollection(ctx, collectionName, embeddingResult.Dimension); err != nil {
-			return fmt.Errorf("failed to create collection: %w", err)
+			return fail(fmt.Errorf("failed to create collection: %w", err))
 		}
 	}
 
@@ -289,7 +298,7 @@ func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
 	}
 	if len(existingVectorIDs) > 0 {
 		if err := provider.DeleteVectors(ctx, collectionName, existingVectorIDs); err != nil {
-			return fmt.Errorf("failed to delete old vectors: %w", err)
+			return fail(fmt.Errorf("failed to delete old vectors: %w", err))
 		}
 	}
 
@@ -307,7 +316,7 @@ func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
 			Provider:        string(enums.KnowledgeChunkProviderFAQ),
 		},
 	}}); err != nil {
-		return fmt.Errorf("failed to upsert vectors: %w", err)
+		return fail(fmt.Errorf("failed to upsert vectors: %w", err))
 	}
 
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
@@ -316,9 +325,11 @@ func (s *index) IndexFAQByID(ctx context.Context, faqID int64) error {
 		}
 		return ctx.Tx.Create(&chunkModel).Error
 	}); err != nil {
-		return fmt.Errorf("failed to save faq chunk: %w", err)
+		return fail(fmt.Errorf("failed to save faq chunk: %w", err))
 	}
-
+	if err := s.markFAQIndexIndexed(faq.ID); err != nil {
+		slog.Error("Failed to mark knowledge faq index as indexed", "faq_id", faq.ID, "error", err)
+	}
 	return nil
 }
 
@@ -618,6 +629,33 @@ func (s *index) markKnowledgeBaseDocumentsIndexPending(knowledgeBaseID int64, do
 			"index_error":  "",
 			"updated_at":   time.Now(),
 		}).Error
+}
+
+func (s *index) markFAQIndexPending(faqID int64) error {
+	return repositories.KnowledgeFAQRepository.Updates(sqls.DB(), faqID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusPending,
+		"indexed_at":   nil,
+		"index_error":  "",
+		"updated_at":   time.Now(),
+	})
+}
+
+func (s *index) markFAQIndexIndexed(faqID int64) error {
+	now := time.Now()
+	return repositories.KnowledgeFAQRepository.Updates(sqls.DB(), faqID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusIndexed,
+		"indexed_at":   &now,
+		"index_error":  "",
+		"updated_at":   now,
+	})
+}
+
+func (s *index) markFAQIndexFailed(faqID int64, err error) error {
+	return repositories.KnowledgeFAQRepository.Updates(sqls.DB(), faqID, map[string]any{
+		"index_status": enums.KnowledgeDocumentIndexStatusFailed,
+		"index_error":  truncateIndexError(err),
+		"updated_at":   time.Now(),
+	})
 }
 
 func truncateIndexError(err error) string {

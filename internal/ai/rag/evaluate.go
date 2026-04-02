@@ -208,7 +208,6 @@ func normalizeCompareProviders(providers []string) []string {
 		return []string{
 			string(enums.KnowledgeChunkProviderFixed),
 			string(enums.KnowledgeChunkProviderStructured),
-			string(enums.KnowledgeChunkProviderFAQ),
 		}
 	}
 	result := make([]string, 0, len(providers))

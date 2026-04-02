@@ -20,7 +20,6 @@ func NewDefaultRegistry() *Registry {
 	r := NewRegistry()
 	r.Register(NewFixedProvider())
 	r.Register(NewStructuredProvider())
-	r.Register(NewFAQProvider())
 	return r
 }
 

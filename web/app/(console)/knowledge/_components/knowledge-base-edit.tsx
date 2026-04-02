@@ -262,6 +262,30 @@ function KnowledgeBaseFormDialogBody({
           onSubmit={handleSubmit(onFormSubmit)}
           className="space-y-4"
         >
+          <Field data-invalid={!!errors.knowledgeType}>
+            <FieldLabel htmlFor="kb-knowledge-type">知识库类型</FieldLabel>
+            <FieldContent>
+              <Controller
+                control={control}
+                name="knowledgeType"
+                render={({ field }) => (
+                  <OptionCombobox
+                    value={field.value}
+                    options={getEnumOptions(KnowledgeBaseTypeLabels).map((option) => ({
+                      value: String(option.value),
+                      label: option.label,
+                    }))}
+                    placeholder="选择知识库类型"
+                    searchPlaceholder="搜索知识库类型"
+                    emptyText="没有匹配的知识库类型"
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.knowledgeType]} />
+            </FieldContent>
+          </Field>
+
           <Field data-invalid={!!errors.name}>
             <FieldLabel htmlFor="kb-name">名称</FieldLabel>
             <FieldContent>
@@ -286,30 +310,6 @@ function KnowledgeBaseFormDialogBody({
                 {...register("description")}
               />
               <FieldError errors={[errors.description]} />
-            </FieldContent>
-          </Field>
-
-          <Field data-invalid={!!errors.knowledgeType}>
-            <FieldLabel htmlFor="kb-knowledge-type">知识库类型</FieldLabel>
-            <FieldContent>
-              <Controller
-                control={control}
-                name="knowledgeType"
-                render={({ field }) => (
-                  <OptionCombobox
-                    value={field.value}
-                    options={getEnumOptions(KnowledgeBaseTypeLabels).map((option) => ({
-                      value: String(option.value),
-                      label: option.label,
-                    }))}
-                    placeholder="选择知识库类型"
-                    searchPlaceholder="搜索知识库类型"
-                    emptyText="没有匹配的知识库类型"
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              <FieldError errors={[errors.knowledgeType]} />
             </FieldContent>
           </Field>
 
