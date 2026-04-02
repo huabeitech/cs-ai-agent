@@ -19,8 +19,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ChevronRightIcon,
-  FolderIcon,
+  CircleHelpIcon,
+  FileTextIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
@@ -64,8 +64,8 @@ import {
   type CreateKnowledgeBasePayload,
   type KnowledgeBase,
 } from "@/lib/api/admin";
-import { StatusLabels } from "@/lib/generated/enums";
 import { getEnumLabel, getEnumOptions } from "@/lib/enums";
+import { KnowledgeBaseType, StatusLabels } from "@/lib/generated/enums";
 import { cn } from "@/lib/utils";
 import { EditDialog } from "./knowledge-base-edit";
 
@@ -139,8 +139,11 @@ function SortableKnowledgeBaseCard({
         {...attributes}
         {...listeners}
       >
-        <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
+        {item.knowledgeType === KnowledgeBaseType.FAQ ? (
+          <CircleHelpIcon className="size-4 shrink-0 text-muted-foreground" />
+        ) : (
+          <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
+        )}
         <span className="min-w-0 flex-1 truncate">{item.name}</span>
         <span className="shrink-0 text-xs text-muted-foreground">
           {item.knowledgeType === "faq" ? item.faqCount : item.documentCount}
