@@ -97,6 +97,7 @@ type TicketSummaryResponse struct {
 	All             int64 `json:"all"`
 	Mine            int64 `json:"mine"`
 	Watching        int64 `json:"watching"`
+	Collaboration   int64 `json:"collaboration"`
 	Participating   int64 `json:"participating"`
 	Mentioned       int64 `json:"mentioned"`
 	Unassigned      int64 `json:"unassigned"`

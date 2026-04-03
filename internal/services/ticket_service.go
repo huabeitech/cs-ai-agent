@@ -40,6 +40,7 @@ type TicketSummaryAggregate struct {
 	All             int64
 	Mine            int64
 	Watching        int64
+	Collaboration   int64
 	Participating   int64
 	Mentioned       int64
 	Unassigned      int64
@@ -164,6 +165,13 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		),
 		Watching: s.Count(
 			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID),
+		),
+		Collaboration: s.Count(
+			sqls.NewCnd().Where(
+				"id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?) OR id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?)",
+				operator.UserID,
+				operator.UserID,
+			),
 		),
 		Participating: s.Count(
 			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID),
@@ -693,9 +701,19 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 		if err := repositories.TicketCommentRepository.Create(ctx.Tx, comment); err != nil {
 			return err
 		}
+		mentionedNames := make([]string, 0, len(notePayload.MentionUserIDs))
 		for _, userID := range notePayload.MentionUserIDs {
 			if userID <= 0 || userID == operator.UserID {
 				continue
+			}
+			if user := UserService.Get(userID); user != nil {
+				name := user.Nickname
+				if name == "" {
+					name = user.Username
+				}
+				if name != "" {
+					mentionedNames = append(mentionedNames, name)
+				}
 			}
 			if TicketCollaboratorService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("user_id", userID)) == nil {
 				if err := repositories.TicketCollaboratorRepository.Create(ctx.Tx, &models.TicketCollaborator{
@@ -733,7 +751,13 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 		}); err != nil {
 			return err
 		}
-		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeInternalNoted, operator, "", "", "添加内部备注", "")
+		if err := s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeInternalNoted, operator, "", "", "添加内部备注", ""); err != nil {
+			return err
+		}
+		if len(mentionedNames) > 0 {
+			return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeMentioned, operator, "", "", fmt.Sprintf("提及协作人：%s", strings.Join(mentionedNames, "、")), comment.Payload)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

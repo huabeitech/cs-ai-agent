@@ -131,6 +131,7 @@ export type TicketSummary = {
   all: number
   mine: number
   watching: number
+  collaboration: number
   participating: number
   mentioned: number
   unassigned: number
@@ -170,6 +171,7 @@ export type TicketListQuery = {
   conversationId?: number
   source?: string
   watching?: number
+  collaboration?: number
   collaborating?: number
   mentioned?: number
   mine?: number

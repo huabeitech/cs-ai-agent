@@ -60,6 +60,7 @@ const emptySummary: TicketSummary = {
   all: 0,
   mine: 0,
   watching: 0,
+  collaboration: 0,
   participating: 0,
   mentioned: 0,
   unassigned: 0,
@@ -71,6 +72,7 @@ const emptySummary: TicketSummary = {
 type QuickViewKey =
   | "all"
   | "mine"
+  | "collaboration"
   | "participating"
   | "mentioned"
   | "watching"
@@ -167,6 +169,7 @@ export default function TicketsPage() {
   }, [quickView, statusFilter])
 
   const activeWatchFilter = quickView === "watching" ? 1 : watchFilter === "watching" ? 1 : undefined
+  const activeCollaborationFilter = quickView === "collaboration" ? 1 : undefined
   const activeCollaboratingFilter = quickView === "participating" ? 1 : undefined
   const activeMentionedFilter = quickView === "mentioned" ? 1 : undefined
   const activeMineFilter = quickView === "mine" ? 1 : undefined
@@ -197,6 +200,7 @@ export default function TicketsPage() {
         currentAssigneeId: assigneeFilter === "all" ? undefined : Number(assigneeFilter),
         source: sourceFilter === "all" ? undefined : sourceFilter,
         watching: activeWatchFilter,
+        collaboration: activeCollaborationFilter,
         collaborating: activeCollaboratingFilter,
         mentioned: activeMentionedFilter,
         mine: activeMineFilter,
@@ -218,6 +222,7 @@ export default function TicketsPage() {
     activeStatusFilter,
     activeUnassignedFilter,
     activeWatchFilter,
+    activeCollaborationFilter,
     activeCollaboratingFilter,
     activeMentionedFilter,
     assigneeFilter,
@@ -425,6 +430,7 @@ export default function TicketsPage() {
   }> = [
     { key: "all", label: "全部工单", description: "工单总量", count: summary.all },
     { key: "mine", label: "我的工单", description: "当前指派给我", count: summary.mine },
+    { key: "collaboration", label: "协作相关", description: "我参与或提及我的工单", count: summary.collaboration },
     { key: "participating", label: "我参与的", description: "我是协作人的工单", count: summary.participating },
     { key: "mentioned", label: "提及我的", description: "内部备注里提到了我", count: summary.mentioned },
     { key: "unassigned", label: "待分配", description: "尚未指派处理人", count: summary.unassigned },
