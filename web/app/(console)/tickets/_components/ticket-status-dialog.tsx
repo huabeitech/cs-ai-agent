@@ -22,6 +22,7 @@ import { changeTicketStatus } from "@/lib/api/ticket"
 const schema = z.object({
   status: z.string().trim().min(1, "请选择状态"),
   pendingReason: z.string().trim(),
+  closeReason: z.string().trim(),
   resolutionCode: z.string().trim(),
   resolutionSummary: z.string().trim(),
   reason: z.string().trim(),
@@ -59,6 +60,7 @@ export function TicketStatusDialog({
     defaultValues: {
       status: "",
       pendingReason: "",
+      closeReason: "",
       resolutionCode: "",
       resolutionSummary: "",
       reason: "",
@@ -80,6 +82,7 @@ export function TicketStatusDialog({
     reset({
       status: currentStatus || "",
       pendingReason: "",
+      closeReason: "",
       resolutionCode: "",
       resolutionSummary: "",
       reason: "",
@@ -96,6 +99,7 @@ export function TicketStatusDialog({
         ticketId,
         status: values.status,
         pendingReason: values.pendingReason || undefined,
+        closeReason: values.closeReason || undefined,
         resolutionCode: values.resolutionCode || undefined,
         resolutionSummary: values.resolutionSummary || undefined,
         reason: values.reason || undefined,
@@ -107,6 +111,8 @@ export function TicketStatusDialog({
       toast.error(error instanceof Error ? error.message : "更新状态失败")
     }
   }
+
+  const statusOptions = buildAllowedStatusOptions(currentStatus)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,15 +133,7 @@ export function TicketStatusDialog({
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="请选择状态"
-                      options={[
-                        { value: "new", label: "新建" },
-                        { value: "open", label: "处理中" },
-                        { value: "pending_customer", label: "待客户反馈" },
-                        { value: "pending_internal", label: "待内部处理" },
-                        { value: "resolved", label: "已解决" },
-                        { value: "closed", label: "已关闭" },
-                        { value: "cancelled", label: "已取消" },
-                      ]}
+                      options={statusOptions}
                     />
                   )}
                 />
@@ -150,6 +148,16 @@ export function TicketStatusDialog({
                 <FieldContent>
                   <Textarea rows={3} placeholder="请输入待处理原因" {...register("pendingReason")} />
                   <FieldError errors={[errors.pendingReason]} />
+                </FieldContent>
+              </Field>
+            )}
+
+            {targetStatus === "closed" && (
+              <Field data-invalid={!!errors.closeReason}>
+                <FieldLabel>关闭原因</FieldLabel>
+                <FieldContent>
+                  <Textarea rows={3} placeholder="请输入关闭原因" {...register("closeReason")} />
+                  <FieldError errors={[errors.closeReason]} />
                 </FieldContent>
               </Field>
             )}
@@ -190,4 +198,38 @@ export function TicketStatusDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function buildAllowedStatusOptions(currentStatus?: string) {
+  const statusLabels: Record<string, string> = {
+    new: "新建",
+    open: "处理中",
+    pending_customer: "待客户反馈",
+    pending_internal: "待内部处理",
+    resolved: "已解决",
+    closed: "已关闭",
+    cancelled: "已取消",
+  }
+  const transitionMap: Record<string, string[]> = {
+    new: ["open", "pending_internal", "cancelled"],
+    open: ["pending_customer", "pending_internal", "resolved", "closed", "cancelled"],
+    pending_customer: ["open", "resolved", "closed", "cancelled"],
+    pending_internal: ["open", "resolved", "closed", "cancelled"],
+    resolved: ["open", "closed"],
+    closed: ["open"],
+  }
+  const candidates = currentStatus ? [currentStatus].concat(transitionMap[currentStatus] ?? []) : []
+  const seen = new Set<string>()
+  return candidates
+    .filter((status) => {
+      if (!statusLabels[status] || seen.has(status)) {
+        return false
+      }
+      seen.add(status)
+      return true
+    })
+    .map((status) => ({
+      value: status,
+      label: statusLabels[status],
+    }))
 }

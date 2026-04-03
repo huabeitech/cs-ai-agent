@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"cs-agent/internal/models"
@@ -44,6 +45,8 @@ type TicketSummaryAggregate struct {
 
 type ticketService struct {
 }
+
+var ticketNoSequence uint64
 
 func (s *ticketService) Get(id int64) *models.Ticket {
 	return repositories.TicketRepository.Get(sqls.DB(), id)
@@ -209,24 +212,27 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 	if assigneeID > 0 {
 		status = enums.TicketStatusOpen
 	}
+	firstResponseTarget, resolutionTarget := ticketSLATargetMinutes(priority)
 	ticket := &models.Ticket{
-		TicketNo:          s.nextTicketNo(),
-		Title:             title,
-		Description:       strings.TrimSpace(req.Description),
-		Source:            source,
-		Channel:           strings.TrimSpace(req.Channel),
-		CustomerID:        req.CustomerID,
-		ConversationID:    req.ConversationID,
-		CategoryID:        req.CategoryID,
-		Type:              strings.TrimSpace(req.Type),
-		Priority:          priority,
-		Severity:          severity,
-		Status:            status,
-		CurrentTeamID:     teamID,
-		CurrentAssigneeID: assigneeID,
-		DueAt:             dueAt,
-		CustomFieldsJSON:  customFieldsJSON,
-		AuditFields:       utils.BuildAuditFields(operator),
+		TicketNo:            s.nextTicketNo(),
+		Title:               title,
+		Description:         strings.TrimSpace(req.Description),
+		Source:              source,
+		Channel:             strings.TrimSpace(req.Channel),
+		CustomerID:          req.CustomerID,
+		ConversationID:      req.ConversationID,
+		CategoryID:          req.CategoryID,
+		Type:                strings.TrimSpace(req.Type),
+		Priority:            priority,
+		Severity:            severity,
+		Status:              status,
+		CurrentTeamID:       teamID,
+		CurrentAssigneeID:   assigneeID,
+		DueAt:               dueAt,
+		NextReplyDeadlineAt: buildDeadlineFromNow(now, firstResponseTarget),
+		ResolveDeadlineAt:   buildDeadlineFromNow(now, resolutionTarget),
+		CustomFieldsJSON:    customFieldsJSON,
+		AuditFields:         utils.BuildAuditFields(operator),
 	}
 	ticket.UpdatedAt = now
 
@@ -326,6 +332,7 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 	if err != nil {
 		return errorsx.InvalidParam("自定义字段格式不合法")
 	}
+	now := time.Now()
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := repositories.TicketRepository.Updates(ctx.Tx, ticket.ID, map[string]any{
 			"title":               title,
@@ -340,8 +347,11 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 			"custom_fields_json":  customFieldsJSON,
 			"update_user_id":      operator.UserID,
 			"update_user_name":    operator.Username,
-			"updated_at":          time.Now(),
+			"updated_at":          now,
 		}); err != nil {
+			return err
+		}
+		if err := s.syncSLATargetsAndDeadlines(ctx.Tx, ticket.ID, enums.TicketPriority(req.Priority), now); err != nil {
 			return err
 		}
 		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeUpdated, operator, "", "", "更新工单信息", "")
@@ -629,7 +639,8 @@ func (s *ticketService) UnwatchTicket(ticketID int64, operator *dto.AuthPrincipa
 
 func (s *ticketService) nextTicketNo() string {
 	now := time.Now()
-	return fmt.Sprintf("TK%s%03d", now.Format("20060102150405"), now.Nanosecond()/1e6)
+	seq := atomic.AddUint64(&ticketNoSequence, 1) % 1000
+	return fmt.Sprintf("TK%s%09d%03d", now.Format("20060102150405"), now.UnixNano()%1e9, seq)
 }
 
 func (s *ticketService) normalizeAssignment(teamID, assigneeID int64) (int64, int64, error) {
@@ -700,16 +711,22 @@ func (s *ticketService) logEvent(tx *gorm.DB, ticketID int64, eventType enums.Ti
 }
 
 func (s *ticketService) completeFirstResponseSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeFirstResponse))
+	record := s.findSLARecord(tx, ticketID, enums.TicketSLATypeFirstResponse)
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
 	elapsed := diffMinutes(record.StartedAt, now)
-	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
+	if err := repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
 		"status":      enums.TicketSLAStatusCompleted,
 		"stopped_at":  now,
 		"elapsed_min": elapsed,
 		"updated_at":  now,
+	}); err != nil {
+		return err
+	}
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"next_reply_deadline_at": nil,
+		"updated_at":             now,
 	})
 }
 
@@ -730,34 +747,47 @@ func (s *ticketService) applySLAOnStatusChange(tx *gorm.DB, ticketID int64, from
 }
 
 func (s *ticketService) pauseResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := s.findSLARecord(tx, ticketID, enums.TicketSLATypeResolution)
 	if record == nil || record.Status != enums.TicketSLAStatusRunning {
 		return nil
 	}
 	elapsed := record.ElapsedMin + diffMinutes(record.StartedAt, now)
-	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
+	if err := repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
 		"status":      enums.TicketSLAStatusPaused,
 		"paused_at":   now,
 		"elapsed_min": elapsed,
 		"updated_at":  now,
+	}); err != nil {
+		return err
+	}
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"resolve_deadline_at": nil,
+		"updated_at":          now,
 	})
 }
 
 func (s *ticketService) resumeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := s.findSLARecord(tx, ticketID, enums.TicketSLATypeResolution)
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
-	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
+	if err := repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
 		"status":     enums.TicketSLAStatusRunning,
 		"started_at": now,
 		"paused_at":  nil,
 		"updated_at": now,
+	}); err != nil {
+		return err
+	}
+	targetMinutes := record.TargetMinutes - record.ElapsedMin
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"resolve_deadline_at": buildDeadlineFromNow(now, targetMinutes),
+		"updated_at":          now,
 	})
 }
 
 func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := s.findSLARecord(tx, ticketID, enums.TicketSLATypeResolution)
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
@@ -765,13 +795,74 @@ func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now t
 	if record.Status == enums.TicketSLAStatusRunning {
 		elapsed += diffMinutes(record.StartedAt, now)
 	}
-	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
+	if err := repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
 		"status":      enums.TicketSLAStatusCompleted,
 		"stopped_at":  now,
 		"paused_at":   nil,
 		"elapsed_min": elapsed,
 		"updated_at":  now,
+	}); err != nil {
+		return err
+	}
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"resolve_deadline_at": nil,
+		"updated_at":          now,
 	})
+}
+
+func (s *ticketService) findSLARecord(tx *gorm.DB, ticketID int64, slaType enums.TicketSLAType) *models.TicketSLARecord {
+	return repositories.TicketSLARecordRepository.FindOne(
+		tx,
+		sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", slaType),
+	)
+}
+
+func (s *ticketService) syncSLATargetsAndDeadlines(tx *gorm.DB, ticketID int64, priority enums.TicketPriority, now time.Time) error {
+	firstResponseTarget, resolutionTarget := ticketSLATargetMinutes(priority)
+	firstResponseRecord := s.findSLARecord(tx, ticketID, enums.TicketSLATypeFirstResponse)
+	if firstResponseRecord != nil && firstResponseRecord.TargetMinutes != firstResponseTarget {
+		if err := repositories.TicketSLARecordRepository.Updates(tx, firstResponseRecord.ID, map[string]any{
+			"target_minutes": firstResponseTarget,
+			"updated_at":     now,
+		}); err != nil {
+			return err
+		}
+		firstResponseRecord.TargetMinutes = firstResponseTarget
+	}
+	resolutionRecord := s.findSLARecord(tx, ticketID, enums.TicketSLATypeResolution)
+	if resolutionRecord != nil && resolutionRecord.TargetMinutes != resolutionTarget {
+		if err := repositories.TicketSLARecordRepository.Updates(tx, resolutionRecord.ID, map[string]any{
+			"target_minutes": resolutionTarget,
+			"updated_at":     now,
+		}); err != nil {
+			return err
+		}
+		resolutionRecord.TargetMinutes = resolutionTarget
+	}
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"next_reply_deadline_at": s.calculateTicketDeadline(firstResponseRecord),
+		"resolve_deadline_at":    s.calculateTicketDeadline(resolutionRecord),
+		"updated_at":             now,
+	})
+}
+
+func (s *ticketService) calculateTicketDeadline(record *models.TicketSLARecord) *time.Time {
+	if record == nil {
+		return nil
+	}
+	switch record.Status {
+	case enums.TicketSLAStatusCompleted, enums.TicketSLAStatusBreached, enums.TicketSLAStatusPaused:
+		return nil
+	case enums.TicketSLAStatusRunning:
+		if record.StartedAt == nil || record.StartedAt.IsZero() {
+			return nil
+		}
+		remainingMinutes := record.TargetMinutes - record.ElapsedMin
+		deadline := record.StartedAt.Add(time.Duration(remainingMinutes) * time.Minute)
+		return &deadline
+	default:
+		return nil
+	}
 }
 
 func (s *ticketService) canTransition(from, to enums.TicketStatus) bool {
@@ -841,4 +932,9 @@ func diffMinutes(start *time.Time, end time.Time) int {
 		return 0
 	}
 	return int(end.Sub(*start).Minutes())
+}
+
+func buildDeadlineFromNow(now time.Time, targetMinutes int) *time.Time {
+	deadline := now.Add(time.Duration(targetMinutes) * time.Minute)
+	return &deadline
 }
