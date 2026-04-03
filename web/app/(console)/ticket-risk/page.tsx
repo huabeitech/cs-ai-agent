@@ -26,7 +26,12 @@ import {
   fetchAgentTeamsAll,
   type AdminAgentTeam,
 } from "@/lib/api/admin"
-import { fetchTickets, type TicketItem } from "@/lib/api/ticket"
+import {
+  fetchTicketRiskOverview,
+  fetchTickets,
+  type TicketItem,
+  type TicketRiskOverview,
+} from "@/lib/api/ticket"
 import { formatDateTime } from "@/lib/utils"
 import { TicketPriorityBadge } from "../tickets/_components/ticket-priority-badge"
 import { TicketSLABadge } from "../tickets/_components/ticket-sla-badge"
@@ -151,14 +156,11 @@ function RiskTable({ title, description, items, emptyText }: RiskTableProps) {
 
 export default function TicketRiskPage() {
   const [loading, setLoading] = useState(true)
+  const [overview, setOverview] = useState<TicketRiskOverview | null>(null)
   const [overdueTickets, setOverdueTickets] = useState<TicketItem[]>([])
   const [highRiskTickets, setHighRiskTickets] = useState<TicketItem[]>([])
   const [unassignedTickets, setUnassignedTickets] = useState<TicketItem[]>([])
   const [pendingInternalTickets, setPendingInternalTickets] = useState<TicketItem[]>([])
-  const [overdueTotal, setOverdueTotal] = useState(0)
-  const [highRiskTotal, setHighRiskTotal] = useState(0)
-  const [unassignedTotal, setUnassignedTotal] = useState(0)
-  const [pendingInternalTotal, setPendingInternalTotal] = useState(0)
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [teamFilter, setTeamFilter] = useState("all")
   const [riskWindow, setRiskWindow] = useState("240")
@@ -179,22 +181,21 @@ export default function TicketRiskPage() {
     try {
       const currentTeamId = teamFilter === "all" ? undefined : Number(teamFilter)
       const riskMinutes = Number(riskWindow)
-      const [overdueData, activeData, unassignedData, pendingInternalData] =
+      const [overviewData, overdueData, activeData, unassignedData, pendingInternalData] =
         await Promise.all([
+          fetchTicketRiskOverview({ currentTeamId, riskWindowMins: riskMinutes }),
           fetchTickets({ overdue: 1, currentTeamId, page: 1, limit: 10 }),
           fetchTickets({ currentTeamId, page: 1, limit: 200 }),
           fetchTickets({ unassigned: 1, currentTeamId, page: 1, limit: 10 }),
           fetchTickets({ status: "pending_internal", currentTeamId, page: 1, limit: 10 }),
         ])
 
+      setOverview(overviewData)
       setOverdueTickets(Array.isArray(overdueData.results) ? overdueData.results : [])
-      setOverdueTotal(overdueData.page?.total ?? 0)
       setUnassignedTickets(Array.isArray(unassignedData.results) ? unassignedData.results : [])
-      setUnassignedTotal(unassignedData.page?.total ?? 0)
       setPendingInternalTickets(
         Array.isArray(pendingInternalData.results) ? pendingInternalData.results : [],
       )
-      setPendingInternalTotal(pendingInternalData.page?.total ?? 0)
 
       const activeTickets = (Array.isArray(activeData.results) ? activeData.results : []).filter(
         (item) => !isClosedStatus(item.status),
@@ -202,7 +203,6 @@ export default function TicketRiskPage() {
       const filteredHighRiskTickets = activeTickets
         .filter((item) => isHighRiskTicket(item, riskMinutes))
         .sort(compareTicketRisk)
-      setHighRiskTotal(filteredHighRiskTickets.length)
       setHighRiskTickets(
         filteredHighRiskTickets.slice(0, 10),
       )
@@ -222,33 +222,33 @@ export default function TicketRiskPage() {
       {
         title: "已超时",
         description: "解决 SLA 已经 breach 的工单",
-        value: overdueTotal,
+        value: overview?.overdue ?? 0,
         icon: AlertTriangleIcon,
         tone: "text-red-700 bg-red-500/10",
       },
       {
         title: `${Number(riskWindow) / 60} 小时内到期`,
         description: "建议组长优先盯防的风险队列",
-        value: highRiskTotal,
+        value: overview?.highRisk ?? 0,
         icon: TimerResetIcon,
         tone: "text-orange-700 bg-orange-500/10",
       },
       {
         title: "待分配",
         description: "目前还没有明确负责人的工单",
-        value: unassignedTotal,
+        value: overview?.unassigned ?? 0,
         icon: CircleDashedIcon,
         tone: "text-amber-700 bg-amber-500/10",
       },
       {
         title: "待内部处理",
         description: "等待内部团队协作处理的工单",
-        value: pendingInternalTotal,
+        value: overview?.pendingInternal ?? 0,
         icon: WrenchIcon,
         tone: "text-blue-700 bg-blue-500/10",
       },
     ],
-    [highRiskTotal, overdueTotal, pendingInternalTotal, riskWindow, unassignedTotal],
+    [overview, riskWindow],
   )
 
   return (
@@ -332,6 +332,28 @@ export default function TicketRiskPage() {
           items={highRiskTickets}
           emptyText="当前没有临近超时工单"
         />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">滞留原因</CardTitle>
+            <CardDescription>帮助主管快速判断风险是由分配、协作还是 SLA 配置问题造成</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {(overview?.reasons?.length ?? 0) > 0 ? (
+                overview?.reasons?.map((item) => (
+                  <div key={item.code} className="rounded-lg border bg-muted/20 p-4">
+                    <div className="text-sm font-medium">{item.title}</div>
+                    <div className="mt-2 text-2xl font-semibold">{item.count.toLocaleString()}</div>
+                    <div className="mt-2 text-xs leading-6 text-muted-foreground">{item.description}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">暂无滞留原因数据</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 xl:grid-cols-2">
           <RiskTable

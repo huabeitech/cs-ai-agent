@@ -100,3 +100,20 @@ type TicketSummaryResponse struct {
 	PendingInternal int64 `json:"pendingInternal"`
 	Overdue         int64 `json:"overdue"`
 }
+
+type TicketRiskReasonResponse struct {
+	Code        string `json:"code"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Count       int64  `json:"count"`
+}
+
+type TicketRiskOverviewResponse struct {
+	Overdue         int64                      `json:"overdue"`
+	HighRisk        int64                      `json:"highRisk"`
+	Unassigned      int64                      `json:"unassigned"`
+	PendingInternal int64                      `json:"pendingInternal"`
+	PendingCustomer int64                      `json:"pendingCustomer"`
+	RiskWindowMins  int                        `json:"riskWindowMins"`
+	Reasons         []TicketRiskReasonResponse `json:"reasons,omitempty"`
+}

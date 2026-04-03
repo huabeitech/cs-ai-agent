@@ -44,6 +44,23 @@ type TicketSummaryAggregate struct {
 	Overdue         int64
 }
 
+type TicketRiskReasonAggregate struct {
+	Code        string
+	Title       string
+	Description string
+	Count       int64
+}
+
+type TicketRiskOverviewAggregate struct {
+	Overdue         int64
+	HighRisk        int64
+	Unassigned      int64
+	PendingInternal int64
+	PendingCustomer int64
+	RiskWindowMins  int
+	Reasons         []TicketRiskReasonAggregate
+}
+
 type ticketService struct {
 }
 
@@ -162,6 +179,95 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 				Where("resolve_deadline_at < ?", now),
 		),
 	}
+}
+
+func (s *ticketService) GetRiskOverview(teamID int64, riskWindowMins int) *TicketRiskOverviewAggregate {
+	if riskWindowMins <= 0 {
+		riskWindowMins = 240
+	}
+	now := time.Now()
+	staleAt := now.Add(-24 * time.Hour)
+	activeBaseCnd := func() *sqls.Cnd {
+		cnd := sqls.NewCnd().In("status", []enums.TicketStatus{
+			enums.TicketStatusNew,
+			enums.TicketStatusOpen,
+			enums.TicketStatusPendingCustomer,
+			enums.TicketStatusPendingInternal,
+		})
+		if teamID > 0 {
+			cnd.Eq("current_team_id", teamID)
+		}
+		return cnd
+	}
+	pendingCustomerBaseCnd := func() *sqls.Cnd {
+		cnd := sqls.NewCnd().Eq("status", enums.TicketStatusPendingCustomer)
+		if teamID > 0 {
+			cnd.Eq("current_team_id", teamID)
+		}
+		return cnd
+	}
+	pendingInternalBaseCnd := func() *sqls.Cnd {
+		cnd := sqls.NewCnd().Eq("status", enums.TicketStatusPendingInternal)
+		if teamID > 0 {
+			cnd.Eq("current_team_id", teamID)
+		}
+		return cnd
+	}
+
+	overview := &TicketRiskOverviewAggregate{
+		Overdue: s.Count(
+			activeBaseCnd().
+				Where("resolve_deadline_at IS NOT NULL").
+				Where("resolve_deadline_at < ?", now),
+		),
+		HighRisk: s.Count(
+			activeBaseCnd().
+				Where("resolve_deadline_at IS NOT NULL").
+				Where("resolve_deadline_at >= ?", now).
+				Where("resolve_deadline_at <= ?", now.Add(time.Duration(riskWindowMins)*time.Minute)),
+		),
+		Unassigned: s.Count(
+			activeBaseCnd().Eq("current_assignee_id", 0),
+		),
+		PendingInternal: s.Count(pendingInternalBaseCnd()),
+		PendingCustomer: s.Count(pendingCustomerBaseCnd()),
+		RiskWindowMins:  riskWindowMins,
+		Reasons: []TicketRiskReasonAggregate{
+			{
+				Code:        "unassigned_active",
+				Title:       "工单未分配",
+				Description: "仍处于活跃状态，但没有明确负责人的工单",
+				Count: s.Count(
+					activeBaseCnd().Eq("current_assignee_id", 0),
+				),
+			},
+			{
+				Code:        "pending_internal_stale",
+				Title:       "待内部处理滞留超过 24 小时",
+				Description: "内部协作未及时推进，容易形成长期积压",
+				Count: s.Count(
+					pendingInternalBaseCnd().Where("updated_at < ?", staleAt),
+				),
+			},
+			{
+				Code:        "pending_customer_stale",
+				Title:       "待客户反馈滞留超过 24 小时",
+				Description: "客户迟迟未补充信息，建议催办或关单",
+				Count: s.Count(
+					pendingCustomerBaseCnd().Where("updated_at < ?", staleAt),
+				),
+			},
+			{
+				Code:        "active_without_deadline",
+				Title:       "活跃工单未设置解决时限",
+				Description: "缺少 SLA 截止时间，主管无法有效盯防风险",
+				Count: s.Count(
+					activeBaseCnd().Where("resolve_deadline_at IS NULL"),
+				),
+			},
+		},
+	}
+	return overview
 }
 
 func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *dto.AuthPrincipal) (*models.Ticket, error) {

@@ -115,6 +115,23 @@ export type TicketSummary = {
   overdue: number
 }
 
+export type TicketRiskReason = {
+  code: string
+  title: string
+  description: string
+  count: number
+}
+
+export type TicketRiskOverview = {
+  overdue: number
+  highRisk: number
+  unassigned: number
+  pendingInternal: number
+  pendingCustomer: number
+  riskWindowMins: number
+  reasons?: TicketRiskReason[]
+}
+
 export type TicketListQuery = {
   page?: number
   limit?: number
@@ -204,6 +221,13 @@ export function fetchTicketDetail(id: number) {
 
 export function fetchTicketSummary() {
   return request<TicketSummary>("/api/console/ticket/summary")
+}
+
+export function fetchTicketRiskOverview(query?: {
+  currentTeamId?: number
+  riskWindowMins?: number
+}) {
+  return request<TicketRiskOverview>(`/api/console/ticket/risk_overview${toQueryString(query)}`)
 }
 
 export function createTicket(payload: CreateTicketPayload) {

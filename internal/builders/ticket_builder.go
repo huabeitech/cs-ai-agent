@@ -208,6 +208,32 @@ func BuildTicketSummary(summary *services.TicketSummaryAggregate) *response.Tick
 	}
 }
 
+func BuildTicketRiskOverview(overview *services.TicketRiskOverviewAggregate) *response.TicketRiskOverviewResponse {
+	if overview == nil {
+		return nil
+	}
+	ret := &response.TicketRiskOverviewResponse{
+		Overdue:         overview.Overdue,
+		HighRisk:        overview.HighRisk,
+		Unassigned:      overview.Unassigned,
+		PendingInternal: overview.PendingInternal,
+		PendingCustomer: overview.PendingCustomer,
+		RiskWindowMins:  overview.RiskWindowMins,
+	}
+	if len(overview.Reasons) > 0 {
+		ret.Reasons = make([]response.TicketRiskReasonResponse, 0, len(overview.Reasons))
+		for _, item := range overview.Reasons {
+			ret.Reasons = append(ret.Reasons, response.TicketRiskReasonResponse{
+				Code:        item.Code,
+				Title:       item.Title,
+				Description: item.Description,
+				Count:       item.Count,
+			})
+		}
+	}
+	return ret
+}
+
 func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatcherResponse {
 	if len(list) == 0 {
 		return nil

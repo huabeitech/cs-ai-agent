@@ -71,6 +71,15 @@ func (c *TicketController) AnySummary() *web.JsonResult {
 	return web.JsonData(builders.BuildTicketSummary(services.TicketService.GetSummary(operator)))
 }
 
+func (c *TicketController) AnyRisk_overview() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView); err != nil {
+		return web.JsonError(err)
+	}
+	teamID, _ := params.GetInt64(c.Ctx, "currentTeamId")
+	riskWindowMins, _ := params.GetInt(c.Ctx, "riskWindowMins")
+	return web.JsonData(builders.BuildTicketRiskOverview(services.TicketService.GetRiskOverview(teamID, riskWindowMins)))
+}
+
 func (c *TicketController) GetBy(id int64) *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView); err != nil {
 		return web.JsonError(err)
