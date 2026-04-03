@@ -995,6 +995,45 @@ func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now t
 	})
 }
 
+func (s *ticketService) ScanAndMarkBreachedSLAs(limit int) (int, error) {
+	if limit <= 0 {
+		limit = 200
+	}
+	now := time.Now()
+	cnd := sqls.NewCnd().
+		Eq("status", enums.TicketSLAStatusRunning).
+		Where("started_at IS NOT NULL").
+		Asc("id")
+	records, _ := TicketSLARecordService.FindPageByCnd(cnd.Limit(limit))
+	if len(records) == 0 {
+		return 0, nil
+	}
+
+	breachedCount := 0
+	for i := range records {
+		record := &records[i]
+		elapsed := record.ElapsedMin + diffMinutes(record.StartedAt, now)
+		if elapsed < record.TargetMinutes {
+			continue
+		}
+		if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+			if err := repositories.TicketSLARecordRepository.Updates(ctx.Tx, record.ID, map[string]any{
+				"status":      enums.TicketSLAStatusBreached,
+				"breached_at": now,
+				"elapsed_min": elapsed,
+				"updated_at":  now,
+			}); err != nil {
+				return err
+			}
+			return s.logEvent(ctx.Tx, record.TicketID, enums.TicketEventTypeSLABreached, nil, string(enums.TicketSLAStatusRunning), string(enums.TicketSLAStatusBreached), fmt.Sprintf("%s SLA 已超时", record.SLAType), "")
+		}); err != nil {
+			return breachedCount, err
+		}
+		breachedCount++
+	}
+	return breachedCount, nil
+}
+
 func (s *ticketService) canTransition(from, to enums.TicketStatus) bool {
 	if from == to {
 		return true

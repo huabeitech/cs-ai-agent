@@ -21,6 +21,17 @@ func Init() {
 		}
 	})
 
+	addFunc(c, "@every 1m", func() {
+		count, err := services.TicketService.ScanAndMarkBreachedSLAs(200)
+		if err != nil {
+			slog.Warn("scan breached ticket slas failed", "error", err)
+			return
+		}
+		if count > 0 {
+			slog.Info("ticket sla breached scan completed", "breachedCount", count)
+		}
+	})
+
 	c.Start()
 }
 
