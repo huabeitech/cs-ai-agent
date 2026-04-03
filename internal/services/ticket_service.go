@@ -40,6 +40,7 @@ type TicketSummaryAggregate struct {
 	Mine            int64
 	Watching        int64
 	PendingCustomer int64
+	DueSoon         int64
 	Overdue         int64
 }
 
@@ -127,6 +128,7 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		return &TicketSummaryAggregate{}
 	}
 	now := time.Now()
+	dueSoonAt := now.Add(30 * time.Minute)
 	return &TicketSummaryAggregate{
 		All: s.Count(sqls.NewCnd()),
 		Mine: s.Count(
@@ -137,6 +139,18 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		),
 		PendingCustomer: s.Count(
 			sqls.NewCnd().Eq("status", enums.TicketStatusPendingCustomer),
+		),
+		DueSoon: s.Count(
+			sqls.NewCnd().
+				In("status", []enums.TicketStatus{
+					enums.TicketStatusNew,
+					enums.TicketStatusOpen,
+					enums.TicketStatusPendingCustomer,
+					enums.TicketStatusPendingInternal,
+				}).
+				Where("resolve_deadline_at IS NOT NULL").
+				Where("resolve_deadline_at >= ?", now).
+				Where("resolve_deadline_at <= ?", dueSoonAt),
 		),
 		Overdue: s.Count(
 			sqls.NewCnd().

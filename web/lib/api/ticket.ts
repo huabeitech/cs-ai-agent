@@ -108,6 +108,7 @@ export type TicketSummary = {
   mine: number
   watching: number
   pendingCustomer: number
+  dueSoon: number
   overdue: number
 }
 
@@ -126,6 +127,7 @@ export type TicketListQuery = {
   source?: string
   watching?: number
   mine?: number
+  dueSoon?: number
   overdue?: number
 }
 

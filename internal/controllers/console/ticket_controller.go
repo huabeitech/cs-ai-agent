@@ -50,12 +50,30 @@ func (c *TicketController) AnyList() *web.JsonResult {
 		cnd.Where("resolve_deadline_at IS NOT NULL")
 		cnd.Where("resolve_deadline_at < ?", time.Now())
 	}
+	if dueSoon, _ := params.Get(c.Ctx, "dueSoon"); dueSoon == "1" || strings.EqualFold(dueSoon, "true") {
+		now := time.Now()
+		cnd.In("status", []string{"new", "open", "pending_customer", "pending_internal"})
+		cnd.Where("resolve_deadline_at IS NOT NULL")
+		cnd.Where("resolve_deadline_at >= ?", now)
+		cnd.Where("resolve_deadline_at <= ?", now.Add(30*time.Minute))
+	}
 	list, paging := services.TicketService.FindPageByCnd(cnd)
 	results := builders.BuildTicketList(list)
-	for i := range results {
-		results[i].WatchedByMe = services.TicketWatcherService.FindOne(
-			sqls.NewCnd().Eq("ticket_id", results[i].ID).Eq("user_id", operator.UserID),
-		) != nil
+	if len(results) > 0 {
+		ticketIDs := make([]int64, 0, len(results))
+		for i := range results {
+			ticketIDs = append(ticketIDs, results[i].ID)
+		}
+		watchers := services.TicketWatcherService.Find(
+			sqls.NewCnd().In("ticket_id", ticketIDs).Eq("user_id", operator.UserID),
+		)
+		watchedMap := make(map[int64]bool, len(watchers))
+		for i := range watchers {
+			watchedMap[watchers[i].TicketID] = true
+		}
+		for i := range results {
+			results[i].WatchedByMe = watchedMap[results[i].ID]
+		}
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }

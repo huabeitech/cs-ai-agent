@@ -45,9 +45,16 @@ const emptySummary: TicketSummary = {
   mine: 0,
   watching: 0,
   pendingCustomer: 0,
+  dueSoon: 0,
   overdue: 0,
 }
-type QuickViewKey = "all" | "mine" | "watching" | "pending_customer" | "overdue"
+type QuickViewKey =
+  | "all"
+  | "mine"
+  | "watching"
+  | "pending_customer"
+  | "due_soon"
+  | "overdue"
 
 export default function TicketsPage() {
   const [result, setResult] = useState<{ results: TicketItem[]; page: Paging }>({
@@ -79,6 +86,7 @@ export default function TicketsPage() {
         : statusFilter
   const activeWatchFilter = quickView === "watching" ? 1 : watchFilter === "watching" ? 1 : undefined
   const activeMineFilter = quickView === "mine" ? 1 : undefined
+  const activeDueSoonFilter = quickView === "due_soon" ? 1 : undefined
   const activeOverdueFilter = quickView === "overdue" ? 1 : undefined
 
   const loadSummary = useCallback(async () => {
@@ -104,6 +112,7 @@ export default function TicketsPage() {
           assigneeFilter === "all" ? undefined : Number(assigneeFilter),
         watching: activeWatchFilter,
         mine: activeMineFilter,
+        dueSoon: activeDueSoonFilter,
         overdue: activeOverdueFilter,
       })
       setResult({
@@ -124,6 +133,7 @@ export default function TicketsPage() {
     activeStatusFilter,
     activeWatchFilter,
     activeMineFilter,
+    activeDueSoonFilter,
     activeOverdueFilter,
     teamFilter,
   ])
@@ -256,6 +266,7 @@ export default function TicketsPage() {
       description: "等待客户补充信息",
       count: summary.pendingCustomer,
     },
+    { key: "due_soon", label: "即将超时", description: "30 分钟内到期", count: summary.dueSoon },
     { key: "overdue", label: "已超时", description: "解决 SLA 已超时", count: summary.overdue },
   ]
 
