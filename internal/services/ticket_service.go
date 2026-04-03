@@ -26,18 +26,21 @@ func newTicketService() *ticketService {
 }
 
 type TicketDetailAggregate struct {
-	Ticket         *models.Ticket
-	Customer       *models.Customer
-	SLAs           []models.TicketSLARecord
-	Watchers       []models.TicketWatcher
-	Collaborators  []models.TicketCollaborator
-	Comments       []models.TicketComment
-	Events         []models.TicketEventLog
-	RelatedTickets []models.TicketRelation
-	Users          map[int64]*models.User
-	Teams          map[int64]*models.AgentTeam
-	AgentProfiles  map[int64]*models.AgentProfile
-	RelatedMap     map[int64]*models.Ticket
+	Ticket            *models.Ticket
+	Customer          *models.Customer
+	SLAs              []models.TicketSLARecord
+	Watchers          []models.TicketWatcher
+	Collaborators     []models.TicketCollaborator
+	Comments          []models.TicketComment
+	Events            []models.TicketEventLog
+	RelatedTickets    []models.TicketRelation
+	Users             map[int64]*models.User
+	Teams             map[int64]*models.AgentTeam
+	AgentProfiles     map[int64]*models.AgentProfile
+	RelatedMap        map[int64]*models.Ticket
+	OperatorUsers     map[int64]*models.User
+	OperatorCustomers map[int64]*models.Customer
+	OperatorAIAgents  map[int64]*models.AIAgent
 }
 
 type TicketSummaryAggregate struct {
@@ -167,10 +170,13 @@ func (s *ticketService) GetDetail(id int64) (*TicketDetailAggregate, error) {
 		RelatedTickets: TicketRelationService.Find(
 			sqls.NewCnd().Eq("ticket_id", id).Desc("id"),
 		),
-		Users:         make(map[int64]*models.User),
-		Teams:         make(map[int64]*models.AgentTeam),
-		AgentProfiles: make(map[int64]*models.AgentProfile),
-		RelatedMap:    make(map[int64]*models.Ticket),
+		Users:             make(map[int64]*models.User),
+		Teams:             make(map[int64]*models.AgentTeam),
+		AgentProfiles:     make(map[int64]*models.AgentProfile),
+		RelatedMap:        make(map[int64]*models.Ticket),
+		OperatorUsers:     make(map[int64]*models.User),
+		OperatorCustomers: make(map[int64]*models.Customer),
+		OperatorAIAgents:  make(map[int64]*models.AIAgent),
 	}
 	if ticket.CustomerID > 0 {
 		aggregate.Customer = CustomerService.Get(ticket.CustomerID)
@@ -186,9 +192,13 @@ func (s *ticketService) enrichTicketDetailAggregate(aggregate *TicketDetailAggre
 	userIDs := make([]int64, 0)
 	teamIDs := make([]int64, 0)
 	relatedTicketIDs := make([]int64, 0)
+	operatorCustomerIDs := make([]int64, 0)
+	operatorAIIDs := make([]int64, 0)
 	userSeen := make(map[int64]struct{})
 	teamSeen := make(map[int64]struct{})
 	relatedSeen := make(map[int64]struct{})
+	customerSeen := make(map[int64]struct{})
+	aiSeen := make(map[int64]struct{})
 	addUserID := func(userID int64) {
 		if userID <= 0 {
 			return
@@ -209,6 +219,26 @@ func (s *ticketService) enrichTicketDetailAggregate(aggregate *TicketDetailAggre
 		teamSeen[teamID] = struct{}{}
 		teamIDs = append(teamIDs, teamID)
 	}
+	addCustomerID := func(customerID int64) {
+		if customerID <= 0 {
+			return
+		}
+		if _, ok := customerSeen[customerID]; ok {
+			return
+		}
+		customerSeen[customerID] = struct{}{}
+		operatorCustomerIDs = append(operatorCustomerIDs, customerID)
+	}
+	addAIID := func(aiID int64) {
+		if aiID <= 0 {
+			return
+		}
+		if _, ok := aiSeen[aiID]; ok {
+			return
+		}
+		aiSeen[aiID] = struct{}{}
+		operatorAIIDs = append(operatorAIIDs, aiID)
+	}
 	for i := range aggregate.Watchers {
 		addUserID(aggregate.Watchers[i].UserID)
 	}
@@ -226,11 +256,32 @@ func (s *ticketService) enrichTicketDetailAggregate(aggregate *TicketDetailAggre
 		relatedSeen[relatedTicketID] = struct{}{}
 		relatedTicketIDs = append(relatedTicketIDs, relatedTicketID)
 	}
+	for i := range aggregate.Comments {
+		switch aggregate.Comments[i].AuthorType {
+		case enums.IMSenderTypeAgent:
+			addUserID(aggregate.Comments[i].AuthorID)
+		case enums.IMSenderTypeCustomer:
+			addCustomerID(aggregate.Comments[i].AuthorID)
+		case enums.IMSenderTypeAI:
+			addAIID(aggregate.Comments[i].AuthorID)
+		}
+	}
+	for i := range aggregate.Events {
+		switch aggregate.Events[i].OperatorType {
+		case enums.IMSenderTypeAgent:
+			addUserID(aggregate.Events[i].OperatorID)
+		case enums.IMSenderTypeCustomer:
+			addCustomerID(aggregate.Events[i].OperatorID)
+		case enums.IMSenderTypeAI:
+			addAIID(aggregate.Events[i].OperatorID)
+		}
+	}
 	if len(userIDs) > 0 {
 		users := repositories.UserRepository.FindByIds(sqls.DB(), userIDs)
 		for i := range users {
 			item := users[i]
 			aggregate.Users[item.ID] = &item
+			aggregate.OperatorUsers[item.ID] = &item
 		}
 		profiles := repositories.AgentProfileRepository.Find(sqls.DB(), sqls.NewCnd().In("user_id", userIDs))
 		for i := range profiles {
@@ -260,6 +311,21 @@ func (s *ticketService) enrichTicketDetailAggregate(aggregate *TicketDetailAggre
 		for i := range users {
 			item := users[i]
 			aggregate.Users[item.ID] = &item
+			aggregate.OperatorUsers[item.ID] = &item
+		}
+	}
+	if len(operatorCustomerIDs) > 0 {
+		customers := repositories.CustomerRepository.Find(sqls.DB(), sqls.NewCnd().In("id", operatorCustomerIDs))
+		for i := range customers {
+			item := customers[i]
+			aggregate.OperatorCustomers[item.ID] = &item
+		}
+	}
+	if len(operatorAIIDs) > 0 {
+		aiAgents := repositories.AIAgentRepository.FindByIds(sqls.DB(), operatorAIIDs)
+		for i := range aiAgents {
+			item := aiAgents[i]
+			aggregate.OperatorAIAgents[item.ID] = &item
 		}
 	}
 }

@@ -350,6 +350,27 @@ func TestBuildTicketDetailUsesAggregatedWatcherCollaboratorAndRelationLookups(t 
 	}); err != nil {
 		t.Fatalf("create relation error = %v", err)
 	}
+	if err := repositories.TicketCommentRepository.Create(sqls.DB(), &models.TicketComment{
+		TicketID:    parent.ID,
+		CommentType: enums.TicketCommentTypePublicReply,
+		AuthorType:  enums.IMSenderTypeAgent,
+		AuthorID:    assigneeID,
+		ContentType: "text",
+		Content:     "reply",
+		CreatedAt:   time.Now(),
+	}); err != nil {
+		t.Fatalf("create comment error = %v", err)
+	}
+	if err := repositories.TicketEventLogRepository.Create(sqls.DB(), &models.TicketEventLog{
+		TicketID:     parent.ID,
+		EventType:    enums.TicketEventTypeAssigned,
+		OperatorType: enums.IMSenderTypeAgent,
+		OperatorID:   assigneeID,
+		Content:      "assigned",
+		CreatedAt:    time.Now(),
+	}); err != nil {
+		t.Fatalf("create event error = %v", err)
+	}
 
 	aggregate, err := services.TicketService.GetDetail(parent.ID)
 	if err != nil {
@@ -370,6 +391,22 @@ func TestBuildTicketDetailUsesAggregatedWatcherCollaboratorAndRelationLookups(t 
 	}
 	if detail.RelatedTickets[0].RelatedTicketNo == "" || detail.RelatedTickets[0].CurrentAssigneeName == "" || detail.RelatedTickets[0].CurrentTeamName == "" {
 		t.Fatalf("expected related ticket display fields to be populated")
+	}
+	if len(detail.Comments) != 1 || detail.Comments[0].AuthorName == "" {
+		t.Fatalf("expected comment author name to be populated")
+	}
+	if len(detail.Events) == 0 {
+		t.Fatalf("expected events to be populated")
+	}
+	hasNamedEvent := false
+	for i := range detail.Events {
+		if detail.Events[i].OperatorName != "" {
+			hasNamedEvent = true
+			break
+		}
+	}
+	if !hasNamedEvent {
+		t.Fatalf("expected at least one event operator name to be populated")
 	}
 }
 

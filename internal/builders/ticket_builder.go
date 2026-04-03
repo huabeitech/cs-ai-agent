@@ -25,6 +25,8 @@ type TicketDetailBuildContext struct {
 	Teams          map[int64]*models.AgentTeam
 	AgentProfiles  map[int64]*models.AgentProfile
 	RelatedTickets map[int64]*models.Ticket
+	Customers      map[int64]*models.Customer
+	AIAgents       map[int64]*models.AIAgent
 }
 
 func BuildTicket(item *models.Ticket) *response.TicketResponse {
@@ -147,6 +149,10 @@ func BuildTicketListWithContext(list []models.Ticket, ctx *TicketBuildContext) [
 }
 
 func BuildTicketComment(item *models.TicketComment) *response.TicketCommentResponse {
+	return BuildTicketCommentWithContext(item, nil)
+}
+
+func BuildTicketCommentWithContext(item *models.TicketComment, ctx *TicketDetailBuildContext) *response.TicketCommentResponse {
 	if item == nil {
 		return nil
 	}
@@ -161,17 +167,21 @@ func BuildTicketComment(item *models.TicketComment) *response.TicketCommentRespo
 		Payload:     item.Payload,
 		CreatedAt:   utils.FormatTime(item.CreatedAt),
 	}
-	ret.AuthorName = buildTicketOperatorName(item.AuthorType, item.AuthorID)
+	ret.AuthorName = buildTicketOperatorName(item.AuthorType, item.AuthorID, ctx)
 	return ret
 }
 
 func BuildTicketCommentList(list []models.TicketComment) []response.TicketCommentResponse {
+	return BuildTicketCommentListWithContext(list, nil)
+}
+
+func BuildTicketCommentListWithContext(list []models.TicketComment, ctx *TicketDetailBuildContext) []response.TicketCommentResponse {
 	if len(list) == 0 {
 		return nil
 	}
 	results := make([]response.TicketCommentResponse, 0, len(list))
 	for i := range list {
-		if item := BuildTicketComment(&list[i]); item != nil {
+		if item := BuildTicketCommentWithContext(&list[i], ctx); item != nil {
 			results = append(results, *item)
 		}
 	}
@@ -179,6 +189,10 @@ func BuildTicketCommentList(list []models.TicketComment) []response.TicketCommen
 }
 
 func BuildTicketEventLog(item *models.TicketEventLog) *response.TicketEventLogResponse {
+	return BuildTicketEventLogWithContext(item, nil)
+}
+
+func BuildTicketEventLogWithContext(item *models.TicketEventLog, ctx *TicketDetailBuildContext) *response.TicketEventLogResponse {
 	if item == nil {
 		return nil
 	}
@@ -188,7 +202,7 @@ func BuildTicketEventLog(item *models.TicketEventLog) *response.TicketEventLogRe
 		EventType:    item.EventType,
 		OperatorType: item.OperatorType,
 		OperatorID:   item.OperatorID,
-		OperatorName: buildTicketOperatorName(item.OperatorType, item.OperatorID),
+		OperatorName: buildTicketOperatorName(item.OperatorType, item.OperatorID, ctx),
 		OldValue:     item.OldValue,
 		NewValue:     item.NewValue,
 		Content:      item.Content,
@@ -198,12 +212,16 @@ func BuildTicketEventLog(item *models.TicketEventLog) *response.TicketEventLogRe
 }
 
 func BuildTicketEventLogList(list []models.TicketEventLog) []response.TicketEventLogResponse {
+	return BuildTicketEventLogListWithContext(list, nil)
+}
+
+func BuildTicketEventLogListWithContext(list []models.TicketEventLog, ctx *TicketDetailBuildContext) []response.TicketEventLogResponse {
 	if len(list) == 0 {
 		return nil
 	}
 	results := make([]response.TicketEventLogResponse, 0, len(list))
 	for i := range list {
-		if item := BuildTicketEventLog(&list[i]); item != nil {
+		if item := BuildTicketEventLogWithContext(&list[i], ctx); item != nil {
 			results = append(results, *item)
 		}
 	}
@@ -240,25 +258,58 @@ func BuildTicketDetailWithContext(aggregate *services.TicketDetailAggregate, ctx
 		return nil
 	}
 	if ctx == nil {
+		users := make(map[int64]*models.User, len(aggregate.Users)+len(aggregate.OperatorUsers))
+		for id, item := range aggregate.Users {
+			users[id] = item
+		}
+		for id, item := range aggregate.OperatorUsers {
+			users[id] = item
+		}
 		ctx = &TicketDetailBuildContext{
-			Users:          aggregate.Users,
+			Users:          users,
 			Teams:          aggregate.Teams,
 			AgentProfiles:  aggregate.AgentProfiles,
 			RelatedTickets: aggregate.RelatedMap,
+			Customers:      aggregate.OperatorCustomers,
+			AIAgents:       aggregate.OperatorAIAgents,
 		}
 	}
 	ret := &response.TicketDetailResponse{
 		Ticket:         *BuildTicket(aggregate.Ticket),
 		Watchers:       BuildTicketWatcherListWithContext(aggregate.Watchers, ctx),
 		Collaborators:  BuildTicketCollaboratorListWithContext(aggregate.Collaborators, ctx),
-		Comments:       BuildTicketCommentList(aggregate.Comments),
-		Events:         BuildTicketEventLogList(aggregate.Events),
 		RelatedTickets: BuildTicketRelationListWithContext(aggregate.RelatedTickets, ctx),
+	}
+	if len(aggregate.Comments) > 0 {
+		ret.Comments = make([]response.TicketCommentResponse, 0, len(aggregate.Comments))
+		for i := range aggregate.Comments {
+			if item := BuildTicketCommentWithContext(&aggregate.Comments[i], ctx); item != nil {
+				ret.Comments = append(ret.Comments, *item)
+			}
+		}
+	}
+	if len(aggregate.Events) > 0 {
+		ret.Events = make([]response.TicketEventLogResponse, 0, len(aggregate.Events))
+		for i := range aggregate.Events {
+			if item := BuildTicketEventLogWithContext(&aggregate.Events[i], ctx); item != nil {
+				ret.Events = append(ret.Events, *item)
+			}
+		}
 	}
 	if aggregate.Customer != nil {
 		ret.Ticket.Customer = BuildCustomer(aggregate.Customer)
 	}
 	ret.Ticket.SLA = BuildTicketSLAList(aggregate.SLAs)
+	for i := range ret.Comments {
+		if ret.Comments[i].AuthorName == "" {
+			ret.Comments[i].AuthorName = buildTicketOperatorName(ret.Comments[i].AuthorType, ret.Comments[i].AuthorID, ctx)
+		}
+	}
+	for i := range ret.Events {
+		if ret.Events[i].OperatorName == "" {
+			ret.Events[i].OperatorName = buildTicketOperatorName(ret.Events[i].OperatorType, ret.Events[i].OperatorID, ctx)
+		}
+	}
 	return ret
 }
 
@@ -443,23 +494,35 @@ func buildTicketUserDisplayName(user *models.User) string {
 	return user.Username
 }
 
-func buildTicketOperatorName(senderType enums.IMSenderType, senderID int64) string {
+func buildTicketOperatorName(senderType enums.IMSenderType, senderID int64, ctx *TicketDetailBuildContext) string {
 	if senderID <= 0 {
 		return ""
 	}
 	switch senderType {
 	case enums.IMSenderTypeAgent:
-		if user := services.UserService.Get(senderID); user != nil {
-			if user.Nickname != "" {
-				return user.Nickname
+		if ctx != nil && ctx.Users != nil {
+			if user := ctx.Users[senderID]; user != nil {
+				return buildTicketUserDisplayName(user)
 			}
-			return user.Username
+		}
+		if user := services.UserService.Get(senderID); user != nil {
+			return buildTicketUserDisplayName(user)
 		}
 	case enums.IMSenderTypeCustomer:
+		if ctx != nil && ctx.Customers != nil {
+			if customer := ctx.Customers[senderID]; customer != nil {
+				return customer.Name
+			}
+		}
 		if customer := services.CustomerService.Get(senderID); customer != nil {
 			return customer.Name
 		}
 	case enums.IMSenderTypeAI:
+		if ctx != nil && ctx.AIAgents != nil {
+			if ai := ctx.AIAgents[senderID]; ai != nil {
+				return ai.Name
+			}
+		}
 		if ai := services.AIAgentService.Get(senderID); ai != nil {
 			return ai.Name
 		}
