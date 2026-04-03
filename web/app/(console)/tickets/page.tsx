@@ -8,9 +8,11 @@ import {
   PlusIcon,
   RefreshCcwIcon,
   SearchIcon,
+  SaveIcon,
   Settings2Icon,
   SquarePenIcon,
   StarIcon,
+  Trash2Icon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -72,6 +74,8 @@ const emptySummary: TicketSummary = {
   overdue: 0,
 }
 
+const TICKET_SAVED_VIEWS_KEY = "ticket_saved_views_v1"
+
 type QuickViewKey =
   | "all"
   | "mine"
@@ -83,6 +87,22 @@ type QuickViewKey =
   | "pending_customer"
   | "pending_internal"
   | "overdue"
+
+type SavedTicketView = {
+  id: string
+  name: string
+  keywordInput: string
+  keyword: string
+  statusFilter: string
+  priorityFilter: string
+  severityFilter: string
+  categoryFilter: string
+  teamFilter: string
+  assigneeFilter: string
+  sourceFilter: string
+  watchFilter: string
+  quickView: QuickViewKey
+}
 
 function isClosedStatus(status: string) {
   return status === "resolved" || status === "closed" || status === "cancelled"
@@ -129,6 +149,34 @@ function getTicketRowClassName(ticket: TicketItem) {
   return ""
 }
 
+function readSavedTicketViews() {
+  if (typeof window === "undefined") {
+    return [] as SavedTicketView[]
+  }
+  try {
+    const raw = window.localStorage.getItem(TICKET_SAVED_VIEWS_KEY)
+    if (!raw) {
+      return []
+    }
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+    return parsed.filter((item): item is SavedTicketView => {
+      return item && typeof item.id === "string" && typeof item.name === "string"
+    })
+  } catch {
+    return []
+  }
+}
+
+function writeSavedTicketViews(views: SavedTicketView[]) {
+  if (typeof window === "undefined") {
+    return
+  }
+  window.localStorage.setItem(TICKET_SAVED_VIEWS_KEY, JSON.stringify(views))
+}
+
 export default function TicketsPage() {
   const [result, setResult] = useState<{ results: TicketItem[]; page: Paging }>({
     results: [],
@@ -150,6 +198,8 @@ export default function TicketsPage() {
   const [sourceFilter, setSourceFilter] = useState("all")
   const [watchFilter, setWatchFilter] = useState("all")
   const [quickView, setQuickView] = useState<QuickViewKey>("all")
+  const [savedViews, setSavedViews] = useState<SavedTicketView[]>([])
+  const [activeSavedViewId, setActiveSavedViewId] = useState("all")
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const [categories, setCategories] = useState<TicketCategory[]>([])
@@ -255,6 +305,10 @@ export default function TicketsPage() {
   }, [loadSummary])
 
   useEffect(() => {
+    setSavedViews(readSavedTicketViews())
+  }, [])
+
+  useEffect(() => {
     void (async () => {
       const [teamData, agentData, categoryData] = await Promise.all([
         fetchAgentTeamsAll(),
@@ -276,7 +330,100 @@ export default function TicketsPage() {
 
   function applyFilters() {
     setKeyword(keywordInput)
+    setActiveSavedViewId("all")
     resetToFirstPage()
+  }
+
+  function buildCurrentView(name: string, existingId?: string): SavedTicketView {
+    return {
+      id: existingId ?? `view_${Date.now()}`,
+      name,
+      keywordInput,
+      keyword,
+      statusFilter,
+      priorityFilter,
+      severityFilter,
+      categoryFilter,
+      teamFilter,
+      assigneeFilter,
+      sourceFilter,
+      watchFilter,
+      quickView,
+    }
+  }
+
+  function applySavedView(view: SavedTicketView) {
+    setKeywordInput(view.keywordInput)
+    setKeyword(view.keyword)
+    setStatusFilter(view.statusFilter)
+    setPriorityFilter(view.priorityFilter)
+    setSeverityFilter(view.severityFilter)
+    setCategoryFilter(view.categoryFilter)
+    setTeamFilter(view.teamFilter)
+    setAssigneeFilter(view.assigneeFilter)
+    setSourceFilter(view.sourceFilter)
+    setWatchFilter(view.watchFilter)
+    setQuickView(view.quickView)
+    setActiveSavedViewId(view.id)
+    setResult((current) => ({
+      ...current,
+      page: { ...current.page, page: 1 },
+    }))
+  }
+
+  function resetAllFilters() {
+    setKeywordInput("")
+    setKeyword("")
+    setStatusFilter("all")
+    setPriorityFilter("all")
+    setSeverityFilter("all")
+    setCategoryFilter("all")
+    setTeamFilter("all")
+    setAssigneeFilter("all")
+    setSourceFilter("all")
+    setWatchFilter("all")
+    setQuickView("all")
+    setActiveSavedViewId("all")
+    resetToFirstPage()
+  }
+
+  function handleSaveCurrentView() {
+    const currentView = activeSavedViewId === "all"
+      ? null
+      : savedViews.find((item) => item.id === activeSavedViewId) ?? null
+    const defaultName = currentView?.name ?? ""
+    const name = window.prompt("输入视图名称", defaultName)?.trim()
+    if (!name) {
+      return
+    }
+    const nextView = buildCurrentView(name, currentView?.id)
+    const nextViews = currentView
+      ? savedViews.map((item) => (item.id === currentView.id ? nextView : item))
+      : [nextView, ...savedViews]
+    setSavedViews(nextViews)
+    setActiveSavedViewId(nextView.id)
+    writeSavedTicketViews(nextViews)
+    toast.success(currentView ? "视图已更新" : "视图已保存")
+  }
+
+  function handleDeleteCurrentView() {
+    if (activeSavedViewId === "all") {
+      toast.error("当前不是已保存视图")
+      return
+    }
+    const currentView = savedViews.find((item) => item.id === activeSavedViewId)
+    if (!currentView) {
+      return
+    }
+    const confirmed = window.confirm(`确认删除视图「${currentView.name}」吗？`)
+    if (!confirmed) {
+      return
+    }
+    const nextViews = savedViews.filter((item) => item.id !== currentView.id)
+    setSavedViews(nextViews)
+    writeSavedTicketViews(nextViews)
+    setActiveSavedViewId("all")
+    toast.success("视图已删除")
   }
 
   function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -497,6 +644,17 @@ export default function TicketsPage() {
     return list
   }, [quickView, result.results])
 
+  const savedViewOptions = useMemo(
+    () =>
+      [{ value: "all", label: "当前筛选" }].concat(
+        savedViews.map((item) => ({
+          value: item.id,
+          label: item.name,
+        })),
+      ),
+    [savedViews],
+  )
+
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4 md:p-6">
       <div className="flex w-full flex-col gap-4">
@@ -508,6 +666,31 @@ export default function TicketsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-48">
+              <OptionCombobox
+                value={activeSavedViewId}
+                onChange={(value) => {
+                  if (value === "all") {
+                    setActiveSavedViewId("all")
+                    return
+                  }
+                  const nextView = savedViews.find((item) => item.id === value)
+                  if (nextView) {
+                    applySavedView(nextView)
+                  }
+                }}
+                placeholder="保存视图"
+                options={savedViewOptions}
+              />
+            </div>
+            <Button variant="outline" onClick={handleSaveCurrentView}>
+              <SaveIcon className="size-4" />
+              保存视图
+            </Button>
+            <Button variant="outline" onClick={handleDeleteCurrentView} disabled={activeSavedViewId === "all"}>
+              <Trash2Icon className="size-4" />
+              删除视图
+            </Button>
             <Link href="/ticket-categories">
               <Button variant="outline">
                 <Settings2Icon className="size-4" />
@@ -666,6 +849,9 @@ export default function TicketsPage() {
             </Button>
             <Button variant="outline" onClick={() => void refreshAll()}>
               <RefreshCcwIcon className="size-4" />
+            </Button>
+            <Button variant="ghost" onClick={resetAllFilters}>
+              重置
             </Button>
           </div>
         </div>
