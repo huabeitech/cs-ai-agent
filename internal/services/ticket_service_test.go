@@ -115,6 +115,40 @@ func TestBatchChangeStatusRollsBackOnFailure(t *testing.T) {
 	}
 }
 
+func TestAssignTicketPromotesNewTicketToOpenAndSetsTeamAssignee(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+
+	ticket, err := services.TicketService.CreateTicket(createTestTicketRequest("assign-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+	teamID, assigneeID := createTestAgentProfile(t, "assignee")
+
+	if err := services.TicketService.AssignTicket(request.AssignTicketRequest{
+		TicketID: ticket.ID,
+		ToTeamID: teamID,
+		ToUserID: assigneeID,
+		Reason:   "manual assign",
+	}, operator); err != nil {
+		t.Fatalf("AssignTicket() error = %v", err)
+	}
+
+	current := services.TicketService.Get(ticket.ID)
+	if current == nil {
+		t.Fatalf("expected ticket to exist")
+	}
+	if current.Status != enums.TicketStatusOpen {
+		t.Fatalf("expected assigned ticket status to be open, got %s", current.Status)
+	}
+	if current.CurrentTeamID != teamID {
+		t.Fatalf("expected current team id %d, got %d", teamID, current.CurrentTeamID)
+	}
+	if current.CurrentAssigneeID != assigneeID {
+		t.Fatalf("expected current assignee id %d, got %d", assigneeID, current.CurrentAssigneeID)
+	}
+}
+
 func TestTicketNoServiceNextConcurrent(t *testing.T) {
 	setupTicketTestDB(t)
 
@@ -213,6 +247,73 @@ func TestCloseAndReopenTicketRefreshResolutionDeadline(t *testing.T) {
 	}
 	if reopened.ResolveDeadlineAt == nil {
 		t.Fatalf("expected resolve deadline to be restored after reopen")
+	}
+}
+
+func TestChangeStatusPendingCustomerThenOpenRefreshesSLAFields(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+
+	ticket, err := services.TicketService.CreateTicket(createTestTicketRequest("pending-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: ticket.ID,
+		Status:   string(enums.TicketStatusOpen),
+		Reason:   "pick up",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() open error = %v", err)
+	}
+
+	beforePending := services.TicketService.Get(ticket.ID)
+	if beforePending == nil || beforePending.ResolveDeadlineAt == nil {
+		t.Fatalf("expected resolve deadline before pending")
+	}
+
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID:      ticket.ID,
+		Status:        string(enums.TicketStatusPendingCustomer),
+		PendingReason: "waiting customer",
+		Reason:        "pause for customer",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() pending error = %v", err)
+	}
+
+	pending := services.TicketService.Get(ticket.ID)
+	if pending == nil {
+		t.Fatalf("expected pending ticket to exist")
+	}
+	if pending.Status != enums.TicketStatusPendingCustomer {
+		t.Fatalf("expected pending status, got %s", pending.Status)
+	}
+	if pending.PendingReason != "waiting customer" {
+		t.Fatalf("expected pending reason to be persisted, got %q", pending.PendingReason)
+	}
+	if pending.ResolveDeadlineAt == nil {
+		t.Fatalf("expected resolve deadline to remain calculable while pending")
+	}
+
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: ticket.ID,
+		Status:   string(enums.TicketStatusOpen),
+		Reason:   "customer replied",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() reopen error = %v", err)
+	}
+
+	reopened := services.TicketService.Get(ticket.ID)
+	if reopened == nil {
+		t.Fatalf("expected reopened ticket to exist")
+	}
+	if reopened.Status != enums.TicketStatusOpen {
+		t.Fatalf("expected reopened status open, got %s", reopened.Status)
+	}
+	if reopened.PendingReason != "" {
+		t.Fatalf("expected pending reason to be cleared, got %q", reopened.PendingReason)
+	}
+	if reopened.ResolveDeadlineAt == nil {
+		t.Fatalf("expected resolve deadline after reopening")
 	}
 }
 
@@ -323,4 +424,50 @@ func createTestUserWithID(t *testing.T, id int64, prefix string) int64 {
 		t.Fatalf("create user error = %v", err)
 	}
 	return user.ID
+}
+
+func createTestAgentProfile(t *testing.T, prefix string) (int64, int64) {
+	t.Helper()
+
+	now := time.Now()
+	userID := createTestUser(t, prefix)
+	team := &models.AgentTeam{
+		Name:        fmt.Sprintf("%s-team-%d", prefix, now.UnixNano()),
+		Status:      enums.StatusOk,
+		Description: "test team",
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   1,
+			CreateUserName: "admin",
+			UpdatedAt:      now,
+			UpdateUserID:   1,
+			UpdateUserName: "admin",
+		},
+	}
+	if err := repositories.AgentTeamRepository.Create(sqls.DB(), team); err != nil {
+		t.Fatalf("create agent team error = %v", err)
+	}
+
+	profile := &models.AgentProfile{
+		UserID:             userID,
+		TeamID:             team.ID,
+		AgentCode:          fmt.Sprintf("%s-code-%d", prefix, now.UnixNano()),
+		DisplayName:        prefix,
+		ServiceStatus:      enums.ServiceStatusIdle,
+		MaxConcurrentCount: 5,
+		AutoAssignEnabled:  true,
+		Status:             enums.StatusOk,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   1,
+			CreateUserName: "admin",
+			UpdatedAt:      now,
+			UpdateUserID:   1,
+			UpdateUserName: "admin",
+		},
+	}
+	if err := repositories.AgentProfileRepository.Create(sqls.DB(), profile); err != nil {
+		t.Fatalf("create agent profile error = %v", err)
+	}
+	return team.ID, userID
 }

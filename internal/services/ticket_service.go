@@ -1085,7 +1085,7 @@ func (s *ticketService) normalizeAssignmentTx(db *gorm.DB, teamID, assigneeID in
 
 func (s *ticketService) initSLAs(tx *gorm.DB, ticket *models.Ticket, now time.Time) error {
 	firstResponseTarget, resolutionTarget := ticketSLATargetMinutes(ticket.Priority)
-	if config := TicketSLAConfigService.GetActiveByPriority(ticket.Priority); config != nil {
+	if config := repositories.TicketSLAConfigRepository.FindOne(tx, sqls.NewCnd().Eq("priority", ticket.Priority).Eq("status", enums.StatusOk)); config != nil {
 		firstResponseTarget = config.FirstResponseMinutes
 		resolutionTarget = config.ResolutionMinutes
 	}
