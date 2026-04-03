@@ -780,7 +780,18 @@ export default function TicketsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{item.customer?.name || "未绑定客户"}</TableCell>
-                    <TableCell>{item.categoryName || "未分类"}</TableCell>
+                    <TableCell>
+                      {item.categoryName ? (
+                        item.categoryName
+                      ) : (
+                        <Link
+                          href="/ticket-categories"
+                          className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800 hover:bg-amber-100"
+                        >
+                          未分类，去配置
+                        </Link>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <TicketPriorityBadge priority={item.priority} />
                     </TableCell>

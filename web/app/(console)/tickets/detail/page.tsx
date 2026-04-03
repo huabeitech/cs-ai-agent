@@ -458,7 +458,10 @@ export default function TicketDetailPage() {
                       <TicketSLABadge ticket={ticket} />
                     </div>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      <SummaryMetric label="分类" value={ticket.categoryName || "未分类"} />
+                      <SummaryMetric
+                        label="分类"
+                        value={ticket.categoryName || "未分类，建议补充分类配置"}
+                      />
                       <SummaryMetric label="严重度" value={ticketSeverityLabel(ticket.severity)} />
                       <SummaryMetric label="处理人" value={ticket.currentAssigneeName || "未指派"} />
                       <SummaryMetric
@@ -680,6 +683,14 @@ export default function TicketDetailPage() {
                   <InfoRow label="工单号" value={ticket.ticketNo} />
                   <InfoRow label="状态" value={ticketStatusLabel(ticket.status)} />
                   <InfoRow label="分类" value={ticket.categoryName || "未分类"} />
+                  {!ticket.categoryName ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+                      当前工单未设置分类，后续统计、自动分派和队列管理会受影响。
+                      <Link href="/ticket-categories" className="ml-1 font-medium underline underline-offset-4">
+                        前往配置分类
+                      </Link>
+                    </div>
+                  ) : null}
                   <InfoRow label="优先级" value={String(ticket.priority)} />
                   <InfoRow label="严重度" value={ticketSeverityLabel(ticket.severity)} />
                   <InfoRow label="处理人" value={ticket.currentAssigneeName || "未指派"} />
@@ -728,7 +739,12 @@ export default function TicketDetailPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-muted-foreground">暂无 SLA 信息</div>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
+                      当前工单未生成 SLA 记录，请检查工单 SLA 配置；如果系统仍在使用默认策略，也需要确认配置是否已补齐。
+                      <Link href="/ticket-sla-configs" className="ml-1 font-medium underline underline-offset-4">
+                        前往配置 SLA
+                      </Link>
+                    </div>
                   )}
                 </CardContent>
               </Card>

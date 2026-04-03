@@ -226,6 +226,19 @@ export function TicketStatusDialog({
                         />
                       )}
                     />
+                    {resolutionCodeOptions.length === 0 ? (
+                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+                        当前没有可用解决码，解决结果无法标准化统计。
+                        <Link
+                          href="/ticket-resolution-codes"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-1 font-medium underline underline-offset-4"
+                        >
+                          前往配置解决码
+                        </Link>
+                      </div>
+                    ) : null}
                   </FieldContent>
                 </Field>
                 <Field>
