@@ -6,6 +6,8 @@ import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/services"
+	"encoding/json"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 )
@@ -480,6 +482,34 @@ func BuildTicketCollaboratorListWithContext(list []models.TicketCollaborator, ct
 			}
 		}
 		results = append(results, out)
+	}
+	return results
+}
+
+func BuildTicketView(item *models.TicketView) *response.TicketViewResponse {
+	if item == nil {
+		return nil
+	}
+	ret := &response.TicketViewResponse{
+		ID:     item.ID,
+		Name:   item.Name,
+		SortNo: item.SortNo,
+	}
+	if strings.TrimSpace(item.FiltersJSON) != "" {
+		_ = json.Unmarshal([]byte(item.FiltersJSON), &ret.Filters)
+	}
+	return ret
+}
+
+func BuildTicketViewList(list []models.TicketView) []response.TicketViewResponse {
+	if len(list) == 0 {
+		return nil
+	}
+	results := make([]response.TicketViewResponse, 0, len(list))
+	for i := range list {
+		if item := BuildTicketView(&list[i]); item != nil {
+			results = append(results, *item)
+		}
 	}
 	return results
 }

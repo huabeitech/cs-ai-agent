@@ -569,6 +569,88 @@ func TestCloseTicketBlockedByOpenChild(t *testing.T) {
 	}
 }
 
+func TestTicketViewServiceSaveListAndDeleteOwnViews(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: createTestUser(t, "viewer"), Username: "viewer"}
+
+	created, err := services.TicketViewService.Save(request.SaveTicketViewRequest{
+		Name: "我的待处理",
+		Filters: map[string]any{
+			"quickView":    "mine",
+			"statusFilter": "open",
+		},
+	}, operator)
+	if err != nil {
+		t.Fatalf("TicketViewService.Save() create error = %v", err)
+	}
+	if created.ID <= 0 {
+		t.Fatalf("expected created ticket view id")
+	}
+
+	updated, err := services.TicketViewService.Save(request.SaveTicketViewRequest{
+		ID:   created.ID,
+		Name: "我的处理中",
+		Filters: map[string]any{
+			"quickView":    "mine",
+			"statusFilter": "pending_internal",
+		},
+	}, operator)
+	if err != nil {
+		t.Fatalf("TicketViewService.Save() update error = %v", err)
+	}
+	if !strings.Contains(updated.FiltersJSON, "pending_internal") {
+		t.Fatalf("expected updated filters json, got %s", updated.FiltersJSON)
+	}
+
+	list := services.TicketViewService.ListByUser(operator.UserID)
+	if len(list) != 1 {
+		t.Fatalf("expected 1 ticket view, got %d", len(list))
+	}
+	if list[0].Name != "我的处理中" {
+		t.Fatalf("expected updated name, got %s", list[0].Name)
+	}
+
+	if err := services.TicketViewService.Delete(created.ID, operator); err != nil {
+		t.Fatalf("TicketViewService.Delete() error = %v", err)
+	}
+	if got := services.TicketViewService.ListByUser(operator.UserID); len(got) != 0 {
+		t.Fatalf("expected ticket views to be deleted, got %d", len(got))
+	}
+}
+
+func TestTicketViewServiceRejectsCrossUserUpdateAndDelete(t *testing.T) {
+	setupTicketTestDB(t)
+	owner := &dto.AuthPrincipal{UserID: createTestUser(t, "owner"), Username: "owner"}
+	other := &dto.AuthPrincipal{UserID: createTestUser(t, "other"), Username: "other"}
+
+	created, err := services.TicketViewService.Save(request.SaveTicketViewRequest{
+		Name: "owner-view",
+		Filters: map[string]any{
+			"quickView": "watching",
+		},
+	}, owner)
+	if err != nil {
+		t.Fatalf("TicketViewService.Save() create error = %v", err)
+	}
+
+	if _, err := services.TicketViewService.Save(request.SaveTicketViewRequest{
+		ID:   created.ID,
+		Name: "hijack",
+		Filters: map[string]any{
+			"quickView": "all",
+		},
+	}, other); err == nil {
+		t.Fatalf("expected cross-user update to fail")
+	}
+
+	if err := services.TicketViewService.Delete(created.ID, other); err == nil {
+		t.Fatalf("expected cross-user delete to fail")
+	}
+	if got := services.TicketViewService.ListByUser(owner.UserID); len(got) != 1 {
+		t.Fatalf("expected owner view to remain, got %d", len(got))
+	}
+}
+
 func setupTicketTestDB(t *testing.T) {
 	t.Helper()
 

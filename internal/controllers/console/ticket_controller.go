@@ -129,6 +129,45 @@ func (c *TicketController) AnyRisk_list() *web.JsonResult {
 	})
 }
 
+func (c *TicketController) AnyView_list() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildTicketViewList(services.TicketViewService.ListByUser(operator.UserID)))
+}
+
+func (c *TicketController) PostSave_view() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.SaveTicketViewRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	item, err := services.TicketViewService.Save(req, operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(builders.BuildTicketView(item))
+}
+
+func (c *TicketController) PostDelete_view() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.DeleteTicketViewRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketViewService.Delete(req.ID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *TicketController) GetBy(id int64) *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView); err != nil {
 		return web.JsonError(err)

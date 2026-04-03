@@ -41,12 +41,16 @@ import { fetchTicketCategoriesAll, type TicketCategory } from "@/lib/api/ticket-
 import {
   createTicket,
   batchWatchTickets,
+  deleteTicketView,
+  fetchTicketViews,
   fetchTicketSummary,
   fetchTickets,
+  saveTicketView,
   updateTicket,
   unwatchTicket,
   watchTicket,
   type Paging,
+  type TicketSavedView,
   type TicketItem,
   type TicketSummary,
 } from "@/lib/api/ticket"
@@ -74,8 +78,6 @@ const emptySummary: TicketSummary = {
   overdue: 0,
 }
 
-const TICKET_SAVED_VIEWS_KEY = "ticket_saved_views_v1"
-
 type QuickViewKey =
   | "all"
   | "mine"
@@ -89,7 +91,7 @@ type QuickViewKey =
   | "overdue"
 
 type SavedTicketView = {
-  id: string
+  id: number
   name: string
   keywordInput: string
   keyword: string
@@ -149,32 +151,26 @@ function getTicketRowClassName(ticket: TicketItem) {
   return ""
 }
 
-function readSavedTicketViews() {
-  if (typeof window === "undefined") {
-    return [] as SavedTicketView[]
+function parseSavedTicketView(item: TicketSavedView): SavedTicketView | null {
+  const filters = item.filters
+  if (!filters || typeof filters !== "object") {
+    return null
   }
-  try {
-    const raw = window.localStorage.getItem(TICKET_SAVED_VIEWS_KEY)
-    if (!raw) {
-      return []
-    }
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-    return parsed.filter((item): item is SavedTicketView => {
-      return item && typeof item.id === "string" && typeof item.name === "string"
-    })
-  } catch {
-    return []
+  return {
+    id: item.id,
+    name: item.name,
+    keywordInput: typeof filters.keywordInput === "string" ? filters.keywordInput : "",
+    keyword: typeof filters.keyword === "string" ? filters.keyword : "",
+    statusFilter: typeof filters.statusFilter === "string" ? filters.statusFilter : "all",
+    priorityFilter: typeof filters.priorityFilter === "string" ? filters.priorityFilter : "all",
+    severityFilter: typeof filters.severityFilter === "string" ? filters.severityFilter : "all",
+    categoryFilter: typeof filters.categoryFilter === "string" ? filters.categoryFilter : "all",
+    teamFilter: typeof filters.teamFilter === "string" ? filters.teamFilter : "all",
+    assigneeFilter: typeof filters.assigneeFilter === "string" ? filters.assigneeFilter : "all",
+    sourceFilter: typeof filters.sourceFilter === "string" ? filters.sourceFilter : "all",
+    watchFilter: typeof filters.watchFilter === "string" ? filters.watchFilter : "all",
+    quickView: typeof filters.quickView === "string" ? (filters.quickView as QuickViewKey) : "all",
   }
-}
-
-function writeSavedTicketViews(views: SavedTicketView[]) {
-  if (typeof window === "undefined") {
-    return
-  }
-  window.localStorage.setItem(TICKET_SAVED_VIEWS_KEY, JSON.stringify(views))
 }
 
 export default function TicketsPage() {
@@ -236,6 +232,20 @@ export default function TicketsPage() {
       setSummary(data)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载工单汇总失败")
+    }
+  }, [])
+
+  const loadSavedViews = useCallback(async () => {
+    try {
+      const data = await fetchTicketViews()
+      const views = Array.isArray(data)
+        ? data
+            .map(parseSavedTicketView)
+            .filter((item): item is SavedTicketView => item !== null)
+        : []
+      setSavedViews(views)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "加载保存视图失败")
     }
   }, [])
 
@@ -305,8 +315,8 @@ export default function TicketsPage() {
   }, [loadSummary])
 
   useEffect(() => {
-    setSavedViews(readSavedTicketViews())
-  }, [])
+    void loadSavedViews()
+  }, [loadSavedViews])
 
   useEffect(() => {
     void (async () => {
@@ -334,9 +344,9 @@ export default function TicketsPage() {
     resetToFirstPage()
   }
 
-  function buildCurrentView(name: string, existingId?: string): SavedTicketView {
+  function buildCurrentView(name: string, existingId?: number): SavedTicketView {
     return {
-      id: existingId ?? `view_${Date.now()}`,
+      id: existingId ?? 0,
       name,
       keywordInput,
       keyword,
@@ -364,7 +374,7 @@ export default function TicketsPage() {
     setSourceFilter(view.sourceFilter)
     setWatchFilter(view.watchFilter)
     setQuickView(view.quickView)
-    setActiveSavedViewId(view.id)
+    setActiveSavedViewId(String(view.id))
     setResult((current) => ({
       ...current,
       page: { ...current.page, page: 1 },
@@ -387,31 +397,54 @@ export default function TicketsPage() {
     resetToFirstPage()
   }
 
-  function handleSaveCurrentView() {
+  async function handleSaveCurrentView() {
     const currentView = activeSavedViewId === "all"
       ? null
-      : savedViews.find((item) => item.id === activeSavedViewId) ?? null
+      : savedViews.find((item) => String(item.id) === activeSavedViewId) ?? null
     const defaultName = currentView?.name ?? ""
     const name = window.prompt("输入视图名称", defaultName)?.trim()
     if (!name) {
       return
     }
     const nextView = buildCurrentView(name, currentView?.id)
-    const nextViews = currentView
-      ? savedViews.map((item) => (item.id === currentView.id ? nextView : item))
-      : [nextView, ...savedViews]
-    setSavedViews(nextViews)
-    setActiveSavedViewId(nextView.id)
-    writeSavedTicketViews(nextViews)
-    toast.success(currentView ? "视图已更新" : "视图已保存")
+    try {
+      const saved = await saveTicketView({
+        id: nextView.id > 0 ? nextView.id : undefined,
+        name: nextView.name,
+        filters: {
+          keywordInput: nextView.keywordInput,
+          keyword: nextView.keyword,
+          statusFilter: nextView.statusFilter,
+          priorityFilter: nextView.priorityFilter,
+          severityFilter: nextView.severityFilter,
+          categoryFilter: nextView.categoryFilter,
+          teamFilter: nextView.teamFilter,
+          assigneeFilter: nextView.assigneeFilter,
+          sourceFilter: nextView.sourceFilter,
+          watchFilter: nextView.watchFilter,
+          quickView: nextView.quickView,
+        },
+      })
+      const parsed = parseSavedTicketView(saved)
+      if (parsed) {
+        setSavedViews((current) => {
+          const exists = current.some((item) => item.id === parsed.id)
+          return exists ? current.map((item) => (item.id === parsed.id ? parsed : item)) : [parsed, ...current]
+        })
+        setActiveSavedViewId(String(parsed.id))
+      }
+      toast.success(currentView ? "视图已更新" : "视图已保存")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "保存视图失败")
+    }
   }
 
-  function handleDeleteCurrentView() {
+  async function handleDeleteCurrentView() {
     if (activeSavedViewId === "all") {
       toast.error("当前不是已保存视图")
       return
     }
-    const currentView = savedViews.find((item) => item.id === activeSavedViewId)
+    const currentView = savedViews.find((item) => String(item.id) === activeSavedViewId)
     if (!currentView) {
       return
     }
@@ -419,11 +452,14 @@ export default function TicketsPage() {
     if (!confirmed) {
       return
     }
-    const nextViews = savedViews.filter((item) => item.id !== currentView.id)
-    setSavedViews(nextViews)
-    writeSavedTicketViews(nextViews)
-    setActiveSavedViewId("all")
-    toast.success("视图已删除")
+    try {
+      await deleteTicketView(currentView.id)
+      setSavedViews((current) => current.filter((item) => item.id !== currentView.id))
+      setActiveSavedViewId("all")
+      toast.success("视图已删除")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "删除视图失败")
+    }
   }
 
   function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -648,7 +684,7 @@ export default function TicketsPage() {
     () =>
       [{ value: "all", label: "当前筛选" }].concat(
         savedViews.map((item) => ({
-          value: item.id,
+          value: String(item.id),
           label: item.name,
         })),
       ),
@@ -674,7 +710,7 @@ export default function TicketsPage() {
                     setActiveSavedViewId("all")
                     return
                   }
-                  const nextView = savedViews.find((item) => item.id === value)
+                  const nextView = savedViews.find((item) => String(item.id) === value)
                   if (nextView) {
                     applySavedView(nextView)
                   }

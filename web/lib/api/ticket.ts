@@ -157,6 +157,13 @@ export type TicketRiskOverview = {
   reasons?: TicketRiskReason[]
 }
 
+export type TicketSavedView = {
+  id: number
+  name: string
+  filters?: Record<string, unknown>
+  sortNo: number
+}
+
 export type TicketListQuery = {
   page?: number
   limit?: number
@@ -257,6 +264,28 @@ export function fetchTicketDetail(id: number) {
 
 export function fetchTicketSummary() {
   return request<TicketSummary>("/api/console/ticket/summary")
+}
+
+export function fetchTicketViews() {
+  return request<TicketSavedView[]>("/api/console/ticket/view_list")
+}
+
+export function saveTicketView(payload: {
+  id?: number
+  name: string
+  filters?: Record<string, unknown>
+}) {
+  return request<TicketSavedView>("/api/console/ticket/save_view", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketView(id: number) {
+  return request<void>("/api/console/ticket/delete_view", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  })
 }
 
 export function fetchTicketRiskOverview(query?: {

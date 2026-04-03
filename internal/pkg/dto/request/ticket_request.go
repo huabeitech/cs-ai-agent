@@ -132,3 +132,13 @@ type DeleteTicketCollaboratorRequest struct {
 	TicketID       int64 `json:"ticketId"`
 	CollaboratorID int64 `json:"collaboratorId"`
 }
+
+type SaveTicketViewRequest struct {
+	ID      int64          `json:"id"`
+	Name    string         `json:"name"`
+	Filters map[string]any `json:"filters"`
+}
+
+type DeleteTicketViewRequest struct {
+	ID int64 `json:"id"`
+}

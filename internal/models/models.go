@@ -9,6 +9,7 @@ import (
 var Models = []any{
 	&Migration{},
 	&TicketNoSequence{},
+	&TicketView{},
 	&User{},
 	&UserIdentity{},
 	&Company{},
@@ -94,6 +95,16 @@ type TicketNoSequence struct {
 	NextSeq   int64     `gorm:"column:next_seq;type:bigint;not null;default:1"`
 	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
 	UpdatedAt time.Time `gorm:"type:datetime;not null;index"`
+}
+
+// TicketView 工单工作台个人保存视图。
+type TicketView struct {
+	ID          int64  `gorm:"primaryKey;autoIncrement"`
+	UserID      int64  `gorm:"column:user_id;type:bigint;not null;index"`
+	Name        string `gorm:"column:name;type:varchar(100);not null;default:'';index"`
+	FiltersJSON string `gorm:"column:filters_json;type:text;not null"`
+	SortNo      int    `gorm:"column:sort_no;type:int;not null;default:0;index"`
+	AuditFields
 }
 
 // AuditFields 定义涉及用户操作数据的统一审计字段。

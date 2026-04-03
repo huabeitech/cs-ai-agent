@@ -142,3 +142,10 @@ type TicketCollaboratorResponse struct {
 	UserName string `json:"userName,omitempty"`
 	TeamName string `json:"teamName,omitempty"`
 }
+
+type TicketViewResponse struct {
+	ID      int64          `json:"id"`
+	Name    string         `json:"name"`
+	Filters map[string]any `json:"filters,omitempty"`
+	SortNo  int            `json:"sortNo"`
+}
