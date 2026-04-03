@@ -85,11 +85,12 @@ type TicketResponse struct {
 }
 
 type TicketDetailResponse struct {
-	Ticket         TicketResponse           `json:"ticket"`
-	Watchers       []TicketWatcherResponse  `json:"watchers,omitempty"`
-	Comments       []TicketCommentResponse  `json:"comments,omitempty"`
-	Events         []TicketEventLogResponse `json:"events,omitempty"`
-	RelatedTickets []TicketRelationResponse `json:"relatedTickets,omitempty"`
+	Ticket         TicketResponse               `json:"ticket"`
+	Watchers       []TicketWatcherResponse      `json:"watchers,omitempty"`
+	Collaborators  []TicketCollaboratorResponse `json:"collaborators,omitempty"`
+	Comments       []TicketCommentResponse      `json:"comments,omitempty"`
+	Events         []TicketEventLogResponse     `json:"events,omitempty"`
+	RelatedTickets []TicketRelationResponse     `json:"relatedTickets,omitempty"`
 }
 
 type TicketSummaryResponse struct {
@@ -130,4 +131,11 @@ type TicketRelationResponse struct {
 	CurrentTeamName     string                   `json:"currentTeamName,omitempty"`
 	CurrentAssigneeName string                   `json:"currentAssigneeName,omitempty"`
 	UpdatedAt           string                   `json:"updatedAt,omitempty"`
+}
+
+type TicketCollaboratorResponse struct {
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"userId"`
+	UserName string `json:"userName,omitempty"`
+	TeamName string `json:"teamName,omitempty"`
 }

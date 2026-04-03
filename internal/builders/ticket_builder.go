@@ -183,6 +183,7 @@ func BuildTicketDetail(aggregate *services.TicketDetailAggregate) *response.Tick
 	ret := &response.TicketDetailResponse{
 		Ticket:         *BuildTicket(aggregate.Ticket),
 		Watchers:       BuildTicketWatcherList(aggregate.Watchers),
+		Collaborators:  BuildTicketCollaboratorList(aggregate.Collaborators),
 		Comments:       BuildTicketCommentList(aggregate.Comments),
 		Events:         BuildTicketEventLogList(aggregate.Events),
 		RelatedTickets: BuildTicketRelationList(aggregate.RelatedTickets),
@@ -295,6 +296,33 @@ func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatche
 			out.UserName = user.Nickname
 			if out.UserName == "" {
 				out.UserName = user.Username
+			}
+		}
+		results = append(results, out)
+	}
+	return results
+}
+
+func BuildTicketCollaboratorList(list []models.TicketCollaborator) []response.TicketCollaboratorResponse {
+	if len(list) == 0 {
+		return nil
+	}
+	results := make([]response.TicketCollaboratorResponse, 0, len(list))
+	for i := range list {
+		item := &list[i]
+		out := response.TicketCollaboratorResponse{
+			ID:     item.ID,
+			UserID: item.UserID,
+		}
+		if user := services.UserService.Get(item.UserID); user != nil {
+			out.UserName = user.Nickname
+			if out.UserName == "" {
+				out.UserName = user.Username
+			}
+		}
+		if profile := services.AgentProfileService.GetByUserID(item.UserID); profile != nil && profile.TeamID > 0 {
+			if team := services.AgentTeamService.Get(profile.TeamID); team != nil {
+				out.TeamName = team.Name
 			}
 		}
 		results = append(results, out)

@@ -342,6 +342,36 @@ func (c *TicketController) PostDelete_relation() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *TicketController) PostAdd_collaborator() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.AddTicketCollaboratorRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.AddCollaborator(req.TicketID, req.UserID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *TicketController) PostDelete_collaborator() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.DeleteTicketCollaboratorRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.RemoveCollaborator(req.TicketID, req.CollaboratorID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *TicketController) AnyComment_list() *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView); err != nil {
 		return web.JsonError(err)

@@ -28,7 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  addTicketRelation,
+  deleteTicketCollaborator,
   deleteTicketRelation,
   addTicketInternalNote,
   fetchTicketDetail,
@@ -50,6 +50,7 @@ import { EditDialog } from "../_components/edit"
 import { TicketAssignDialog } from "../_components/ticket-assign-dialog"
 import { TicketPriorityBadge } from "../_components/ticket-priority-badge"
 import { TicketReasonDialog } from "../_components/ticket-reason-dialog"
+import { TicketCollaboratorDialog } from "../_components/ticket-collaborator-dialog"
 import { TicketRelationDialog } from "../_components/ticket-relation-dialog"
 import { TicketSLABadge } from "../_components/ticket-sla-badge"
 import { TicketStatusDialog } from "../_components/ticket-status-dialog"
@@ -141,6 +142,7 @@ export default function TicketDetailPage() {
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [relationDialogOpen, setRelationDialogOpen] = useState(false)
+  const [collaboratorDialogOpen, setCollaboratorDialogOpen] = useState(false)
   const [sourceConversation, setSourceConversation] = useState<AdminConversationDetail | null>(null)
 
   const ticket = detail?.ticket ?? null
@@ -265,6 +267,22 @@ export default function TicketDetailPage() {
       await loadDetail()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "移除关联工单失败")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteCollaborator(collaboratorId: number) {
+    if (!ticket) {
+      return
+    }
+    setSaving(true)
+    try {
+      await deleteTicketCollaborator({ ticketId: ticket.id, collaboratorId })
+      toast.success("协作人已移除")
+      await loadDetail()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "移除协作人失败")
     } finally {
       setSaving(false)
     }
@@ -660,6 +678,43 @@ export default function TicketDetailPage() {
 
               <Card>
                 <CardHeader>
+                  <CardTitle className="text-base">协作人</CardTitle>
+                  <CardAction>
+                    <Button variant="ghost" size="sm" onClick={() => setCollaboratorDialogOpen(true)}>
+                      <PlusIcon className="size-4" />
+                      新增协作人
+                    </Button>
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {detail?.collaborators?.length ? (
+                    detail.collaborators.map((collaborator) => (
+                      <div
+                        key={collaborator.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-medium">{collaborator.userName || `用户#${collaborator.userId}`}</div>
+                          <div className="text-xs text-muted-foreground">{collaborator.teamName || "未分组"}</div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={saving}
+                          onClick={() => void handleDeleteCollaborator(collaborator.id)}
+                        >
+                          <XIcon className="size-4" />
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground">暂无协作人</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
                   <CardTitle className="text-base">关注人</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -722,6 +777,12 @@ export default function TicketDetailPage() {
         open={relationDialogOpen}
         ticketId={ticket?.id ?? null}
         onOpenChange={setRelationDialogOpen}
+        onSuccess={loadDetail}
+      />
+      <TicketCollaboratorDialog
+        open={collaboratorDialogOpen}
+        ticketId={ticket?.id ?? null}
+        onOpenChange={setCollaboratorDialogOpen}
         onSuccess={loadDetail}
       />
     </div>

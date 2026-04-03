@@ -37,6 +37,7 @@ var Models = []any{
 	&TicketSLAConfig{},
 	&TicketComment{},
 	&TicketWatcher{},
+	&TicketCollaborator{},
 	&TicketEventLog{},
 	&TicketSLARecord{},
 	&TicketRelation{},
@@ -532,6 +533,14 @@ type TicketWatcher struct {
 	ID        int64     `gorm:"primaryKey;autoIncrement"`
 	TicketID  int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_watcher"`
 	UserID    int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_watcher"`
+	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
+}
+
+// TicketCollaborator 工单协作人。
+type TicketCollaborator struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement"`
+	TicketID  int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_collaborator"`
+	UserID    int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_collaborator"`
 	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
 }
 

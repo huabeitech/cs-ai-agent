@@ -30,6 +30,7 @@ type TicketDetailAggregate struct {
 	Customer       *models.Customer
 	SLAs           []models.TicketSLARecord
 	Watchers       []models.TicketWatcher
+	Collaborators  []models.TicketCollaborator
 	Comments       []models.TicketComment
 	Events         []models.TicketEventLog
 	RelatedTickets []models.TicketRelation
@@ -124,6 +125,9 @@ func (s *ticketService) GetDetail(id int64) (*TicketDetailAggregate, error) {
 			sqls.NewCnd().Eq("ticket_id", id).Asc("id"),
 		),
 		Watchers: TicketWatcherService.Find(
+			sqls.NewCnd().Eq("ticket_id", id).Asc("id"),
+		),
+		Collaborators: TicketCollaboratorService.Find(
 			sqls.NewCnd().Eq("ticket_id", id).Asc("id"),
 		),
 		Comments: TicketCommentService.Find(
@@ -769,6 +773,78 @@ func (s *ticketService) UnwatchTicket(ticketID int64, operator *dto.AuthPrincipa
 	}
 	repositories.TicketWatcherRepository.Delete(sqls.DB(), existing.ID)
 	return nil
+}
+
+func (s *ticketService) AddCollaborator(ticketID, userID int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	ticket := s.Get(ticketID)
+	if ticket == nil {
+		return errorsx.InvalidParam("工单不存在")
+	}
+	if userID <= 0 {
+		return errorsx.InvalidParam("协作人不能为空")
+	}
+	profile := AgentProfileService.GetByUserID(userID)
+	if profile == nil || profile.Status != enums.StatusOk {
+		return errorsx.InvalidParam("协作人不存在")
+	}
+	if TicketCollaboratorService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("user_id", userID)) != nil {
+		return nil
+	}
+	now := time.Now()
+	userName := ""
+	if user := UserService.Get(userID); user != nil {
+		userName = user.Nickname
+		if userName == "" {
+			userName = user.Username
+		}
+	}
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		if err := repositories.TicketCollaboratorRepository.Create(ctx.Tx, &models.TicketCollaborator{
+			TicketID:  ticketID,
+			UserID:    userID,
+			CreatedAt: now,
+		}); err != nil {
+			return err
+		}
+		if TicketWatcherService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("user_id", userID)) == nil {
+			if err := repositories.TicketWatcherRepository.Create(ctx.Tx, &models.TicketWatcher{
+				TicketID:  ticketID,
+				UserID:    userID,
+				CreatedAt: now,
+			}); err != nil {
+				return err
+			}
+		}
+		return s.logEvent(ctx.Tx, ticketID, enums.TicketEventTypeUpdated, operator, "", "", fmt.Sprintf("新增协作人：%s", userName), "")
+	})
+}
+
+func (s *ticketService) RemoveCollaborator(ticketID, collaboratorID int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	ticket := s.Get(ticketID)
+	if ticket == nil {
+		return errorsx.InvalidParam("工单不存在")
+	}
+	item := TicketCollaboratorService.Get(collaboratorID)
+	if item == nil || item.TicketID != ticketID {
+		return errorsx.InvalidParam("协作关系不存在")
+	}
+	userName := ""
+	if user := UserService.Get(item.UserID); user != nil {
+		userName = user.Nickname
+		if userName == "" {
+			userName = user.Username
+		}
+	}
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		repositories.TicketCollaboratorRepository.Delete(ctx.Tx, collaboratorID)
+		return s.logEvent(ctx.Tx, ticketID, enums.TicketEventTypeUpdated, operator, "", "", fmt.Sprintf("移除协作人：%s", userName), "")
+	})
 }
 
 func (s *ticketService) BatchAssignTickets(req request.BatchAssignTicketRequest, operator *dto.AuthPrincipal) error {

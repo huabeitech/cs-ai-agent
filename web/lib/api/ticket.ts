@@ -101,9 +101,17 @@ export type TicketDetail = {
     userId: number
     userName?: string
   }>
+  collaborators?: TicketCollaborator[]
   comments?: TicketComment[]
   events?: TicketEvent[]
   relatedTickets?: TicketRelation[]
+}
+
+export type TicketCollaborator = {
+  id: number
+  userId: number
+  userName?: string
+  teamName?: string
 }
 
 export type TicketRelation = {
@@ -392,6 +400,20 @@ export function addTicketRelation(payload: {
 
 export function deleteTicketRelation(payload: { ticketId: number; relationId: number }) {
   return request<void>("/api/console/ticket/delete_relation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function addTicketCollaborator(payload: { ticketId: number; userId: number }) {
+  return request<void>("/api/console/ticket/add_collaborator", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketCollaborator(payload: { ticketId: number; collaboratorId: number }) {
+  return request<void>("/api/console/ticket/delete_collaborator", {
     method: "POST",
     body: JSON.stringify(payload),
   })

@@ -122,3 +122,13 @@ type DeleteTicketRelationRequest struct {
 	TicketID   int64 `json:"ticketId"`
 	RelationID int64 `json:"relationId"`
 }
+
+type AddTicketCollaboratorRequest struct {
+	TicketID int64 `json:"ticketId"`
+	UserID   int64 `json:"userId"`
+}
+
+type DeleteTicketCollaboratorRequest struct {
+	TicketID       int64 `json:"ticketId"`
+	CollaboratorID int64 `json:"collaboratorId"`
+}
