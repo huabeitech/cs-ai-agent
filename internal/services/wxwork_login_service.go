@@ -49,7 +49,7 @@ func (s *wxWorkLoginService) LoginByWxWork(code, state string, authCfg config.Au
 	if err != nil {
 		return "", "", errorsx.Unauthorized("企业微信登录状态无效或已过期")
 	}
-	profile, err := wxwork.GetLoginUser(code)
+	profile, err := wxwork.GetUserDetail(code)
 	if err != nil {
 		return "", "", err
 	}

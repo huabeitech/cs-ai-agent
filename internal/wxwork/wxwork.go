@@ -2,7 +2,6 @@ package wxwork
 
 import (
 	"cs-agent/internal/pkg/config"
-	"fmt"
 	"strings"
 
 	"github.com/silenceper/wechat/v2/cache"
@@ -63,66 +62,4 @@ func StateSecret() string {
 		return strings.TrimSpace(wxCfg.StateSecret)
 	}
 	return strings.TrimSpace(wxCfg.CorpSecret)
-}
-
-func GetLoginUser(code string) (*LoginUser, error) {
-	if !Enabled() {
-		return nil, fmt.Errorf("企业微信登录未启用")
-	}
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return nil, fmt.Errorf("微信授权 code 不能为空")
-	}
-
-	oauthClient := w.GetOauth()
-	userInfo, err := oauthClient.GetUserInfo(code)
-	if err != nil {
-		return nil, err
-	}
-	if strings.TrimSpace(userInfo.UserID) == "" {
-		return nil, fmt.Errorf("当前登录身份不是企业内部成员")
-	}
-
-	ret := &LoginUser{
-		CorpID:         wxCfg.CorpID,
-		UserID:         strings.TrimSpace(userInfo.UserID),
-		OpenID:         strings.TrimSpace(userInfo.OpenID),
-		ExternalUserID: strings.TrimSpace(userInfo.ExternalUserID),
-		UserTicket:     strings.TrimSpace(userInfo.UserTicket),
-		UserInfo:       userInfo,
-	}
-
-	if ret.UserTicket != "" {
-		if detail, detailErr := oauthClient.GetUserDetail(&oauth.GetUserDetailRequest{UserTicket: ret.UserTicket}); detailErr == nil {
-			ret.UserDetail = detail
-			ret.Avatar = strings.TrimSpace(detail.Avatar)
-			ret.Mobile = strings.TrimSpace(detail.Mobile)
-			ret.Email = strings.TrimSpace(detail.Email)
-			ret.BizMail = strings.TrimSpace(detail.BizMail)
-		}
-	}
-
-	if profile, profileErr := w.GetAddressList().UserGet(ret.UserID); profileErr == nil {
-		ret.UserProfile = profile
-		if strings.TrimSpace(profile.Name) != "" {
-			ret.Name = strings.TrimSpace(profile.Name)
-		}
-		if strings.TrimSpace(profile.Avatar) != "" {
-			ret.Avatar = strings.TrimSpace(profile.Avatar)
-		}
-		if ret.Mobile == "" && strings.TrimSpace(profile.Mobile) != "" {
-			ret.Mobile = strings.TrimSpace(profile.Mobile)
-		}
-		if ret.Email == "" && strings.TrimSpace(profile.Email) != "" {
-			ret.Email = strings.TrimSpace(profile.Email)
-		}
-		if ret.BizMail == "" && strings.TrimSpace(profile.BizMail) != "" {
-			ret.BizMail = strings.TrimSpace(profile.BizMail)
-		}
-	}
-
-	if ret.Name == "" {
-		ret.Name = ret.UserID
-	}
-	return ret, nil
 }
