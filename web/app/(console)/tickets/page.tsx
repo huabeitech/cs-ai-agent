@@ -439,12 +439,8 @@ export default function TicketsPage() {
     }
   }
 
-  async function handleDeleteCurrentView() {
-    if (activeSavedViewId === "all") {
-      toast.error("当前不是已保存视图")
-      return
-    }
-    const currentView = savedViews.find((item) => String(item.id) === activeSavedViewId)
+  async function handleDeleteSavedView(viewId: number) {
+    const currentView = savedViews.find((item) => item.id === viewId)
     if (!currentView) {
       return
     }
@@ -455,7 +451,9 @@ export default function TicketsPage() {
     try {
       await deleteTicketView(currentView.id)
       setSavedViews((current) => current.filter((item) => item.id !== currentView.id))
-      setActiveSavedViewId("all")
+      if (activeSavedViewId === String(currentView.id)) {
+        setActiveSavedViewId("all")
+      }
       toast.success("视图已删除")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "删除视图失败")
@@ -682,7 +680,7 @@ export default function TicketsPage() {
 
   const savedViewOptions = useMemo(
     () =>
-      [{ value: "all", label: "当前筛选" }].concat(
+      [{ value: "all", label: "筛选视图" }].concat(
         savedViews.map((item) => ({
           value: String(item.id),
           label: item.name,
@@ -722,15 +720,31 @@ export default function TicketsPage() {
                 }}
                 placeholder="保存视图"
                 options={savedViewOptions}
+                renderOptionAction={(option) => {
+                  if (option.value === "all") {
+                    return null
+                  }
+                  const viewId = Number(option.value)
+                  if (!Number.isFinite(viewId)) {
+                    return null
+                  }
+                  return (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => void handleDeleteSavedView(viewId)}
+                    >
+                      <Trash2Icon className="size-4" />
+                    </Button>
+                  )
+                }}
               />
             </div>
             <Button variant="outline" onClick={handleSaveCurrentView}>
               <SaveIcon className="size-4" />
               保存视图
-            </Button>
-            <Button variant="outline" onClick={handleDeleteCurrentView} disabled={activeSavedViewId === "all"}>
-              <Trash2Icon className="size-4" />
-              删除视图
             </Button>
             <Button onClick={openCreateDialog}>
               <PlusIcon className="size-4" />
