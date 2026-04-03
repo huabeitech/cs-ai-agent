@@ -1,5 +1,5 @@
 .PHONY: run run-server run-web build build-all build-assets build-web build-widget \
-	package-current package-platform clean-dist clean-temp test tidy generator enums migration testdata
+	package-current package-platform build-server-linux-amd64 clean-dist clean-temp test tidy generator enums migration testdata
 
 DIST_DIR ?= dist
 TMP_DIR := $(DIST_DIR)/.tmp
@@ -61,6 +61,15 @@ build-widget:
 
 package-current:
 	@$(MAKE) package-platform PLATFORM=$(CURRENT_PLATFORM)
+
+build-server-linux-amd64:
+	@dist_dir="$(CURDIR)/$(DIST_DIR)"; \
+	output="$$dist_dir/$(APP_NAME)-linux-amd64"; \
+	echo "[build-server] start linux-amd64"; \
+	mkdir -p "$$dist_dir"; \
+	echo "[build-server] go build -> $$output"; \
+	GOOS=linux GOARCH=amd64 go build -o "$$output" $(APP_ENTRY); \
+	echo "[build-server] done -> $$output"
 
 package-platform:
 	@platform="$(PLATFORM)"; \

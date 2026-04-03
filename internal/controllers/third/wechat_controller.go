@@ -2,7 +2,6 @@ package third
 
 import (
 	"cs-agent/internal/wxwork"
-	"fmt"
 	"net/http"
 
 	"github.com/kataras/iris/v12"
@@ -58,8 +57,10 @@ func (c *WechatController) PostCallback() {
 		return
 	}
 
-	// TODO 消息处理
-	fmt.Println(message)
+	if err := wxwork.ConsumeCallback(message); err != nil {
+		c.Ctx.StopWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	c.Ctx.WriteString("ok")
 }
