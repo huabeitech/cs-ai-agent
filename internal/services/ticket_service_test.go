@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -114,13 +115,155 @@ func TestBatchChangeStatusRollsBackOnFailure(t *testing.T) {
 	}
 }
 
+func TestTicketNoServiceNextConcurrent(t *testing.T) {
+	setupTicketTestDB(t)
+
+	const count = 20
+	results := make(chan string, count)
+	errs := make(chan error, count)
+	var wg sync.WaitGroup
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+				ticketNo, err := services.TicketNoService.Next(ctx.Tx, time.Now())
+				if err != nil {
+					return err
+				}
+				results <- ticketNo
+				return nil
+			})
+			if err != nil {
+				errs <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(results)
+	close(errs)
+
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("TicketNoService.Next() concurrent error = %v", err)
+		}
+	}
+
+	seen := make(map[string]struct{}, count)
+	for ticketNo := range results {
+		if _, ok := seen[ticketNo]; ok {
+			t.Fatalf("duplicate ticket number generated: %s", ticketNo)
+		}
+		seen[ticketNo] = struct{}{}
+	}
+	if len(seen) != count {
+		t.Fatalf("expected %d unique ticket numbers, got %d", count, len(seen))
+	}
+}
+
+func TestCloseAndReopenTicketRefreshResolutionDeadline(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+
+	ticket, err := services.TicketService.CreateTicket(createTestTicketRequest("deadline-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+
+	original := services.TicketService.Get(ticket.ID)
+	if original == nil || original.ResolveDeadlineAt == nil {
+		t.Fatalf("expected initial resolve deadline to exist")
+	}
+
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: ticket.ID,
+		Status:   string(enums.TicketStatusOpen),
+		Reason:   "pick up",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() open error = %v", err)
+	}
+
+	if err := services.TicketService.CloseTicket(request.CloseTicketRequest{
+		TicketID:    ticket.ID,
+		CloseReason: "done",
+	}, operator); err != nil {
+		t.Fatalf("CloseTicket() error = %v", err)
+	}
+
+	closed := services.TicketService.Get(ticket.ID)
+	if closed == nil {
+		t.Fatalf("expected closed ticket to exist")
+	}
+	if closed.ResolveDeadlineAt != nil {
+		t.Fatalf("expected resolve deadline to be cleared after close")
+	}
+
+	if err := services.TicketService.ReopenTicket(request.ReopenTicketRequest{
+		TicketID: ticket.ID,
+		Reason:   "need follow-up",
+	}, operator); err != nil {
+		t.Fatalf("ReopenTicket() error = %v", err)
+	}
+
+	reopened := services.TicketService.Get(ticket.ID)
+	if reopened == nil {
+		t.Fatalf("expected reopened ticket to exist")
+	}
+	if reopened.ResolveDeadlineAt == nil {
+		t.Fatalf("expected resolve deadline to be restored after reopen")
+	}
+}
+
+func TestCloseTicketBlockedByOpenChild(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+
+	parent, err := services.TicketService.CreateTicket(createTestTicketRequest("parent-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() parent error = %v", err)
+	}
+	child, err := services.TicketService.CreateTicket(createTestTicketRequest("child-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() child error = %v", err)
+	}
+
+	if err := repositories.TicketRelationRepository.Create(sqls.DB(), &models.TicketRelation{
+		TicketID:        parent.ID,
+		RelatedTicketID: child.ID,
+		RelationType:    enums.TicketRelationTypeChild,
+		CreatedAt:       time.Now(),
+	}); err != nil {
+		t.Fatalf("create relation error = %v", err)
+	}
+
+	err = services.TicketService.CloseTicket(request.CloseTicketRequest{
+		TicketID:    parent.ID,
+		CloseReason: "done",
+	}, operator)
+	if err == nil {
+		t.Fatalf("expected close ticket to be blocked by open child")
+	}
+
+	current := services.TicketService.Get(parent.ID)
+	if current == nil {
+		t.Fatalf("expected parent ticket to exist")
+	}
+	if current.Status != enums.TicketStatusNew {
+		t.Fatalf("expected parent ticket status to remain new, got %s", current.Status)
+	}
+}
+
 func setupTicketTestDB(t *testing.T) {
 	t.Helper()
 
 	dbPath := filepath.Join(t.TempDir(), "ticket-test.db")
 	db, err := bootstrap.InitDB(config.DBConfig{
-		Type: "sqlite",
-		DSN:  dbPath,
+		Type:         "sqlite",
+		DSN:          "file:" + dbPath + "?_busy_timeout=5000",
+		MaxIdleConns: 1,
+		MaxOpenConns: 1,
 	})
 	if err != nil {
 		t.Fatalf("InitDB() error = %v", err)

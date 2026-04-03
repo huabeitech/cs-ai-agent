@@ -527,7 +527,7 @@ func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequ
 	if ticket == nil {
 		return errorsx.InvalidParam("工单不存在")
 	}
-	teamID, assigneeID, err := s.normalizeAssignment(req.ToTeamID, req.ToUserID)
+	teamID, assigneeID, err := s.normalizeAssignmentTx(tx, req.ToTeamID, req.ToUserID)
 	if err != nil {
 		return err
 	}
@@ -580,7 +580,7 @@ func (s *ticketService) changeStatusTx(tx *gorm.DB, req request.ChangeTicketStat
 		return errorsx.InvalidParam("工单当前状态不允许该操作")
 	}
 	if targetStatus == enums.TicketStatusClosed {
-		if childNos := s.findOpenChildTicketNos(ticket.ID); len(childNos) > 0 {
+		if childNos := s.findOpenChildTicketNosTx(tx, ticket.ID); len(childNos) > 0 {
 			if len(childNos) > 3 {
 				return errorsx.InvalidParam(fmt.Sprintf("仍有未完成子工单，暂不可关闭：%s 等 %d 张", strings.Join(childNos[:3], "、"), len(childNos)))
 			}
@@ -604,7 +604,7 @@ func (s *ticketService) changeStatusTx(tx *gorm.DB, req request.ChangeTicketStat
 	case enums.TicketStatusResolved:
 		resolutionCode := strings.TrimSpace(req.ResolutionCode)
 		if resolutionCode != "" {
-			code := TicketResolutionCodeService.Take("code = ? AND status = ?", resolutionCode, enums.StatusOk)
+			code := repositories.TicketResolutionCodeRepository.Take(tx, "code = ? AND status = ?", resolutionCode, enums.StatusOk)
 			if code == nil {
 				return errorsx.InvalidParam("解决码不存在")
 			}
@@ -636,7 +636,11 @@ func (s *ticketService) changeStatusTx(tx *gorm.DB, req request.ChangeTicketStat
 }
 
 func (s *ticketService) findOpenChildTicketNos(ticketID int64) []string {
-	relations := TicketRelationService.Find(
+	return s.findOpenChildTicketNosTx(sqls.DB(), ticketID)
+}
+
+func (s *ticketService) findOpenChildTicketNosTx(db *gorm.DB, ticketID int64) []string {
+	relations := repositories.TicketRelationRepository.Find(db,
 		sqls.NewCnd().
 			Eq("ticket_id", ticketID).
 			Eq("relation_type", enums.TicketRelationTypeChild),
@@ -646,7 +650,7 @@ func (s *ticketService) findOpenChildTicketNos(ticketID int64) []string {
 	}
 	results := make([]string, 0, len(relations))
 	for _, relation := range relations {
-		child := s.Get(relation.RelatedTicketID)
+		child := repositories.TicketRepository.Get(db, relation.RelatedTicketID)
 		if child == nil {
 			continue
 		}
@@ -1057,8 +1061,12 @@ func normalizeBatchTicketIDs(ticketIDs []int64) []int64 {
 }
 
 func (s *ticketService) normalizeAssignment(teamID, assigneeID int64) (int64, int64, error) {
+	return s.normalizeAssignmentTx(sqls.DB(), teamID, assigneeID)
+}
+
+func (s *ticketService) normalizeAssignmentTx(db *gorm.DB, teamID, assigneeID int64) (int64, int64, error) {
 	if assigneeID > 0 {
-		profile := AgentProfileService.GetByUserID(assigneeID)
+		profile := repositories.AgentProfileRepository.FindOne(db, sqls.NewCnd().Eq("user_id", assigneeID))
 		if profile == nil || profile.Status != enums.StatusOk {
 			return 0, 0, errorsx.InvalidParam("目标处理人不存在")
 		}
@@ -1067,7 +1075,7 @@ func (s *ticketService) normalizeAssignment(teamID, assigneeID int64) (int64, in
 		}
 	}
 	if teamID > 0 {
-		team := AgentTeamService.Get(teamID)
+		team := repositories.AgentTeamRepository.Get(db, teamID)
 		if team == nil || team.Status != enums.StatusOk {
 			return 0, 0, errorsx.InvalidParam("处理团队不存在")
 		}
@@ -1173,15 +1181,21 @@ func (s *ticketService) pauseResolutionSLA(tx *gorm.DB, ticketID int64, now time
 
 func (s *ticketService) resumeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
 	record := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeResolution))
-	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
+	if record == nil {
 		return nil
 	}
-	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, map[string]any{
+	values := map[string]any{
 		"status":     enums.TicketSLAStatusRunning,
 		"started_at": now,
 		"paused_at":  nil,
 		"updated_at": now,
-	})
+	}
+	if record.Status == enums.TicketSLAStatusCompleted || record.Status == enums.TicketSLAStatusBreached {
+		values["elapsed_min"] = 0
+		values["stopped_at"] = nil
+		values["breached_at"] = nil
+	}
+	return repositories.TicketSLARecordRepository.Updates(tx, record.ID, values)
 }
 
 func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
