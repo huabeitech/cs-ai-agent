@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"cs-agent/internal/bootstrap"
+	"cs-agent/internal/builders"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
@@ -149,6 +150,63 @@ func TestAssignTicketPromotesNewTicketToOpenAndSetsTeamAssignee(t *testing.T) {
 	}
 }
 
+func TestFindPageAggregateByCndBuildsWatcherAndLookupMaps(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+	teamID, assigneeID := createTestAgentProfile(t, "aggregate-agent")
+	customerID := createTestCustomer(t, "aggregate-customer")
+	categoryID := createTestTicketCategory(t, "aggregate-category")
+
+	ticket, err := services.TicketService.CreateTicket(request.CreateTicketRequest{
+		Title:             "aggregate-ticket",
+		CustomerID:        customerID,
+		CategoryID:        categoryID,
+		Priority:          int(enums.TicketPriorityHigh),
+		Severity:          int(enums.TicketSeverityMajor),
+		CurrentTeamID:     teamID,
+		CurrentAssigneeID: assigneeID,
+	}, operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+	if err := repositories.TicketWatcherRepository.Create(sqls.DB(), &models.TicketWatcher{
+		TicketID:  ticket.ID,
+		UserID:    operator.UserID,
+		CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("create ticket watcher error = %v", err)
+	}
+
+	aggregate, err := services.TicketService.FindPageAggregateByCnd(
+		sqls.NewCnd().Eq("id", ticket.ID).Page(1, 10),
+		operator.UserID,
+	)
+	if err != nil {
+		t.Fatalf("FindPageAggregateByCnd() error = %v", err)
+	}
+	if len(aggregate.List) != 1 {
+		t.Fatalf("expected 1 ticket, got %d", len(aggregate.List))
+	}
+	if _, ok := aggregate.WatchedTicketIDs[ticket.ID]; !ok {
+		t.Fatalf("expected watched ticket id to be populated")
+	}
+	if aggregate.Categories[categoryID] == nil {
+		t.Fatalf("expected category lookup to be populated")
+	}
+	if aggregate.Customers[customerID] == nil {
+		t.Fatalf("expected customer lookup to be populated")
+	}
+	if aggregate.Users[assigneeID] == nil {
+		t.Fatalf("expected assignee lookup to be populated")
+	}
+	if aggregate.Teams[teamID] == nil {
+		t.Fatalf("expected team lookup to be populated")
+	}
+	if len(aggregate.SLAByTicketID[ticket.ID]) != 2 {
+		t.Fatalf("expected 2 sla records for ticket, got %d", len(aggregate.SLAByTicketID[ticket.ID]))
+	}
+}
+
 func TestTicketNoServiceNextConcurrent(t *testing.T) {
 	setupTicketTestDB(t)
 
@@ -194,6 +252,124 @@ func TestTicketNoServiceNextConcurrent(t *testing.T) {
 	}
 	if len(seen) != count {
 		t.Fatalf("expected %d unique ticket numbers, got %d", count, len(seen))
+	}
+}
+
+func TestGetRiskPageAggregateReturnsAccurateHighRiskTickets(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+
+	highRisk, err := services.TicketService.CreateTicket(createTestTicketRequest("high-risk-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() highRisk error = %v", err)
+	}
+	safe, err := services.TicketService.CreateTicket(createTestTicketRequest("safe-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() safe error = %v", err)
+	}
+
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: highRisk.ID,
+		Status:   string(enums.TicketStatusOpen),
+		Reason:   "pick up high risk",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() highRisk open error = %v", err)
+	}
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: safe.ID,
+		Status:   string(enums.TicketStatusOpen),
+		Reason:   "pick up safe",
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() safe open error = %v", err)
+	}
+
+	now := time.Now()
+	if err := repositories.TicketRepository.Updates(sqls.DB(), highRisk.ID, map[string]any{
+		"resolve_deadline_at": now.Add(30 * time.Minute),
+		"updated_at":          now,
+	}); err != nil {
+		t.Fatalf("update highRisk deadline error = %v", err)
+	}
+	if err := repositories.TicketRepository.Updates(sqls.DB(), safe.ID, map[string]any{
+		"resolve_deadline_at": now.Add(6 * time.Hour),
+		"updated_at":          now,
+	}); err != nil {
+		t.Fatalf("update safe deadline error = %v", err)
+	}
+
+	aggregate, err := services.TicketService.GetRiskPageAggregate("high_risk", 0, 60, 1, 10, operator.UserID)
+	if err != nil {
+		t.Fatalf("GetRiskPageAggregate() error = %v", err)
+	}
+	if len(aggregate.List) != 1 {
+		t.Fatalf("expected 1 high risk ticket, got %d", len(aggregate.List))
+	}
+	if aggregate.List[0].ID != highRisk.ID {
+		t.Fatalf("expected high risk ticket id %d, got %d", highRisk.ID, aggregate.List[0].ID)
+	}
+}
+
+func TestBuildTicketDetailUsesAggregatedWatcherCollaboratorAndRelationLookups(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+	teamID, assigneeID := createTestAgentProfile(t, "detail-agent")
+
+	parent, err := services.TicketService.CreateTicket(createTestTicketRequest("detail-parent"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() parent error = %v", err)
+	}
+	child, err := services.TicketService.CreateTicket(request.CreateTicketRequest{
+		Title:             "detail-child",
+		Priority:          int(enums.TicketPriorityNormal),
+		Severity:          int(enums.TicketSeverityMinor),
+		CurrentTeamID:     teamID,
+		CurrentAssigneeID: assigneeID,
+	}, operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() child error = %v", err)
+	}
+	if err := repositories.TicketWatcherRepository.Create(sqls.DB(), &models.TicketWatcher{
+		TicketID:  parent.ID,
+		UserID:    assigneeID,
+		CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("create watcher error = %v", err)
+	}
+	if err := repositories.TicketCollaboratorRepository.Create(sqls.DB(), &models.TicketCollaborator{
+		TicketID:  parent.ID,
+		UserID:    assigneeID,
+		CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("create collaborator error = %v", err)
+	}
+	if err := repositories.TicketRelationRepository.Create(sqls.DB(), &models.TicketRelation{
+		TicketID:        parent.ID,
+		RelatedTicketID: child.ID,
+		RelationType:    enums.TicketRelationTypeChild,
+		CreatedAt:       time.Now(),
+	}); err != nil {
+		t.Fatalf("create relation error = %v", err)
+	}
+
+	aggregate, err := services.TicketService.GetDetail(parent.ID)
+	if err != nil {
+		t.Fatalf("GetDetail() error = %v", err)
+	}
+	detail := builders.BuildTicketDetail(aggregate)
+	if detail == nil {
+		t.Fatalf("expected ticket detail to be built")
+	}
+	if len(detail.Watchers) != 1 || detail.Watchers[0].UserName == "" {
+		t.Fatalf("expected watcher user name to be populated")
+	}
+	if len(detail.Collaborators) != 1 || detail.Collaborators[0].UserName == "" || detail.Collaborators[0].TeamName == "" {
+		t.Fatalf("expected collaborator user and team names to be populated")
+	}
+	if len(detail.RelatedTickets) != 1 {
+		t.Fatalf("expected 1 related ticket, got %d", len(detail.RelatedTickets))
+	}
+	if detail.RelatedTickets[0].RelatedTicketNo == "" || detail.RelatedTickets[0].CurrentAssigneeName == "" || detail.RelatedTickets[0].CurrentTeamName == "" {
+		t.Fatalf("expected related ticket display fields to be populated")
 	}
 }
 
@@ -470,4 +646,50 @@ func createTestAgentProfile(t *testing.T, prefix string) (int64, int64) {
 		t.Fatalf("create agent profile error = %v", err)
 	}
 	return team.ID, userID
+}
+
+func createTestCustomer(t *testing.T, prefix string) int64 {
+	t.Helper()
+
+	now := time.Now()
+	item := &models.Customer{
+		Name:   fmt.Sprintf("%s-%d", prefix, now.UnixNano()),
+		Status: enums.StatusOk,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   1,
+			CreateUserName: "admin",
+			UpdatedAt:      now,
+			UpdateUserID:   1,
+			UpdateUserName: "admin",
+		},
+	}
+	if err := repositories.CustomerRepository.Create(sqls.DB(), item); err != nil {
+		t.Fatalf("create customer error = %v", err)
+	}
+	return item.ID
+}
+
+func createTestTicketCategory(t *testing.T, prefix string) int64 {
+	t.Helper()
+
+	now := time.Now()
+	item := &models.TicketCategory{
+		Name:     fmt.Sprintf("%s-%d", prefix, now.UnixNano()),
+		Status:   enums.StatusOk,
+		ParentID: 0,
+		SortNo:   1,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   1,
+			CreateUserName: "admin",
+			UpdatedAt:      now,
+			UpdateUserID:   1,
+			UpdateUserName: "admin",
+		},
+	}
+	if err := repositories.TicketCategoryRepository.Create(sqls.DB(), item); err != nil {
+		t.Fatalf("create ticket category error = %v", err)
+	}
+	return item.ID
 }

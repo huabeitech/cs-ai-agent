@@ -34,6 +34,10 @@ type TicketDetailAggregate struct {
 	Comments       []models.TicketComment
 	Events         []models.TicketEventLog
 	RelatedTickets []models.TicketRelation
+	Users          map[int64]*models.User
+	Teams          map[int64]*models.AgentTeam
+	AgentProfiles  map[int64]*models.AgentProfile
+	RelatedMap     map[int64]*models.Ticket
 }
 
 type TicketSummaryAggregate struct {
@@ -163,11 +167,101 @@ func (s *ticketService) GetDetail(id int64) (*TicketDetailAggregate, error) {
 		RelatedTickets: TicketRelationService.Find(
 			sqls.NewCnd().Eq("ticket_id", id).Desc("id"),
 		),
+		Users:         make(map[int64]*models.User),
+		Teams:         make(map[int64]*models.AgentTeam),
+		AgentProfiles: make(map[int64]*models.AgentProfile),
+		RelatedMap:    make(map[int64]*models.Ticket),
 	}
 	if ticket.CustomerID > 0 {
 		aggregate.Customer = CustomerService.Get(ticket.CustomerID)
 	}
+	s.enrichTicketDetailAggregate(aggregate)
 	return aggregate, nil
+}
+
+func (s *ticketService) enrichTicketDetailAggregate(aggregate *TicketDetailAggregate) {
+	if aggregate == nil {
+		return
+	}
+	userIDs := make([]int64, 0)
+	teamIDs := make([]int64, 0)
+	relatedTicketIDs := make([]int64, 0)
+	userSeen := make(map[int64]struct{})
+	teamSeen := make(map[int64]struct{})
+	relatedSeen := make(map[int64]struct{})
+	addUserID := func(userID int64) {
+		if userID <= 0 {
+			return
+		}
+		if _, ok := userSeen[userID]; ok {
+			return
+		}
+		userSeen[userID] = struct{}{}
+		userIDs = append(userIDs, userID)
+	}
+	addTeamID := func(teamID int64) {
+		if teamID <= 0 {
+			return
+		}
+		if _, ok := teamSeen[teamID]; ok {
+			return
+		}
+		teamSeen[teamID] = struct{}{}
+		teamIDs = append(teamIDs, teamID)
+	}
+	for i := range aggregate.Watchers {
+		addUserID(aggregate.Watchers[i].UserID)
+	}
+	for i := range aggregate.Collaborators {
+		addUserID(aggregate.Collaborators[i].UserID)
+	}
+	for i := range aggregate.RelatedTickets {
+		relatedTicketID := aggregate.RelatedTickets[i].RelatedTicketID
+		if relatedTicketID <= 0 {
+			continue
+		}
+		if _, ok := relatedSeen[relatedTicketID]; ok {
+			continue
+		}
+		relatedSeen[relatedTicketID] = struct{}{}
+		relatedTicketIDs = append(relatedTicketIDs, relatedTicketID)
+	}
+	if len(userIDs) > 0 {
+		users := repositories.UserRepository.FindByIds(sqls.DB(), userIDs)
+		for i := range users {
+			item := users[i]
+			aggregate.Users[item.ID] = &item
+		}
+		profiles := repositories.AgentProfileRepository.Find(sqls.DB(), sqls.NewCnd().In("user_id", userIDs))
+		for i := range profiles {
+			item := profiles[i]
+			aggregate.AgentProfiles[item.UserID] = &item
+			addTeamID(item.TeamID)
+		}
+	}
+	if len(relatedTicketIDs) > 0 {
+		relatedTickets := repositories.TicketRepository.Find(sqls.DB(), sqls.NewCnd().In("id", relatedTicketIDs))
+		for i := range relatedTickets {
+			item := relatedTickets[i]
+			aggregate.RelatedMap[item.ID] = &item
+			addUserID(item.CurrentAssigneeID)
+			addTeamID(item.CurrentTeamID)
+		}
+	}
+	if len(teamIDs) > 0 {
+		teams := repositories.AgentTeamRepository.FindByIds(sqls.DB(), teamIDs)
+		for i := range teams {
+			item := teams[i]
+			aggregate.Teams[item.ID] = &item
+		}
+	}
+	if len(userIDs) > len(aggregate.Users) {
+		users := repositories.UserRepository.FindByIds(sqls.DB(), userIDs)
+		for i := range users {
+			item := users[i]
+			aggregate.Users[item.ID] = &item
+		}
+	}
 }
 
 func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAggregate {

@@ -20,6 +20,13 @@ type TicketBuildContext struct {
 	WatchedTicketIDs map[int64]struct{}
 }
 
+type TicketDetailBuildContext struct {
+	Users          map[int64]*models.User
+	Teams          map[int64]*models.AgentTeam
+	AgentProfiles  map[int64]*models.AgentProfile
+	RelatedTickets map[int64]*models.Ticket
+}
+
 func BuildTicket(item *models.Ticket) *response.TicketResponse {
 	return BuildTicketWithContext(item, nil)
 }
@@ -225,16 +232,28 @@ func BuildTicketSLAList(list []models.TicketSLARecord) []response.TicketSLARespo
 }
 
 func BuildTicketDetail(aggregate *services.TicketDetailAggregate) *response.TicketDetailResponse {
+	return BuildTicketDetailWithContext(aggregate, nil)
+}
+
+func BuildTicketDetailWithContext(aggregate *services.TicketDetailAggregate, ctx *TicketDetailBuildContext) *response.TicketDetailResponse {
 	if aggregate == nil || aggregate.Ticket == nil {
 		return nil
 	}
+	if ctx == nil {
+		ctx = &TicketDetailBuildContext{
+			Users:          aggregate.Users,
+			Teams:          aggregate.Teams,
+			AgentProfiles:  aggregate.AgentProfiles,
+			RelatedTickets: aggregate.RelatedMap,
+		}
+	}
 	ret := &response.TicketDetailResponse{
 		Ticket:         *BuildTicket(aggregate.Ticket),
-		Watchers:       BuildTicketWatcherList(aggregate.Watchers),
-		Collaborators:  BuildTicketCollaboratorList(aggregate.Collaborators),
+		Watchers:       BuildTicketWatcherListWithContext(aggregate.Watchers, ctx),
+		Collaborators:  BuildTicketCollaboratorListWithContext(aggregate.Collaborators, ctx),
 		Comments:       BuildTicketCommentList(aggregate.Comments),
 		Events:         BuildTicketEventLogList(aggregate.Events),
-		RelatedTickets: BuildTicketRelationList(aggregate.RelatedTickets),
+		RelatedTickets: BuildTicketRelationListWithContext(aggregate.RelatedTickets, ctx),
 	}
 	if aggregate.Customer != nil {
 		ret.Ticket.Customer = BuildCustomer(aggregate.Customer)
@@ -244,6 +263,10 @@ func BuildTicketDetail(aggregate *services.TicketDetailAggregate) *response.Tick
 }
 
 func BuildTicketRelation(item *models.TicketRelation) *response.TicketRelationResponse {
+	return BuildTicketRelationWithContext(item, nil)
+}
+
+func BuildTicketRelationWithContext(item *models.TicketRelation, ctx *TicketDetailBuildContext) *response.TicketRelationResponse {
 	if item == nil {
 		return nil
 	}
@@ -253,17 +276,30 @@ func BuildTicketRelation(item *models.TicketRelation) *response.TicketRelationRe
 		RelatedTicketID: item.RelatedTicketID,
 		RelationType:    item.RelationType,
 	}
-	if related := services.TicketService.Get(item.RelatedTicketID); related != nil {
+	related := (*models.Ticket)(nil)
+	if ctx != nil && ctx.RelatedTickets != nil {
+		related = ctx.RelatedTickets[item.RelatedTicketID]
+	}
+	if related == nil {
+		related = services.TicketService.Get(item.RelatedTicketID)
+	}
+	if related != nil {
 		ret.RelatedTicketNo = related.TicketNo
 		ret.RelatedTicketTitle = related.Title
 		ret.RelatedTicketStatus = related.Status
 		ret.UpdatedAt = utils.FormatTime(related.UpdatedAt)
-		if related.CurrentTeamID > 0 {
+		if related.CurrentTeamID > 0 && ctx != nil && ctx.Teams != nil {
+			if team := ctx.Teams[related.CurrentTeamID]; team != nil {
+				ret.CurrentTeamName = team.Name
+			}
+		} else if related.CurrentTeamID > 0 {
 			if team := services.AgentTeamService.Get(related.CurrentTeamID); team != nil {
 				ret.CurrentTeamName = team.Name
 			}
 		}
-		if related.CurrentAssigneeID > 0 {
+		if related.CurrentAssigneeID > 0 && ctx != nil && ctx.Users != nil {
+			ret.CurrentAssigneeName = buildTicketUserDisplayName(ctx.Users[related.CurrentAssigneeID])
+		} else if related.CurrentAssigneeID > 0 {
 			if user := services.UserService.Get(related.CurrentAssigneeID); user != nil {
 				ret.CurrentAssigneeName = user.Nickname
 				if ret.CurrentAssigneeName == "" {
@@ -276,12 +312,16 @@ func BuildTicketRelation(item *models.TicketRelation) *response.TicketRelationRe
 }
 
 func BuildTicketRelationList(list []models.TicketRelation) []response.TicketRelationResponse {
+	return BuildTicketRelationListWithContext(list, nil)
+}
+
+func BuildTicketRelationListWithContext(list []models.TicketRelation, ctx *TicketDetailBuildContext) []response.TicketRelationResponse {
 	if len(list) == 0 {
 		return nil
 	}
 	results := make([]response.TicketRelationResponse, 0, len(list))
 	for i := range list {
-		if item := BuildTicketRelation(&list[i]); item != nil {
+		if item := BuildTicketRelationWithContext(&list[i], ctx); item != nil {
 			results = append(results, *item)
 		}
 	}
@@ -333,6 +373,10 @@ func BuildTicketRiskOverview(overview *services.TicketRiskOverviewAggregate) *re
 }
 
 func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatcherResponse {
+	return BuildTicketWatcherListWithContext(list, nil)
+}
+
+func BuildTicketWatcherListWithContext(list []models.TicketWatcher, ctx *TicketDetailBuildContext) []response.TicketWatcherResponse {
 	if len(list) == 0 {
 		return nil
 	}
@@ -343,11 +387,10 @@ func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatche
 			ID:     item.ID,
 			UserID: item.UserID,
 		}
-		if user := services.UserService.Get(item.UserID); user != nil {
-			out.UserName = user.Nickname
-			if out.UserName == "" {
-				out.UserName = user.Username
-			}
+		if ctx != nil && ctx.Users != nil {
+			out.UserName = buildTicketUserDisplayName(ctx.Users[item.UserID])
+		} else if user := services.UserService.Get(item.UserID); user != nil {
+			out.UserName = buildTicketUserDisplayName(user)
 		}
 		results = append(results, out)
 	}
@@ -355,6 +398,10 @@ func BuildTicketWatcherList(list []models.TicketWatcher) []response.TicketWatche
 }
 
 func BuildTicketCollaboratorList(list []models.TicketCollaborator) []response.TicketCollaboratorResponse {
+	return BuildTicketCollaboratorListWithContext(list, nil)
+}
+
+func BuildTicketCollaboratorListWithContext(list []models.TicketCollaborator, ctx *TicketDetailBuildContext) []response.TicketCollaboratorResponse {
 	if len(list) == 0 {
 		return nil
 	}
@@ -365,13 +412,18 @@ func BuildTicketCollaboratorList(list []models.TicketCollaborator) []response.Ti
 			ID:     item.ID,
 			UserID: item.UserID,
 		}
-		if user := services.UserService.Get(item.UserID); user != nil {
-			out.UserName = user.Nickname
-			if out.UserName == "" {
-				out.UserName = user.Username
-			}
+		if ctx != nil && ctx.Users != nil {
+			out.UserName = buildTicketUserDisplayName(ctx.Users[item.UserID])
+		} else if user := services.UserService.Get(item.UserID); user != nil {
+			out.UserName = buildTicketUserDisplayName(user)
 		}
-		if profile := services.AgentProfileService.GetByUserID(item.UserID); profile != nil && profile.TeamID > 0 {
+		if ctx != nil && ctx.AgentProfiles != nil {
+			if profile := ctx.AgentProfiles[item.UserID]; profile != nil && profile.TeamID > 0 {
+				if team := ctx.Teams[profile.TeamID]; team != nil {
+					out.TeamName = team.Name
+				}
+			}
+		} else if profile := services.AgentProfileService.GetByUserID(item.UserID); profile != nil && profile.TeamID > 0 {
 			if team := services.AgentTeamService.Get(profile.TeamID); team != nil {
 				out.TeamName = team.Name
 			}
@@ -379,6 +431,16 @@ func BuildTicketCollaboratorList(list []models.TicketCollaborator) []response.Ti
 		results = append(results, out)
 	}
 	return results
+}
+
+func buildTicketUserDisplayName(user *models.User) string {
+	if user == nil {
+		return ""
+	}
+	if user.Nickname != "" {
+		return user.Nickname
+	}
+	return user.Username
 }
 
 func buildTicketOperatorName(senderType enums.IMSenderType, senderID int64) string {
