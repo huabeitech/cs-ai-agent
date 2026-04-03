@@ -1,12 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { PlusIcon, RefreshCcwIcon, SearchIcon, StarIcon } from "lucide-react"
+import { AlertTriangleIcon, PlusIcon, RefreshCcwIcon, SearchIcon, StarIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -426,24 +427,27 @@ export default function TicketsPage() {
                 <TableHead>客户</TableHead>
                 <TableHead>优先级</TableHead>
                 <TableHead>状态</TableHead>
+                <TableHead>风险</TableHead>
                 <TableHead>处理人</TableHead>
                 <TableHead>团队</TableHead>
                 <TableHead>关注</TableHead>
-                <TableHead>更新时间</TableHead>
+                <TableHead>解决时限</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     加载中...
                   </TableCell>
                 </TableRow>
               ) : result.results.length > 0 ? (
-                result.results.map((item) => (
+                result.results.map((item) => {
+                  const risk = getTicketRisk(item)
+                  return (
                   <TableRow key={item.id}>
-                    <TableCell>
+                    <TableCell className="min-w-72">
                       <div className="space-y-1">
                         <div className="font-medium">{item.title}</div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -454,6 +458,12 @@ export default function TicketsPage() {
                             </span>
                           ) : null}
                         </div>
+                        {risk ? (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <AlertTriangleIcon className={`size-3.5 ${risk.iconClassName}`} />
+                            <span className={risk.textClassName}>{risk.message}</span>
+                          </div>
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>{item.customer?.name || "未绑定客户"}</TableCell>
@@ -462,6 +472,15 @@ export default function TicketsPage() {
                     </TableCell>
                     <TableCell>
                       <TicketStatusBadge status={item.status} />
+                    </TableCell>
+                    <TableCell>
+                      {risk ? (
+                        <Badge variant="outline" className={risk.badgeClassName}>
+                          {risk.label}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">正常</span>
+                      )}
                     </TableCell>
                     <TableCell>{item.currentAssigneeName || "未指派"}</TableCell>
                     <TableCell>{item.currentTeamName || "未分组"}</TableCell>
@@ -480,7 +499,14 @@ export default function TicketsPage() {
                         {item.watchedByMe ? "已关注" : "关注"}
                       </Button>
                     </TableCell>
-                    <TableCell>{item.updatedAt ? formatDateTime(item.updatedAt) : "—"}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-sm">
+                        <div>{item.resolveDeadlineAt ? formatDateTime(item.resolveDeadlineAt) : "—"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          更新于 {item.updatedAt ? formatDateTime(item.updatedAt) : "—"}
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Link
@@ -496,10 +522,10 @@ export default function TicketsPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     暂无工单
                   </TableCell>
                 </TableRow>
@@ -537,4 +563,31 @@ export default function TicketsPage() {
       />
     </div>
   )
+}
+
+function getTicketRisk(item: TicketItem) {
+  const deadline = item.resolveDeadlineAt ? new Date(item.resolveDeadlineAt) : null
+  if (!deadline || Number.isNaN(deadline.getTime())) {
+    return null
+  }
+  const diffMs = deadline.getTime() - Date.now()
+  if (diffMs < 0) {
+    return {
+      label: "已超时",
+      message: "解决时限已超时，需立即处理",
+      badgeClassName: "border-red-500/20 bg-red-500/10 text-red-700",
+      textClassName: "text-red-700",
+      iconClassName: "text-red-600",
+    }
+  }
+  if (diffMs <= 30 * 60 * 1000) {
+    return {
+      label: "即将超时",
+      message: "30 分钟内到期，建议优先处理",
+      badgeClassName: "border-amber-500/20 bg-amber-500/10 text-amber-700",
+      textClassName: "text-amber-700",
+      iconClassName: "text-amber-600",
+    }
+  }
+  return null
 }
