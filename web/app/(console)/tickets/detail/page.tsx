@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { OptionCombobox } from "@/components/option-combobox"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -126,6 +127,25 @@ function ticketRelationLabel(relationType?: string) {
       return "子工单"
     default:
       return relationType || "关联工单"
+  }
+}
+
+function ticketEventLabel(eventType?: string) {
+  switch (eventType) {
+    case "mentioned":
+      return "提及协作人"
+    case "internal_noted":
+      return "内部备注"
+    case "replied":
+      return "回复客户"
+    case "status_changed":
+      return "状态变更"
+    case "assigned":
+      return "指派工单"
+    case "transferred":
+      return "转派工单"
+    default:
+      return eventType || "事件"
   }
 }
 
@@ -569,9 +589,23 @@ export default function TicketDetailPage() {
                     <TabsContent value="events" className="space-y-2">
                       {(detail?.events?.length || 0) > 0 ? (
                         detail?.events?.map((event) => (
-                          <div key={`event-${event.id}`} className="rounded-lg border px-3 py-2">
+                          <div
+                            key={`event-${event.id}`}
+                            className={`rounded-lg border px-3 py-2 ${
+                              event.eventType === "mentioned" ? "border-amber-200 bg-amber-50/60" : ""
+                            }`}
+                          >
                             <div className="flex items-center justify-between gap-3">
-                              <div className="text-sm font-medium">{event.content || event.eventType}</div>
+                              <div className="flex items-center gap-2">
+                                {event.eventType === "mentioned" ? (
+                                  <Badge variant="outline" className="border-amber-300 bg-amber-100 text-amber-800">
+                                    提及
+                                  </Badge>
+                                ) : null}
+                                <div className="text-sm font-medium">
+                                  {event.content || ticketEventLabel(event.eventType)}
+                                </div>
+                              </div>
                               <div className="text-xs text-muted-foreground">
                                 {event.createdAt ? formatDateTime(event.createdAt) : "—"}
                               </div>
@@ -579,6 +613,21 @@ export default function TicketDetailPage() {
                             <div className="mt-1 text-xs text-muted-foreground">
                               {event.operatorName || `用户#${event.operatorId}`}
                             </div>
+                            {event.payload && event.eventType === "mentioned" && parseMentionUserIds(event.payload).length ? (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {parseMentionUserIds(event.payload).map((userId) => {
+                                  const user = agents.find((item) => item.userId === userId)
+                                  return (
+                                    <span
+                                      key={`${event.id}-${userId}`}
+                                      className="rounded-full border border-amber-200 px-2 py-1 text-xs text-amber-800"
+                                    >
+                                      @{user?.displayName || user?.nickname || user?.username || `用户#${userId}`}
+                                    </span>
+                                  )
+                                })}
+                              </div>
+                            ) : null}
                           </div>
                         ))
                       ) : (

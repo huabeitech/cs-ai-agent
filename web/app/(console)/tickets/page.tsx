@@ -16,6 +16,7 @@ import { toast } from "sonner"
 
 import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -46,6 +47,7 @@ import {
   type TicketItem,
   type TicketSummary,
 } from "@/lib/api/ticket"
+import { readSession } from "@/lib/auth"
 import { formatDateTime } from "@/lib/utils"
 import { EditDialog } from "./_components/edit"
 import { TicketAssignDialog } from "./_components/ticket-assign-dialog"
@@ -157,6 +159,7 @@ export default function TicketsPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
   const [actionTicket, setActionTicket] = useState<TicketItem | null>(null)
+  const currentUserId = readSession()?.user?.id ?? 0
 
   const activeStatusFilter = useMemo(() => {
     if (quickView === "pending_customer") {
@@ -725,6 +728,7 @@ export default function TicketsPage() {
                 <TableHead>优先级</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>SLA 风险</TableHead>
+                <TableHead>协作</TableHead>
                 <TableHead>处理人</TableHead>
                 <TableHead>团队</TableHead>
                 <TableHead>关注</TableHead>
@@ -735,7 +739,7 @@ export default function TicketsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={13} className="h-32 text-center text-muted-foreground">
                     加载中...
                   </TableCell>
                 </TableRow>
@@ -776,6 +780,23 @@ export default function TicketsPage() {
                     </TableCell>
                     <TableCell>
                       <TicketSLABadge ticket={item} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {quickView === "participating" || quickView === "collaboration" ? (
+                          <Badge variant="outline">协作中</Badge>
+                        ) : null}
+                        {quickView === "mentioned" || quickView === "collaboration" ? (
+                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+                            提及我
+                          </Badge>
+                        ) : null}
+                        {item.currentAssigneeId === currentUserId ? (
+                          <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-800">
+                            负责人
+                          </Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell>{item.currentAssigneeName || "未指派"}</TableCell>
                     <TableCell>{item.currentTeamName || "未分组"}</TableCell>
@@ -828,7 +849,7 @@ export default function TicketsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={13} className="h-32 text-center text-muted-foreground">
                     暂无符合当前筛选条件的工单
                   </TableCell>
                 </TableRow>
