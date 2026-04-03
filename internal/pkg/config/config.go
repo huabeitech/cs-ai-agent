@@ -131,9 +131,9 @@ type WxWorkConfig struct {
 	// StateSecret 为登录 state 的签名密钥，用于防止篡改和重放。
 	// 建议填写独立随机字符串；留空时业务代码会退回使用 CorpSecret。
 	StateSecret string `yaml:"stateSecret"`
-	// RsaPrivateKey 为企业微信回调解密私钥。
+	// RSAPrivateKey 为企业微信回调解密私钥。
 	// 当前登录流程未使用，保留给消息回调等场景。
-	RsaPrivateKey string `yaml:"rsaPrivateKey"`
+	RSAPrivateKey string `yaml:"rsaPrivateKey"`
 	// Token 为企业微信回调 Token。
 	// 当前登录流程未使用，保留给消息回调等场景。
 	Token string `yaml:"token"`

@@ -14,11 +14,12 @@ require (
 	github.com/openai/openai-go/v3 v3.28.0
 	github.com/qdrant/go-client v1.17.1
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/silenceper/wechat/v2 v2.1.12
 	github.com/spf13/cast v1.6.0
 	github.com/yuin/goldmark v1.4.13
-	golang.org/x/crypto v0.48.0
-	golang.org/x/net v0.50.0
-	golang.org/x/tools v0.41.0
+	golang.org/x/crypto v0.49.0
+	golang.org/x/net v0.51.0
+	golang.org/x/tools v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/sqlite v1.5.7
@@ -75,7 +76,6 @@ require (
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
-	github.com/silenceper/wechat/v2 v2.1.12 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/tdewolff/minify/v2 v2.20.19 // indirect
 	github.com/tdewolff/parse/v2 v2.7.12 // indirect
@@ -88,12 +88,13 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
+	go.opentelemetry.io/otel v1.42.0 // indirect
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
-	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect

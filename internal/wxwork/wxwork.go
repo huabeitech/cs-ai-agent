@@ -46,10 +46,10 @@ func Init(cfg *config.Config) {
 		CorpID:         wxCfg.CorpID,
 		CorpSecret:     wxCfg.CorpSecret,
 		AgentID:        wxCfg.AgentID,
-		Cache:          cache.NewMemory(),
-		RasPrivateKey:  wxCfg.RsaPrivateKey,
+		RasPrivateKey:  wxCfg.RSAPrivateKey,
 		Token:          wxCfg.Token,
 		EncodingAESKey: wxCfg.EncodingAESKey,
+		Cache:          cache.NewMemory(),
 	})
 }
 
@@ -62,4 +62,8 @@ func StateSecret() string {
 		return strings.TrimSpace(wxCfg.StateSecret)
 	}
 	return strings.TrimSpace(wxCfg.CorpSecret)
+}
+
+func GetWorkCli() *work.Work {
+	return w
 }
