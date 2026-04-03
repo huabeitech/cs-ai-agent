@@ -697,9 +697,14 @@ export default function TicketsPage() {
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h1 className="text-xl font-semibold">工单</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            {/* <p className="mt-1 text-sm text-muted-foreground">
               作为队列工作台处理异步问题、分派、流转与关闭
-            </p>
+            </p> */}
+            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="rounded bg-red-50 px-2 py-1 text-red-700">红色：已超时</span>
+              <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">黄色：待分配</span>
+              <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-48">
@@ -734,11 +739,6 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="rounded bg-red-50 px-2 py-1 text-red-700">红色：已超时</span>
-          <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">黄色：待分配</span>
-          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
-        </div>
 
         <div className="rounded-lg border bg-background/80 p-2">
           <div className="flex flex-wrap gap-2">
