@@ -11,6 +11,7 @@ import (
 	"cs-agent/internal/controllers/api"
 	"cs-agent/internal/controllers/console"
 	"cs-agent/internal/controllers/open"
+	"cs-agent/internal/controllers/third"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/logx"
 	"cs-agent/internal/services/cronx"
@@ -169,5 +170,10 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Party("/widget").Handle(new(open.ImWidgetController))
 		m.Party("/conversation").Handle(new(open.ImConversationController))
 		m.Party("/message").Handle(new(open.ImMessageController))
+	})
+
+	mvc.Configure(app.Party("/api/third"), func(m *mvc.Application) {
+		m.Register(cfg)
+		m.Party("/wechat").Handle(new(third.WechatController))
 	})
 }
