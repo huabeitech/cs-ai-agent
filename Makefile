@@ -70,7 +70,7 @@ package-platform:
 	cp config/config.yaml "$$stage_dir/config/config.yaml"; \
 	cp config/config.example.yaml "$$stage_dir/config/config.example.yaml"; \
 	rm -f "$$archive_base.zip"; \
-	cd "$$stage_dir" && zip -rq "$$archive_base.zip" .; \
+	cd "$$stage_dir" && zip -rXq "$$archive_base.zip" . -x "*.DS_Store" "__MACOSX/*"; \
 	rm -rf "$$stage_dir"
 
 clean-dist:
