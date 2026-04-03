@@ -40,20 +40,20 @@ func (c *TicketController) AnyList() *web.JsonResult {
 		cnd.Where("ticket_no LIKE ? OR title LIKE ? OR description LIKE ?", keyword, keyword, keyword)
 	}
 	if watching, _ := params.Get(c.Ctx, "watching"); watching == "1" || strings.EqualFold(watching, "true") {
-		cnd.Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID)
+		cnd.Where("id IN (SELECT ticket_id FROM t_ticket_watcher WHERE user_id = ?)", operator.UserID)
 	}
 	if collaborating, _ := params.Get(c.Ctx, "collaborating"); collaborating == "1" || strings.EqualFold(collaborating, "true") {
-		cnd.Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID)
+		cnd.Where("id IN (SELECT ticket_id FROM t_ticket_collaborator WHERE user_id = ?)", operator.UserID)
 	}
 	if collaboration, _ := params.Get(c.Ctx, "collaboration"); collaboration == "1" || strings.EqualFold(collaboration, "true") {
 		cnd.Where(
-			"(id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?) OR id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?))",
+			"(id IN (SELECT ticket_id FROM t_ticket_collaborator WHERE user_id = ?) OR id IN (SELECT ticket_id FROM t_ticket_mention WHERE mentioned_user_id = ?))",
 			operator.UserID,
 			operator.UserID,
 		)
 	}
 	if mentioned, _ := params.Get(c.Ctx, "mentioned"); mentioned == "1" || strings.EqualFold(mentioned, "true") {
-		cnd.Where("id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?)", operator.UserID)
+		cnd.Where("id IN (SELECT ticket_id FROM t_ticket_mention WHERE mentioned_user_id = ?)", operator.UserID)
 	}
 	if mine, _ := params.Get(c.Ctx, "mine"); mine == "1" || strings.EqualFold(mine, "true") {
 		cnd.Eq("current_assignee_id", operator.UserID)

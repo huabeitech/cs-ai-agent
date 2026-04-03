@@ -207,6 +207,44 @@ func TestFindPageAggregateByCndBuildsWatcherAndLookupMaps(t *testing.T) {
 	}
 }
 
+func TestWatchTicketAffectsSummaryAndListFilter(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: createTestUser(t, "watch-operator"), Username: "watch-operator"}
+
+	ticket, err := services.TicketService.CreateTicket(createTestTicketRequest("watch-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+
+	if err := services.TicketService.WatchTicket(ticket.ID, operator); err != nil {
+		t.Fatalf("WatchTicket() error = %v", err)
+	}
+
+	summary := services.TicketService.GetSummary(operator)
+	if summary.Watching != 1 {
+		t.Fatalf("expected watching summary to be 1, got %d", summary.Watching)
+	}
+
+	aggregate, err := services.TicketService.FindPageAggregateByCnd(
+		sqls.NewCnd().
+			Where("id IN (SELECT ticket_id FROM t_ticket_watcher WHERE user_id = ?)", operator.UserID).
+			Page(1, 10),
+		operator.UserID,
+	)
+	if err != nil {
+		t.Fatalf("FindPageAggregateByCnd() error = %v", err)
+	}
+	if len(aggregate.List) != 1 {
+		t.Fatalf("expected 1 watched ticket, got %d", len(aggregate.List))
+	}
+	if aggregate.List[0].ID != ticket.ID {
+		t.Fatalf("expected watched ticket id %d, got %d", ticket.ID, aggregate.List[0].ID)
+	}
+	if _, ok := aggregate.WatchedTicketIDs[ticket.ID]; !ok {
+		t.Fatalf("expected watched ticket id to be marked in aggregate")
+	}
+}
+
 func TestTicketNoServiceNextConcurrent(t *testing.T) {
 	setupTicketTestDB(t)
 

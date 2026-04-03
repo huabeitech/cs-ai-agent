@@ -341,20 +341,20 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 			sqls.NewCnd().Eq("current_assignee_id", operator.UserID),
 		),
 		Watching: s.Count(
-			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID),
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM t_ticket_watcher WHERE user_id = ?)", operator.UserID),
 		),
 		Collaboration: s.Count(
 			sqls.NewCnd().Where(
-				"id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?) OR id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?)",
+				"id IN (SELECT ticket_id FROM t_ticket_collaborator WHERE user_id = ?) OR id IN (SELECT ticket_id FROM t_ticket_mention WHERE mentioned_user_id = ?)",
 				operator.UserID,
 				operator.UserID,
 			),
 		),
 		Participating: s.Count(
-			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID),
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM t_ticket_collaborator WHERE user_id = ?)", operator.UserID),
 		),
 		Mentioned: s.Count(
-			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?)", operator.UserID),
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM t_ticket_mention WHERE mentioned_user_id = ?)", operator.UserID),
 		),
 		Unassigned: s.Count(
 			sqls.NewCnd().

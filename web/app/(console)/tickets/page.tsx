@@ -778,7 +778,7 @@ export default function TicketsPage() {
           <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(7,minmax(0,1fr))_auto]">
+        <div className="grid gap-3 lg:grid-cols-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(8,minmax(0,1fr))_auto]">
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -885,6 +885,19 @@ export default function TicketsPage() {
             }}
             placeholder="全部处理人"
             options={agentOptions}
+          />
+          <OptionCombobox
+            value={watchFilter}
+            onChange={(value) => {
+              setWatchFilter(value)
+              setQuickView("all")
+              resetToFirstPage()
+            }}
+            placeholder="全部关注"
+            options={[
+              { value: "all", label: "全部关注" },
+              { value: "watching", label: "我关注的" },
+            ]}
           />
           <div className="flex gap-2">
             <Button variant="outline" onClick={applyFilters}>
