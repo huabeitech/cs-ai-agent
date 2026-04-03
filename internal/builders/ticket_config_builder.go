@@ -29,7 +29,7 @@ func BuildTicketCategory(item *models.TicketCategory) *response.TicketCategoryRe
 
 func BuildTicketCategoryList(list []models.TicketCategory) []response.TicketCategoryResponse {
 	if len(list) == 0 {
-		return nil
+		return make([]response.TicketCategoryResponse, 0)
 	}
 	ret := make([]response.TicketCategoryResponse, 0, len(list))
 	for i := range list {
@@ -56,7 +56,7 @@ func BuildTicketResolutionCode(item *models.TicketResolutionCode) *response.Tick
 
 func BuildTicketResolutionCodeList(list []models.TicketResolutionCode) []response.TicketResolutionCodeResponse {
 	if len(list) == 0 {
-		return nil
+		return make([]response.TicketResolutionCodeResponse, 0)
 	}
 	ret := make([]response.TicketResolutionCodeResponse, 0, len(list))
 	for i := range list {
@@ -84,7 +84,7 @@ func BuildTicketSLAConfig(item *models.TicketSLAConfig) *response.TicketSLAConfi
 
 func BuildTicketSLAConfigList(list []models.TicketSLAConfig) []response.TicketSLAConfigResponse {
 	if len(list) == 0 {
-		return nil
+		return make([]response.TicketSLAConfigResponse, 0)
 	}
 	ret := make([]response.TicketSLAConfigResponse, 0, len(list))
 	for i := range list {
