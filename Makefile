@@ -69,13 +69,8 @@ package-platform:
 	cp -R widget/out "$$stage_dir/widget/out"; \
 	cp config/config.yaml "$$stage_dir/config/config.yaml"; \
 	cp config/config.example.yaml "$$stage_dir/config/config.example.yaml"; \
-	if [ "$$goos" = "windows" ]; then \
-		rm -f "$$archive_base.zip"; \
-		cd "$$stage_dir" && zip -rq "$$archive_base.zip" .; \
-	else \
-		rm -f "$$archive_base.tar.gz"; \
-		tar -C "$$stage_dir" -czf "$$archive_base.tar.gz" .; \
-	fi; \
+	rm -f "$$archive_base.zip"; \
+	cd "$$stage_dir" && zip -rq "$$archive_base.zip" .; \
 	rm -rf "$$stage_dir"
 
 clean-dist:
