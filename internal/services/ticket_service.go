@@ -26,12 +26,13 @@ func newTicketService() *ticketService {
 }
 
 type TicketDetailAggregate struct {
-	Ticket   *models.Ticket
-	Customer *models.Customer
-	SLAs     []models.TicketSLARecord
-	Watchers []models.TicketWatcher
-	Comments []models.TicketComment
-	Events   []models.TicketEventLog
+	Ticket         *models.Ticket
+	Customer       *models.Customer
+	SLAs           []models.TicketSLARecord
+	Watchers       []models.TicketWatcher
+	Comments       []models.TicketComment
+	Events         []models.TicketEventLog
+	RelatedTickets []models.TicketRelation
 }
 
 type TicketSummaryAggregate struct {
@@ -129,6 +130,9 @@ func (s *ticketService) GetDetail(id int64) (*TicketDetailAggregate, error) {
 			sqls.NewCnd().Eq("ticket_id", id).Asc("id"),
 		),
 		Events: TicketEventLogService.Find(
+			sqls.NewCnd().Eq("ticket_id", id).Desc("id"),
+		),
+		RelatedTickets: TicketRelationService.Find(
 			sqls.NewCnd().Eq("ticket_id", id).Desc("id"),
 		),
 	}

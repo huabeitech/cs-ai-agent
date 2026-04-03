@@ -103,6 +103,20 @@ export type TicketDetail = {
   }>
   comments?: TicketComment[]
   events?: TicketEvent[]
+  relatedTickets?: TicketRelation[]
+}
+
+export type TicketRelation = {
+  id: number
+  ticketId: number
+  relatedTicketId: number
+  relationType: string
+  relatedTicketNo?: string
+  relatedTicketTitle?: string
+  relatedTicketStatus?: string
+  currentTeamName?: string
+  currentAssigneeName?: string
+  updatedAt?: string
 }
 
 export type TicketSummary = {
@@ -359,6 +373,25 @@ export function unwatchTicket(ticketId: number) {
 
 export function batchWatchTickets(payload: { ticketIds: number[]; watched: boolean }) {
   return request<void>("/api/console/ticket/batch_watch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function addTicketRelation(payload: {
+  ticketId: number
+  relatedTicketId?: number
+  relatedTicketNo?: string
+  relationType: string
+}) {
+  return request<void>("/api/console/ticket/add_relation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketRelation(payload: { ticketId: number; relationId: number }) {
+  return request<void>("/api/console/ticket/delete_relation", {
     method: "POST",
     body: JSON.stringify(payload),
   })

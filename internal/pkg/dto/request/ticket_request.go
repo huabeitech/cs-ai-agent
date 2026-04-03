@@ -110,3 +110,15 @@ type BatchWatchTicketRequest struct {
 	TicketIDs []int64 `json:"ticketIds"`
 	Watched   bool    `json:"watched"`
 }
+
+type AddTicketRelationRequest struct {
+	TicketID        int64  `json:"ticketId"`
+	RelatedTicketID int64  `json:"relatedTicketId"`
+	RelatedTicketNo string `json:"relatedTicketNo"`
+	RelationType    string `json:"relationType"`
+}
+
+type DeleteTicketRelationRequest struct {
+	TicketID   int64 `json:"ticketId"`
+	RelationID int64 `json:"relationId"`
+}

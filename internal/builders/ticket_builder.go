@@ -181,16 +181,62 @@ func BuildTicketDetail(aggregate *services.TicketDetailAggregate) *response.Tick
 		return nil
 	}
 	ret := &response.TicketDetailResponse{
-		Ticket:   *BuildTicket(aggregate.Ticket),
-		Watchers: BuildTicketWatcherList(aggregate.Watchers),
-		Comments: BuildTicketCommentList(aggregate.Comments),
-		Events:   BuildTicketEventLogList(aggregate.Events),
+		Ticket:         *BuildTicket(aggregate.Ticket),
+		Watchers:       BuildTicketWatcherList(aggregate.Watchers),
+		Comments:       BuildTicketCommentList(aggregate.Comments),
+		Events:         BuildTicketEventLogList(aggregate.Events),
+		RelatedTickets: BuildTicketRelationList(aggregate.RelatedTickets),
 	}
 	if aggregate.Customer != nil {
 		ret.Ticket.Customer = BuildCustomer(aggregate.Customer)
 	}
 	ret.Ticket.SLA = BuildTicketSLAList(aggregate.SLAs)
 	return ret
+}
+
+func BuildTicketRelation(item *models.TicketRelation) *response.TicketRelationResponse {
+	if item == nil {
+		return nil
+	}
+	ret := &response.TicketRelationResponse{
+		ID:              item.ID,
+		TicketID:        item.TicketID,
+		RelatedTicketID: item.RelatedTicketID,
+		RelationType:    item.RelationType,
+	}
+	if related := services.TicketService.Get(item.RelatedTicketID); related != nil {
+		ret.RelatedTicketNo = related.TicketNo
+		ret.RelatedTicketTitle = related.Title
+		ret.RelatedTicketStatus = related.Status
+		ret.UpdatedAt = utils.FormatTime(related.UpdatedAt)
+		if related.CurrentTeamID > 0 {
+			if team := services.AgentTeamService.Get(related.CurrentTeamID); team != nil {
+				ret.CurrentTeamName = team.Name
+			}
+		}
+		if related.CurrentAssigneeID > 0 {
+			if user := services.UserService.Get(related.CurrentAssigneeID); user != nil {
+				ret.CurrentAssigneeName = user.Nickname
+				if ret.CurrentAssigneeName == "" {
+					ret.CurrentAssigneeName = user.Username
+				}
+			}
+		}
+	}
+	return ret
+}
+
+func BuildTicketRelationList(list []models.TicketRelation) []response.TicketRelationResponse {
+	if len(list) == 0 {
+		return nil
+	}
+	results := make([]response.TicketRelationResponse, 0, len(list))
+	for i := range list {
+		if item := BuildTicketRelation(&list[i]); item != nil {
+			results = append(results, *item)
+		}
+	}
+	return results
 }
 
 func BuildTicketSummary(summary *services.TicketSummaryAggregate) *response.TicketSummaryResponse {

@@ -85,10 +85,11 @@ type TicketResponse struct {
 }
 
 type TicketDetailResponse struct {
-	Ticket   TicketResponse           `json:"ticket"`
-	Watchers []TicketWatcherResponse  `json:"watchers,omitempty"`
-	Comments []TicketCommentResponse  `json:"comments,omitempty"`
-	Events   []TicketEventLogResponse `json:"events,omitempty"`
+	Ticket         TicketResponse           `json:"ticket"`
+	Watchers       []TicketWatcherResponse  `json:"watchers,omitempty"`
+	Comments       []TicketCommentResponse  `json:"comments,omitempty"`
+	Events         []TicketEventLogResponse `json:"events,omitempty"`
+	RelatedTickets []TicketRelationResponse `json:"relatedTickets,omitempty"`
 }
 
 type TicketSummaryResponse struct {
@@ -116,4 +117,17 @@ type TicketRiskOverviewResponse struct {
 	PendingCustomer int64                      `json:"pendingCustomer"`
 	RiskWindowMins  int                        `json:"riskWindowMins"`
 	Reasons         []TicketRiskReasonResponse `json:"reasons,omitempty"`
+}
+
+type TicketRelationResponse struct {
+	ID                  int64                    `json:"id"`
+	TicketID            int64                    `json:"ticketId"`
+	RelatedTicketID     int64                    `json:"relatedTicketId"`
+	RelationType        enums.TicketRelationType `json:"relationType"`
+	RelatedTicketNo     string                   `json:"relatedTicketNo,omitempty"`
+	RelatedTicketTitle  string                   `json:"relatedTicketTitle,omitempty"`
+	RelatedTicketStatus enums.TicketStatus       `json:"relatedTicketStatus,omitempty"`
+	CurrentTeamName     string                   `json:"currentTeamName,omitempty"`
+	CurrentAssigneeName string                   `json:"currentAssigneeName,omitempty"`
+	UpdatedAt           string                   `json:"updatedAt,omitempty"`
 }

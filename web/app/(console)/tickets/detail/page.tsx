@@ -2,12 +2,15 @@
 
 import Link from "next/link"
 import {
+  ExternalLinkIcon,
   ArrowLeftIcon,
   MessageSquarePlusIcon,
+  PlusIcon,
   RefreshCcwIcon,
   RotateCcwIcon,
   SaveIcon,
   UserRoundPlusIcon,
+  XIcon,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -25,6 +28,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  addTicketRelation,
+  deleteTicketRelation,
   addTicketInternalNote,
   fetchTicketDetail,
   replyTicket,
@@ -45,6 +50,7 @@ import { EditDialog } from "../_components/edit"
 import { TicketAssignDialog } from "../_components/ticket-assign-dialog"
 import { TicketPriorityBadge } from "../_components/ticket-priority-badge"
 import { TicketReasonDialog } from "../_components/ticket-reason-dialog"
+import { TicketRelationDialog } from "../_components/ticket-relation-dialog"
 import { TicketSLABadge } from "../_components/ticket-sla-badge"
 import { TicketStatusDialog } from "../_components/ticket-status-dialog"
 import {
@@ -101,6 +107,21 @@ function isClosedStatus(status: string) {
   return status === "resolved" || status === "closed" || status === "cancelled"
 }
 
+function ticketRelationLabel(relationType?: string) {
+  switch (relationType) {
+    case "duplicate":
+      return "重复工单"
+    case "related":
+      return "相关工单"
+    case "parent":
+      return "父工单"
+    case "child":
+      return "子工单"
+    default:
+      return relationType || "关联工单"
+  }
+}
+
 function getMainSLA(ticket: TicketItem | null) {
   return ticket?.sla?.find((item) => item.slaType === "resolution") ?? ticket?.sla?.[0] ?? null
 }
@@ -119,6 +140,7 @@ export default function TicketDetailPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [relationDialogOpen, setRelationDialogOpen] = useState(false)
   const [sourceConversation, setSourceConversation] = useState<AdminConversationDetail | null>(null)
 
   const ticket = detail?.ticket ?? null
@@ -227,6 +249,22 @@ export default function TicketDetailPage() {
       await loadDetail()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新工单失败")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteRelation(relationId: number) {
+    if (!ticket) {
+      return
+    }
+    setSaving(true)
+    try {
+      await deleteTicketRelation({ ticketId: ticket.id, relationId })
+      toast.success("关联工单已移除")
+      await loadDetail()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "移除关联工单失败")
     } finally {
       setSaving(false)
     }
@@ -562,6 +600,66 @@ export default function TicketDetailPage() {
 
               <Card>
                 <CardHeader>
+                  <CardTitle className="text-base">关联工单</CardTitle>
+                  <CardAction>
+                    <Button variant="ghost" size="sm" onClick={() => setRelationDialogOpen(true)}>
+                      <PlusIcon className="size-4" />
+                      新增关联
+                    </Button>
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {detail?.relatedTickets?.length ? (
+                    detail.relatedTickets.map((relation) => (
+                      <div key={relation.id} className="rounded-lg border bg-muted/20 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                              {ticketRelationLabel(relation.relationType)}
+                            </div>
+                            <div className="truncate font-medium">
+                              {relation.relatedTicketNo || `#${relation.relatedTicketId}`}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {relation.relatedTicketTitle || "未命名工单"}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => router.push(`/tickets/detail?id=${relation.relatedTicketId}`)}
+                            >
+                              <ExternalLinkIcon className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={saving}
+                              onClick={() => void handleDeleteRelation(relation.id)}
+                            >
+                              <XIcon className="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>状态：{ticketStatusLabel(relation.relatedTicketStatus || "")}</span>
+                          <span>团队：{relation.currentTeamName || "未分组"}</span>
+                          <span>处理人：{relation.currentAssigneeName || "未指派"}</span>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          最近更新：{relation.updatedAt ? formatDateTime(relation.updatedAt) : "—"}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground">暂无关联工单</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
                   <CardTitle className="text-base">关注人</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -619,6 +717,12 @@ export default function TicketDetailPage() {
         itemId={ticket?.id ?? null}
         onOpenChange={setEditDialogOpen}
         onSubmit={handleEditSubmit}
+      />
+      <TicketRelationDialog
+        open={relationDialogOpen}
+        ticketId={ticket?.id ?? null}
+        onOpenChange={setRelationDialogOpen}
+        onSuccess={loadDetail}
       />
     </div>
   )

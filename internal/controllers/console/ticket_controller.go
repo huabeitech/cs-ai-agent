@@ -7,6 +7,7 @@ import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
@@ -300,6 +301,42 @@ func (c *TicketController) PostBatch_watch() *web.JsonResult {
 		return web.JsonError(err)
 	}
 	if err := services.TicketService.BatchWatchTickets(req, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *TicketController) PostAdd_relation() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.AddTicketRelationRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	relatedTicketID := req.RelatedTicketID
+	if relatedTicketID <= 0 && strings.TrimSpace(req.RelatedTicketNo) != "" {
+		if relatedTicket := services.TicketService.Take("ticket_no = ?", strings.TrimSpace(req.RelatedTicketNo)); relatedTicket != nil {
+			relatedTicketID = relatedTicket.ID
+		}
+	}
+	if err := services.TicketRelationService.AddRelation(req.TicketID, relatedTicketID, enums.TicketRelationType(strings.TrimSpace(req.RelationType)), operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *TicketController) PostDelete_relation() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.DeleteTicketRelationRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketRelationService.DeleteRelation(req.TicketID, req.RelationID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
