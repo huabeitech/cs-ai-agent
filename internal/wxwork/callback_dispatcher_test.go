@@ -8,19 +8,19 @@ import (
 )
 
 func TestBuildCallbackKey(t *testing.T) {
-	if got := BuildCallbackKey("event", "kf_msg_or_event"); got != "event:kf_msg_or_event" {
+	if got := buildCallbackKey("event", "kf_msg_or_event"); got != "event:kf_msg_or_event" {
 		t.Fatalf("unexpected callback key: %s", got)
 	}
-	if got := BuildCallbackKey("text", "ignored"); got != "text" {
+	if got := buildCallbackKey("text", "ignored"); got != "text" {
 		t.Fatalf("unexpected callback key for non-event: %s", got)
 	}
 }
 
 func TestBuildSyncMessageKey(t *testing.T) {
-	if got := BuildSyncMessageKey("event", "enter_session"); got != "event:enter_session" {
+	if got := buildSyncMessageKey("event", "enter_session"); got != "event:enter_session" {
 		t.Fatalf("unexpected sync message key: %s", got)
 	}
-	if got := BuildSyncMessageKey("text", "ignored"); got != "text" {
+	if got := buildSyncMessageKey("text", "ignored"); got != "text" {
 		t.Fatalf("unexpected sync message key for non-event: %s", got)
 	}
 }
