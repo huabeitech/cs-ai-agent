@@ -132,6 +132,7 @@ export type TicketSummary = {
   mine: number
   watching: number
   participating: number
+  mentioned: number
   unassigned: number
   pendingCustomer: number
   pendingInternal: number
@@ -170,6 +171,7 @@ export type TicketListQuery = {
   source?: string
   watching?: number
   collaborating?: number
+  mentioned?: number
   mine?: number
   unassigned?: number
   overdue?: number

@@ -16,6 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { OptionCombobox } from "@/components/option-combobox"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -41,7 +42,12 @@ import {
   updateTicket,
   watchTicket,
 } from "@/lib/api/ticket"
-import { fetchConversationDetail, type AdminConversationDetail } from "@/lib/api/admin"
+import {
+  fetchAgentProfilesAll,
+  fetchConversationDetail,
+  type AdminAgentProfile,
+  type AdminConversationDetail,
+} from "@/lib/api/admin"
 import { readSession } from "@/lib/auth"
 import { getEnumLabel } from "@/lib/enums"
 import { IMConversationStatus, IMConversationStatusLabels } from "@/lib/generated/enums"
@@ -127,6 +133,18 @@ function getMainSLA(ticket: TicketItem | null) {
   return ticket?.sla?.find((item) => item.slaType === "resolution") ?? ticket?.sla?.[0] ?? null
 }
 
+function parseMentionUserIds(payload?: string) {
+  if (!payload) {
+    return []
+  }
+  try {
+    const data = JSON.parse(payload) as { mentionUserIds?: number[] }
+    return Array.isArray(data.mentionUserIds) ? data.mentionUserIds : []
+  } catch {
+    return []
+  }
+}
+
 export default function TicketDetailPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -144,6 +162,9 @@ export default function TicketDetailPage() {
   const [relationDialogOpen, setRelationDialogOpen] = useState(false)
   const [collaboratorDialogOpen, setCollaboratorDialogOpen] = useState(false)
   const [sourceConversation, setSourceConversation] = useState<AdminConversationDetail | null>(null)
+  const [agents, setAgents] = useState<AdminAgentProfile[]>([])
+  const [mentionUserId, setMentionUserId] = useState("")
+  const [mentionedUsers, setMentionedUsers] = useState<AdminAgentProfile[]>([])
 
   const ticket = detail?.ticket ?? null
   const currentUserId = readSession()?.user?.id ?? 0
@@ -170,6 +191,17 @@ export default function TicketDetailPage() {
   useEffect(() => {
     void loadDetail()
   }, [loadDetail])
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await fetchAgentProfilesAll()
+        setAgents(Array.isArray(data) ? data : [])
+      } catch {
+        setAgents([])
+      }
+    })()
+  }, [])
 
   useEffect(() => {
     if (!ticket?.conversationId) {
@@ -201,20 +233,56 @@ export default function TicketDetailPage() {
         })
         toast.success("已回复客户")
       } else {
+        const payload =
+          mentionedUsers.length > 0
+            ? JSON.stringify({
+                mentionUserIds: mentionedUsers.map((item) => item.userId),
+              })
+            : undefined
         await addTicketInternalNote({
           ticketId: ticket.id,
           contentType: "text",
           content: replyContent.trim(),
+          payload,
         })
         toast.success("已添加内部备注")
       }
       setReplyContent("")
+      setMentionUserId("")
+      setMentionedUsers([])
       await loadDetail()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "提交失败")
     } finally {
       setSaving(false)
     }
+  }
+
+  const mentionOptions = useMemo(
+    () =>
+      agents.map((agent) => ({
+        value: String(agent.userId),
+        label: agent.displayName || agent.nickname || agent.username || `客服 #${agent.userId}`,
+      })),
+    [agents],
+  )
+
+  function handleAddMentionUser() {
+    const userId = Number(mentionUserId)
+    if (!userId) {
+      return
+    }
+    const user = agents.find((item) => item.userId === userId)
+    if (!user) {
+      return
+    }
+    setMentionedUsers((current) => {
+      if (current.some((item) => item.userId === user.userId)) {
+        return current
+      }
+      return [...current, user]
+    })
+    setMentionUserId("")
   }
 
   async function handleWatchToggle() {
@@ -406,6 +474,44 @@ export default function TicketDetailPage() {
                     placeholder={replyMode === "public" ? "输入给客户的回复内容" : "输入内部备注"}
                     onChange={(event) => setReplyContent(event.target.value)}
                   />
+                  {replyMode === "internal" ? (
+                    <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+                      <div className="text-sm font-medium">@提及协作人</div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <OptionCombobox
+                            value={mentionUserId}
+                            options={mentionOptions}
+                            placeholder="选择要提及的客服"
+                            searchPlaceholder="搜索客服"
+                            emptyText="暂无可选客服"
+                            onChange={setMentionUserId}
+                          />
+                        </div>
+                        <Button type="button" variant="outline" onClick={handleAddMentionUser}>
+                          添加
+                        </Button>
+                      </div>
+                      {mentionedUsers.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {mentionedUsers.map((user) => (
+                            <button
+                              key={user.userId}
+                              type="button"
+                              className="rounded-full border px-3 py-1 text-xs"
+                              onClick={() =>
+                                setMentionedUsers((current) => current.filter((item) => item.userId !== user.userId))
+                              }
+                            >
+                              @{user.displayName || user.nickname || user.username || `客服#${user.userId}`} ×
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">未添加提及对象</div>
+                      )}
+                    </div>
+                  ) : null}
                   <div className="flex justify-end">
                     <Button onClick={() => void handleReplySubmit()} disabled={saving}>
                       <MessageSquarePlusIcon className="size-4" />
@@ -441,6 +547,18 @@ export default function TicketDetailPage() {
                             <div className="mb-2 text-xs text-muted-foreground">
                               {comment.commentType === "public_reply" ? "客户可见回复" : "内部备注"}
                             </div>
+                            {comment.commentType === "internal_note" && parseMentionUserIds(comment.payload).length ? (
+                              <div className="mb-2 flex flex-wrap gap-2">
+                                {parseMentionUserIds(comment.payload).map((userId) => {
+                                  const user = agents.find((item) => item.userId === userId)
+                                  return (
+                                    <span key={`${comment.id}-${userId}`} className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                                      @{user?.displayName || user?.nickname || user?.username || `用户#${userId}`}
+                                    </span>
+                                  )
+                                })}
+                              </div>
+                            ) : null}
                             <div className="whitespace-pre-wrap text-sm leading-6">{comment.content}</div>
                           </div>
                         ))

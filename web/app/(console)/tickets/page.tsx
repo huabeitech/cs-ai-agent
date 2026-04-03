@@ -61,6 +61,7 @@ const emptySummary: TicketSummary = {
   mine: 0,
   watching: 0,
   participating: 0,
+  mentioned: 0,
   unassigned: 0,
   pendingCustomer: 0,
   pendingInternal: 0,
@@ -71,6 +72,7 @@ type QuickViewKey =
   | "all"
   | "mine"
   | "participating"
+  | "mentioned"
   | "watching"
   | "unassigned"
   | "pending_customer"
@@ -166,6 +168,7 @@ export default function TicketsPage() {
 
   const activeWatchFilter = quickView === "watching" ? 1 : watchFilter === "watching" ? 1 : undefined
   const activeCollaboratingFilter = quickView === "participating" ? 1 : undefined
+  const activeMentionedFilter = quickView === "mentioned" ? 1 : undefined
   const activeMineFilter = quickView === "mine" ? 1 : undefined
   const activeUnassignedFilter = quickView === "unassigned" ? 1 : undefined
   const activeOverdueFilter = quickView === "overdue" ? 1 : undefined
@@ -195,6 +198,7 @@ export default function TicketsPage() {
         source: sourceFilter === "all" ? undefined : sourceFilter,
         watching: activeWatchFilter,
         collaborating: activeCollaboratingFilter,
+        mentioned: activeMentionedFilter,
         mine: activeMineFilter,
         unassigned: activeUnassignedFilter,
         overdue: activeOverdueFilter,
@@ -215,6 +219,7 @@ export default function TicketsPage() {
     activeUnassignedFilter,
     activeWatchFilter,
     activeCollaboratingFilter,
+    activeMentionedFilter,
     assigneeFilter,
     categoryFilter,
     keyword,
@@ -421,6 +426,7 @@ export default function TicketsPage() {
     { key: "all", label: "全部工单", description: "工单总量", count: summary.all },
     { key: "mine", label: "我的工单", description: "当前指派给我", count: summary.mine },
     { key: "participating", label: "我参与的", description: "我是协作人的工单", count: summary.participating },
+    { key: "mentioned", label: "提及我的", description: "内部备注里提到了我", count: summary.mentioned },
     { key: "unassigned", label: "待分配", description: "尚未指派处理人", count: summary.unassigned },
     { key: "watching", label: "我的关注", description: "我在跟进的工单", count: summary.watching },
     {

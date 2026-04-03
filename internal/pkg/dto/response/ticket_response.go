@@ -98,6 +98,7 @@ type TicketSummaryResponse struct {
 	Mine            int64 `json:"mine"`
 	Watching        int64 `json:"watching"`
 	Participating   int64 `json:"participating"`
+	Mentioned       int64 `json:"mentioned"`
 	Unassigned      int64 `json:"unassigned"`
 	PendingCustomer int64 `json:"pendingCustomer"`
 	PendingInternal int64 `json:"pendingInternal"`

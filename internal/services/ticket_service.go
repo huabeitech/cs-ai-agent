@@ -41,6 +41,7 @@ type TicketSummaryAggregate struct {
 	Mine            int64
 	Watching        int64
 	Participating   int64
+	Mentioned       int64
 	Unassigned      int64
 	PendingCustomer int64
 	PendingInternal int64
@@ -65,6 +66,10 @@ type TicketRiskOverviewAggregate struct {
 }
 
 type ticketService struct {
+}
+
+type ticketNotePayload struct {
+	MentionUserIDs []int64 `json:"mentionUserIds,omitempty"`
 }
 
 func (s *ticketService) Get(id int64) *models.Ticket {
@@ -162,6 +167,9 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		),
 		Participating: s.Count(
 			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID),
+		),
+		Mentioned: s.Count(
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_mentions WHERE mentioned_user_id = ?)", operator.UserID),
 		),
 		Unassigned: s.Count(
 			sqls.NewCnd().
@@ -680,9 +688,43 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 	if comment.ContentType == "" {
 		comment.ContentType = "text"
 	}
+	notePayload := parseTicketNotePayload(comment.Payload)
 	err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		if err := repositories.TicketCommentRepository.Create(ctx.Tx, comment); err != nil {
 			return err
+		}
+		for _, userID := range notePayload.MentionUserIDs {
+			if userID <= 0 || userID == operator.UserID {
+				continue
+			}
+			if TicketCollaboratorService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("user_id", userID)) == nil {
+				if err := repositories.TicketCollaboratorRepository.Create(ctx.Tx, &models.TicketCollaborator{
+					TicketID:  ticket.ID,
+					UserID:    userID,
+					CreatedAt: time.Now(),
+				}); err != nil {
+					return err
+				}
+			}
+			if TicketWatcherService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("user_id", userID)) == nil {
+				if err := repositories.TicketWatcherRepository.Create(ctx.Tx, &models.TicketWatcher{
+					TicketID:  ticket.ID,
+					UserID:    userID,
+					CreatedAt: time.Now(),
+				}); err != nil {
+					return err
+				}
+			}
+			if TicketMentionService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("comment_id", comment.ID).Eq("mentioned_user_id", userID)) == nil {
+				if err := repositories.TicketMentionRepository.Create(ctx.Tx, &models.TicketMention{
+					TicketID:        ticket.ID,
+					CommentID:       comment.ID,
+					MentionedUserID: userID,
+					CreatedAt:       time.Now(),
+				}); err != nil {
+					return err
+				}
+			}
 		}
 		if err := repositories.TicketRepository.Updates(ctx.Tx, ticket.ID, map[string]any{
 			"update_user_id":   operator.UserID,
@@ -1164,6 +1206,18 @@ func marshalJSON(value any) (string, error) {
 		return "", err
 	}
 	return string(buf), nil
+}
+
+func parseTicketNotePayload(value string) ticketNotePayload {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ticketNotePayload{}
+	}
+	var payload ticketNotePayload
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		return ticketNotePayload{}
+	}
+	return payload
 }
 
 func parseOptionalDateTime(value string) (*time.Time, error) {

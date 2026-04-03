@@ -249,6 +249,7 @@ func BuildTicketSummary(summary *services.TicketSummaryAggregate) *response.Tick
 		Mine:            summary.Mine,
 		Watching:        summary.Watching,
 		Participating:   summary.Participating,
+		Mentioned:       summary.Mentioned,
 		Unassigned:      summary.Unassigned,
 		PendingCustomer: summary.PendingCustomer,
 		PendingInternal: summary.PendingInternal,
