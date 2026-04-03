@@ -66,6 +66,18 @@ type TicketRiskOverviewAggregate struct {
 	Reasons         []TicketRiskReasonAggregate
 }
 
+type TicketListAggregate struct {
+	List             []models.Ticket
+	Paging           *sqls.Paging
+	Categories       map[int64]*models.TicketCategory
+	ResolutionCodes  map[string]*models.TicketResolutionCode
+	Users            map[int64]*models.User
+	Teams            map[int64]*models.AgentTeam
+	Customers        map[int64]*models.Customer
+	SLAByTicketID    map[int64][]models.TicketSLARecord
+	WatchedTicketIDs map[int64]struct{}
+}
+
 type ticketService struct {
 }
 
@@ -95,6 +107,11 @@ func (s *ticketService) FindPageByParams(params *params.QueryParams) (list []mod
 
 func (s *ticketService) FindPageByCnd(cnd *sqls.Cnd) (list []models.Ticket, paging *sqls.Paging) {
 	return repositories.TicketRepository.FindPageByCnd(sqls.DB(), cnd)
+}
+
+func (s *ticketService) FindPageAggregateByCnd(cnd *sqls.Cnd, watcherUserID int64) (*TicketListAggregate, error) {
+	list, paging := repositories.TicketRepository.FindPageByCnd(sqls.DB(), cnd)
+	return s.buildTicketListAggregate(sqls.DB(), list, paging, watcherUserID), nil
 }
 
 func (s *ticketService) Count(cnd *sqls.Cnd) int64 {
@@ -209,6 +226,12 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 	}
 }
 
+func (s *ticketService) GetRiskPageAggregate(riskType string, teamID int64, riskWindowMins int, page, limit int, watcherUserID int64) (*TicketListAggregate, error) {
+	cnd := s.buildRiskListCnd(riskType, teamID, riskWindowMins, page, limit)
+	list, paging := repositories.TicketRepository.FindPageByCnd(sqls.DB(), cnd)
+	return s.buildTicketListAggregate(sqls.DB(), list, paging, watcherUserID), nil
+}
+
 func (s *ticketService) GetRiskOverview(teamID int64, riskWindowMins int) *TicketRiskOverviewAggregate {
 	if riskWindowMins <= 0 {
 		riskWindowMins = 240
@@ -296,6 +319,173 @@ func (s *ticketService) GetRiskOverview(teamID int64, riskWindowMins int) *Ticke
 		},
 	}
 	return overview
+}
+
+func (s *ticketService) buildRiskListCnd(riskType string, teamID int64, riskWindowMins int, page, limit int) *sqls.Cnd {
+	if riskWindowMins <= 0 {
+		riskWindowMins = 240
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	now := time.Now()
+	cnd := sqls.NewCnd().Page(page, limit)
+	if teamID > 0 {
+		cnd.Eq("current_team_id", teamID)
+	}
+	switch strings.TrimSpace(riskType) {
+	case "overdue":
+		cnd.In("status", activeTicketStatuses()).
+			Where("resolve_deadline_at IS NOT NULL").
+			Where("resolve_deadline_at < ?", now).
+			Asc("resolve_deadline_at").
+			Asc("id")
+	case "high_risk":
+		cnd.In("status", activeTicketStatuses()).
+			Where("resolve_deadline_at IS NOT NULL").
+			Where("resolve_deadline_at >= ?", now).
+			Where("resolve_deadline_at <= ?", now.Add(time.Duration(riskWindowMins)*time.Minute)).
+			Asc("resolve_deadline_at").
+			Desc("priority").
+			Desc("id")
+	case "unassigned":
+		cnd.In("status", activeTicketStatuses()).
+			Eq("current_assignee_id", 0).
+			Desc("updated_at").
+			Desc("id")
+	case "pending_internal":
+		cnd.Eq("status", enums.TicketStatusPendingInternal).
+			Desc("updated_at").
+			Desc("id")
+	case "pending_customer":
+		cnd.Eq("status", enums.TicketStatusPendingCustomer).
+			Desc("updated_at").
+			Desc("id")
+	default:
+		cnd.In("status", activeTicketStatuses()).
+			Desc("updated_at").
+			Desc("id")
+	}
+	return cnd
+}
+
+func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Ticket, paging *sqls.Paging, watcherUserID int64) *TicketListAggregate {
+	aggregate := &TicketListAggregate{
+		List:             list,
+		Paging:           paging,
+		Categories:       make(map[int64]*models.TicketCategory),
+		ResolutionCodes:  make(map[string]*models.TicketResolutionCode),
+		Users:            make(map[int64]*models.User),
+		Teams:            make(map[int64]*models.AgentTeam),
+		Customers:        make(map[int64]*models.Customer),
+		SLAByTicketID:    make(map[int64][]models.TicketSLARecord),
+		WatchedTicketIDs: make(map[int64]struct{}),
+	}
+	if len(list) == 0 {
+		return aggregate
+	}
+
+	categoryIDs := make([]int64, 0)
+	customerIDs := make([]int64, 0)
+	teamIDs := make([]int64, 0)
+	userIDs := make([]int64, 0)
+	ticketIDs := make([]int64, 0, len(list))
+	resolutionCodes := make([]string, 0)
+
+	categorySeen := map[int64]struct{}{}
+	customerSeen := map[int64]struct{}{}
+	teamSeen := map[int64]struct{}{}
+	userSeen := map[int64]struct{}{}
+	ticketSeen := map[int64]struct{}{}
+	codeSeen := map[string]struct{}{}
+
+	for i := range list {
+		item := &list[i]
+		if _, ok := ticketSeen[item.ID]; !ok {
+			ticketSeen[item.ID] = struct{}{}
+			ticketIDs = append(ticketIDs, item.ID)
+		}
+		if item.CategoryID > 0 {
+			if _, ok := categorySeen[item.CategoryID]; !ok {
+				categorySeen[item.CategoryID] = struct{}{}
+				categoryIDs = append(categoryIDs, item.CategoryID)
+			}
+		}
+		if item.CustomerID > 0 {
+			if _, ok := customerSeen[item.CustomerID]; !ok {
+				customerSeen[item.CustomerID] = struct{}{}
+				customerIDs = append(customerIDs, item.CustomerID)
+			}
+		}
+		if item.CurrentTeamID > 0 {
+			if _, ok := teamSeen[item.CurrentTeamID]; !ok {
+				teamSeen[item.CurrentTeamID] = struct{}{}
+				teamIDs = append(teamIDs, item.CurrentTeamID)
+			}
+		}
+		if item.CurrentAssigneeID > 0 {
+			if _, ok := userSeen[item.CurrentAssigneeID]; !ok {
+				userSeen[item.CurrentAssigneeID] = struct{}{}
+				userIDs = append(userIDs, item.CurrentAssigneeID)
+			}
+		}
+		code := strings.TrimSpace(item.ResolutionCode)
+		if code != "" {
+			if _, ok := codeSeen[code]; !ok {
+				codeSeen[code] = struct{}{}
+				resolutionCodes = append(resolutionCodes, code)
+			}
+		}
+	}
+
+	if len(categoryIDs) > 0 {
+		categories := repositories.TicketCategoryRepository.Find(db, sqls.NewCnd().In("id", categoryIDs))
+		for i := range categories {
+			item := categories[i]
+			aggregate.Categories[item.ID] = &item
+		}
+	}
+	if len(resolutionCodes) > 0 {
+		codeItems := repositories.TicketResolutionCodeRepository.Find(db, sqls.NewCnd().In("code", resolutionCodes).NotEq("status", enums.StatusDeleted))
+		for i := range codeItems {
+			item := codeItems[i]
+			aggregate.ResolutionCodes[item.Code] = &item
+		}
+	}
+	users := repositories.UserRepository.FindByIds(db, userIDs)
+	for i := range users {
+		item := users[i]
+		aggregate.Users[item.ID] = &item
+	}
+	teams := repositories.AgentTeamRepository.FindByIds(db, teamIDs)
+	for i := range teams {
+		item := teams[i]
+		aggregate.Teams[item.ID] = &item
+	}
+	if len(customerIDs) > 0 {
+		customers := repositories.CustomerRepository.Find(db, sqls.NewCnd().In("id", customerIDs))
+		for i := range customers {
+			item := customers[i]
+			aggregate.Customers[item.ID] = &item
+		}
+	}
+	if len(ticketIDs) > 0 {
+		slaRecords := repositories.TicketSLARecordRepository.Find(db, sqls.NewCnd().In("ticket_id", ticketIDs).Asc("id"))
+		for i := range slaRecords {
+			item := slaRecords[i]
+			aggregate.SLAByTicketID[item.TicketID] = append(aggregate.SLAByTicketID[item.TicketID], item)
+		}
+	}
+	if watcherUserID > 0 {
+		watchers := repositories.TicketWatcherRepository.Find(db, sqls.NewCnd().Eq("user_id", watcherUserID).In("ticket_id", ticketIDs))
+		for i := range watchers {
+			aggregate.WatchedTicketIDs[watchers[i].TicketID] = struct{}{}
+		}
+	}
+	return aggregate
 }
 
 func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *dto.AuthPrincipal) (*models.Ticket, error) {
@@ -1291,6 +1481,15 @@ func (s *ticketService) canTransition(from, to enums.TicketStatus) bool {
 
 func (s *ticketService) isEditableStatus(status enums.TicketStatus) bool {
 	return status != enums.TicketStatusClosed && status != enums.TicketStatusCancelled
+}
+
+func activeTicketStatuses() []enums.TicketStatus {
+	return []enums.TicketStatus{
+		enums.TicketStatusNew,
+		enums.TicketStatusOpen,
+		enums.TicketStatusPendingCustomer,
+		enums.TicketStatusPendingInternal,
+	}
 }
 
 func ticketSLATargetMinutes(priority enums.TicketPriority) (int, int) {

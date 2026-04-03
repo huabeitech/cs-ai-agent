@@ -11,7 +11,6 @@ import (
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
-	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -67,14 +66,22 @@ func (c *TicketController) AnyList() *web.JsonResult {
 		cnd.Where("resolve_deadline_at IS NOT NULL")
 		cnd.Where("resolve_deadline_at < ?", time.Now())
 	}
-	list, paging := services.TicketService.FindPageByCnd(cnd)
-	results := builders.BuildTicketList(list)
-	for i := range results {
-		results[i].WatchedByMe = services.TicketWatcherService.FindOne(
-			sqls.NewCnd().Eq("ticket_id", results[i].ID).Eq("user_id", operator.UserID),
-		) != nil
+	aggregate, err := services.TicketService.FindPageAggregateByCnd(cnd, operator.UserID)
+	if err != nil {
+		return web.JsonError(err)
 	}
-	return web.JsonData(&web.PageResult{Results: results, Page: paging})
+	return web.JsonData(&web.PageResult{
+		Results: builders.BuildTicketListWithContext(aggregate.List, &builders.TicketBuildContext{
+			Categories:       aggregate.Categories,
+			ResolutionCodes:  aggregate.ResolutionCodes,
+			Users:            aggregate.Users,
+			Teams:            aggregate.Teams,
+			Customers:        aggregate.Customers,
+			SLAByTicketID:    aggregate.SLAByTicketID,
+			WatchedTicketIDs: aggregate.WatchedTicketIDs,
+		}),
+		Page: aggregate.Paging,
+	})
 }
 
 func (c *TicketController) AnySummary() *web.JsonResult {
@@ -92,6 +99,34 @@ func (c *TicketController) AnyRisk_overview() *web.JsonResult {
 	teamID, _ := params.GetInt64(c.Ctx, "currentTeamId")
 	riskWindowMins, _ := params.GetInt(c.Ctx, "riskWindowMins")
 	return web.JsonData(builders.BuildTicketRiskOverview(services.TicketService.GetRiskOverview(teamID, riskWindowMins)))
+}
+
+func (c *TicketController) AnyRisk_list() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketView)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	riskType, _ := params.Get(c.Ctx, "riskType")
+	teamID, _ := params.GetInt64(c.Ctx, "currentTeamId")
+	riskWindowMins, _ := params.GetInt(c.Ctx, "riskWindowMins")
+	page, _ := params.GetInt(c.Ctx, "page")
+	limit, _ := params.GetInt(c.Ctx, "limit")
+	aggregate, err := services.TicketService.GetRiskPageAggregate(riskType, teamID, riskWindowMins, page, limit, operator.UserID)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(&web.PageResult{
+		Results: builders.BuildTicketListWithContext(aggregate.List, &builders.TicketBuildContext{
+			Categories:       aggregate.Categories,
+			ResolutionCodes:  aggregate.ResolutionCodes,
+			Users:            aggregate.Users,
+			Teams:            aggregate.Teams,
+			Customers:        aggregate.Customers,
+			SLAByTicketID:    aggregate.SLAByTicketID,
+			WatchedTicketIDs: aggregate.WatchedTicketIDs,
+		}),
+		Page: aggregate.Paging,
+	})
 }
 
 func (c *TicketController) GetBy(id int64) *web.JsonResult {

@@ -179,6 +179,14 @@ export type TicketListQuery = {
   overdue?: number
 }
 
+export type TicketRiskListQuery = {
+  riskType: "overdue" | "high_risk" | "unassigned" | "pending_internal" | "pending_customer"
+  currentTeamId?: number
+  riskWindowMins?: number
+  page?: number
+  limit?: number
+}
+
 export type CreateTicketPayload = {
   title: string
   description: string
@@ -256,6 +264,10 @@ export function fetchTicketRiskOverview(query?: {
   riskWindowMins?: number
 }) {
   return request<TicketRiskOverview>(`/api/console/ticket/risk_overview${toQueryString(query)}`)
+}
+
+export function fetchTicketRiskList(query: TicketRiskListQuery) {
+  return request<PageResult<TicketItem>>(`/api/console/ticket/risk_list${toQueryString(query)}`)
 }
 
 export function createTicket(payload: CreateTicketPayload) {

@@ -10,7 +10,21 @@ import (
 	"github.com/mlogclub/simple/sqls"
 )
 
+type TicketBuildContext struct {
+	Categories       map[int64]*models.TicketCategory
+	ResolutionCodes  map[string]*models.TicketResolutionCode
+	Users            map[int64]*models.User
+	Teams            map[int64]*models.AgentTeam
+	Customers        map[int64]*models.Customer
+	SLAByTicketID    map[int64][]models.TicketSLARecord
+	WatchedTicketIDs map[int64]struct{}
+}
+
 func BuildTicket(item *models.Ticket) *response.TicketResponse {
+	return BuildTicketWithContext(item, nil)
+}
+
+func BuildTicketWithContext(item *models.Ticket, ctx *TicketBuildContext) *response.TicketResponse {
 	if item == nil {
 		return nil
 	}
@@ -44,17 +58,37 @@ func BuildTicket(item *models.Ticket) *response.TicketResponse {
 		CreatedAt:           utils.FormatTime(item.CreatedAt),
 		UpdatedAt:           utils.FormatTime(item.UpdatedAt),
 	}
-	if item.CategoryID > 0 {
+	if ctx != nil {
+		if _, ok := ctx.WatchedTicketIDs[item.ID]; ok {
+			ret.WatchedByMe = true
+		}
+	}
+	if item.CategoryID > 0 && ctx != nil && ctx.Categories != nil {
+		if category := ctx.Categories[item.CategoryID]; category != nil {
+			ret.CategoryName = category.Name
+		}
+	} else if item.CategoryID > 0 {
 		if category := services.TicketCategoryService.Get(item.CategoryID); category != nil {
 			ret.CategoryName = category.Name
 		}
 	}
-	if item.ResolutionCode != "" {
+	if item.ResolutionCode != "" && ctx != nil && ctx.ResolutionCodes != nil {
+		if code := ctx.ResolutionCodes[item.ResolutionCode]; code != nil {
+			ret.ResolutionCodeName = code.Name
+		}
+	} else if item.ResolutionCode != "" {
 		if code := services.TicketResolutionCodeService.Take("code = ? AND status <> ?", item.ResolutionCode, enums.StatusDeleted); code != nil {
 			ret.ResolutionCodeName = code.Name
 		}
 	}
-	if item.CurrentAssigneeID > 0 {
+	if item.CurrentAssigneeID > 0 && ctx != nil && ctx.Users != nil {
+		if user := ctx.Users[item.CurrentAssigneeID]; user != nil {
+			ret.CurrentAssigneeName = user.Nickname
+			if ret.CurrentAssigneeName == "" {
+				ret.CurrentAssigneeName = user.Username
+			}
+		}
+	} else if item.CurrentAssigneeID > 0 {
 		if user := services.UserService.Get(item.CurrentAssigneeID); user != nil {
 			ret.CurrentAssigneeName = user.Nickname
 			if ret.CurrentAssigneeName == "" {
@@ -62,29 +96,43 @@ func BuildTicket(item *models.Ticket) *response.TicketResponse {
 			}
 		}
 	}
-	if item.CurrentTeamID > 0 {
+	if item.CurrentTeamID > 0 && ctx != nil && ctx.Teams != nil {
+		if team := ctx.Teams[item.CurrentTeamID]; team != nil {
+			ret.CurrentTeamName = team.Name
+		}
+	} else if item.CurrentTeamID > 0 {
 		if team := services.AgentTeamService.Get(item.CurrentTeamID); team != nil {
 			ret.CurrentTeamName = team.Name
 		}
 	}
-	if item.CustomerID > 0 {
+	if item.CustomerID > 0 && ctx != nil && ctx.Customers != nil {
+		ret.Customer = BuildCustomer(ctx.Customers[item.CustomerID])
+	} else if item.CustomerID > 0 {
 		ret.Customer = BuildCustomer(services.CustomerService.Get(item.CustomerID))
 	}
-	ret.SLA = BuildTicketSLAList(
-		services.TicketSLARecordService.Find(
-			sqls.NewCnd().Eq("ticket_id", item.ID).Asc("id"),
-		),
-	)
+	if ctx != nil && ctx.SLAByTicketID != nil {
+		ret.SLA = BuildTicketSLAList(ctx.SLAByTicketID[item.ID])
+	} else {
+		ret.SLA = BuildTicketSLAList(
+			services.TicketSLARecordService.Find(
+				sqls.NewCnd().Eq("ticket_id", item.ID).Asc("id"),
+			),
+		)
+	}
 	return ret
 }
 
 func BuildTicketList(list []models.Ticket) []response.TicketResponse {
+	return BuildTicketListWithContext(list, nil)
+}
+
+func BuildTicketListWithContext(list []models.Ticket, ctx *TicketBuildContext) []response.TicketResponse {
 	if len(list) == 0 {
 		return nil
 	}
 	results := make([]response.TicketResponse, 0, len(list))
 	for i := range list {
-		if item := BuildTicket(&list[i]); item != nil {
+		if item := BuildTicketWithContext(&list[i], ctx); item != nil {
 			results = append(results, *item)
 		}
 	}

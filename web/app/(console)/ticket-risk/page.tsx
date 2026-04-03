@@ -28,7 +28,7 @@ import {
 } from "@/lib/api/admin"
 import {
   fetchTicketRiskOverview,
-  fetchTickets,
+  fetchTicketRiskList,
   type TicketItem,
   type TicketRiskOverview,
 } from "@/lib/api/ticket"
@@ -36,50 +36,6 @@ import { formatDateTime } from "@/lib/utils"
 import { TicketPriorityBadge } from "../tickets/_components/ticket-priority-badge"
 import { TicketSLABadge } from "../tickets/_components/ticket-sla-badge"
 import { TicketStatusBadge } from "../tickets/_components/ticket-status-badge"
-
-function getResolveDeadlineTime(ticket: TicketItem) {
-  if (!ticket.resolveDeadlineAt) {
-    return null
-  }
-  const deadline = new Date(ticket.resolveDeadlineAt.replace(" ", "T"))
-  if (Number.isNaN(deadline.getTime())) {
-    return null
-  }
-  return deadline.getTime()
-}
-
-function isClosedStatus(status: string) {
-  return status === "resolved" || status === "closed" || status === "cancelled"
-}
-
-function isHighRiskTicket(ticket: TicketItem, riskMinutes: number) {
-  const deadline = getResolveDeadlineTime(ticket)
-  if (deadline === null || isClosedStatus(ticket.status)) {
-    return false
-  }
-  const remainingMinutes = Math.floor((deadline - Date.now()) / 60000)
-  return remainingMinutes >= 0 && remainingMinutes <= riskMinutes
-}
-
-function compareTicketRisk(left: TicketItem, right: TicketItem) {
-  const leftDeadline = getResolveDeadlineTime(left)
-  const rightDeadline = getResolveDeadlineTime(right)
-  if (leftDeadline !== null || rightDeadline !== null) {
-    if (leftDeadline === null) {
-      return 1
-    }
-    if (rightDeadline === null) {
-      return -1
-    }
-    if (leftDeadline !== rightDeadline) {
-      return leftDeadline - rightDeadline
-    }
-  }
-  if (left.priority !== right.priority) {
-    return right.priority - left.priority
-  }
-  return right.id - left.id
-}
 
 type RiskTableProps = {
   title: string
@@ -181,30 +137,21 @@ export default function TicketRiskPage() {
     try {
       const currentTeamId = teamFilter === "all" ? undefined : Number(teamFilter)
       const riskMinutes = Number(riskWindow)
-      const [overviewData, overdueData, activeData, unassignedData, pendingInternalData] =
+      const [overviewData, overdueData, highRiskData, unassignedData, pendingInternalData] =
         await Promise.all([
           fetchTicketRiskOverview({ currentTeamId, riskWindowMins: riskMinutes }),
-          fetchTickets({ overdue: 1, currentTeamId, page: 1, limit: 10 }),
-          fetchTickets({ currentTeamId, page: 1, limit: 200 }),
-          fetchTickets({ unassigned: 1, currentTeamId, page: 1, limit: 10 }),
-          fetchTickets({ status: "pending_internal", currentTeamId, page: 1, limit: 10 }),
+          fetchTicketRiskList({ riskType: "overdue", currentTeamId, riskWindowMins: riskMinutes, page: 1, limit: 10 }),
+          fetchTicketRiskList({ riskType: "high_risk", currentTeamId, riskWindowMins: riskMinutes, page: 1, limit: 10 }),
+          fetchTicketRiskList({ riskType: "unassigned", currentTeamId, riskWindowMins: riskMinutes, page: 1, limit: 10 }),
+          fetchTicketRiskList({ riskType: "pending_internal", currentTeamId, riskWindowMins: riskMinutes, page: 1, limit: 10 }),
         ])
 
       setOverview(overviewData)
       setOverdueTickets(Array.isArray(overdueData.results) ? overdueData.results : [])
+      setHighRiskTickets(Array.isArray(highRiskData.results) ? highRiskData.results : [])
       setUnassignedTickets(Array.isArray(unassignedData.results) ? unassignedData.results : [])
       setPendingInternalTickets(
         Array.isArray(pendingInternalData.results) ? pendingInternalData.results : [],
-      )
-
-      const activeTickets = (Array.isArray(activeData.results) ? activeData.results : []).filter(
-        (item) => !isClosedStatus(item.status),
-      )
-      const filteredHighRiskTickets = activeTickets
-        .filter((item) => isHighRiskTicket(item, riskMinutes))
-        .sort(compareTicketRisk)
-      setHighRiskTickets(
-        filteredHighRiskTickets.slice(0, 10),
       )
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载 SLA 风险页失败")
