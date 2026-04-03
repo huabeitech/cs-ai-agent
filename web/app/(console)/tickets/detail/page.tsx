@@ -704,6 +704,11 @@ export default function TicketDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">SLA 信息</CardTitle>
+                  <CardAction>
+                    <Link href="/ticket-sla-configs">
+                      <Button variant="ghost" size="sm">管理SLA</Button>
+                    </Link>
+                  </CardAction>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   {ticket.sla?.length ? (
@@ -731,6 +736,11 @@ export default function TicketDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">解决信息</CardTitle>
+                  <CardAction>
+                    <Link href="/ticket-resolution-codes">
+                      <Button variant="ghost" size="sm">管理解决码</Button>
+                    </Link>
+                  </CardAction>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <InfoRow label="解决码" value={ticket.resolutionCodeName || ticket.resolutionCode || "—"} />

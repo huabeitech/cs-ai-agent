@@ -1,7 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Settings2Icon } from "lucide-react"
 import { Controller, Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod/v4"
@@ -201,7 +203,15 @@ export function TicketStatusDialog({
             {targetStatus === "resolved" && (
               <>
                 <Field>
-                  <FieldLabel>解决编码</FieldLabel>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel>解决编码</FieldLabel>
+                    <Link href="/ticket-resolution-codes" target="_blank" rel="noreferrer">
+                      <Button variant="ghost" size="sm" type="button">
+                        <Settings2Icon className="size-4" />
+                        管理解决码
+                      </Button>
+                    </Link>
+                  </div>
                   <FieldContent>
                     <Controller
                       control={control}
