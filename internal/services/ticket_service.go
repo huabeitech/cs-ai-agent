@@ -40,6 +40,7 @@ type TicketSummaryAggregate struct {
 	All             int64
 	Mine            int64
 	Watching        int64
+	Participating   int64
 	Unassigned      int64
 	PendingCustomer int64
 	PendingInternal int64
@@ -158,6 +159,9 @@ func (s *ticketService) GetSummary(operator *dto.AuthPrincipal) *TicketSummaryAg
 		),
 		Watching: s.Count(
 			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID),
+		),
+		Participating: s.Count(
+			sqls.NewCnd().Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID),
 		),
 		Unassigned: s.Count(
 			sqls.NewCnd().

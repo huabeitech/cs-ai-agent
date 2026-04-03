@@ -43,6 +43,9 @@ func (c *TicketController) AnyList() *web.JsonResult {
 	if watching, _ := params.Get(c.Ctx, "watching"); watching == "1" || strings.EqualFold(watching, "true") {
 		cnd.Where("id IN (SELECT ticket_id FROM ticket_watchers WHERE user_id = ?)", operator.UserID)
 	}
+	if collaborating, _ := params.Get(c.Ctx, "collaborating"); collaborating == "1" || strings.EqualFold(collaborating, "true") {
+		cnd.Where("id IN (SELECT ticket_id FROM ticket_collaborators WHERE user_id = ?)", operator.UserID)
+	}
 	if mine, _ := params.Get(c.Ctx, "mine"); mine == "1" || strings.EqualFold(mine, "true") {
 		cnd.Eq("current_assignee_id", operator.UserID)
 	}
