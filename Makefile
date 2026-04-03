@@ -79,7 +79,7 @@ package-platform:
 	echo "[package] copy assets $$platform"; \
 	cp -R web/out "$$stage_dir/web/out"; \
 	cp -R widget/out "$$stage_dir/widget/out"; \
-	cp config/config.yaml "$$stage_dir/config/config.yaml"; \
+	echo "[package] include example config only"; \
 	cp config/config.example.yaml "$$stage_dir/config/config.example.yaml"; \
 	rm -f "$$archive_base.zip"; \
 	echo "[package] archive $$archive_base.zip"; \
