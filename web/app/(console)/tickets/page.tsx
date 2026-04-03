@@ -740,29 +740,36 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-          {quickViews.map((view) => {
-            const active = quickView === view.key
-            return (
-              <button
-                key={view.key}
-                type="button"
-                className={`rounded-xl border p-4 text-left transition ${
-                  active
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border bg-background hover:border-primary/40"
-                }`}
-                onClick={() => {
-                  setQuickView(view.key)
-                  resetToFirstPage()
-                }}
-              >
-                <div className="text-sm font-medium">{view.label}</div>
-                <div className="mt-1 text-2xl font-semibold">{view.count}</div>
-                <div className="mt-2 text-xs text-muted-foreground">{view.description}</div>
-              </button>
-            )
-          })}
+        <div className="rounded-lg border bg-background/80 p-2">
+          <div className="flex flex-wrap gap-2">
+            {quickViews.map((view) => {
+              const active = quickView === view.key
+              return (
+                <button
+                  key={view.key}
+                  type="button"
+                  className={`inline-flex min-w-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition ${
+                    active
+                      ? "border-primary bg-primary/8 text-primary shadow-sm"
+                      : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/60"
+                  }`}
+                  onClick={() => {
+                    setQuickView(view.key)
+                    resetToFirstPage()
+                  }}
+                >
+                  <span className="truncate font-medium">{view.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
+                      active ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {view.count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
