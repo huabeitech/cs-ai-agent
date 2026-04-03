@@ -17,6 +17,14 @@ func newTicketMentionRepository() *ticketMentionRepository {
 type ticketMentionRepository struct {
 }
 
+func (r *ticketMentionRepository) TakeByCommentAndUserID(db *gorm.DB, ticketID, commentID, userID int64) *models.TicketMention {
+	ret := &models.TicketMention{}
+	if err := db.Take(ret, "ticket_id = ? AND comment_id = ? AND mentioned_user_id = ?", ticketID, commentID, userID).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *ticketMentionRepository) Get(db *gorm.DB, id int64) *models.TicketMention {
 	ret := &models.TicketMention{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {

@@ -17,6 +17,14 @@ func newTicketCollaboratorRepository() *ticketCollaboratorRepository {
 type ticketCollaboratorRepository struct {
 }
 
+func (r *ticketCollaboratorRepository) TakeByTicketIDAndUserID(db *gorm.DB, ticketID, userID int64) *models.TicketCollaborator {
+	ret := &models.TicketCollaborator{}
+	if err := db.Take(ret, "ticket_id = ? AND user_id = ?", ticketID, userID).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *ticketCollaboratorRepository) Get(db *gorm.DB, id int64) *models.TicketCollaborator {
 	ret := &models.TicketCollaborator{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {

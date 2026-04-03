@@ -17,6 +17,14 @@ func newTicketSLARecordRepository() *ticketSLARecordRepository {
 type ticketSLARecordRepository struct {
 }
 
+func (r *ticketSLARecordRepository) TakeByTicketIDAndType(db *gorm.DB, ticketID int64, slaType string) *models.TicketSLARecord {
+	ret := &models.TicketSLARecord{}
+	if err := db.Take(ret, "ticket_id = ? AND sla_type = ?", ticketID, slaType).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *ticketSLARecordRepository) Get(db *gorm.DB, id int64) *models.TicketSLARecord {
 	ret := &models.TicketSLARecord{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {
@@ -62,12 +70,12 @@ func (r *ticketSLARecordRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (l
 	return
 }
 
-func (r *ticketSLARecordRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.TicketSLARecord) {
+func (r *ticketSLARecordRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.TicketSLARecord) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *ticketSLARecordRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *ticketSLARecordRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -99,4 +107,3 @@ func (r *ticketSLARecordRepository) UpdateColumn(db *gorm.DB, id int64, name str
 func (r *ticketSLARecordRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.TicketSLARecord{}, "id = ?", id)
 }
-

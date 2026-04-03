@@ -8,6 +8,7 @@ import (
 // Models 注册所有需要迁移和代码生成的模型。
 var Models = []any{
 	&Migration{},
+	&TicketNoSequence{},
 	&User{},
 	&UserIdentity{},
 	&Company{},
@@ -82,6 +83,17 @@ type SystemConfig struct {
 	Description string       `gorm:"type:text"`
 	Status      enums.Status `gorm:"type:int;not null;default:0;index"`
 	AuditFields
+}
+
+// TicketNoSequence 工单号日序列表。
+//
+// 每天一条记录，NextSeq 表示当日下一次可分配的序号。
+type TicketNoSequence struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement"`
+	DateKey   string    `gorm:"column:date_key;type:varchar(8);not null;uniqueIndex"`
+	NextSeq   int64     `gorm:"column:next_seq;type:bigint;not null;default:1"`
+	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
+	UpdatedAt time.Time `gorm:"type:datetime;not null;index"`
 }
 
 // AuditFields 定义涉及用户操作数据的统一审计字段。
@@ -548,8 +560,8 @@ type TicketCollaborator struct {
 // TicketMention 工单提及记录。
 type TicketMention struct {
 	ID              int64     `gorm:"primaryKey;autoIncrement"`
-	TicketID        int64     `gorm:"type:bigint;not null;index"`
-	CommentID       int64     `gorm:"type:bigint;not null;index"`
+	TicketID        int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
+	CommentID       int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
 	MentionedUserID int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
 	CreatedAt       time.Time `gorm:"type:datetime;not null;index"`
 }

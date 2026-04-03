@@ -365,7 +365,6 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 		status = enums.TicketStatusOpen
 	}
 	ticket := &models.Ticket{
-		TicketNo:          s.nextTicketNo(),
 		Title:             title,
 		Description:       strings.TrimSpace(req.Description),
 		Source:            source,
@@ -386,6 +385,11 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 	ticket.UpdatedAt = now
 
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		ticketNo, err := TicketNoService.Next(ctx.Tx, now)
+		if err != nil {
+			return err
+		}
+		ticket.TicketNo = ticketNo
 		if err := repositories.TicketRepository.Create(ctx.Tx, ticket); err != nil {
 			return err
 		}
@@ -510,10 +514,16 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 }
 
 func (s *ticketService) AssignTicket(req request.AssignTicketRequest, operator *dto.AuthPrincipal) error {
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		return s.assignTicketTx(ctx.Tx, req, operator)
+	})
+}
+
+func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequest, operator *dto.AuthPrincipal) error {
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
-	ticket := s.Get(req.TicketID)
+	ticket := repositories.TicketRepository.Get(tx, req.TicketID)
 	if ticket == nil {
 		return errorsx.InvalidParam("工单不存在")
 	}
@@ -535,26 +545,30 @@ func (s *ticketService) AssignTicket(req request.AssignTicketRequest, operator *
 	if status == enums.TicketStatusNew {
 		status = enums.TicketStatusOpen
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := repositories.TicketRepository.Updates(ctx.Tx, ticket.ID, map[string]any{
-			"current_team_id":     teamID,
-			"current_assignee_id": assigneeID,
-			"status":              status,
-			"update_user_id":      operator.UserID,
-			"update_user_name":    operator.Username,
-			"updated_at":          now,
-		}); err != nil {
-			return err
-		}
-		return s.logEvent(ctx.Tx, ticket.ID, eventType, operator, fmt.Sprintf("%d", ticket.CurrentAssigneeID), fmt.Sprintf("%d", assigneeID), strings.TrimSpace(content), strings.TrimSpace(req.Reason))
-	})
+	if err := repositories.TicketRepository.Updates(tx, ticket.ID, map[string]any{
+		"current_team_id":     teamID,
+		"current_assignee_id": assigneeID,
+		"status":              status,
+		"update_user_id":      operator.UserID,
+		"update_user_name":    operator.Username,
+		"updated_at":          now,
+	}); err != nil {
+		return err
+	}
+	return s.logEvent(tx, ticket.ID, eventType, operator, fmt.Sprintf("%d", ticket.CurrentAssigneeID), fmt.Sprintf("%d", assigneeID), strings.TrimSpace(content), strings.TrimSpace(req.Reason))
 }
 
 func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		return s.changeStatusTx(ctx.Tx, req, operator)
+	})
+}
+
+func (s *ticketService) changeStatusTx(tx *gorm.DB, req request.ChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {
 	if operator == nil {
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
-	ticket := s.Get(req.TicketID)
+	ticket := repositories.TicketRepository.Get(tx, req.TicketID)
 	if ticket == nil {
 		return errorsx.InvalidParam("工单不存在")
 	}
@@ -609,15 +623,16 @@ func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, oper
 		values["resolved_at"] = nil
 		values["closed_at"] = nil
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := repositories.TicketRepository.Updates(ctx.Tx, ticket.ID, values); err != nil {
-			return err
-		}
-		if err := s.applySLAOnStatusChange(ctx.Tx, ticket.ID, ticket.Status, targetStatus, now); err != nil {
-			return err
-		}
-		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeStatusChanged, operator, string(ticket.Status), string(targetStatus), strings.TrimSpace(req.Reason), "")
-	})
+	if err := repositories.TicketRepository.Updates(tx, ticket.ID, values); err != nil {
+		return err
+	}
+	if err := s.applySLAOnStatusChange(tx, ticket.ID, ticket.Status, targetStatus, now); err != nil {
+		return err
+	}
+	if err := s.refreshTicketSLAFields(tx, ticket.ID, now); err != nil {
+		return err
+	}
+	return s.logEvent(tx, ticket.ID, enums.TicketEventTypeStatusChanged, operator, string(ticket.Status), string(targetStatus), strings.TrimSpace(req.Reason), "")
 }
 
 func (s *ticketService) findOpenChildTicketNos(ticketID int64) []string {
@@ -700,6 +715,9 @@ func (s *ticketService) ReplyTicket(req request.ReplyTicketRequest, operator *dt
 		if err := s.completeFirstResponseSLA(ctx.Tx, ticket.ID, now); err != nil {
 			return err
 		}
+		if err := s.refreshTicketSLAFields(ctx.Tx, ticket.ID, now); err != nil {
+			return err
+		}
 		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeReplied, operator, "", "", "回复客户", "")
 	})
 	if err != nil {
@@ -752,7 +770,7 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 					mentionedNames = append(mentionedNames, name)
 				}
 			}
-			if TicketCollaboratorService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("user_id", userID)) == nil {
+			if repositories.TicketCollaboratorRepository.TakeByTicketIDAndUserID(ctx.Tx, ticket.ID, userID) == nil {
 				if err := repositories.TicketCollaboratorRepository.Create(ctx.Tx, &models.TicketCollaborator{
 					TicketID:  ticket.ID,
 					UserID:    userID,
@@ -761,7 +779,7 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 					return err
 				}
 			}
-			if TicketWatcherService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("user_id", userID)) == nil {
+			if repositories.TicketWatcherRepository.TakeByTicketIDAndUserID(ctx.Tx, ticket.ID, userID) == nil {
 				if err := repositories.TicketWatcherRepository.Create(ctx.Tx, &models.TicketWatcher{
 					TicketID:  ticket.ID,
 					UserID:    userID,
@@ -770,7 +788,7 @@ func (s *ticketService) AddInternalNote(req request.InternalNoteRequest, operato
 					return err
 				}
 			}
-			if TicketMentionService.FindOne(sqls.NewCnd().Eq("ticket_id", ticket.ID).Eq("comment_id", comment.ID).Eq("mentioned_user_id", userID)) == nil {
+			if repositories.TicketMentionRepository.TakeByCommentAndUserID(ctx.Tx, ticket.ID, comment.ID, userID) == nil {
 				if err := repositories.TicketMentionRepository.Create(ctx.Tx, &models.TicketMention{
 					TicketID:        ticket.ID,
 					CommentID:       comment.ID,
@@ -837,6 +855,9 @@ func (s *ticketService) ReopenTicket(req request.ReopenTicketRequest, operator *
 			return err
 		}
 		if err := s.resumeResolutionSLA(ctx.Tx, ticket.ID, now); err != nil {
+			return err
+		}
+		if err := s.refreshTicketSLAFields(ctx.Tx, ticket.ID, now); err != nil {
 			return err
 		}
 		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeReopened, operator, string(ticket.Status), string(enums.TicketStatusOpen), strings.TrimSpace(req.Reason), "")
@@ -959,17 +980,19 @@ func (s *ticketService) BatchAssignTickets(req request.BatchAssignTicketRequest,
 	if len(ticketIDs) == 0 {
 		return errorsx.InvalidParam("请选择工单")
 	}
-	for _, ticketID := range ticketIDs {
-		if err := s.AssignTicket(request.AssignTicketRequest{
-			TicketID: ticketID,
-			ToUserID: req.ToUserID,
-			ToTeamID: req.ToTeamID,
-			Reason:   req.Reason,
-		}, operator); err != nil {
-			return err
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		for _, ticketID := range ticketIDs {
+			if err := s.assignTicketTx(ctx.Tx, request.AssignTicketRequest{
+				TicketID: ticketID,
+				ToUserID: req.ToUserID,
+				ToTeamID: req.ToTeamID,
+				Reason:   req.Reason,
+			}, operator); err != nil {
+				return err
+			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func (s *ticketService) BatchChangeStatus(req request.BatchChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {
@@ -977,20 +1000,22 @@ func (s *ticketService) BatchChangeStatus(req request.BatchChangeTicketStatusReq
 	if len(ticketIDs) == 0 {
 		return errorsx.InvalidParam("请选择工单")
 	}
-	for _, ticketID := range ticketIDs {
-		if err := s.ChangeStatus(request.ChangeTicketStatusRequest{
-			TicketID:          ticketID,
-			Status:            req.Status,
-			PendingReason:     req.PendingReason,
-			CloseReason:       req.CloseReason,
-			ResolutionCode:    req.ResolutionCode,
-			ResolutionSummary: req.ResolutionSummary,
-			Reason:            req.Reason,
-		}, operator); err != nil {
-			return err
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		for _, ticketID := range ticketIDs {
+			if err := s.changeStatusTx(ctx.Tx, request.ChangeTicketStatusRequest{
+				TicketID:          ticketID,
+				Status:            req.Status,
+				PendingReason:     req.PendingReason,
+				CloseReason:       req.CloseReason,
+				ResolutionCode:    req.ResolutionCode,
+				ResolutionSummary: req.ResolutionSummary,
+				Reason:            req.Reason,
+			}, operator); err != nil {
+				return err
+			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func (s *ticketService) BatchWatchTickets(req request.BatchWatchTicketRequest, operator *dto.AuthPrincipal) error {
@@ -1010,11 +1035,6 @@ func (s *ticketService) BatchWatchTickets(req request.BatchWatchTicketRequest, o
 		}
 	}
 	return nil
-}
-
-func (s *ticketService) nextTicketNo() string {
-	now := time.Now()
-	return fmt.Sprintf("TK%s%03d", now.Format("20060102150405"), now.Nanosecond()/1e6)
 }
 
 func normalizeBatchTicketIDs(ticketIDs []int64) []int64 {
@@ -1086,7 +1106,7 @@ func (s *ticketService) initSLAs(tx *gorm.DB, ticket *models.Ticket, now time.Ti
 			return err
 		}
 	}
-	return nil
+	return s.refreshTicketSLAFields(tx, ticket.ID, now)
 }
 
 func (s *ticketService) logEvent(tx *gorm.DB, ticketID int64, eventType enums.TicketEventType, operator *dto.AuthPrincipal, oldValue, newValue, content, payload string) error {
@@ -1108,7 +1128,7 @@ func (s *ticketService) logEvent(tx *gorm.DB, ticketID int64, eventType enums.Ti
 }
 
 func (s *ticketService) completeFirstResponseSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeFirstResponse))
+	record := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeFirstResponse))
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
@@ -1138,7 +1158,7 @@ func (s *ticketService) applySLAOnStatusChange(tx *gorm.DB, ticketID int64, from
 }
 
 func (s *ticketService) pauseResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeResolution))
 	if record == nil || record.Status != enums.TicketSLAStatusRunning {
 		return nil
 	}
@@ -1152,7 +1172,7 @@ func (s *ticketService) pauseResolutionSLA(tx *gorm.DB, ticketID int64, now time
 }
 
 func (s *ticketService) resumeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeResolution))
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
@@ -1165,7 +1185,7 @@ func (s *ticketService) resumeResolutionSLA(tx *gorm.DB, ticketID int64, now tim
 }
 
 func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now time.Time) error {
-	record := TicketSLARecordService.FindOne(sqls.NewCnd().Eq("ticket_id", ticketID).Eq("sla_type", enums.TicketSLATypeResolution))
+	record := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeResolution))
 	if record == nil || record.Status == enums.TicketSLAStatusCompleted {
 		return nil
 	}
@@ -1179,6 +1199,15 @@ func (s *ticketService) completeResolutionSLA(tx *gorm.DB, ticketID int64, now t
 		"paused_at":   nil,
 		"elapsed_min": elapsed,
 		"updated_at":  now,
+	})
+}
+
+func (s *ticketService) refreshTicketSLAFields(tx *gorm.DB, ticketID int64, now time.Time) error {
+	firstResponse := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeFirstResponse))
+	resolution := repositories.TicketSLARecordRepository.TakeByTicketIDAndType(tx, ticketID, string(enums.TicketSLATypeResolution))
+	return repositories.TicketRepository.Updates(tx, ticketID, map[string]any{
+		"next_reply_deadline_at": calcTicketSLADeadline(firstResponse, now),
+		"resolve_deadline_at":    calcTicketSLADeadline(resolution, now),
 	})
 }
 
@@ -1210,6 +1239,9 @@ func (s *ticketService) ScanAndMarkBreachedSLAs(limit int) (int, error) {
 				"elapsed_min": elapsed,
 				"updated_at":  now,
 			}); err != nil {
+				return err
+			}
+			if err := s.refreshTicketSLAFields(ctx.Tx, record.TicketID, now); err != nil {
 				return err
 			}
 			return s.logEvent(ctx.Tx, record.TicketID, enums.TicketEventTypeSLABreached, nil, string(enums.TicketSLAStatusRunning), string(enums.TicketSLAStatusBreached), fmt.Sprintf("%s SLA 已超时", record.SLAType), "")
@@ -1300,4 +1332,36 @@ func diffMinutes(start *time.Time, end time.Time) int {
 		return 0
 	}
 	return int(end.Sub(*start).Minutes())
+}
+
+func calcTicketSLADeadline(record *models.TicketSLARecord, now time.Time) *time.Time {
+	if record == nil {
+		return nil
+	}
+	switch record.Status {
+	case enums.TicketSLAStatusCompleted:
+		return nil
+	case enums.TicketSLAStatusBreached:
+		if record.BreachedAt != nil && !record.BreachedAt.IsZero() {
+			value := *record.BreachedAt
+			return &value
+		}
+	case enums.TicketSLAStatusPaused:
+		base := now
+		if record.PausedAt != nil && !record.PausedAt.IsZero() {
+			base = *record.PausedAt
+		}
+		remaining := record.TargetMinutes - record.ElapsedMin
+		if remaining < 0 {
+			remaining = 0
+		}
+		deadline := base.Add(time.Duration(remaining) * time.Minute)
+		return &deadline
+	}
+	if record.StartedAt == nil || record.StartedAt.IsZero() {
+		return nil
+	}
+	remaining := record.TargetMinutes - record.ElapsedMin
+	deadline := record.StartedAt.Add(time.Duration(remaining) * time.Minute)
+	return &deadline
 }
