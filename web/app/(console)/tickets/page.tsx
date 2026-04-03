@@ -727,17 +727,17 @@ export default function TicketsPage() {
               <Trash2Icon className="size-4" />
               删除视图
             </Button>
-            <Link href="/ticket-categories">
-              <Button variant="outline">
-                <Settings2Icon className="size-4" />
-                工单配置
-              </Button>
-            </Link>
             <Button onClick={openCreateDialog}>
               <PlusIcon className="size-4" />
               新建工单
             </Button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="rounded bg-red-50 px-2 py-1 text-red-700">红色：已超时</span>
+          <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">黄色：待分配</span>
+          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
         </div>
 
         <div className="rounded-lg border bg-background/80 p-2">
@@ -770,12 +770,6 @@ export default function TicketsPage() {
               )
             })}
           </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="rounded bg-red-50 px-2 py-1 text-red-700">红色：已超时</span>
-          <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">黄色：待分配</span>
-          <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">橙色：即将超时</span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-4 xl:grid-cols-[minmax(0,1.5fr)_repeat(8,minmax(0,1fr))_auto]">
