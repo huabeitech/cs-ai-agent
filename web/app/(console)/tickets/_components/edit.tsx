@@ -1,7 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Settings2Icon } from "lucide-react"
 import type { Resolver } from "react-hook-form"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
@@ -324,7 +326,15 @@ function TicketEditDialogBody({
             </Field>
 
             <Field>
-              <FieldLabel>工单分类</FieldLabel>
+              <div className="flex items-center justify-between gap-3">
+                <FieldLabel>工单分类</FieldLabel>
+                <Link href="/ticket-categories" target="_blank" rel="noreferrer">
+                  <Button variant="ghost" size="sm">
+                    <Settings2Icon className="size-4" />
+                    管理分类
+                  </Button>
+                </Link>
+              </div>
               <FieldContent>
                 <Controller
                   control={control}

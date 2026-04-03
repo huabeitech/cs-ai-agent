@@ -8,6 +8,7 @@ import {
   PlusIcon,
   RefreshCcwIcon,
   SearchIcon,
+  Settings2Icon,
   SquarePenIcon,
   StarIcon,
 } from "lucide-react"
@@ -506,10 +507,18 @@ export default function TicketsPage() {
               作为队列工作台处理异步问题、分派、流转与关闭
             </p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <PlusIcon className="size-4" />
-            新建工单
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/ticket-categories">
+              <Button variant="outline">
+                <Settings2Icon className="size-4" />
+                工单配置
+              </Button>
+            </Link>
+            <Button onClick={openCreateDialog}>
+              <PlusIcon className="size-4" />
+              新建工单
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">

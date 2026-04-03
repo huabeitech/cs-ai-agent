@@ -147,6 +147,29 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
     ],
   },
   {
+    title: "工单配置",
+    items: [
+      {
+        title: "工单分类",
+        url: "/ticket-categories",
+        icon: <TagsIcon />,
+        requiredPermission: "ticketCategory.view",
+      },
+      {
+        title: "解决码",
+        url: "/ticket-resolution-codes",
+        icon: <KeyRoundIcon />,
+        requiredPermission: "ticketResolutionCode.view",
+      },
+      {
+        title: "工单SLA",
+        url: "/ticket-sla-configs",
+        icon: <Settings2Icon />,
+        requiredPermission: "ticketSLAConfig.view",
+      },
+    ],
+  },
+  {
     title: "客服管理",
     items: [
       {
@@ -234,24 +257,6 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         url: "/permissions",
         icon: <KeyRoundIcon />,
         requiredPermission: "permission.view",
-      },
-      {
-        title: "工单分类",
-        url: "/ticket-categories",
-        icon: <TagsIcon />,
-        requiredPermission: "ticketCategory.view",
-      },
-      {
-        title: "解决码",
-        url: "/ticket-resolution-codes",
-        icon: <KeyRoundIcon />,
-        requiredPermission: "ticketResolutionCode.view",
-      },
-      {
-        title: "工单SLA",
-        url: "/ticket-sla-configs",
-        icon: <Settings2Icon />,
-        requiredPermission: "ticketSLAConfig.view",
       },
     ],
   },

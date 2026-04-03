@@ -565,6 +565,14 @@ func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, oper
 	if !s.canTransition(ticket.Status, targetStatus) {
 		return errorsx.InvalidParam("工单当前状态不允许该操作")
 	}
+	if targetStatus == enums.TicketStatusClosed {
+		if childNos := s.findOpenChildTicketNos(ticket.ID); len(childNos) > 0 {
+			if len(childNos) > 3 {
+				return errorsx.InvalidParam(fmt.Sprintf("仍有未完成子工单，暂不可关闭：%s 等 %d 张", strings.Join(childNos[:3], "、"), len(childNos)))
+			}
+			return errorsx.InvalidParam(fmt.Sprintf("仍有未完成子工单，暂不可关闭：%s", strings.Join(childNos, "、")))
+		}
+	}
 	now := time.Now()
 	values := map[string]any{
 		"status":             targetStatus,
@@ -610,6 +618,35 @@ func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, oper
 		}
 		return s.logEvent(ctx.Tx, ticket.ID, enums.TicketEventTypeStatusChanged, operator, string(ticket.Status), string(targetStatus), strings.TrimSpace(req.Reason), "")
 	})
+}
+
+func (s *ticketService) findOpenChildTicketNos(ticketID int64) []string {
+	relations := TicketRelationService.Find(
+		sqls.NewCnd().
+			Eq("ticket_id", ticketID).
+			Eq("relation_type", enums.TicketRelationTypeChild),
+	)
+	if len(relations) == 0 {
+		return nil
+	}
+	results := make([]string, 0, len(relations))
+	for _, relation := range relations {
+		child := s.Get(relation.RelatedTicketID)
+		if child == nil {
+			continue
+		}
+		switch child.Status {
+		case enums.TicketStatusResolved, enums.TicketStatusClosed, enums.TicketStatusCancelled:
+			continue
+		default:
+			if child.TicketNo != "" {
+				results = append(results, child.TicketNo)
+			} else {
+				results = append(results, fmt.Sprintf("#%d", child.ID))
+			}
+		}
+	}
+	return results
 }
 
 func (s *ticketService) ReplyTicket(req request.ReplyTicketRequest, operator *dto.AuthPrincipal) (*models.TicketComment, error) {

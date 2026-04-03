@@ -9,6 +9,7 @@ import {
   RefreshCcwIcon,
   RotateCcwIcon,
   SaveIcon,
+  Settings2Icon,
   UserRoundPlusIcon,
   XIcon,
 } from "lucide-react"
@@ -165,6 +166,10 @@ function parseMentionUserIds(payload?: string) {
   }
 }
 
+function isDoneTicketStatus(status?: string) {
+  return status === "resolved" || status === "closed" || status === "cancelled"
+}
+
 export default function TicketDetailPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -190,6 +195,19 @@ export default function TicketDetailPage() {
   const currentUserId = readSession()?.user?.id ?? 0
   const isWatching = Boolean(detail?.watchers?.some((item) => item.userId === currentUserId))
   const resolutionSLA = useMemo(() => getMainSLA(ticket), [ticket])
+  const childRelations = useMemo(
+    () => (detail?.relatedTickets || []).filter((item) => item.relationType === "child"),
+    [detail?.relatedTickets],
+  )
+  const childProgress = useMemo(() => {
+    const total = childRelations.length
+    const completed = childRelations.filter((item) => isDoneTicketStatus(item.relatedTicketStatus)).length
+    return {
+      total,
+      completed,
+      active: total - completed,
+    }
+  }, [childRelations])
 
   const loadDetail = useCallback(async () => {
     if (!ticketId) {
@@ -395,6 +413,12 @@ export default function TicketDetailPage() {
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/ticket-categories">
+              <Button variant="outline">
+                <Settings2Icon className="size-4" />
+                工单配置
+              </Button>
+            </Link>
             <Button
               variant="outline"
               onClick={() => void handleWatchToggle()}
@@ -447,10 +471,13 @@ export default function TicketDetailPage() {
                       />
                     </div>
                   </div>
-                  <CardAction className="flex w-full flex-wrap justify-end gap-2 pt-3 sm:w-auto sm:pt-0">
-                    <Button className="min-w-28" variant="outline" onClick={() => setEditDialogOpen(true)}>
-                      编辑基础信息
-                    </Button>
+                <CardAction className="flex w-full flex-wrap justify-end gap-2 pt-3 sm:w-auto sm:pt-0">
+                  <Link href="/ticket-categories">
+                    <Button className="min-w-28" variant="ghost">管理分类</Button>
+                  </Link>
+                  <Button className="min-w-28" variant="outline" onClick={() => setEditDialogOpen(true)}>
+                    编辑基础信息
+                  </Button>
                     <Button className="min-w-28" variant="outline" onClick={() => setAssignDialogOpen(true)}>
                       <UserRoundPlusIcon className="size-4" />
                       分配处理人
@@ -794,6 +821,16 @@ export default function TicketDetailPage() {
                   </CardAction>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
+                  {childProgress.total > 0 ? (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+                      <div className="text-sm font-medium text-blue-900">子工单进展</div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-blue-900">
+                        <span>总数：{childProgress.total}</span>
+                        <span>已完成：{childProgress.completed}</span>
+                        <span>进行中：{childProgress.active}</span>
+                      </div>
+                    </div>
+                  ) : null}
                   {detail?.relatedTickets?.length ? (
                     detail.relatedTickets.map((relation) => (
                       <div key={relation.id} className="rounded-lg border bg-muted/20 p-3">
@@ -828,6 +865,18 @@ export default function TicketDetailPage() {
                           </div>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {relation.relationType === "child" ? (
+                            <Badge
+                              variant="outline"
+                              className={
+                                isDoneTicketStatus(relation.relatedTicketStatus)
+                                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                  : "border-orange-300 bg-orange-50 text-orange-800"
+                              }
+                            >
+                              {isDoneTicketStatus(relation.relatedTicketStatus) ? "子单已完成" : "子单处理中"}
+                            </Badge>
+                          ) : null}
                           <span>状态：{ticketStatusLabel(relation.relatedTicketStatus || "")}</span>
                           <span>团队：{relation.currentTeamName || "未分组"}</span>
                           <span>处理人：{relation.currentAssigneeName || "未指派"}</span>
