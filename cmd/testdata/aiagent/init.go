@@ -30,9 +30,9 @@ func Init() (*InitResult, error) {
 		return result, fmt.Errorf("no default ai config found, please init ai config first")
 	}
 
-	knowledgeID, err := getDefaultKnowledgeID()
+	knowledgeIDs, err := getDefaultKnowledgeIDs()
 	if err != nil {
-		return result, fmt.Errorf("get default knowledge id failed: %w", err)
+		return result, fmt.Errorf("get default knowledge ids failed: %w", err)
 	}
 
 	defaultTeamIDs := getDefaultTeamIDs()
@@ -41,7 +41,7 @@ func Init() (*InitResult, error) {
 		return result, fmt.Errorf("get default skill ids failed: %w", err)
 	}
 
-	seedItems := buildSeedItems(aiConfigID, knowledgeID, defaultTeamIDs, defaultSkillIDs)
+	seedItems := buildSeedItems(aiConfigID, knowledgeIDs, defaultTeamIDs, defaultSkillIDs)
 	for _, item := range seedItems {
 		itemCopy := item
 		if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
@@ -68,7 +68,7 @@ func Init() (*InitResult, error) {
 	return result, nil
 }
 
-func buildSeedItems(aiConfigID, knowledgeID int64, defaultTeamIDs string, defaultSkillIDs string) []models.AIAgent {
+func buildSeedItems(aiConfigID int64, knowledgeIDs []int64, defaultTeamIDs string, defaultSkillIDs string) []models.AIAgent {
 	now := time.Now()
 	return []models.AIAgent{
 		{
@@ -85,7 +85,7 @@ func buildSeedItems(aiConfigID, knowledgeID int64, defaultTeamIDs string, defaul
 			MaxAIReplyRounds:    5,
 			FallbackMode:        enums.AIAgentFallbackModeGuideRephrase,
 			FallbackMessage:     "我暂时没有找到足够准确的信息。你可以补充订单号、产品名或更具体的问题，我再继续帮你查。",
-			KnowledgeIDs:        fmt.Sprintf("%d", knowledgeID),
+			KnowledgeIDs:        utils.JoinInt64s(knowledgeIDs),
 			SkillIDs:            defaultSkillIDs,
 			SortNo:              10,
 			Remark:              "Local testdata seed",
@@ -114,16 +114,16 @@ func getDefaultAIConfigID() (int64, error) {
 	return aiConfig.ID, nil
 }
 
-func getDefaultKnowledgeID() (int64, error) {
-	knowledge := repositories.KnowledgeBaseRepository.Take(
+func getDefaultKnowledgeIDs() ([]int64, error) {
+	knowledges := repositories.KnowledgeBaseRepository.Find(
 		sqls.DB(),
-		"status = ?",
-		enums.StatusOk,
+		sqls.NewCnd().Where("status = ?", enums.StatusOk),
 	)
-	if knowledge == nil {
-		return 0, nil
+	ids := make([]int64, 0, len(knowledges))
+	for _, knowledge := range knowledges {
+		ids = append(ids, knowledge.ID)
 	}
-	return knowledge.ID, nil
+	return ids, nil
 }
 
 func getDefaultTeamIDs() string {
