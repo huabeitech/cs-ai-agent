@@ -397,6 +397,8 @@ export default function TicketDetailPage() {
         <>
           <div className="min-w-0 flex-1">
             <div className="flex h-full flex-col">
+              
+              {/* 工单header */}
               <div className="border-b border-border/70 bg-muted/10">
                 <div className="px-4 py-4 lg:px-6 lg:py-5">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -437,7 +439,7 @@ export default function TicketDetailPage() {
                       </Button>
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-col gap-4">
+                  <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-2">
                         <TicketStatusBadge status={ticket.status} />
