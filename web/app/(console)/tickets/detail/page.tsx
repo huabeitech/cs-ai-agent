@@ -460,7 +460,7 @@ export default function TicketDetailPage() {
                         {ticket.title}
                       </h1>
                       <div className="border-l-2 pl-3 border-border/70 ">
-                        <div className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/80">
+                        <div className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground/80">
                           {ticket.description || "暂无工单描述"}
                         </div>
                       </div>
@@ -475,56 +475,83 @@ export default function TicketDetailPage() {
                       </TabsList>
                       <TabsContent value="comments" className="space-y-3">
                         {(detail?.comments?.length || 0) > 0 ? (
-                          detail?.comments?.map((comment) => (
-                            <div
-                              key={`comment-${comment.id}`}
-                              className="rounded-lg border border-border/60 bg-muted/20 p-3"
-                            >
-                              <div className="mb-1 flex items-center justify-between gap-3">
-                                <div className="text-sm font-medium">
-                                  {comment.authorName ||
-                                    `用户#${comment.authorId}`}
+                          <div className="relative pl-6">
+                            <div className="absolute top-0 bottom-0 left-[0.55rem] w-px bg-border/70" />
+                            <div className="space-y-4">
+                              {detail?.comments?.map((comment) => (
+                                <div
+                                  key={`comment-${comment.id}`}
+                                  className="relative"
+                                >
+                                  <div
+                                    className={`absolute top-2 -left-6 size-3 rounded-full ring-4 ring-background ${
+                                      comment.commentType === "public_reply"
+                                        ? "bg-emerald-500"
+                                        : "bg-amber-500"
+                                    }`}
+                                  />
+                                  <div className="rounded-xl border border-border/60 bg-muted/15 px-3.5 py-3">
+                                    <div className="mb-2 flex items-start justify-between gap-3">
+                                      <div className="min-w-0 space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <div className="text-sm font-medium">
+                                            {comment.authorName ||
+                                              `用户#${comment.authorId}`}
+                                          </div>
+                                          <Badge
+                                            variant="outline"
+                                            className={
+                                              comment.commentType ===
+                                              "public_reply"
+                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                : "border-amber-200 bg-amber-50 text-amber-700"
+                                            }
+                                          >
+                                            {comment.commentType ===
+                                            "public_reply"
+                                              ? "客户回复"
+                                              : "内部备注"}
+                                          </Badge>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {comment.createdAt
+                                            ? formatDateTime(comment.createdAt)
+                                            : "—"}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {comment.commentType === "internal_note" &&
+                                    parseMentionUserIds(comment.payload).length ? (
+                                      <div className="mb-2 flex flex-wrap gap-2">
+                                        {parseMentionUserIds(comment.payload).map(
+                                          (userId) => {
+                                            const user = agents.find(
+                                              (item) => item.userId === userId,
+                                            );
+                                            return (
+                                              <span
+                                                key={`${comment.id}-${userId}`}
+                                                className="rounded-full border px-2 py-1 text-xs text-muted-foreground"
+                                              >
+                                                @
+                                                {user?.displayName ||
+                                                  user?.nickname ||
+                                                  user?.username ||
+                                                  `用户#${userId}`}
+                                              </span>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    ) : null}
+                                    <div className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground/90">
+                                      {comment.content}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {comment.createdAt
-                                    ? formatDateTime(comment.createdAt)
-                                    : "—"}
-                                </div>
-                              </div>
-                              <div className="mb-2 text-xs text-muted-foreground">
-                                {comment.commentType === "public_reply"
-                                  ? "客户可见回复"
-                                  : "内部备注"}
-                              </div>
-                              {comment.commentType === "internal_note" &&
-                              parseMentionUserIds(comment.payload).length ? (
-                                <div className="mb-2 flex flex-wrap gap-2">
-                                  {parseMentionUserIds(comment.payload).map(
-                                    (userId) => {
-                                      const user = agents.find(
-                                        (item) => item.userId === userId,
-                                      );
-                                      return (
-                                        <span
-                                          key={`${comment.id}-${userId}`}
-                                          className="rounded-full border px-2 py-1 text-xs text-muted-foreground"
-                                        >
-                                          @
-                                          {user?.displayName ||
-                                            user?.nickname ||
-                                            user?.username ||
-                                            `用户#${userId}`}
-                                        </span>
-                                      );
-                                    },
-                                  )}
-                                </div>
-                              ) : null}
-                              <div className="whitespace-pre-wrap text-sm leading-6">
-                                {comment.content}
-                              </div>
+                              ))}
                             </div>
-                          ))
+                          </div>
                         ) : (
                           <div className="text-sm text-muted-foreground">
                             暂无评论记录
