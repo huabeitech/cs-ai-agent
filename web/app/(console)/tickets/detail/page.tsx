@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ExternalLinkIcon,
   MessageSquarePlusIcon,
@@ -13,6 +12,7 @@ import {
   UserRoundPlusIcon,
   XIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -29,25 +29,25 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  deleteTicketCollaborator,
-  deleteTicketRelation,
-  addTicketInternalNote,
-  fetchTicketDetail,
-  replyTicket,
-  unwatchTicket,
-  type TicketDetail,
-  type TicketItem,
-  type CreateTicketPayload,
-  type UpdateTicketPayload,
-  updateTicket,
-  watchTicket,
-} from "@/lib/api/ticket";
-import {
   fetchAgentProfilesAll,
   fetchConversationDetail,
   type AdminAgentProfile,
   type AdminConversationDetail,
 } from "@/lib/api/admin";
+import {
+  addTicketInternalNote,
+  deleteTicketCollaborator,
+  deleteTicketRelation,
+  fetchTicketDetail,
+  replyTicket,
+  unwatchTicket,
+  updateTicket,
+  watchTicket,
+  type CreateTicketPayload,
+  type TicketDetail,
+  type TicketItem,
+  type UpdateTicketPayload,
+} from "@/lib/api/ticket";
 import { readSession } from "@/lib/auth";
 import { getEnumLabel } from "@/lib/enums";
 import {
@@ -57,16 +57,16 @@ import {
 import { formatDateTime } from "@/lib/utils";
 import { EditDialog } from "../_components/edit";
 import { TicketAssignDialog } from "../_components/ticket-assign-dialog";
+import { TicketCollaboratorDialog } from "../_components/ticket-collaborator-dialog";
 import { TicketPriorityBadge } from "../_components/ticket-priority-badge";
 import { TicketReasonDialog } from "../_components/ticket-reason-dialog";
-import { TicketCollaboratorDialog } from "../_components/ticket-collaborator-dialog";
 import { TicketRelationDialog } from "../_components/ticket-relation-dialog";
 import { TicketSLABadge } from "../_components/ticket-sla-badge";
-import { TicketStatusDialog } from "../_components/ticket-status-dialog";
 import {
   TicketStatusBadge,
   ticketStatusLabel,
 } from "../_components/ticket-status-badge";
+import { TicketStatusDialog } from "../_components/ticket-status-dialog";
 
 function formatTicketSource(source?: string) {
   switch (source) {
