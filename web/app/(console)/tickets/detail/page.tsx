@@ -519,11 +519,11 @@ export default function TicketDetailPage() {
                 <div className="space-y-0">
                   <DetailSection className="px-4 lg:px-6">
                     <div className="space-y-2.5">
-                      <h1 className="text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
+                      <h1 className="text-xl font-semibold tracking-tight text-foreground">
                         {ticket.title}
                       </h1>
-                      <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
-                        <div className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground/85">
+                      <div className="border-l-2 pl-3 border-border/70 ">
+                        <div className="whitespace-pre-wrap wrap-break-word text-sm leading-6 text-foreground/80">
                           {ticket.description || "暂无工单描述"}
                         </div>
                       </div>
@@ -891,13 +891,6 @@ export default function TicketDetailPage() {
                     <DetailSection
                       title="SLA 信息"
                       className="px-4 pt-4 lg:px-6"
-                      action={
-                        <Link href="/ticket-sla-configs">
-                          <Button variant="ghost" size="sm">
-                            管理SLA
-                          </Button>
-                        </Link>
-                      }
                       contentClassName="space-y-3 text-sm"
                     >
                       {ticket.sla?.length ? (
@@ -941,13 +934,6 @@ export default function TicketDetailPage() {
                     <DetailSection
                       title="解决信息"
                       className="px-4 pt-4 lg:px-6"
-                      action={
-                        <Link href="/ticket-resolution-codes">
-                          <Button variant="ghost" size="sm">
-                            管理解决码
-                          </Button>
-                        </Link>
-                      }
                       contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
