@@ -328,12 +328,6 @@ function TicketEditDialogBody({
             <Field>
               <div className="flex items-center justify-between gap-3">
                 <FieldLabel>工单分类</FieldLabel>
-                <Link href="/ticket-categories" target="_blank" rel="noreferrer">
-                  <Button variant="ghost" size="sm">
-                    <Settings2Icon className="size-4" />
-                    管理分类
-                  </Button>
-                </Link>
               </div>
               <FieldContent>
                 <Controller

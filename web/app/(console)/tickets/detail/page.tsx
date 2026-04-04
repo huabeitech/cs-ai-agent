@@ -430,8 +430,8 @@ export default function TicketDetailPage() {
             <div className="flex h-full flex-col">
               {/* 工单header */}
               <div className="border-b border-border/70 bg-muted/10">
-                <div className="flex flex-col gap-3 px-4 py-4 lg:px-6 lg:py-5">
-                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="flex flex-col gap-2.5 px-4 py-3 lg:px-6 lg:py-4">
+                  <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 space-y-2">
                       <div className="text-xs font-medium tracking-wide text-muted-foreground">
                         {ticket.ticketNo}
@@ -514,7 +514,7 @@ export default function TicketDetailPage() {
                       </ButtonGroup>
                     </div>
                   </div>
-                  <div className="min-w-0 text-2xl font-semibold tracking-tight text-foreground">
+                  <div className="min-w-0 text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
                     {ticket.title}
                   </div>
                 </div>
@@ -527,7 +527,7 @@ export default function TicketDetailPage() {
                     description="问题背景、上下文和当前处理要求"
                     className="px-4 lg:px-6"
                   >
-                    <SurfacePanel className="p-4 text-sm leading-7 text-foreground/85">
+                    <SurfacePanel className="p-3 text-sm leading-6 text-foreground/85">
                       {ticket.description || "暂无工单描述"}
                     </SurfacePanel>
                   </DetailSection>
@@ -535,10 +535,10 @@ export default function TicketDetailPage() {
                   <DetailSection
                     title="回复与备注"
                     description="在详情页内完成客户回复和内部协作记录"
-                    className="px-4 pt-6 lg:px-6"
-                    contentClassName="space-y-3"
+                    className="px-4 pt-4 lg:px-6"
+                    contentClassName="space-y-2.5"
                   >
-                    <SurfacePanel className="space-y-4 p-4">
+                    <SurfacePanel className="space-y-3 p-3">
                       <div className="flex gap-2">
                         <Button
                           variant={
@@ -570,7 +570,7 @@ export default function TicketDetailPage() {
                         }
                       />
                       {replyMode === "internal" ? (
-                        <div className="space-y-3 rounded-lg border border-border/60 bg-background p-3">
+                        <div className="space-y-2.5 rounded-lg border border-border/60 bg-background p-3">
                           <div className="text-sm font-medium">@提及协作人</div>
                           <div className="flex gap-2">
                             <div className="flex-1">
@@ -637,9 +637,9 @@ export default function TicketDetailPage() {
                   <DetailSection
                     title="处理记录"
                     description="沟通记录和状态流转分开展示，便于排查"
-                    className="px-4 pt-6 lg:px-6"
+                    className="px-4 pt-4 lg:px-6"
                   >
-                    <Tabs defaultValue="comments" className="gap-4">
+                    <Tabs defaultValue="comments" className="gap-3">
                       <TabsList variant="line">
                         <TabsTrigger value="comments">回复记录</TabsTrigger>
                         <TabsTrigger value="events">事件记录</TabsTrigger>
@@ -649,7 +649,7 @@ export default function TicketDetailPage() {
                           detail?.comments?.map((comment) => (
                             <div
                               key={`comment-${comment.id}`}
-                              className="rounded-lg border border-border/60 bg-muted/20 p-4"
+                              className="rounded-lg border border-border/60 bg-muted/20 p-3"
                             >
                               <div className="mb-1 flex items-center justify-between gap-3">
                                 <div className="text-sm font-medium">
@@ -707,7 +707,7 @@ export default function TicketDetailPage() {
                           detail?.events?.map((event) => (
                             <div
                               key={`event-${event.id}`}
-                              className={`rounded-lg border px-4 py-3 ${
+                              className={`rounded-lg border px-3 py-2.5 ${
                                 event.eventType === "mentioned"
                                   ? "border-amber-200 bg-amber-50/60"
                                   : "border-border/60 bg-muted/20"
@@ -779,10 +779,10 @@ export default function TicketDetailPage() {
           </div>
 
           <div className="relative hidden shrink-0 border-l border-border/70 bg-background lg:block">
-            <Button
+              <Button
               variant="outline"
               size="icon"
-              className="absolute top-4 left-1/2 z-10 size-7 -translate-x-1/2 rounded-full shadow-sm"
+              className="absolute top-3 left-1/2 z-10 size-6.5 -translate-x-1/2 rounded-full shadow-sm"
               onClick={() => setRightPanelCollapsed((value) => !value)}
               aria-label={
                 rightPanelCollapsed ? "展开右侧信息面板" : "折叠右侧信息面板"
@@ -798,16 +798,16 @@ export default function TicketDetailPage() {
 
           <div
             className={`shrink-0 overflow-hidden bg-background transition-[width] duration-200 ${
-              rightPanelCollapsed ? "w-0" : "w-full lg:w-[380px]"
+              rightPanelCollapsed ? "w-0" : "w-full lg:w-[360px]"
             }`}
           >
             <div className="h-full">
-              <div className="flex h-full flex-col gap-6">
+              <div className="flex h-full flex-col gap-4">
                 <div className="min-h-0 overflow-y-auto">
                   <div className="space-y-0">
                     <DetailSection
                       title="基础信息"
-                      className="px-4 pt-4 lg:px-6 lg:pt-6"
+                      className="px-4 pt-3 lg:px-6 lg:pt-4"
                       action={
                         <Button
                           variant="ghost"
@@ -873,7 +873,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="客户信息"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
@@ -892,7 +892,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="SLA 信息"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       action={
                         <Link href="/ticket-sla-configs">
                           <Button variant="ghost" size="sm">
@@ -904,7 +904,7 @@ export default function TicketDetailPage() {
                     >
                       {ticket.sla?.length ? (
                         ticket.sla.map((sla) => (
-                          <SurfacePanel key={sla.slaType} className="p-3">
+                          <SurfacePanel key={sla.slaType} className="p-2.5">
                             <div className="font-medium">
                               {sla.slaType === "first_response"
                                 ? "首次响应"
@@ -942,7 +942,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="解决信息"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       action={
                         <Link href="/ticket-resolution-codes">
                           <Button variant="ghost" size="sm">
@@ -988,7 +988,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="时间信息"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
@@ -1025,7 +1025,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="来源关联"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       contentClassName="space-y-3 text-sm"
                     >
                       <InfoRow
@@ -1037,7 +1037,7 @@ export default function TicketDetailPage() {
                         }
                       />
                       {sourceConversation ? (
-                        <SurfacePanel className="p-3">
+                        <SurfacePanel className="p-2.5">
                           <div className="text-sm font-medium">
                             {sourceConversation.subject || "未命名会话"}
                           </div>
@@ -1081,7 +1081,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="关联工单"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       action={
                         <Button
                           variant="ghost"
@@ -1108,7 +1108,7 @@ export default function TicketDetailPage() {
                       ) : null}
                       {detail?.relatedTickets?.length ? (
                         detail.relatedTickets.map((relation) => (
-                          <SurfacePanel key={relation.id} className="p-3">
+                          <SurfacePanel key={relation.id} className="p-2.5">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 space-y-1">
                                 <div className="text-xs text-muted-foreground">
@@ -1196,7 +1196,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="协作人"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       action={
                         <Button
                           variant="ghost"
@@ -1213,7 +1213,7 @@ export default function TicketDetailPage() {
                         detail.collaborators.map((collaborator) => (
                           <SurfacePanel
                             key={collaborator.id}
-                            className="flex items-center justify-between gap-3 p-3"
+                            className="flex items-center justify-between gap-3 p-2.5"
                           >
                             <div className="min-w-0">
                               <div className="font-medium">
@@ -1243,7 +1243,7 @@ export default function TicketDetailPage() {
 
                     <DetailSection
                       title="关注人"
-                      className="px-4 pt-6 lg:px-6"
+                      className="px-4 pt-4 lg:px-6"
                       contentClassName="space-y-3 text-sm"
                     >
                       {detail?.watchers?.length ? (
@@ -1327,7 +1327,7 @@ export default function TicketDetailPage() {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 py-1.5">
+    <div className="grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 py-1">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-right text-sm text-foreground break-words">
         {value}
@@ -1353,14 +1353,16 @@ function DetailSection({
 }) {
   return (
     <section
-      className={`border-b border-border/70 py-6 last:border-b-0 ${className ?? ""}`}
+      className={`border-b border-border/70 py-4 last:border-b-0 ${className ?? ""}`}
     >
       {title || description || action ? (
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             {title ? <h2 className="text-base font-medium">{title}</h2> : null}
             {description ? (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-sm leading-5 text-muted-foreground">
+                {description}
+              </p>
             ) : null}
           </div>
           {action ? <div className="shrink-0">{action}</div> : null}
