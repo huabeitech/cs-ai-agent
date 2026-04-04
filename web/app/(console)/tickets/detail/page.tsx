@@ -10,7 +10,6 @@ import {
   RefreshCcwIcon,
   RotateCcwIcon,
   SaveIcon,
-  Settings2Icon,
   UserRoundPlusIcon,
   XIcon,
 } from "lucide-react"
@@ -397,93 +396,97 @@ export default function TicketDetailPage() {
       ) : ticket ? (
         <>
           <div className="min-w-0 flex-1">
-            <div className="flex h-full flex-col gap-6">
-              <div className="flex items-start justify-between gap-4 px-4 pt-4 lg:px-6 lg:pt-6">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className="text-xs text-muted-foreground">{ticket.ticketNo}</div>
-                    <div className="text-lg font-semibold">{ticket.title}</div>
+            <div className="flex h-full flex-col">
+              <div className="border-b border-border/70 bg-muted/10">
+                <div className="px-4 py-4 lg:px-6 lg:py-5">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="min-w-0 space-y-4">
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium tracking-wide text-muted-foreground">
+                          {ticket.ticketNo}
+                        </div>
+                        <div className="text-2xl font-semibold tracking-tight text-foreground">
+                          {ticket.title}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TicketStatusBadge status={ticket.status} />
+                        <TicketPriorityBadge priority={ticket.priority} />
+                        <TicketSLABadge ticket={ticket} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => void handleWatchToggle()}
+                        disabled={saving || !ticket}
+                      >
+                        {isWatching ? "取消关注" : "关注工单"}
+                      </Button>
+                      {ticket.status === "closed" ? (
+                        <Button onClick={() => setReopenDialogOpen(true)} disabled={saving}>
+                          重开工单
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={() => setCloseDialogOpen(true)}
+                          disabled={saving || !ticket}
+                        >
+                          关闭工单
+                        </Button>
+                      )}
+                      <Button variant="outline" onClick={() => void loadDetail()} disabled={loading || saving}>
+                        <RefreshCcwIcon className="size-4" />
+                        刷新
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => void handleWatchToggle()}
-                    disabled={saving || !ticket}
-                  >
-                    {isWatching ? "取消关注" : "关注工单"}
-                  </Button>
-                  {ticket.status === "closed" ? (
-                    <Button onClick={() => setReopenDialogOpen(true)} disabled={saving}>
-                      重开工单
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <SummaryMetric
+                      label="分类"
+                      value={ticket.categoryName || "未分类，建议补充分类配置"}
+                    />
+                    <SummaryMetric label="严重度" value={ticketSeverityLabel(ticket.severity)} />
+                    <SummaryMetric label="处理人" value={ticket.currentAssigneeName || "未指派"} />
+                    <SummaryMetric
+                      label="解决时限"
+                      value={
+                        resolutionSLA
+                          ? `${resolutionSLA.targetMinutes} 分钟 / ${formatSLAStatus(resolutionSLA.status)}`
+                          : "未设置"
+                      }
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href="/ticket-categories">
+                      <Button variant="ghost">管理分类</Button>
+                    </Link>
+                    <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                      编辑基础信息
                     </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => setCloseDialogOpen(true)}
-                      disabled={saving || !ticket}
-                    >
-                      关闭工单
+                    <Button variant="outline" onClick={() => setAssignDialogOpen(true)}>
+                      <UserRoundPlusIcon className="size-4" />
+                      分配处理人
                     </Button>
-                  )}
-                  <Button variant="outline" onClick={() => void loadDetail()} disabled={loading || saving}>
-                    <RefreshCcwIcon className="size-4" />
-                    刷新
-                  </Button>
+                    <Button variant="outline" onClick={() => setStatusDialogOpen(true)}>
+                      <SaveIcon className="size-4" />
+                      变更状态
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               <div className="min-h-0 overflow-y-auto">
                 <div className="space-y-0">
                   <DetailSection
+                    title="工单说明"
+                    description="问题背景、上下文和当前处理要求"
                     className="px-4 lg:px-6"
-                    action={
-                      <div className="flex w-full flex-wrap justify-end gap-2 pt-3 sm:w-auto sm:pt-0">
-                        <Link href="/ticket-categories">
-                          <Button className="min-w-28" variant="ghost">
-                            管理分类
-                          </Button>
-                        </Link>
-                        <Button className="min-w-28" variant="outline" onClick={() => setEditDialogOpen(true)}>
-                          编辑基础信息
-                        </Button>
-                        <Button className="min-w-28" variant="outline" onClick={() => setAssignDialogOpen(true)}>
-                          <UserRoundPlusIcon className="size-4" />
-                          分配处理人
-                        </Button>
-                        <Button className="min-w-28" variant="outline" onClick={() => setStatusDialogOpen(true)}>
-                          <SaveIcon className="size-4" />
-                          变更状态
-                        </Button>
-                      </div>
-                    }
                   >
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <TicketStatusBadge status={ticket.status} />
-                          <TicketPriorityBadge priority={ticket.priority} />
-                          <TicketSLABadge ticket={ticket} />
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                          <SummaryMetric
-                            label="分类"
-                            value={ticket.categoryName || "未分类，建议补充分类配置"}
-                          />
-                          <SummaryMetric label="严重度" value={ticketSeverityLabel(ticket.severity)} />
-                          <SummaryMetric label="处理人" value={ticket.currentAssigneeName || "未指派"} />
-                          <SummaryMetric
-                            label="解决时限"
-                            value={
-                              resolutionSLA
-                                ? `${resolutionSLA.targetMinutes} 分钟 / ${formatSLAStatus(resolutionSLA.status)}`
-                                : "未设置"
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-muted/40 p-4 text-sm leading-7 text-muted-foreground">
+                    <SurfacePanel className="p-4 text-sm leading-7 text-foreground/85">
                         {ticket.description || "暂无工单描述"}
-                      </div>
+                    </SurfacePanel>
                   </DetailSection>
 
                   <DetailSection
@@ -492,6 +495,7 @@ export default function TicketDetailPage() {
                     className="px-4 pt-6 lg:px-6"
                     contentClassName="space-y-3"
                   >
+                    <SurfacePanel className="space-y-4 p-4">
                       <div className="flex gap-2">
                         <Button
                           variant={replyMode === "public" ? "default" : "outline"}
@@ -510,10 +514,10 @@ export default function TicketDetailPage() {
                         rows={5}
                         value={replyContent}
                         placeholder={replyMode === "public" ? "输入给客户的回复内容" : "输入内部备注"}
-                        onChange={(event) => setReplyContent(event.target.value)}
+                          onChange={(event) => setReplyContent(event.target.value)}
                       />
                       {replyMode === "internal" ? (
-                        <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+                        <div className="space-y-3 rounded-lg border border-border/60 bg-background p-3">
                           <div className="text-sm font-medium">@提及协作人</div>
                           <div className="flex gap-2">
                             <div className="flex-1">
@@ -558,6 +562,7 @@ export default function TicketDetailPage() {
                           {replyMode === "public" ? "发送回复" : "保存备注"}
                         </Button>
                       </div>
+                    </SurfacePanel>
                   </DetailSection>
 
                   <DetailSection
@@ -573,7 +578,10 @@ export default function TicketDetailPage() {
                         <TabsContent value="comments" className="space-y-3">
                           {(detail?.comments?.length || 0) > 0 ? (
                             detail?.comments?.map((comment) => (
-                              <div key={`comment-${comment.id}`} className="rounded-lg border p-3">
+                              <div
+                                key={`comment-${comment.id}`}
+                                className="rounded-lg border border-border/60 bg-muted/20 p-4"
+                              >
                                 <div className="mb-1 flex items-center justify-between gap-3">
                                   <div className="text-sm font-medium">
                                     {comment.authorName || `用户#${comment.authorId}`}
@@ -613,8 +621,10 @@ export default function TicketDetailPage() {
                             detail?.events?.map((event) => (
                               <div
                                 key={`event-${event.id}`}
-                                className={`rounded-lg border px-3 py-2 ${
-                                  event.eventType === "mentioned" ? "border-amber-200 bg-amber-50/60" : ""
+                                className={`rounded-lg border px-4 py-3 ${
+                                  event.eventType === "mentioned"
+                                    ? "border-amber-200 bg-amber-50/60"
+                                    : "border-border/60 bg-muted/20"
                                 }`}
                               >
                                 <div className="flex items-center justify-between gap-3">
@@ -668,7 +678,7 @@ export default function TicketDetailPage() {
             </div>
           </div>
 
-          <div className="relative hidden shrink-0 border-l bg-background lg:block">
+          <div className="relative hidden shrink-0 border-l border-border/70 bg-background lg:block">
             <Button
               variant="outline"
               size="icon"
@@ -685,7 +695,7 @@ export default function TicketDetailPage() {
           </div>
 
           <div
-            className={`shrink-0 overflow-hidden transition-[width] duration-200 ${
+            className={`shrink-0 overflow-hidden bg-background transition-[width] duration-200 ${
               rightPanelCollapsed ? "w-0" : "w-full lg:w-[380px]"
             }`}
           >
@@ -743,7 +753,7 @@ export default function TicketDetailPage() {
                 >
                     {ticket.sla?.length ? (
                       ticket.sla.map((sla) => (
-                        <div key={sla.slaType} className="rounded-2xl bg-muted/40 p-3">
+                        <SurfacePanel key={sla.slaType} className="p-3">
                           <div className="font-medium">
                             {sla.slaType === "first_response" ? "首次响应" : "解决时效"}
                           </div>
@@ -755,7 +765,7 @@ export default function TicketDetailPage() {
                               超时于：{formatDateTime(sla.breachedAt)}
                             </div>
                           ) : null}
-                        </div>
+                        </SurfacePanel>
                       ))
                     ) : (
                       <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
@@ -817,7 +827,7 @@ export default function TicketDetailPage() {
                       value={ticket.conversationId ? `#${ticket.conversationId}` : "未关联"}
                     />
                     {sourceConversation ? (
-                      <div className="rounded-2xl bg-muted/40 p-3">
+                      <SurfacePanel className="p-3">
                         <div className="text-sm font-medium">{sourceConversation.subject || "未命名会话"}</div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
                           <span>
@@ -835,7 +845,7 @@ export default function TicketDetailPage() {
                         <div className="mt-2 text-xs text-muted-foreground">
                           最近活跃：{sourceConversation.lastActiveAt ? formatDateTime(sourceConversation.lastActiveAt) : "—"}
                         </div>
-                      </div>
+                      </SurfacePanel>
                     ) : null}
                     {ticket.conversationId ? (
                       <Button variant="outline" className="w-full" onClick={() => router.push("/conversations")}>
@@ -857,7 +867,7 @@ export default function TicketDetailPage() {
                   contentClassName="space-y-3 text-sm"
                 >
                     {childProgress.total > 0 ? (
-                      <div className="rounded-2xl bg-blue-50/70 p-3">
+                      <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-3">
                         <div className="text-sm font-medium text-blue-900">子工单进展</div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-blue-900">
                           <span>总数：{childProgress.total}</span>
@@ -868,7 +878,7 @@ export default function TicketDetailPage() {
                     ) : null}
                     {detail?.relatedTickets?.length ? (
                       detail.relatedTickets.map((relation) => (
-                        <div key={relation.id} className="rounded-2xl bg-muted/40 p-3">
+                        <SurfacePanel key={relation.id} className="p-3">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 space-y-1">
                               <div className="text-xs text-muted-foreground">
@@ -919,7 +929,7 @@ export default function TicketDetailPage() {
                           <div className="mt-2 text-xs text-muted-foreground">
                             最近更新：{relation.updatedAt ? formatDateTime(relation.updatedAt) : "—"}
                           </div>
-                        </div>
+                        </SurfacePanel>
                       ))
                     ) : (
                       <div className="text-muted-foreground">暂无关联工单</div>
@@ -939,9 +949,9 @@ export default function TicketDetailPage() {
                 >
                     {detail?.collaborators?.length ? (
                       detail.collaborators.map((collaborator) => (
-                        <div
+                        <SurfacePanel
                           key={collaborator.id}
-                          className="flex items-center justify-between gap-3 rounded-2xl bg-muted/40 p-3"
+                          className="flex items-center justify-between gap-3 p-3"
                         >
                           <div className="min-w-0">
                             <div className="font-medium">{collaborator.userName || `用户#${collaborator.userId}`}</div>
@@ -955,7 +965,7 @@ export default function TicketDetailPage() {
                           >
                             <XIcon className="size-4" />
                           </Button>
-                        </div>
+                        </SurfacePanel>
                       ))
                     ) : (
                       <div className="text-muted-foreground">暂无协作人</div>
@@ -1042,18 +1052,18 @@ export default function TicketDetailPage() {
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-muted/20 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-medium">{value}</div>
+    <div className="rounded-lg bg-muted/30 px-3 py-3">
+      <div className="text-[11px] font-medium tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
     </div>
   )
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="max-w-[60%] text-right">{value}</span>
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 py-2">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-right text-sm text-foreground break-words">{value}</span>
     </div>
   )
 }
@@ -1074,9 +1084,9 @@ function DetailSection({
   children: ReactNode
 }) {
   return (
-    <section className={`border-b pb-6 last:border-b-0 last:pb-0 ${className ?? ""}`}>
+    <section className={`border-b border-border/70 py-6 last:border-b-0 ${className ?? ""}`}>
       {title || description || action ? (
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             {title ? <h2 className="text-base font-medium">{title}</h2> : null}
             {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
@@ -1086,5 +1096,19 @@ function DetailSection({
       ) : null}
       <div className={contentClassName}>{children}</div>
     </section>
+  )
+}
+
+function SurfacePanel({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <div className={`rounded-lg border border-border/60 bg-muted/20 ${className ?? ""}`}>
+      {children}
+    </div>
   )
 }
