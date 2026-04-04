@@ -67,6 +67,7 @@ import {
   ticketStatusLabel,
 } from "../_components/ticket-status-badge";
 import { TicketStatusDialog } from "../_components/ticket-status-dialog";
+import { Toggle } from "@/components/ui/toggle";
 
 function formatTicketSource(source?: string) {
   switch (source) {
