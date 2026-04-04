@@ -810,7 +810,7 @@ export default function TicketDetailPage() {
                           编辑
                         </Button>
                       }
-                      contentClassName="space-y-3 text-sm"
+                      contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow label="工单号" value={ticket.ticketNo} />
                       <InfoRow
@@ -867,7 +867,7 @@ export default function TicketDetailPage() {
                     <DetailSection
                       title="客户信息"
                       className="px-4 pt-6 lg:px-6"
-                      contentClassName="space-y-3 text-sm"
+                      contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
                         label="客户"
@@ -943,7 +943,7 @@ export default function TicketDetailPage() {
                           </Button>
                         </Link>
                       }
-                      contentClassName="space-y-3 text-sm"
+                      contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
                         label="解决码"
@@ -982,7 +982,7 @@ export default function TicketDetailPage() {
                     <DetailSection
                       title="时间信息"
                       className="px-4 pt-6 lg:px-6"
-                      contentClassName="space-y-3 text-sm"
+                      contentClassName="space-y-0 text-sm"
                     >
                       <InfoRow
                         label="创建时间"
@@ -1318,20 +1318,9 @@ export default function TicketDetailPage() {
   );
 }
 
-function SummaryMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-muted/30 px-3 py-3">
-      <div className="text-[11px] font-medium tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
-    </div>
-  );
-}
-
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 py-2">
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 py-1.5">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-right text-sm text-foreground break-words">
         {value}
