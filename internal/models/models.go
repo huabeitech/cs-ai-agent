@@ -8,6 +8,8 @@ import (
 // Models 注册所有需要迁移和代码生成的模型。
 var Models = []any{
 	&Migration{},
+	&TicketNoSequence{},
+	&TicketView{},
 	&User{},
 	&UserIdentity{},
 	&Company{},
@@ -32,8 +34,13 @@ var Models = []any{
 	&QuickReply{},
 	&ConversationEventLog{},
 	&Ticket{},
+	&TicketCategory{},
+	&TicketResolutionCode{},
+	&TicketSLAConfig{},
 	&TicketComment{},
 	&TicketWatcher{},
+	&TicketCollaborator{},
+	&TicketMention{},
 	&TicketEventLog{},
 	&TicketSLARecord{},
 	&TicketRelation{},
@@ -76,6 +83,27 @@ type SystemConfig struct {
 	Title       string       `gorm:"type:varchar(200);not null;default:''"`
 	Description string       `gorm:"type:text"`
 	Status      enums.Status `gorm:"type:int;not null;default:0;index"`
+	AuditFields
+}
+
+// TicketNoSequence 工单号日序列表。
+//
+// 每天一条记录，NextSeq 表示当日下一次可分配的序号。
+type TicketNoSequence struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement"`
+	DateKey   string    `gorm:"column:date_key;type:varchar(8);not null;uniqueIndex"`
+	NextSeq   int64     `gorm:"column:next_seq;type:bigint;not null;default:1"`
+	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
+	UpdatedAt time.Time `gorm:"type:datetime;not null;index"`
+}
+
+// TicketView 工单工作台个人保存视图。
+type TicketView struct {
+	ID          int64  `gorm:"primaryKey;autoIncrement"`
+	UserID      int64  `gorm:"column:user_id;type:bigint;not null;index"`
+	Name        string `gorm:"column:name;type:varchar(100);not null;default:'';index"`
+	FiltersJSON string `gorm:"column:filters_json;type:text;not null"`
+	SortNo      int    `gorm:"column:sort_no;type:int;not null;default:0;index"`
 	AuditFields
 }
 
@@ -476,6 +504,41 @@ type Ticket struct {
 	AuditFields
 }
 
+// TicketCategory 工单分类。
+type TicketCategory struct {
+	ID       int64        `gorm:"primaryKey;autoIncrement"`
+	Name     string       `gorm:"type:varchar(100);not null;default:'';index"`
+	Code     string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"`
+	ParentID int64        `gorm:"type:bigint;not null;default:0;index"`
+	SortNo   int          `gorm:"type:int;not null;default:0;index"`
+	Status   enums.Status `gorm:"type:int;not null;default:0;index"`
+	Remark   string       `gorm:"type:text"`
+	AuditFields
+}
+
+// TicketResolutionCode 工单解决码。
+type TicketResolutionCode struct {
+	ID     int64        `gorm:"primaryKey;autoIncrement"`
+	Name   string       `gorm:"type:varchar(100);not null;default:'';index"`
+	Code   string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"`
+	SortNo int          `gorm:"type:int;not null;default:0;index"`
+	Status enums.Status `gorm:"type:int;not null;default:0;index"`
+	Remark string       `gorm:"type:text"`
+	AuditFields
+}
+
+// TicketSLAConfig 工单 SLA 配置。
+type TicketSLAConfig struct {
+	ID                   int64                `gorm:"primaryKey;autoIncrement"`
+	Name                 string               `gorm:"type:varchar(100);not null;default:'';index"`
+	Priority             enums.TicketPriority `gorm:"type:int;not null;default:2;uniqueIndex"`
+	FirstResponseMinutes int                  `gorm:"type:int;not null;default:0"`
+	ResolutionMinutes    int                  `gorm:"type:int;not null;default:0"`
+	Status               enums.Status         `gorm:"type:int;not null;default:0;index"`
+	Remark               string               `gorm:"type:text"`
+	AuditFields
+}
+
 // TicketComment 工单评论。
 type TicketComment struct {
 	ID          int64                   `gorm:"primaryKey;autoIncrement"`
@@ -495,6 +558,23 @@ type TicketWatcher struct {
 	TicketID  int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_watcher"`
 	UserID    int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_watcher"`
 	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
+}
+
+// TicketCollaborator 工单协作人。
+type TicketCollaborator struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement"`
+	TicketID  int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_collaborator"`
+	UserID    int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_collaborator"`
+	CreatedAt time.Time `gorm:"type:datetime;not null;index"`
+}
+
+// TicketMention 工单提及记录。
+type TicketMention struct {
+	ID              int64     `gorm:"primaryKey;autoIncrement"`
+	TicketID        int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
+	CommentID       int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
+	MentionedUserID int64     `gorm:"type:bigint;not null;index;uniqueIndex:uk_ticket_mention"`
+	CreatedAt       time.Time `gorm:"type:datetime;not null;index"`
 }
 
 // TicketEventLog 工单事件日志。

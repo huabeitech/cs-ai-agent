@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ type OptionComboboxProps = {
   emptyText?: string
   disabled?: boolean
   onChange: (value: string) => void
+  renderOptionAction?: (option: ComboboxOption) => ReactNode
 }
 
 export function OptionCombobox({
@@ -41,6 +43,7 @@ export function OptionCombobox({
   emptyText = "没有可选项",
   disabled = false,
   onChange,
+  renderOptionAction,
 }: OptionComboboxProps) {
   const selectedLabel =
     options.find((option) => option.value === value)?.label ?? placeholder
@@ -72,13 +75,26 @@ export function OptionCombobox({
                   value={`${option.label} ${option.value}`}
                   onSelect={() => onChange(option.value)}
                 >
-                  <CheckIcon
-                    className={cn(
-                      "mr-2 size-4",
-                      option.value === value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
+                  <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center">
+                      <CheckIcon
+                        className={cn(
+                          "mr-2 size-4 shrink-0",
+                          option.value === value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{option.label}</span>
+                    </div>
+                    {renderOptionAction ? (
+                      <div
+                        className="shrink-0"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {renderOptionAction(option)}
+                      </div>
+                    ) : null}
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

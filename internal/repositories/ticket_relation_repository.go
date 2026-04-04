@@ -62,12 +62,12 @@ func (r *ticketRelationRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (li
 	return
 }
 
-func (r *ticketRelationRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.TicketRelation) {
+func (r *ticketRelationRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.TicketRelation) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *ticketRelationRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *ticketRelationRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -100,3 +100,7 @@ func (r *ticketRelationRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.TicketRelation{}, "id = ?", id)
 }
 
+func (r *ticketRelationRepository) DeleteByTicketRelation(db *gorm.DB, ticketID, relatedTicketID int64, relationType string) error {
+	return db.Where("ticket_id = ? AND related_ticket_id = ? AND relation_type = ?", ticketID, relatedTicketID, relationType).
+		Delete(&models.TicketRelation{}).Error
+}

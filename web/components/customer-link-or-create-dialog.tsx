@@ -9,12 +9,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { linkConversationToCustomer } from "@/lib/api/agent"
 import { fetchCustomers, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer"
+import { linkTicketToCustomer } from "@/lib/api/ticket"
 
 export type CustomerLinkOrCreateDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** 传入时会话侧：关联已有或新建后绑定该会话 */
   conversationId?: number | null
+  /** 传入时工单侧：关联已有或新建后绑定该工单 */
+  ticketId?: number | null
   /** 绑定成功或仅新建成功后的回调 */
   onSuccess?: () => void | Promise<void>
 }
@@ -25,6 +28,7 @@ export function CustomerLinkOrCreateDialog({
   open,
   onOpenChange,
   conversationId,
+  ticketId,
   onSuccess,
 }: CustomerLinkOrCreateDialogProps) {
   const [searchText, setSearchText] = useState("")
@@ -70,7 +74,7 @@ export function CustomerLinkOrCreateDialog({
   }
 
   const handleLinkExisting = async (customer: AdminCustomer) => {
-    if (!conversationId) {
+    if (!conversationId && !ticketId) {
       toast.success(`已选择客户：${customer.name || `#${customer.id}`}`)
       onOpenChange(false)
       await onSuccess?.()
@@ -78,10 +82,17 @@ export function CustomerLinkOrCreateDialog({
     }
     setLinkingId(customer.id)
     try {
-      await linkConversationToCustomer({
-        conversationId,
-        customerId: customer.id,
-      })
+      if (conversationId) {
+        await linkConversationToCustomer({
+          conversationId,
+          customerId: customer.id,
+        })
+      } else if (ticketId) {
+        await linkTicketToCustomer({
+          ticketId,
+          customerId: customer.id,
+        })
+      }
       toast.success("已关联客户")
       onOpenChange(false)
       await onSuccess?.()
@@ -102,6 +113,12 @@ export function CustomerLinkOrCreateDialog({
           customerId: created.id,
         })
         toast.success("已创建客户并关联当前会话")
+      } else if (ticketId) {
+        await linkTicketToCustomer({
+          ticketId,
+          customerId: created.id,
+        })
+        toast.success("已创建客户并关联当前工单")
       } else {
         toast.success("已创建客户")
       }
@@ -116,9 +133,18 @@ export function CustomerLinkOrCreateDialog({
 
   const description = (
     <>
-      先搜索已有客户；{conversationId ? "选中即可关联当前会话。" : "未接入会话时仅创建或定位客户。"}
+      先搜索已有客户；
+      {conversationId
+        ? "选中即可关联当前会话。"
+        : ticketId
+          ? "选中即可关联当前工单。"
+          : "未接入上下文时仅创建或定位客户。"}
       若无结果，可填写下方新客户
-      {conversationId ? "，保存后将自动关联会话。" : "。"}
+      {conversationId
+        ? "，保存后将自动关联会话。"
+        : ticketId
+          ? "，保存后将自动关联工单。"
+          : "。"}
     </>
   )
 
@@ -145,6 +171,8 @@ export function CustomerLinkOrCreateDialog({
                 ? "提交中…"
                 : conversationId
                   ? "创建并关联会话"
+                  : ticketId
+                    ? "创建并关联工单"
                   : "创建客户"}
             </Button>
           ) : null}
@@ -209,6 +237,8 @@ export function CustomerLinkOrCreateDialog({
                     ? "处理中…"
                     : conversationId
                       ? "关联"
+                      : ticketId
+                        ? "关联"
                       : "选用"}
                 </Button>
               </li>

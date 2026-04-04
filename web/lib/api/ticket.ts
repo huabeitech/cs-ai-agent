@@ -14,6 +14,15 @@ export type PageResult<T> = {
 export type TicketCustomer = {
   id: number
   name: string
+  companyId?: number
+  company?: {
+    id: number
+    name: string
+    code?: string
+    remark?: string
+    createdAt?: string
+    updatedAt?: string
+  }
   primaryMobile?: string
   primaryEmail?: string
 }
@@ -66,6 +75,7 @@ export type TicketItem = {
   customerId: number
   conversationId: number
   categoryId: number
+  categoryName?: string
   type: string
   priority: number
   severity: number
@@ -78,6 +88,7 @@ export type TicketItem = {
   pendingReason?: string
   closeReason?: string
   resolutionCode?: string
+  resolutionCodeName?: string
   resolutionSummary?: string
   firstResponseAt?: string
   resolvedAt?: string
@@ -99,16 +110,67 @@ export type TicketDetail = {
     userId: number
     userName?: string
   }>
+  collaborators?: TicketCollaborator[]
   comments?: TicketComment[]
   events?: TicketEvent[]
+  relatedTickets?: TicketRelation[]
+}
+
+export type TicketCollaborator = {
+  id: number
+  userId: number
+  userName?: string
+  teamName?: string
+}
+
+export type TicketRelation = {
+  id: number
+  ticketId: number
+  relatedTicketId: number
+  relationType: string
+  relatedTicketNo?: string
+  relatedTicketTitle?: string
+  relatedTicketStatus?: string
+  currentTeamName?: string
+  currentAssigneeName?: string
+  updatedAt?: string
 }
 
 export type TicketSummary = {
   all: number
   mine: number
   watching: number
+  collaboration: number
+  participating: number
+  mentioned: number
+  unassigned: number
   pendingCustomer: number
+  pendingInternal: number
   overdue: number
+}
+
+export type TicketRiskReason = {
+  code: string
+  title: string
+  description: string
+  count: number
+}
+
+export type TicketRiskOverview = {
+  overdue: number
+  highRisk: number
+  unassigned: number
+  pendingInternal: number
+  pendingCustomer: number
+  riskWindowMins: number
+  reasons?: TicketRiskReason[]
+}
+
+export type TicketSavedView = {
+  id: number
+  name: string
+  filters?: Record<string, unknown>
+  sortNo: number
 }
 
 export type TicketListQuery = {
@@ -125,8 +187,20 @@ export type TicketListQuery = {
   conversationId?: number
   source?: string
   watching?: number
+  collaboration?: number
+  collaborating?: number
+  mentioned?: number
   mine?: number
+  unassigned?: number
   overdue?: number
+}
+
+export type TicketRiskListQuery = {
+  riskType: "overdue" | "high_risk" | "unassigned" | "pending_internal" | "pending_customer"
+  currentTeamId?: number
+  riskWindowMins?: number
+  page?: number
+  limit?: number
 }
 
 export type CreateTicketPayload = {
@@ -201,6 +275,39 @@ export function fetchTicketSummary() {
   return request<TicketSummary>("/api/console/ticket/summary")
 }
 
+export function fetchTicketViews() {
+  return request<TicketSavedView[]>("/api/console/ticket/view_list")
+}
+
+export function saveTicketView(payload: {
+  id?: number
+  name: string
+  filters?: Record<string, unknown>
+}) {
+  return request<TicketSavedView>("/api/console/ticket/save_view", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketView(id: number) {
+  return request<void>("/api/console/ticket/delete_view", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  })
+}
+
+export function fetchTicketRiskOverview(query?: {
+  currentTeamId?: number
+  riskWindowMins?: number
+}) {
+  return request<TicketRiskOverview>(`/api/console/ticket/risk_overview${toQueryString(query)}`)
+}
+
+export function fetchTicketRiskList(query: TicketRiskListQuery) {
+  return request<PageResult<TicketItem>>(`/api/console/ticket/risk_list${toQueryString(query)}`)
+}
+
 export function createTicket(payload: CreateTicketPayload) {
   return request<TicketItem>("/api/console/ticket/create", {
     method: "POST",
@@ -222,6 +329,16 @@ export function updateTicket(payload: UpdateTicketPayload) {
   })
 }
 
+export function linkTicketToCustomer(payload: {
+  ticketId: number
+  customerId: number
+}) {
+  return request<void>("/api/console/ticket/link_customer", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export function assignTicket(payload: {
   ticketId: number
   toUserId: number
@@ -229,6 +346,18 @@ export function assignTicket(payload: {
   reason?: string
 }) {
   return request<void>("/api/console/ticket/assign", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function batchAssignTickets(payload: {
+  ticketIds: number[]
+  toUserId: number
+  toTeamId?: number
+  reason?: string
+}) {
+  return request<void>("/api/console/ticket/batch_assign", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -244,6 +373,21 @@ export function changeTicketStatus(payload: {
   reason?: string
 }) {
   return request<void>("/api/console/ticket/change_status", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function batchChangeTicketStatus(payload: {
+  ticketIds: number[]
+  status: string
+  pendingReason?: string
+  closeReason?: string
+  resolutionCode?: string
+  resolutionSummary?: string
+  reason?: string
+}) {
+  return request<void>("/api/console/ticket/batch_change_status", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -298,5 +442,45 @@ export function unwatchTicket(ticketId: number) {
   return request<void>("/api/console/ticket/unwatch", {
     method: "POST",
     body: JSON.stringify({ ticketId }),
+  })
+}
+
+export function batchWatchTickets(payload: { ticketIds: number[]; watched: boolean }) {
+  return request<void>("/api/console/ticket/batch_watch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function addTicketRelation(payload: {
+  ticketId: number
+  relatedTicketId?: number
+  relatedTicketNo?: string
+  relationType: string
+}) {
+  return request<void>("/api/console/ticket/add_relation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketRelation(payload: { ticketId: number; relationId: number }) {
+  return request<void>("/api/console/ticket/delete_relation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function addTicketCollaborator(payload: { ticketId: number; userId: number }) {
+  return request<void>("/api/console/ticket/add_collaborator", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteTicketCollaborator(payload: { ticketId: number; collaboratorId: number }) {
+  return request<void>("/api/console/ticket/delete_collaborator", {
+    method: "POST",
+    body: JSON.stringify(payload),
   })
 }

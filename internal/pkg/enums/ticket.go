@@ -163,6 +163,7 @@ const (
 	TicketEventTypeReopened           TicketEventType = "reopened"
 	TicketEventTypeSLABreached        TicketEventType = "sla_breached"
 	TicketEventTypeLinkedConversation TicketEventType = "linked_conversation"
+	TicketEventTypeMentioned          TicketEventType = "mentioned"
 )
 
 type TicketSLAType string

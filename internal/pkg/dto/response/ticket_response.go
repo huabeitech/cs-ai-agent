@@ -56,6 +56,7 @@ type TicketResponse struct {
 	CustomerID          int64                `json:"customerId"`
 	ConversationID      int64                `json:"conversationId"`
 	CategoryID          int64                `json:"categoryId"`
+	CategoryName        string               `json:"categoryName,omitempty"`
 	Type                string               `json:"type"`
 	Priority            enums.TicketPriority `json:"priority"`
 	Severity            enums.TicketSeverity `json:"severity"`
@@ -68,6 +69,7 @@ type TicketResponse struct {
 	PendingReason       string               `json:"pendingReason,omitempty"`
 	CloseReason         string               `json:"closeReason,omitempty"`
 	ResolutionCode      string               `json:"resolutionCode,omitempty"`
+	ResolutionCodeName  string               `json:"resolutionCodeName,omitempty"`
 	ResolutionSummary   string               `json:"resolutionSummary,omitempty"`
 	FirstResponseAt     string               `json:"firstResponseAt,omitempty"`
 	ResolvedAt          string               `json:"resolvedAt,omitempty"`
@@ -83,16 +85,67 @@ type TicketResponse struct {
 }
 
 type TicketDetailResponse struct {
-	Ticket   TicketResponse           `json:"ticket"`
-	Watchers []TicketWatcherResponse  `json:"watchers,omitempty"`
-	Comments []TicketCommentResponse  `json:"comments,omitempty"`
-	Events   []TicketEventLogResponse `json:"events,omitempty"`
+	Ticket         TicketResponse               `json:"ticket"`
+	Watchers       []TicketWatcherResponse      `json:"watchers,omitempty"`
+	Collaborators  []TicketCollaboratorResponse `json:"collaborators,omitempty"`
+	Comments       []TicketCommentResponse      `json:"comments,omitempty"`
+	Events         []TicketEventLogResponse     `json:"events,omitempty"`
+	RelatedTickets []TicketRelationResponse     `json:"relatedTickets,omitempty"`
 }
 
 type TicketSummaryResponse struct {
 	All             int64 `json:"all"`
 	Mine            int64 `json:"mine"`
 	Watching        int64 `json:"watching"`
+	Collaboration   int64 `json:"collaboration"`
+	Participating   int64 `json:"participating"`
+	Mentioned       int64 `json:"mentioned"`
+	Unassigned      int64 `json:"unassigned"`
 	PendingCustomer int64 `json:"pendingCustomer"`
+	PendingInternal int64 `json:"pendingInternal"`
 	Overdue         int64 `json:"overdue"`
+}
+
+type TicketRiskReasonResponse struct {
+	Code        string `json:"code"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Count       int64  `json:"count"`
+}
+
+type TicketRiskOverviewResponse struct {
+	Overdue         int64                      `json:"overdue"`
+	HighRisk        int64                      `json:"highRisk"`
+	Unassigned      int64                      `json:"unassigned"`
+	PendingInternal int64                      `json:"pendingInternal"`
+	PendingCustomer int64                      `json:"pendingCustomer"`
+	RiskWindowMins  int                        `json:"riskWindowMins"`
+	Reasons         []TicketRiskReasonResponse `json:"reasons,omitempty"`
+}
+
+type TicketRelationResponse struct {
+	ID                  int64                    `json:"id"`
+	TicketID            int64                    `json:"ticketId"`
+	RelatedTicketID     int64                    `json:"relatedTicketId"`
+	RelationType        enums.TicketRelationType `json:"relationType"`
+	RelatedTicketNo     string                   `json:"relatedTicketNo,omitempty"`
+	RelatedTicketTitle  string                   `json:"relatedTicketTitle,omitempty"`
+	RelatedTicketStatus enums.TicketStatus       `json:"relatedTicketStatus,omitempty"`
+	CurrentTeamName     string                   `json:"currentTeamName,omitempty"`
+	CurrentAssigneeName string                   `json:"currentAssigneeName,omitempty"`
+	UpdatedAt           string                   `json:"updatedAt,omitempty"`
+}
+
+type TicketCollaboratorResponse struct {
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"userId"`
+	UserName string `json:"userName,omitempty"`
+	TeamName string `json:"teamName,omitempty"`
+}
+
+type TicketViewResponse struct {
+	ID      int64          `json:"id"`
+	Name    string         `json:"name"`
+	Filters map[string]any `json:"filters,omitempty"`
+	SortNo  int            `json:"sortNo"`
 }

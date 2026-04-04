@@ -23,7 +23,7 @@ import {
   type AdminAgentProfile,
   type AdminAgentTeam,
 } from "@/lib/api/admin"
-import { assignTicket } from "@/lib/api/ticket"
+import { assignTicket, batchAssignTickets } from "@/lib/api/ticket"
 
 const schema = z.object({
   toUserId: z.string().trim().min(1, "请选择处理人"),
@@ -48,6 +48,7 @@ const emptyForm: FormValues = {
 type TicketAssignDialogProps = {
   open: boolean
   ticketId: number | null
+  ticketIds?: number[]
   currentTeamId?: number
   currentAssigneeId?: number
   onOpenChange: (open: boolean) => void
@@ -57,6 +58,7 @@ type TicketAssignDialogProps = {
 export function TicketAssignDialog({
   open,
   ticketId,
+  ticketIds,
   currentTeamId,
   currentAssigneeId,
   onOpenChange,
@@ -68,6 +70,7 @@ export function TicketAssignDialog({
         <TicketAssignDialogBody
           key={ticketId ?? "ticket-assign"}
           ticketId={ticketId}
+          ticketIds={ticketIds}
           currentTeamId={currentTeamId}
           currentAssigneeId={currentAssigneeId}
           onOpenChange={onOpenChange}
@@ -80,6 +83,7 @@ export function TicketAssignDialog({
 
 function TicketAssignDialogBody({
   ticketId,
+  ticketIds,
   currentTeamId,
   currentAssigneeId,
   onOpenChange,
@@ -129,19 +133,30 @@ function TicketAssignDialogBody({
   }, [])
 
   async function onFormSubmit(values: FormValues) {
-    if (!ticketId) {
-      toast.error("工单不存在")
+    const validTicketIds = (ticketIds ?? []).filter((item) => item > 0)
+    if (!ticketId && validTicketIds.length === 0) {
+      toast.error("请选择工单")
       return
     }
     setSaving(true)
     try {
-      await assignTicket({
-        ticketId,
-        toUserId: Number(values.toUserId),
-        toTeamId: values.toTeamId ? Number(values.toTeamId) : undefined,
-        reason: values.reason.trim() || undefined,
-      })
-      toast.success("处理人已更新")
+      if (validTicketIds.length > 0) {
+        await batchAssignTickets({
+          ticketIds: validTicketIds,
+          toUserId: Number(values.toUserId),
+          toTeamId: values.toTeamId ? Number(values.toTeamId) : undefined,
+          reason: values.reason.trim() || undefined,
+        })
+        toast.success(`已批量指派 ${validTicketIds.length} 张工单`)
+      } else {
+        await assignTicket({
+          ticketId: ticketId!,
+          toUserId: Number(values.toUserId),
+          toTeamId: values.toTeamId ? Number(values.toTeamId) : undefined,
+          reason: values.reason.trim() || undefined,
+        })
+        toast.success("处理人已更新")
+      }
       onOpenChange(false)
       await onSuccess?.()
     } catch (error) {
@@ -154,7 +169,7 @@ function TicketAssignDialogBody({
   return (
     <DialogContent className="max-w-lg gap-0 p-0 sm:max-w-lg">
       <DialogHeader className="px-6 pt-6">
-        <DialogTitle>指派工单</DialogTitle>
+        <DialogTitle>{ticketIds?.length ? `批量指派工单（${ticketIds.length}）` : "指派工单"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <div className="space-y-4 p-6">

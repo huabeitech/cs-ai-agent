@@ -88,3 +88,62 @@ type ReopenTicketRequest struct {
 type WatchTicketRequest struct {
 	TicketID int64 `json:"ticketId"`
 }
+
+type BatchAssignTicketRequest struct {
+	TicketIDs []int64 `json:"ticketIds"`
+	ToUserID  int64   `json:"toUserId"`
+	ToTeamID  int64   `json:"toTeamId"`
+	Reason    string  `json:"reason"`
+}
+
+type BatchChangeTicketStatusRequest struct {
+	TicketIDs         []int64 `json:"ticketIds"`
+	Status            string  `json:"status"`
+	PendingReason     string  `json:"pendingReason"`
+	CloseReason       string  `json:"closeReason"`
+	ResolutionCode    string  `json:"resolutionCode"`
+	ResolutionSummary string  `json:"resolutionSummary"`
+	Reason            string  `json:"reason"`
+}
+
+type BatchWatchTicketRequest struct {
+	TicketIDs []int64 `json:"ticketIds"`
+	Watched   bool    `json:"watched"`
+}
+
+type AddTicketRelationRequest struct {
+	TicketID        int64  `json:"ticketId"`
+	RelatedTicketID int64  `json:"relatedTicketId"`
+	RelatedTicketNo string `json:"relatedTicketNo"`
+	RelationType    string `json:"relationType"`
+}
+
+type DeleteTicketRelationRequest struct {
+	TicketID   int64 `json:"ticketId"`
+	RelationID int64 `json:"relationId"`
+}
+
+type AddTicketCollaboratorRequest struct {
+	TicketID int64 `json:"ticketId"`
+	UserID   int64 `json:"userId"`
+}
+
+type DeleteTicketCollaboratorRequest struct {
+	TicketID       int64 `json:"ticketId"`
+	CollaboratorID int64 `json:"collaboratorId"`
+}
+
+type LinkTicketCustomerRequest struct {
+	TicketID   int64 `json:"ticketId"`
+	CustomerID int64 `json:"customerId"`
+}
+
+type SaveTicketViewRequest struct {
+	ID      int64          `json:"id"`
+	Name    string         `json:"name"`
+	Filters map[string]any `json:"filters"`
+}
+
+type DeleteTicketViewRequest struct {
+	ID int64 `json:"id"`
+}

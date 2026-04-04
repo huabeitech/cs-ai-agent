@@ -17,6 +17,14 @@ func newTicketWatcherRepository() *ticketWatcherRepository {
 type ticketWatcherRepository struct {
 }
 
+func (r *ticketWatcherRepository) TakeByTicketIDAndUserID(db *gorm.DB, ticketID, userID int64) *models.TicketWatcher {
+	ret := &models.TicketWatcher{}
+	if err := db.Take(ret, "ticket_id = ? AND user_id = ?", ticketID, userID).Error; err != nil {
+		return nil
+	}
+	return ret
+}
+
 func (r *ticketWatcherRepository) Get(db *gorm.DB, id int64) *models.TicketWatcher {
 	ret := &models.TicketWatcher{}
 	if err := db.First(ret, "id = ?", id).Error; err != nil {
@@ -62,12 +70,12 @@ func (r *ticketWatcherRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (lis
 	return
 }
 
-func (r *ticketWatcherRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (list []models.TicketWatcher) {
+func (r *ticketWatcherRepository) FindBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (list []models.TicketWatcher) {
 	db.Raw(sqlStr, paramArr...).Scan(&list)
 	return
 }
 
-func (r *ticketWatcherRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr... interface{}) (count int64) {
+func (r *ticketWatcherRepository) CountBySql(db *gorm.DB, sqlStr string, paramArr ...interface{}) (count int64) {
 	db.Raw(sqlStr, paramArr...).Count(&count)
 	return
 }
@@ -99,4 +107,3 @@ func (r *ticketWatcherRepository) UpdateColumn(db *gorm.DB, id int64, name strin
 func (r *ticketWatcherRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.TicketWatcher{}, "id = ?", id)
 }
-

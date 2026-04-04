@@ -5,6 +5,7 @@ import {
   BrainCircuitIcon,
   Building2Icon,
   CalendarClockIcon,
+  ChartColumnIncreasingIcon,
   FileTextIcon,
   GlobeIcon,
   KeyRoundIcon,
@@ -111,6 +112,13 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         title: "工单",
         url: "/tickets",
         icon: <FileTextIcon />,
+        requiredPermission: "ticket.view",
+      },
+      {
+        title: "SLA风险",
+        url: "/ticket-risk",
+        icon: <ChartColumnIncreasingIcon />,
+        requiredPermission: "ticket.view",
       },
       {
         title: "会话监控",
@@ -135,6 +143,29 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         url: "/customers",
         icon: <UsersIcon />,
         requiredPermission: "customer.view",
+      },
+    ],
+  },
+  {
+    title: "工单配置",
+    items: [
+      {
+        title: "工单分类",
+        url: "/ticket-categories",
+        icon: <TagsIcon />,
+        requiredPermission: "ticketCategory.view",
+      },
+      {
+        title: "解决码",
+        url: "/ticket-resolution-codes",
+        icon: <KeyRoundIcon />,
+        requiredPermission: "ticketResolutionCode.view",
+      },
+      {
+        title: "工单SLA",
+        url: "/ticket-sla-configs",
+        icon: <Settings2Icon />,
+        requiredPermission: "ticketSLAConfig.view",
       },
     ],
   },
