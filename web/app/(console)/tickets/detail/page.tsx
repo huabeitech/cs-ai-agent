@@ -409,11 +409,6 @@ export default function TicketDetailPage() {
                           {ticket.title}
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <TicketStatusBadge status={ticket.status} />
-                        <TicketPriorityBadge priority={ticket.priority} />
-                        <TicketSLABadge ticket={ticket} />
-                      </div>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       <Button
@@ -442,7 +437,34 @@ export default function TicketDetailPage() {
                       </Button>
                     </div>
                   </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TicketStatusBadge status={ticket.status} />
+                        <TicketPriorityBadge priority={ticket.priority} />
+                        <TicketSLABadge ticket={ticket} />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setEditDialogOpen(true)}>
+                          编辑基础信息
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setAssignDialogOpen(true)}>
+                          <UserRoundPlusIcon className="size-4" />
+                          分配处理人
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setStatusDialogOpen(true)}>
+                          <SaveIcon className="size-4" />
+                          变更状态
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="min-h-0 overflow-y-auto">
+                <div className="space-y-0">
+                  <DetailSection className="px-4 pt-6 lg:px-6" contentClassName="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <SummaryMetric
                       label="分类"
                       value={ticket.categoryName || "未分类，建议补充分类配置"}
@@ -457,28 +479,8 @@ export default function TicketDetailPage() {
                           : "未设置"
                       }
                     />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Link href="/ticket-categories">
-                      <Button variant="ghost">管理分类</Button>
-                    </Link>
-                    <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-                      编辑基础信息
-                    </Button>
-                    <Button variant="outline" onClick={() => setAssignDialogOpen(true)}>
-                      <UserRoundPlusIcon className="size-4" />
-                      分配处理人
-                    </Button>
-                    <Button variant="outline" onClick={() => setStatusDialogOpen(true)}>
-                      <SaveIcon className="size-4" />
-                      变更状态
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                  </DetailSection>
 
-              <div className="min-h-0 overflow-y-auto">
-                <div className="space-y-0">
                   <DetailSection
                     title="工单说明"
                     description="问题背景、上下文和当前处理要求"
