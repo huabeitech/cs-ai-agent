@@ -365,8 +365,11 @@ function TicketSLAConfigEditDialog({
   } = form
 
   useEffect(() => {
+    if (!open) {
+      return
+    }
     reset(buildForm(item))
-  }, [item, reset])
+  }, [open, item, reset])
 
   return (
     <ProjectDialog
