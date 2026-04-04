@@ -490,7 +490,7 @@ export default function TicketDetailPage() {
                                         : "bg-amber-500"
                                     }`}
                                   />
-                                  <div className="rounded-xl border border-border/60 bg-muted/15 px-3.5 py-3">
+                                  <div className="rounded-lg border border-border/60 bg-muted/15 px-3.5 py-3">
                                     <div className="mb-2 flex items-start justify-between gap-3">
                                       <div className="min-w-0 space-y-1">
                                         <div className="flex flex-wrap items-center gap-2">
