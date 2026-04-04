@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  BellIcon,
-  BellOffIcon,
+  Cog,
   ExternalLinkIcon,
+  Heart,
   MessageSquarePlusIcon,
   PanelRightCloseIcon,
   PanelRightOpenIcon,
@@ -11,7 +11,6 @@ import {
   PlusIcon,
   RefreshCcwIcon,
   RotateCcwIcon,
-  SaveIcon,
   UserRoundPlusIcon,
   XIcon,
 } from "lucide-react";
@@ -26,11 +25,10 @@ import {
 } from "react";
 import { toast } from "sonner";
 
-import { OptionCombobox } from "@/components/option-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   fetchAgentProfilesAll,
   fetchConversationDetail,
@@ -38,11 +36,9 @@ import {
   type AdminConversationDetail,
 } from "@/lib/api/admin";
 import {
-  addTicketInternalNote,
   deleteTicketCollaborator,
   deleteTicketRelation,
   fetchTicketDetail,
-  replyTicket,
   unwatchTicket,
   updateTicket,
   watchTicket,
@@ -64,13 +60,13 @@ import { TicketCollaboratorDialog } from "../_components/ticket-collaborator-dia
 import { TicketPriorityBadge } from "../_components/ticket-priority-badge";
 import { TicketReasonDialog } from "../_components/ticket-reason-dialog";
 import { TicketRelationDialog } from "../_components/ticket-relation-dialog";
+import { TicketReplyDialog } from "../_components/ticket-reply-dialog";
 import { TicketSLABadge } from "../_components/ticket-sla-badge";
 import {
   TicketStatusBadge,
   ticketStatusLabel,
 } from "../_components/ticket-status-badge";
 import { TicketStatusDialog } from "../_components/ticket-status-dialog";
-import { ButtonGroup } from "@/components/ui/button-group";
 
 function formatTicketSource(source?: string) {
   switch (source) {
@@ -182,8 +178,7 @@ export default function TicketDetailPage() {
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [replyMode, setReplyMode] = useState<"public" | "internal">("public");
-  const [replyContent, setReplyContent] = useState("");
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -195,8 +190,6 @@ export default function TicketDetailPage() {
   const [sourceConversation, setSourceConversation] =
     useState<AdminConversationDetail | null>(null);
   const [agents, setAgents] = useState<AdminAgentProfile[]>([]);
-  const [mentionUserId, setMentionUserId] = useState("");
-  const [mentionedUsers, setMentionedUsers] = useState<AdminAgentProfile[]>([]);
 
   const ticket = detail?.ticket ?? null;
   const currentUserId = readSession()?.user?.id ?? 0;
@@ -269,79 +262,6 @@ export default function TicketDetailPage() {
       }
     })();
   }, [ticket?.conversationId]);
-
-  async function handleReplySubmit() {
-    if (!ticket || !replyContent.trim()) {
-      toast.error(
-        replyMode === "public" ? "回复内容不能为空" : "备注内容不能为空",
-      );
-      return;
-    }
-    setSaving(true);
-    try {
-      if (replyMode === "public") {
-        await replyTicket({
-          ticketId: ticket.id,
-          contentType: "text",
-          content: replyContent.trim(),
-        });
-        toast.success("已回复客户");
-      } else {
-        const payload =
-          mentionedUsers.length > 0
-            ? JSON.stringify({
-                mentionUserIds: mentionedUsers.map((item) => item.userId),
-              })
-            : undefined;
-        await addTicketInternalNote({
-          ticketId: ticket.id,
-          contentType: "text",
-          content: replyContent.trim(),
-          payload,
-        });
-        toast.success("已添加内部备注");
-      }
-      setReplyContent("");
-      setMentionUserId("");
-      setMentionedUsers([]);
-      await loadDetail();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "提交失败");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const mentionOptions = useMemo(
-    () =>
-      agents.map((agent) => ({
-        value: String(agent.userId),
-        label:
-          agent.displayName ||
-          agent.nickname ||
-          agent.username ||
-          `客服 #${agent.userId}`,
-      })),
-    [agents],
-  );
-
-  function handleAddMentionUser() {
-    const userId = Number(mentionUserId);
-    if (!userId) {
-      return;
-    }
-    const user = agents.find((item) => item.userId === userId);
-    if (!user) {
-      return;
-    }
-    setMentionedUsers((current) => {
-      if (current.some((item) => item.userId === user.userId)) {
-        return current;
-      }
-      return [...current, user];
-    });
-    setMentionUserId("");
-  }
 
   async function handleWatchToggle() {
     if (!ticket) {
@@ -449,12 +369,16 @@ export default function TicketDetailPage() {
                         onClick={() => void handleWatchToggle()}
                         disabled={saving || !ticket}
                       >
-                        {isWatching ? (
-                          <BellOffIcon className="size-4" />
-                        ) : (
-                          <BellIcon className="size-4" />
-                        )}
-                        {isWatching ? "取消关注" : "关注工单"}
+                        <Heart className="size-4" />
+                        {isWatching ? "已关注" : "关注"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setReplyDialogOpen(true)}
+                      >
+                        <MessageSquarePlusIcon className="size-4" />
+                        回复/备注
                       </Button>
                       {ticket.status === "closed" ? (
                         <Button
@@ -480,23 +404,6 @@ export default function TicketDetailPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => void loadDetail()}
-                        disabled={loading || saving}
-                      >
-                        <RefreshCcwIcon className="size-4" />
-                        刷新
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditDialogOpen(true)}
-                      >
-                        <PencilIcon className="size-4" />
-                        编辑
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
                         onClick={() => setAssignDialogOpen(true)}
                       >
                         <UserRoundPlusIcon className="size-4" />
@@ -507,8 +414,25 @@ export default function TicketDetailPage() {
                         variant="outline"
                         onClick={() => setStatusDialogOpen(true)}
                       >
-                        <SaveIcon className="size-4" />
+                        <Cog className="size-4" />
                         变更状态
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditDialogOpen(true)}
+                      >
+                        <PencilIcon className="size-4" />
+                        {/* 编辑 */}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void loadDetail()}
+                        disabled={loading || saving}
+                      >
+                        <RefreshCcwIcon className="size-4" />
+                        {/* 刷新 */}
                       </Button>
                     </ButtonGroup>
                   </div>
@@ -530,115 +454,9 @@ export default function TicketDetailPage() {
                     </div>
                   </DetailSection>
 
-                  <DetailSection
-                    title="回复与备注"
-                    description="在详情页内完成客户回复和内部协作记录"
-                    className="px-4 pt-4 lg:px-6"
-                    contentClassName="space-y-2.5"
-                  >
-                    <SurfacePanel className="space-y-3 p-3">
-                      <div className="flex gap-2">
-                        <Button
-                          variant={
-                            replyMode === "public" ? "default" : "outline"
-                          }
-                          onClick={() => setReplyMode("public")}
-                        >
-                          回复客户
-                        </Button>
-                        <Button
-                          variant={
-                            replyMode === "internal" ? "default" : "outline"
-                          }
-                          onClick={() => setReplyMode("internal")}
-                        >
-                          内部备注
-                        </Button>
-                      </div>
-                      <Textarea
-                        rows={5}
-                        value={replyContent}
-                        placeholder={
-                          replyMode === "public"
-                            ? "输入给客户的回复内容"
-                            : "输入内部备注"
-                        }
-                        onChange={(event) =>
-                          setReplyContent(event.target.value)
-                        }
-                      />
-                      {replyMode === "internal" ? (
-                        <div className="space-y-2.5 rounded-lg border border-border/60 bg-background p-3">
-                          <div className="text-sm font-medium">@提及协作人</div>
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <OptionCombobox
-                                value={mentionUserId}
-                                options={mentionOptions}
-                                placeholder="选择要提及的客服"
-                                searchPlaceholder="搜索客服"
-                                emptyText="暂无可选客服"
-                                onChange={setMentionUserId}
-                              />
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={handleAddMentionUser}
-                            >
-                              添加
-                            </Button>
-                          </div>
-                          {mentionedUsers.length ? (
-                            <div className="flex flex-wrap gap-2">
-                              {mentionedUsers.map((user) => (
-                                <button
-                                  key={user.userId}
-                                  type="button"
-                                  className="rounded-full border px-3 py-1 text-xs"
-                                  onClick={() =>
-                                    setMentionedUsers((current) =>
-                                      current.filter(
-                                        (item) => item.userId !== user.userId,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  @
-                                  {user.displayName ||
-                                    user.nickname ||
-                                    user.username ||
-                                    `客服#${user.userId}`}{" "}
-                                  ×
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground">
-                              未添加提及对象
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => void handleReplySubmit()}
-                          disabled={saving}
-                        >
-                          <MessageSquarePlusIcon className="size-4" />
-                          {replyMode === "public" ? "发送回复" : "保存备注"}
-                        </Button>
-                      </div>
-                    </SurfacePanel>
-                  </DetailSection>
-
-                  <DetailSection
-                    title="处理记录"
-                    description="沟通记录和状态流转分开展示，便于排查"
-                    className="px-4 pt-4 lg:px-6"
-                  >
+                  <DetailSection className="px-4 pt-4 lg:px-6">
                     <Tabs defaultValue="comments" className="gap-3">
-                      <TabsList variant="line">
+                      <TabsList>
                         <TabsTrigger value="comments">回复记录</TabsTrigger>
                         <TabsTrigger value="events">事件记录</TabsTrigger>
                       </TabsList>
@@ -1255,6 +1073,12 @@ export default function TicketDetailPage() {
           </div>
         </div>
       )}
+      <TicketReplyDialog
+        open={replyDialogOpen}
+        ticketId={ticket?.id ?? null}
+        onOpenChange={setReplyDialogOpen}
+        onSuccess={loadDetail}
+      />
       <TicketAssignDialog
         open={assignDialogOpen}
         ticketId={ticket?.id ?? null}
