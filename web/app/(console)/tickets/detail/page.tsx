@@ -67,6 +67,7 @@ import {
   ticketStatusLabel,
 } from "../_components/ticket-status-badge";
 import { TicketStatusDialog } from "../_components/ticket-status-dialog";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 function formatTicketSource(source?: string) {
   switch (source) {
@@ -111,10 +112,6 @@ function ticketSeverityLabel(severity: number) {
     default:
       return String(severity);
   }
-}
-
-function isClosedStatus(status: string) {
-  return status === "resolved" || status === "closed" || status === "cancelled";
 }
 
 function ticketRelationLabel(relationType?: string) {
@@ -443,47 +440,43 @@ export default function TicketDetailPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => void handleWatchToggle()}
-                        disabled={saving || !ticket}
-                      >
-                        {isWatching ? "取消关注" : "关注工单"}
-                      </Button>
-                      {ticket.status === "closed" ? (
+                      <ButtonGroup>
                         <Button
-                          onClick={() => setReopenDialogOpen(true)}
-                          disabled={saving}
-                        >
-                          重开工单
-                        </Button>
-                      ) : (
-                        <Button
+                          size="sm"
                           variant="outline"
-                          onClick={() => setCloseDialogOpen(true)}
+                          onClick={() => void handleWatchToggle()}
                           disabled={saving || !ticket}
                         >
-                          关闭工单
+                          {isWatching ? "取消关注" : "关注工单"}
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        onClick={() => void loadDetail()}
-                        disabled={loading || saving}
-                      >
-                        <RefreshCcwIcon className="size-4" />
-                        刷新
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <TicketStatusBadge status={ticket.status} />
-                        <TicketPriorityBadge priority={ticket.priority} />
-                        <TicketSLABadge ticket={ticket} />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
+                        {ticket.status === "closed" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setReopenDialogOpen(true)}
+                            disabled={saving}
+                          >
+                            重开工单
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCloseDialogOpen(true)}
+                            disabled={saving || !ticket}
+                          >
+                            关闭工单
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void loadDetail()}
+                          disabled={loading || saving}
+                        >
+                          <RefreshCcwIcon className="size-4" />
+                          刷新
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -507,7 +500,17 @@ export default function TicketDetailPage() {
                           <SaveIcon className="size-4" />
                           变更状态
                         </Button>
+                      </ButtonGroup>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TicketStatusBadge status={ticket.status} />
+                        <TicketPriorityBadge priority={ticket.priority} />
+                        <TicketSLABadge ticket={ticket} />
                       </div>
+                      <div className="flex flex-wrap gap-2"></div>
                     </div>
                   </div>
                 </div>
