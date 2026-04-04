@@ -429,104 +429,104 @@ export default function TicketDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex h-full flex-col">
               {/* 工单header */}
-              {/* <div className="border-b border-border/70 bg-muted/10"> */}
-                <div className="border-b border-border/70 bg-muted/10 flex flex-col gap-2.5 px-4 py-2">
-                  <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="min-w-0 space-y-2">
-                      <div className="text-xs font-medium tracking-wide text-muted-foreground">
-                        {ticket.ticketNo}
-                      </div>
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <TicketStatusBadge status={ticket.status} />
-                        <TicketPriorityBadge priority={ticket.priority} />
-                        <TicketSLABadge ticket={ticket} />
-                      </div>
+              <div className="border-b border-border/70 bg-muted/10 flex flex-col gap-2.5 px-4 py-2">
+                <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0 space-y-2">
+                    <div className="text-xs font-medium tracking-wide text-muted-foreground">
+                      {ticket.ticketNo}
                     </div>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <ButtonGroup>
-                        <Button
-                          size="sm"
-                          variant={isWatching ? "default" : "outline"}
-                          onClick={() => void handleWatchToggle()}
-                          disabled={saving || !ticket}
-                        >
-                          {isWatching ? (
-                            <BellOffIcon className="size-4" />
-                          ) : (
-                            <BellIcon className="size-4" />
-                          )}
-                          {isWatching ? "取消关注" : "关注工单"}
-                        </Button>
-                        {ticket.status === "closed" ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setReopenDialogOpen(true)}
-                            disabled={saving}
-                          >
-                            <RotateCcwIcon className="size-4" />
-                            重开工单
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCloseDialogOpen(true)}
-                            disabled={saving || !ticket}
-                          >
-                            <XIcon className="size-4" />
-                            关闭工单
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void loadDetail()}
-                          disabled={loading || saving}
-                        >
-                          <RefreshCcwIcon className="size-4" />
-                          刷新
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditDialogOpen(true)}
-                        >
-                          <PencilIcon className="size-4" />
-                          编辑
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setAssignDialogOpen(true)}
-                        >
-                          <UserRoundPlusIcon className="size-4" />
-                          分配处理人
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setStatusDialogOpen(true)}
-                        >
-                          <SaveIcon className="size-4" />
-                          变更状态
-                        </Button>
-                      </ButtonGroup>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <TicketStatusBadge status={ticket.status} />
+                      <TicketPriorityBadge priority={ticket.priority} />
+                      <TicketSLABadge ticket={ticket} />
                     </div>
                   </div>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <ButtonGroup>
+                      <Button
+                        size="sm"
+                        variant={isWatching ? "default" : "outline"}
+                        onClick={() => void handleWatchToggle()}
+                        disabled={saving || !ticket}
+                      >
+                        {isWatching ? (
+                          <BellOffIcon className="size-4" />
+                        ) : (
+                          <BellIcon className="size-4" />
+                        )}
+                        {isWatching ? "取消关注" : "关注工单"}
+                      </Button>
+                      {ticket.status === "closed" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setReopenDialogOpen(true)}
+                          disabled={saving}
+                        >
+                          <RotateCcwIcon className="size-4" />
+                          重开工单
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCloseDialogOpen(true)}
+                          disabled={saving || !ticket}
+                        >
+                          <XIcon className="size-4" />
+                          关闭工单
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void loadDetail()}
+                        disabled={loading || saving}
+                      >
+                        <RefreshCcwIcon className="size-4" />
+                        刷新
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditDialogOpen(true)}
+                      >
+                        <PencilIcon className="size-4" />
+                        编辑
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAssignDialogOpen(true)}
+                      >
+                        <UserRoundPlusIcon className="size-4" />
+                        分配处理人
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setStatusDialogOpen(true)}
+                      >
+                        <SaveIcon className="size-4" />
+                        变更状态
+                      </Button>
+                    </ButtonGroup>
+                  </div>
                 </div>
-              {/* </div> */}
+              </div>
 
               <div className="min-h-0 overflow-y-auto">
                 <div className="space-y-0">
-                  <DetailSection
-                    className="px-4 lg:px-6"
-                  >
-                    <div>
-                      {ticket.title}
-                    </div>
-                    <div>
-                      {ticket.description || "暂无工单描述"}
+                  <DetailSection className="px-4 lg:px-6">
+                    <div className="space-y-2.5">
+                      <h1 className="text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
+                        {ticket.title}
+                      </h1>
+                      <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+                        <div className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground/85">
+                          {ticket.description || "暂无工单描述"}
+                        </div>
+                      </div>
                     </div>
                   </DetailSection>
 
@@ -777,7 +777,7 @@ export default function TicketDetailPage() {
           </div>
 
           <div className="relative hidden shrink-0 border-l border-border/70 bg-background lg:block">
-              <Button
+            <Button
               variant="outline"
               size="icon"
               className="absolute top-3 left-1/2 z-10 size-6.5 -translate-x-1/2 rounded-full shadow-sm"
