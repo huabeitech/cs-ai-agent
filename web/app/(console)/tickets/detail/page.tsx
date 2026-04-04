@@ -429,8 +429,8 @@ export default function TicketDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex h-full flex-col">
               {/* 工单header */}
-              <div className="border-b border-border/70 bg-muted/10">
-                <div className="flex flex-col gap-2.5 px-4 py-3 lg:px-6 lg:py-4">
+              {/* <div className="border-b border-border/70 bg-muted/10"> */}
+                <div className="border-b border-border/70 bg-muted/10 flex flex-col gap-2.5 px-4 py-2">
                   <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 space-y-2">
                       <div className="text-xs font-medium tracking-wide text-muted-foreground">
@@ -514,22 +514,20 @@ export default function TicketDetailPage() {
                       </ButtonGroup>
                     </div>
                   </div>
-                  <div className="min-w-0 text-xl font-semibold tracking-tight text-foreground lg:text-2xl">
-                    {ticket.title}
-                  </div>
                 </div>
-              </div>
+              {/* </div> */}
 
               <div className="min-h-0 overflow-y-auto">
                 <div className="space-y-0">
                   <DetailSection
-                    title="工单说明"
-                    description="问题背景、上下文和当前处理要求"
                     className="px-4 lg:px-6"
                   >
-                    <SurfacePanel className="p-3 text-sm leading-6 text-foreground/85">
+                    <div>
+                      {ticket.title}
+                    </div>
+                    <div>
                       {ticket.description || "暂无工单描述"}
-                    </SurfacePanel>
+                    </div>
                   </DetailSection>
 
                   <DetailSection
