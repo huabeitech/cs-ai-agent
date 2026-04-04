@@ -14,6 +14,15 @@ export type PageResult<T> = {
 export type TicketCustomer = {
   id: number
   name: string
+  companyId?: number
+  company?: {
+    id: number
+    name: string
+    code?: string
+    remark?: string
+    createdAt?: string
+    updatedAt?: string
+  }
   primaryMobile?: string
   primaryEmail?: string
 }
@@ -315,6 +324,16 @@ export function createTicketFromConversation(payload: CreateTicketFromConversati
 
 export function updateTicket(payload: UpdateTicketPayload) {
   return request<void>("/api/console/ticket/update", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function linkTicketToCustomer(payload: {
+  ticketId: number
+  customerId: number
+}) {
+  return request<void>("/api/console/ticket/link_customer", {
     method: "POST",
     body: JSON.stringify(payload),
   })

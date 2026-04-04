@@ -57,6 +57,7 @@ import { formatDateTime } from "@/lib/utils";
 import { EditDialog } from "../_components/edit";
 import { TicketAssignDialog } from "../_components/ticket-assign-dialog";
 import { TicketCollaboratorDialog } from "../_components/ticket-collaborator-dialog";
+import { TicketCustomerPanel } from "../_components/ticket-customer-panel";
 import { TicketPriorityBadge } from "../_components/ticket-priority-badge";
 import { TicketReasonDialog } from "../_components/ticket-reason-dialog";
 import { TicketRelationDialog } from "../_components/ticket-relation-dialog";
@@ -694,21 +695,14 @@ export default function TicketDetailPage() {
                       <DetailSection
                         title="客户信息"
                         className="px-4 pt-4 lg:px-6"
-                        contentClassName="space-y-0 text-sm"
+                        contentClassName="text-sm"
                       >
-                      <InfoRow
-                        label="客户"
-                        value={ticket.customer?.name || "未绑定客户"}
-                      />
-                      <InfoRow
-                        label="手机号"
-                        value={ticket.customer?.primaryMobile || "—"}
-                      />
-                      <InfoRow
-                        label="邮箱"
-                        value={ticket.customer?.primaryEmail || "—"}
-                      />
-                    </DetailSection>
+                        <TicketCustomerPanel
+                          ticketId={ticket.id}
+                          customerId={ticket.customerId}
+                          onRefresh={loadDetail}
+                        />
+                      </DetailSection>
 
                     <DetailSection
                       title="SLA 信息"

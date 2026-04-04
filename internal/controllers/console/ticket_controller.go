@@ -226,6 +226,21 @@ func (c *TicketController) PostUpdate() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *TicketController) PostLink_customer() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.LinkTicketCustomerRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketService.LinkTicketCustomer(req.TicketID, req.CustomerID, operator); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *TicketController) PostAssign() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketAssign)
 	if err != nil {

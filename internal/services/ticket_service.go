@@ -863,6 +863,49 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 	})
 }
 
+func (s *ticketService) LinkTicketCustomer(ticketID, customerID int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	if ticketID <= 0 || customerID <= 0 {
+		return errorsx.InvalidParam("参数不合法")
+	}
+	ticket := repositories.TicketRepository.Get(sqls.DB(), ticketID)
+	if ticket == nil {
+		return errorsx.InvalidParam("工单不存在")
+	}
+	customer := CustomerService.Get(customerID)
+	if customer == nil || customer.Status == enums.StatusDeleted {
+		return errorsx.InvalidParam("客户不存在")
+	}
+	if ticket.CustomerID == customerID {
+		return nil
+	}
+
+	oldCustomerID := ticket.CustomerID
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		now := time.Now()
+		if err := repositories.TicketRepository.Updates(ctx.Tx, ticketID, map[string]any{
+			"customer_id":      customerID,
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+			"updated_at":       now,
+		}); err != nil {
+			return err
+		}
+		return s.logEvent(
+			ctx.Tx,
+			ticketID,
+			enums.TicketEventTypeUpdated,
+			operator,
+			fmt.Sprintf("%d", oldCustomerID),
+			fmt.Sprintf("%d", customerID),
+			fmt.Sprintf("关联客户：%s", strings.TrimSpace(customer.Name)),
+			"",
+		)
+	})
+}
+
 func (s *ticketService) AssignTicket(req request.AssignTicketRequest, operator *dto.AuthPrincipal) error {
 	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		return s.assignTicketTx(ctx.Tx, req, operator)
