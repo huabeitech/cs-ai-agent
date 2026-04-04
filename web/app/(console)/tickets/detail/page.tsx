@@ -429,14 +429,16 @@ export default function TicketDetailPage() {
               <div className="border-b border-border/70 bg-muted/10">
                 <div className="px-4 py-4 lg:px-6 lg:py-5">
                   <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="min-w-0 space-y-2">
                         <div className="text-xs font-medium tracking-wide text-muted-foreground">
                           {ticket.ticketNo}
                         </div>
-                        <TicketStatusBadge status={ticket.status} />
-                        <TicketPriorityBadge priority={ticket.priority} />
-                        <TicketSLABadge ticket={ticket} />
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <TicketStatusBadge status={ticket.status} />
+                          <TicketPriorityBadge priority={ticket.priority} />
+                          <TicketSLABadge ticket={ticket} />
+                        </div>
                       </div>
                       <div className="flex flex-wrap justify-end gap-2">
                         <ButtonGroup>
