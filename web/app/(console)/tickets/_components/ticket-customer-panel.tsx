@@ -165,6 +165,12 @@ type TicketCustomerPanelProps = {
   onRefresh: () => void | Promise<void>
 }
 
+type TicketLinkedCustomerPanelProps = {
+  ticketId: number
+  customerId: number
+  onRefresh: () => void | Promise<void>
+}
+
 export function TicketCustomerPanel({
   ticketId,
   customerId = 0,
@@ -186,7 +192,8 @@ function TicketLinkedCustomerPanel({
   ticketId,
   customerId,
   onRefresh,
-}: TicketCustomerPanelProps) {
+}: TicketLinkedCustomerPanelProps) {
+  const linkedCustomerId = customerId
   const [loading, setLoading] = useState(true)
   const [customer, setCustomer] = useState<AdminCustomer | null>(null)
   const [contacts, setContacts] = useState<AdminCustomerContact[]>([])
@@ -198,13 +205,13 @@ function TicketLinkedCustomerPanel({
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const c = await fetchCustomer(customerId)
+      const c = await fetchCustomer(linkedCustomerId)
       setCustomer(c)
       if (!c) {
         setContacts([])
         return
       }
-      const list = await fetchCustomerContacts(customerId)
+      const list = await fetchCustomerContacts(linkedCustomerId)
       setContacts(Array.isArray(list) ? list : [])
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载客户信息失败")
@@ -213,7 +220,7 @@ function TicketLinkedCustomerPanel({
     } finally {
       setLoading(false)
     }
-  }, [customerId])
+  }, [linkedCustomerId])
 
   useEffect(() => {
     void load()
