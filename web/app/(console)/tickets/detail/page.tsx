@@ -470,7 +470,7 @@ export default function TicketDetailPage() {
                   <DetailSection className="px-4 pt-4 lg:px-6">
                     <Tabs defaultValue="comments" className="gap-3">
                       <TabsList>
-                        <TabsTrigger value="comments">回复/记录</TabsTrigger>
+                        <TabsTrigger value="comments">回复&备注</TabsTrigger>
                         <TabsTrigger value="events">事件记录</TabsTrigger>
                       </TabsList>
                       <TabsContent value="comments" className="space-y-3">
