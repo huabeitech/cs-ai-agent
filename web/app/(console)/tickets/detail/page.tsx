@@ -1,10 +1,13 @@
 "use client";
 
 import {
+  BellIcon,
+  BellOffIcon,
   ExternalLinkIcon,
   MessageSquarePlusIcon,
   PanelRightCloseIcon,
   PanelRightOpenIcon,
+  PencilIcon,
   PlusIcon,
   RefreshCcwIcon,
   RotateCcwIcon,
@@ -443,10 +446,15 @@ export default function TicketDetailPage() {
                       <ButtonGroup>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant={isWatching ? "default" : "outline"}
                           onClick={() => void handleWatchToggle()}
                           disabled={saving || !ticket}
                         >
+                          {isWatching ? (
+                            <BellOffIcon className="size-4" />
+                          ) : (
+                            <BellIcon className="size-4" />
+                          )}
                           {isWatching ? "取消关注" : "关注工单"}
                         </Button>
                         {ticket.status === "closed" ? (
@@ -456,6 +464,7 @@ export default function TicketDetailPage() {
                             onClick={() => setReopenDialogOpen(true)}
                             disabled={saving}
                           >
+                            <RotateCcwIcon className="size-4" />
                             重开工单
                           </Button>
                         ) : (
@@ -465,6 +474,7 @@ export default function TicketDetailPage() {
                             onClick={() => setCloseDialogOpen(true)}
                             disabled={saving || !ticket}
                           >
+                            <XIcon className="size-4" />
                             关闭工单
                           </Button>
                         )}
@@ -482,6 +492,7 @@ export default function TicketDetailPage() {
                           variant="outline"
                           onClick={() => setEditDialogOpen(true)}
                         >
+                          <PencilIcon className="size-4" />
                           编辑
                         </Button>
                         <Button
