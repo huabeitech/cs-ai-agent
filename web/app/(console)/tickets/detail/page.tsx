@@ -458,7 +458,7 @@ export default function TicketDetailPage() {
                   <DetailSection className="px-4 pt-4 lg:px-6">
                     <Tabs defaultValue="comments" className="gap-3">
                       <TabsList>
-                        <TabsTrigger value="comments">回复记录</TabsTrigger>
+                        <TabsTrigger value="comments">回复/记录</TabsTrigger>
                         <TabsTrigger value="events">事件记录</TabsTrigger>
                       </TabsList>
                       <TabsContent value="comments" className="space-y-3">
@@ -690,6 +690,36 @@ export default function TicketDetailPage() {
                           label="重开次数"
                           value={String(ticket.reopenedCount)}
                         />
+                        <InfoRow
+                          label="创建时间"
+                          value={
+                            ticket.createdAt
+                              ? formatDateTime(ticket.createdAt)
+                              : "—"
+                          }
+                        />
+                        <InfoRow
+                          label="更新时间"
+                          value={
+                            ticket.updatedAt
+                              ? formatDateTime(ticket.updatedAt)
+                              : "—"
+                          }
+                        />
+                        <InfoRow
+                          label="截止时间"
+                          value={
+                            ticket.dueAt ? formatDateTime(ticket.dueAt) : "—"
+                          }
+                        />
+                        <InfoRow
+                          label="首次响应"
+                          value={
+                            ticket.firstResponseAt
+                              ? formatDateTime(ticket.firstResponseAt)
+                              : "—"
+                          }
+                        />
                       </DetailSection>
 
                       <DetailSection
@@ -781,43 +811,6 @@ export default function TicketDetailPage() {
                         value={
                           ticket.closedAt
                             ? formatDateTime(ticket.closedAt)
-                            : "—"
-                        }
-                      />
-                    </DetailSection>
-
-                    <DetailSection
-                      title="时间信息"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-0 text-sm"
-                    >
-                      <InfoRow
-                        label="创建时间"
-                        value={
-                          ticket.createdAt
-                            ? formatDateTime(ticket.createdAt)
-                            : "—"
-                        }
-                      />
-                      <InfoRow
-                        label="更新时间"
-                        value={
-                          ticket.updatedAt
-                            ? formatDateTime(ticket.updatedAt)
-                            : "—"
-                        }
-                      />
-                      <InfoRow
-                        label="截止时间"
-                        value={
-                          ticket.dueAt ? formatDateTime(ticket.dueAt) : "—"
-                        }
-                      />
-                      <InfoRow
-                        label="首次响应"
-                        value={
-                          ticket.firstResponseAt
-                            ? formatDateTime(ticket.firstResponseAt)
                             : "—"
                         }
                       />
