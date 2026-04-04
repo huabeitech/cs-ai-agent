@@ -516,24 +516,6 @@ export default function TicketDetailPage() {
               <div className="min-h-0 overflow-y-auto">
                 <div className="space-y-0">
                   <DetailSection
-                    className="px-4 pt-6 lg:px-6"
-                    contentClassName="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-                  >
-                    <SummaryMetric
-                      label="分类"
-                      value={ticket.categoryName || "未分类，建议补充分类配置"}
-                    />
-                    <SummaryMetric
-                      label="严重度"
-                      value={ticketSeverityLabel(ticket.severity)}
-                    />
-                    <SummaryMetric
-                      label="处理人"
-                      value={ticket.currentAssigneeName || "未指派"}
-                    />
-                  </DetailSection>
-
-                  <DetailSection
                     title="工单说明"
                     description="问题背景、上下文和当前处理要求"
                     className="px-4 lg:px-6"
