@@ -3,7 +3,6 @@
 import Link from "next/link"
 import {
   ExternalLinkIcon,
-  ArrowLeftIcon,
   MessageSquarePlusIcon,
   PlusIcon,
   RefreshCcwIcon,
@@ -399,12 +398,6 @@ export default function TicketDetailPage() {
       <div className="flex w-full flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/tickets">
-              <Button variant="outline" size="sm">
-                <ArrowLeftIcon className="size-4" />
-                返回工单列表
-              </Button>
-            </Link>
             {ticket ? (
               <div>
                 <div className="text-xs text-muted-foreground">{ticket.ticketNo}</div>
@@ -413,22 +406,12 @@ export default function TicketDetailPage() {
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/ticket-categories">
-              <Button variant="outline">
-                <Settings2Icon className="size-4" />
-                工单配置
-              </Button>
-            </Link>
             <Button
               variant="outline"
               onClick={() => void handleWatchToggle()}
               disabled={saving || !ticket}
             >
               {isWatching ? "取消关注" : "关注工单"}
-            </Button>
-            <Button variant="outline" onClick={() => void loadDetail()} disabled={loading || saving}>
-              <RefreshCcwIcon className="size-4" />
-              刷新
             </Button>
             {ticket?.status === "closed" ? (
               <Button onClick={() => setReopenDialogOpen(true)} disabled={saving}>
@@ -439,6 +422,10 @@ export default function TicketDetailPage() {
                 关闭工单
               </Button>
             )}
+            <Button variant="outline" onClick={() => void loadDetail()} disabled={loading || saving}>
+              <RefreshCcwIcon className="size-4" />
+              刷新
+            </Button>
           </div>
         </div>
 
