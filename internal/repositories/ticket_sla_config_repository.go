@@ -76,6 +76,6 @@ func (r *ticketSLAConfigRepository) UpdateColumn(db *gorm.DB, id int64, name str
 	return db.Model(&models.TicketSLAConfig{}).Where("id = ?", id).UpdateColumn(name, value).Error
 }
 
-func (r *ticketSLAConfigRepository) Delete(db *gorm.DB, id int64) {
-	db.Delete(&models.TicketSLAConfig{}, "id = ?", id)
+func (r *ticketSLAConfigRepository) Delete(db *gorm.DB, id int64) error {
+	return db.Delete(&models.TicketSLAConfig{}, "id = ?", id).Error
 }

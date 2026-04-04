@@ -73,7 +73,7 @@ func (s *ticketSLAConfigService) UpdateTicketSLAConfig(req request.UpdateTicketS
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
 	current := s.Get(req.ID)
-	if current == nil || current.Status == enums.StatusDeleted {
+	if current == nil {
 		return errorsx.InvalidParam("工单SLA配置不存在")
 	}
 	item, err := s.buildSLAConfigModel(req.ID, req.Name, req.Priority, req.FirstResponseMinutes, req.ResolutionMinutes, int(req.Status), req.Remark)
@@ -98,15 +98,10 @@ func (s *ticketSLAConfigService) DeleteTicketSLAConfig(id int64, operator *dto.A
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
 	current := s.Get(id)
-	if current == nil || current.Status == enums.StatusDeleted {
+	if current == nil {
 		return errorsx.InvalidParam("工单SLA配置不存在")
 	}
-	return s.Updates(id, map[string]any{
-		"status":           enums.StatusDeleted,
-		"update_user_id":   operator.UserID,
-		"update_user_name": operator.Username,
-		"updated_at":       time.Now(),
-	})
+	return repositories.TicketSLAConfigRepository.Delete(sqls.DB(), id)
 }
 
 func (s *ticketSLAConfigService) buildSLAConfigModel(id int64, name string, priority enums.TicketPriority, firstResponseMinutes, resolutionMinutes, status int, remark string) (*models.TicketSLAConfig, error) {
