@@ -427,88 +427,84 @@ export default function TicketDetailPage() {
             <div className="flex h-full flex-col">
               {/* 工单header */}
               <div className="border-b border-border/70 bg-muted/10">
-                <div className="px-4 py-4 lg:px-6 lg:py-5">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                      <div className="min-w-0 space-y-2">
-                        <div className="text-xs font-medium tracking-wide text-muted-foreground">
-                          {ticket.ticketNo}
-                        </div>
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <TicketStatusBadge status={ticket.status} />
-                          <TicketPriorityBadge priority={ticket.priority} />
-                          <TicketSLABadge ticket={ticket} />
-                        </div>
+                <div className="flex flex-col gap-3 px-4 py-4 lg:px-6 lg:py-5">
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="min-w-0 space-y-2">
+                      <div className="text-xs font-medium tracking-wide text-muted-foreground">
+                        {ticket.ticketNo}
                       </div>
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <ButtonGroup>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <TicketStatusBadge status={ticket.status} />
+                        <TicketPriorityBadge priority={ticket.priority} />
+                        <TicketSLABadge ticket={ticket} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <ButtonGroup>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleWatchToggle()}
+                          disabled={saving || !ticket}
+                        >
+                          {isWatching ? "取消关注" : "关注工单"}
+                        </Button>
+                        {ticket.status === "closed" ? (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => void handleWatchToggle()}
+                            onClick={() => setReopenDialogOpen(true)}
+                            disabled={saving}
+                          >
+                            重开工单
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCloseDialogOpen(true)}
                             disabled={saving || !ticket}
                           >
-                            {isWatching ? "取消关注" : "关注工单"}
+                            关闭工单
                           </Button>
-                          {ticket.status === "closed" ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setReopenDialogOpen(true)}
-                              disabled={saving}
-                            >
-                              重开工单
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setCloseDialogOpen(true)}
-                              disabled={saving || !ticket}
-                            >
-                              关闭工单
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void loadDetail()}
-                            disabled={loading || saving}
-                          >
-                            <RefreshCcwIcon className="size-4" />
-                            刷新
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditDialogOpen(true)}
-                          >
-                            编辑基础信息
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setAssignDialogOpen(true)}
-                          >
-                            <UserRoundPlusIcon className="size-4" />
-                            分配处理人
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatusDialogOpen(true)}
-                          >
-                            <SaveIcon className="size-4" />
-                            变更状态
-                          </Button>
-                        </ButtonGroup>
-                      </div>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void loadDetail()}
+                          disabled={loading || saving}
+                        >
+                          <RefreshCcwIcon className="size-4" />
+                          刷新
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditDialogOpen(true)}
+                        >
+                          编辑
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setAssignDialogOpen(true)}
+                        >
+                          <UserRoundPlusIcon className="size-4" />
+                          分配处理人
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setStatusDialogOpen(true)}
+                        >
+                          <SaveIcon className="size-4" />
+                          变更状态
+                        </Button>
+                      </ButtonGroup>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-2xl font-semibold tracking-tight text-foreground">
-                        {ticket.title}
-                      </div>
-                    </div>
+                  </div>
+                  <div className="min-w-0 text-2xl font-semibold tracking-tight text-foreground">
+                    {ticket.title}
                   </div>
                 </div>
               </div>
