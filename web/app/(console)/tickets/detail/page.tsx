@@ -67,7 +67,6 @@ import {
   ticketStatusLabel,
 } from "../_components/ticket-status-badge";
 import { TicketStatusDialog } from "../_components/ticket-status-dialog";
-import { Toggle } from "@/components/ui/toggle";
 
 function formatTicketSource(source?: string) {
   switch (source) {
@@ -338,7 +337,7 @@ export default function TicketDetailPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100vh-4rem)] min-w-0 overflow-hidden">
       {loading ? (
         <div className="min-w-0 flex-1 p-4 lg:p-6">
           <div className="py-20 text-center text-muted-foreground">
@@ -350,7 +349,7 @@ export default function TicketDetailPage() {
           <div className="min-w-0 flex-1">
             <div className="flex h-full flex-col">
               {/* 工单header */}
-              <div className="border-b border-border/70 bg-muted/10 flex flex-col gap-2.5 px-4 py-2">
+              <div className="border-b border-border/70 bg-muted/10 flex flex-col gap-2.5 px-8 py-2">
                 <div className="flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 space-y-2">
                     <div className="text-xs font-medium tracking-wide text-muted-foreground">
@@ -599,7 +598,7 @@ export default function TicketDetailPage() {
             <Button
               variant="outline"
               size="icon"
-              className="absolute top-3 left-1/2 z-10 size-6.5 -translate-x-1/2 rounded-full shadow-sm"
+              className="absolute top-2.5 left-1/2 z-10 size-6.5 -translate-x-1/2 rounded-full shadow-sm"
               onClick={() => setRightPanelCollapsed((value) => !value)}
               aria-label={
                 rightPanelCollapsed ? "展开右侧信息面板" : "折叠右侧信息面板"
@@ -614,85 +613,89 @@ export default function TicketDetailPage() {
           </div>
 
           <div
-            className={`shrink-0 overflow-hidden bg-background transition-[width] duration-200 ${
+            className={`min-w-0 shrink-0 overflow-hidden bg-background transition-[width] duration-200 ${
               rightPanelCollapsed ? "w-0" : "w-full lg:w-[360px]"
             }`}
           >
-            <div className="h-full">
-              <div className="flex h-full flex-col gap-4">
-                <div className="min-h-0 overflow-y-auto">
-                  <div className="space-y-0">
-                    <DetailSection
-                      title="基础信息"
-                      className="px-4 pt-3 lg:px-6 lg:pt-4"
-                      action={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditDialogOpen(true)}
-                        >
-                          编辑
-                        </Button>
-                      }
-                      contentClassName="space-y-0 text-sm"
-                    >
-                      <InfoRow label="工单号" value={ticket.ticketNo} />
-                      <InfoRow
-                        label="状态"
-                        value={ticketStatusLabel(ticket.status)}
-                      />
-                      <InfoRow
-                        label="分类"
-                        value={ticket.categoryName || "未分类"}
-                      />
-                      {!ticket.categoryName ? (
-                        <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
-                          当前工单未设置分类，后续统计、自动分派和队列管理会受影响。
-                          <Link
-                            href="/ticket-categories"
-                            className="ml-1 font-medium underline underline-offset-4"
+            {rightPanelCollapsed ? null : (
+              <div className="h-full">
+                <div className="flex h-full flex-col gap-4">
+                  <div className="min-h-0 overflow-y-auto">
+                    <div className="space-y-0">
+                      <DetailSection
+                        title="基础信息"
+                        className="px-4 pt-3 lg:px-6 lg:pt-4"
+                        action={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditDialogOpen(true)}
                           >
-                            前往配置分类
-                          </Link>
-                        </div>
-                      ) : null}
-                      <InfoRow label="优先级" value={String(ticket.priority)} />
-                      <InfoRow
-                        label="严重度"
-                        value={ticketSeverityLabel(ticket.severity)}
-                      />
-                      <InfoRow
-                        label="处理人"
-                        value={ticket.currentAssigneeName || "未指派"}
-                      />
-                      <InfoRow
-                        label="处理团队"
-                        value={ticket.currentTeamName || "未分组"}
-                      />
-                      <InfoRow
-                        label="解决时限"
-                        value={
-                          resolutionSLA
-                            ? `${resolutionSLA.targetMinutes} 分钟 / ${formatSLAStatus(resolutionSLA.status)}`
-                            : "未设置"
+                            编辑
+                          </Button>
                         }
-                      />
-                      <InfoRow
-                        label="来源"
-                        value={formatTicketSource(ticket.source)}
-                      />
-                      <InfoRow label="渠道" value={ticket.channel || "—"} />
-                      <InfoRow
-                        label="重开次数"
-                        value={String(ticket.reopenedCount)}
-                      />
-                    </DetailSection>
+                        contentClassName="space-y-0 text-sm"
+                      >
+                        <InfoRow label="工单号" value={ticket.ticketNo} />
+                        <InfoRow
+                          label="状态"
+                          value={ticketStatusLabel(ticket.status)}
+                        />
+                        <InfoRow
+                          label="分类"
+                          value={ticket.categoryName || "未分类"}
+                        />
+                        {!ticket.categoryName ? (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+                            当前工单未设置分类，后续统计、自动分派和队列管理会受影响。
+                            <Link
+                              href="/ticket-categories"
+                              className="ml-1 font-medium underline underline-offset-4"
+                            >
+                              前往配置分类
+                            </Link>
+                          </div>
+                        ) : null}
+                        <InfoRow
+                          label="优先级"
+                          value={String(ticket.priority)}
+                        />
+                        <InfoRow
+                          label="严重度"
+                          value={ticketSeverityLabel(ticket.severity)}
+                        />
+                        <InfoRow
+                          label="处理人"
+                          value={ticket.currentAssigneeName || "未指派"}
+                        />
+                        <InfoRow
+                          label="处理团队"
+                          value={ticket.currentTeamName || "未分组"}
+                        />
+                        <InfoRow
+                          label="解决时限"
+                          value={
+                            resolutionSLA
+                              ? `${resolutionSLA.targetMinutes} 分钟 / ${formatSLAStatus(resolutionSLA.status)}`
+                              : "未设置"
+                          }
+                        />
+                        <InfoRow
+                          label="来源"
+                          value={formatTicketSource(ticket.source)}
+                        />
+                        <InfoRow label="渠道" value={ticket.channel || "—"} />
+                        <InfoRow
+                          label="重开次数"
+                          value={String(ticket.reopenedCount)}
+                        />
+                      </DetailSection>
 
-                    <DetailSection
-                      title="客户信息"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-0 text-sm"
-                    >
+                      <DetailSection
+                        title="客户信息"
+                        className="px-4 pt-4 lg:px-6"
+                        contentClassName="space-y-0 text-sm"
+                      >
                       <InfoRow
                         label="客户"
                         value={ticket.customer?.name || "未绑定客户"}
@@ -1044,11 +1047,11 @@ export default function TicketDetailPage() {
                       )}
                     </DetailSection>
 
-                    <DetailSection
-                      title="关注人"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-3 text-sm"
-                    >
+                      <DetailSection
+                        title="关注人"
+                        className="px-4 pt-4 lg:px-6"
+                        contentClassName="space-y-3 text-sm"
+                      >
                       {detail?.watchers?.length ? (
                         detail.watchers.map((watcher) => (
                           <InfoRow
@@ -1060,11 +1063,12 @@ export default function TicketDetailPage() {
                       ) : (
                         <div className="text-muted-foreground">暂无关注人</div>
                       )}
-                    </DetailSection>
+                      </DetailSection>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </>
       ) : (
