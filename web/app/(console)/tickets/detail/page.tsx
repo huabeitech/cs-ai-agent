@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ChevronDownIcon,
+  ChevronRightIcon,
   Cog,
   ExternalLinkIcon,
   Heart,
@@ -187,6 +189,9 @@ export default function TicketDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [relationDialogOpen, setRelationDialogOpen] = useState(false);
   const [collaboratorDialogOpen, setCollaboratorDialogOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<
+    Record<string, boolean>
+  >({});
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [sourceConversation, setSourceConversation] =
     useState<AdminConversationDetail | null>(null);
@@ -216,6 +221,13 @@ export default function TicketDetailPage() {
       active: total - completed,
     };
   }, [childRelations]);
+
+  const toggleSection = useCallback((sectionKey: string) => {
+    setCollapsedSections((current) => ({
+      ...current,
+      [sectionKey]: !current[sectionKey],
+    }));
+  }, []);
 
   const loadDetail = useCallback(async () => {
     if (!ticketId) {
@@ -625,6 +637,9 @@ export default function TicketDetailPage() {
                     <div className="space-y-0">
                       <DetailSection
                         title="基础信息"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.basics)}
+                        onToggle={() => toggleSection("basics")}
                         className="px-4 pt-3 lg:px-6 lg:pt-4"
                         action={
                           <Button
@@ -632,6 +647,7 @@ export default function TicketDetailPage() {
                             size="sm"
                             onClick={() => setEditDialogOpen(true)}
                           >
+                            <PencilIcon className="size-3.5" />
                             编辑
                           </Button>
                         }
@@ -724,6 +740,9 @@ export default function TicketDetailPage() {
 
                       <DetailSection
                         title="客户信息"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.customer)}
+                        onToggle={() => toggleSection("customer")}
                         className="px-4 pt-4 lg:px-6"
                         contentClassName="text-sm"
                       >
@@ -734,11 +753,14 @@ export default function TicketDetailPage() {
                         />
                       </DetailSection>
 
-                    <DetailSection
-                      title="SLA 信息"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-3 text-sm"
-                    >
+                      <DetailSection
+                        title="SLA 信息"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.sla)}
+                        onToggle={() => toggleSection("sla")}
+                        className="px-4 pt-4 lg:px-6"
+                        contentClassName="space-y-3 text-sm"
+                      >
                       {ticket.sla?.length ? (
                         ticket.sla.map((sla) => (
                           <SurfacePanel key={sla.slaType} className="p-2.5">
@@ -777,11 +799,14 @@ export default function TicketDetailPage() {
                       )}
                     </DetailSection>
 
-                    <DetailSection
-                      title="解决信息"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-0 text-sm"
-                    >
+                      <DetailSection
+                        title="解决信息"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.resolution)}
+                        onToggle={() => toggleSection("resolution")}
+                        className="px-4 pt-4 lg:px-6"
+                        contentClassName="space-y-0 text-sm"
+                      >
                       <InfoRow
                         label="解决码"
                         value={
@@ -816,11 +841,14 @@ export default function TicketDetailPage() {
                       />
                     </DetailSection>
 
-                    <DetailSection
-                      title="来源关联"
-                      className="px-4 pt-4 lg:px-6"
-                      contentClassName="space-y-3 text-sm"
-                    >
+                      <DetailSection
+                        title="来源关联"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.source)}
+                        onToggle={() => toggleSection("source")}
+                        className="px-4 pt-4 lg:px-6"
+                        contentClassName="space-y-3 text-sm"
+                      >
                       <InfoRow
                         label="关联会话"
                         value={
@@ -872,10 +900,13 @@ export default function TicketDetailPage() {
                       ) : null}
                     </DetailSection>
 
-                    <DetailSection
-                      title="关联工单"
-                      className="px-4 pt-4 lg:px-6"
-                      action={
+                      <DetailSection
+                        title="关联工单"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.related)}
+                        onToggle={() => toggleSection("related")}
+                        className="px-4 pt-4 lg:px-6"
+                        action={
                         <Button
                           variant="ghost"
                           size="sm"
@@ -884,9 +915,9 @@ export default function TicketDetailPage() {
                           <PlusIcon className="size-4" />
                           新增关联
                         </Button>
-                      }
-                      contentClassName="space-y-3 text-sm"
-                    >
+                        }
+                        contentClassName="space-y-3 text-sm"
+                      >
                       {childProgress.total > 0 ? (
                         <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-3">
                           <div className="text-sm font-medium text-blue-900">
@@ -987,10 +1018,13 @@ export default function TicketDetailPage() {
                       )}
                     </DetailSection>
 
-                    <DetailSection
-                      title="协作人"
-                      className="px-4 pt-4 lg:px-6"
-                      action={
+                      <DetailSection
+                        title="协作人"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.collaborators)}
+                        onToggle={() => toggleSection("collaborators")}
+                        className="px-4 pt-4 lg:px-6"
+                        action={
                         <Button
                           variant="ghost"
                           size="sm"
@@ -999,9 +1033,9 @@ export default function TicketDetailPage() {
                           <PlusIcon className="size-4" />
                           新增协作人
                         </Button>
-                      }
-                      contentClassName="space-y-3 text-sm"
-                    >
+                        }
+                        contentClassName="space-y-3 text-sm"
+                      >
                       {detail?.collaborators?.length ? (
                         detail.collaborators.map((collaborator) => (
                           <SurfacePanel
@@ -1036,6 +1070,9 @@ export default function TicketDetailPage() {
 
                       <DetailSection
                         title="关注人"
+                        collapsible
+                        collapsed={Boolean(collapsedSections.watchers)}
+                        onToggle={() => toggleSection("watchers")}
                         className="px-4 pt-4 lg:px-6"
                         contentClassName="space-y-3 text-sm"
                       >
@@ -1129,7 +1166,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid grid-cols-[78px_minmax(0,1fr)] items-start gap-3 py-1">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-right text-sm text-foreground break-words">
+      <span className="text-right text-sm text-foreground wrap-break-word">
         {value}
       </span>
     </div>
@@ -1140,6 +1177,9 @@ function DetailSection({
   title,
   description,
   action,
+  collapsible,
+  collapsed,
+  onToggle,
   className,
   contentClassName,
   children,
@@ -1147,6 +1187,9 @@ function DetailSection({
   title?: string;
   description?: string;
   action?: ReactNode;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggle?: () => void;
   className?: string;
   contentClassName?: string;
   children: ReactNode;
@@ -1156,9 +1199,27 @@ function DetailSection({
       className={`border-b border-border/70 py-4 last:border-b-0 ${className ?? ""}`}
     >
       {title || description || action ? (
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            {title ? <h2 className="text-base font-medium">{title}</h2> : null}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              {collapsible ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 shrink-0"
+                  onClick={onToggle}
+                  aria-label={collapsed ? "展开面板" : "折叠面板"}
+                >
+                  {collapsed ? (
+                    <ChevronRightIcon className="size-4" />
+                  ) : (
+                    <ChevronDownIcon className="size-4" />
+                  )}
+                </Button>
+              ) : null}
+              {title ? <h2 className="text-base font-medium">{title}</h2> : null}
+            </div>
             {description ? (
               <p className="text-sm leading-5 text-muted-foreground">
                 {description}
@@ -1168,7 +1229,7 @@ function DetailSection({
           {action ? <div className="shrink-0">{action}</div> : null}
         </div>
       ) : null}
-      <div className={contentClassName}>{children}</div>
+      {collapsed ? null :<div className="pt-3"><div className={contentClassName}>{children}</div></div>}
     </section>
   );
 }
