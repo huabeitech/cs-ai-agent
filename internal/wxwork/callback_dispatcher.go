@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	callbackWorkerCount       = 16
-	callbackMaxBlockingTasks  = 10000
+	callbackWorkerCount       = 16    // worker 数量
+	callbackMaxBlockingTasks  = 10000 // 队列大小
 	callbackMsgTypeEvent      = "event"
 	callbackEventKFMsgOrEvent = "kf_msg_or_event"
 )
@@ -36,8 +36,6 @@ func init() {
 	if err != nil {
 		slog.Error("init wxwork callback pool failed", "error", err)
 	}
-
-	RegCallbackHandler(callbackMsgTypeEvent, callbackEventKFMsgOrEvent, consumeSyncMessages)
 }
 
 // ConsumeCallback 异步消费企业微信客服回调。
@@ -63,8 +61,8 @@ func ConsumeCallback(message kf.CallbackMessage) error {
 	return nil
 }
 
-// RegCallbackHandler 注册企业微信客服回调处理器。
-func RegCallbackHandler(msgType, event string, handler CallbackHandler) {
+// RegHandler 注册企业微信客服回调处理器。
+func RegHandler(msgType, event string, handler CallbackHandler) {
 	callbackHandlerMu.Lock()
 	defer callbackHandlerMu.Unlock()
 

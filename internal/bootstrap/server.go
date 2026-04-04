@@ -21,6 +21,8 @@ import (
 	"github.com/kataras/iris/v12/middleware/cors"
 	"github.com/kataras/iris/v12/middleware/recover"
 	"github.com/kataras/iris/v12/mvc"
+
+	_ "cs-agent/internal/services/wx_callback_handlers"
 )
 
 func NewServer(configPath string) (*iris.Application, *config.Config, error) {
