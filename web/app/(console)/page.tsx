@@ -127,8 +127,8 @@ export default function DashboardPage() {
                   <div className="mt-2 text-3xl font-semibold">{data.aiStats.enabledAiAgents}</div>
                 </div>
                 <div className="rounded-2xl border bg-muted/30 p-4">
-                  <div className="text-sm text-muted-foreground">启用中的接入站点</div>
-                  <div className="mt-2 text-3xl font-semibold">{data.aiStats.enabledWidgetSites}</div>
+                  <div className="text-sm text-muted-foreground">启用中的接入渠道</div>
+                  <div className="mt-2 text-3xl font-semibold">{data.aiStats.enabledChannels}</div>
                 </div>
                 <div className="rounded-2xl border bg-muted/30 p-4">
                   <div className="text-sm text-muted-foreground">今日知识检索次数</div>

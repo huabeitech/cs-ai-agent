@@ -166,24 +166,33 @@ export type AdminQuickReply = {
   createdBy: number
 }
 
-export type AdminWidgetSite = {
+export type AdminChannel = {
   id: number
+  channelType: string
+  channelCode: string
   aiAgentId: number
   aiAgentName?: string
   name: string
   appId: string
+  configJson: string
+  sortNo: number
   status: number
   remark: string
 }
 
-export type CreateAdminWidgetSitePayload = {
+export type CreateAdminChannelPayload = {
+  channelType: string
+  channelCode: string
   aiAgentId: number
   name: string
+  appId: string
+  configJson: string
+  sortNo: number
   status: number
   remark: string
 }
 
-export type UpdateAdminWidgetSitePayload = CreateAdminWidgetSitePayload & {
+export type UpdateAdminChannelPayload = CreateAdminChannelPayload & {
   id: number
 }
 
@@ -473,41 +482,41 @@ export function createAdminWebSocketUrl() {
   return `${baseUrl}/api/admin/ws?${params.toString()}`
 }
 
-export function fetchWidgetSites(
+export function fetchChannels(
   query?: Record<string, string | number | undefined>
 ) {
-  return request<PageResult<AdminWidgetSite>>(
-    `/api/console/widget-site/list${toQueryString(query)}`
+  return request<PageResult<AdminChannel>>(
+    `/api/console/channel/list${toQueryString(query)}`
   )
 }
 
-export function fetchWidgetSite(id: number) {
-  return request<AdminWidgetSite>(`/api/console/widget-site/${id}`)
+export function fetchChannel(id: number) {
+  return request<AdminChannel>(`/api/console/channel/${id}`)
 }
 
-export function createWidgetSite(payload: CreateAdminWidgetSitePayload) {
-  return request<AdminWidgetSite>("/api/console/widget-site/create", {
+export function createChannel(payload: CreateAdminChannelPayload) {
+  return request<AdminChannel>("/api/console/channel/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function updateWidgetSite(payload: UpdateAdminWidgetSitePayload) {
-  return request<void>("/api/console/widget-site/update", {
+export function updateChannel(payload: UpdateAdminChannelPayload) {
+  return request<void>("/api/console/channel/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function updateWidgetSiteStatus(id: number, status: number) {
-  return request<void>("/api/console/widget-site/update_status", {
+export function updateChannelStatus(id: number, status: number) {
+  return request<void>("/api/console/channel/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
-export function deleteWidgetSite(id: number) {
-  return request<void>("/api/console/widget-site/delete", {
+export function deleteChannel(id: number) {
+  return request<void>("/api/console/channel/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

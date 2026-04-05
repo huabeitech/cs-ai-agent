@@ -4,11 +4,11 @@ import (
 	"cs-agent/cmd/testdata/agentteam"
 	"cs-agent/cmd/testdata/aiagent"
 	"cs-agent/cmd/testdata/aiconfig"
+	"cs-agent/cmd/testdata/channel"
 	"cs-agent/cmd/testdata/kb"
 	"cs-agent/cmd/testdata/quickreply"
 	"cs-agent/cmd/testdata/skill"
 	"cs-agent/cmd/testdata/tag"
-	"cs-agent/cmd/testdata/widgetsite"
 	"cs-agent/internal/bootstrap"
 	"cs-agent/internal/pkg/config"
 	"flag"
@@ -106,11 +106,11 @@ func run() error {
 	}
 	slog.Info("ai agent init success", slog.Int("created", aiAgentResult.Created), slog.Int("updated", aiAgentResult.Updated))
 
-	widgetSiteResult, err := widgetsite.Init()
+	channelResult, err := channel.Init()
 	if err != nil {
-		return fmt.Errorf("init widget site failed: %w", err)
+		return fmt.Errorf("init channel failed: %w", err)
 	}
-	slog.Info("widget site init success", slog.Int("created", widgetSiteResult.Created), slog.Int("updated", widgetSiteResult.Updated))
+	slog.Info("channel init success", slog.Int("created", channelResult.Created), slog.Int("updated", channelResult.Updated))
 
 	if err := tag.Init(); err != nil {
 		slog.Error("init tag failed", "error", err)

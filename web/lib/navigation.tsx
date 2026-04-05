@@ -191,8 +191,8 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         requiredPermission: "agentTeamSchedule.view",
       },
       {
-        title: "接入站点",
-        url: "/widget-sites",
+        title: "接入渠道",
+        url: "/channels",
         icon: <GlobeIcon />,
       },
     ],

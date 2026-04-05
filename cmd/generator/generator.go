@@ -46,7 +46,6 @@ func main() {
 		codegen.GetGenerateStruct(&models.QuickReply{}),
 		codegen.GetGenerateStruct(&models.AIAgent{}),
 		codegen.GetGenerateStruct(&models.Channel{}),
-		codegen.GetGenerateStruct(&models.WidgetSite{}),
 		codegen.GetGenerateStruct(&models.ConversationEventLog{}),
 		codegen.GetGenerateStruct(&models.Ticket{}),
 		codegen.GetGenerateStruct(&models.TicketCategory{}),

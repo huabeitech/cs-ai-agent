@@ -116,8 +116,8 @@ func (s *aIAgentService) DeleteAIAgent(id int64, operator *dto.AuthPrincipal) er
 	if current == nil {
 		return errorsx.InvalidParam("AI Agent 不存在")
 	}
-	if WidgetSiteService.Take("ai_agent_id = ?", id) != nil {
-		return errorsx.Forbidden("已有接入站点绑定该 AI Agent，无法删除")
+	if ChannelService.Take("ai_agent_id = ?", id) != nil {
+		return errorsx.Forbidden("已有接入渠道绑定该 AI Agent，无法删除")
 	}
 	return repositories.AIAgentRepository.Updates(sqls.DB(), id, map[string]any{
 		"status":           enums.StatusDeleted,

@@ -2,11 +2,17 @@ package services
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"encoding/json"
 	"strings"
+	"time"
 
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -72,6 +78,77 @@ func (s *channelService) Delete(id int64) {
 	repositories.ChannelRepository.Delete(sqls.DB(), id)
 }
 
+func (s *channelService) CreateChannel(req request.CreateChannelRequest, operator *dto.AuthPrincipal) (*models.Channel, error) {
+	if operator == nil {
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
+	}
+	item, err := s.buildChannelModel(0, req)
+	if err != nil {
+		return nil, err
+	}
+	item.AuditFields = utils.BuildAuditFields(operator)
+	if err := repositories.ChannelRepository.Create(sqls.DB(), item); err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *channelService) UpdateChannel(req request.UpdateChannelRequest, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	current := s.Get(req.ID)
+	if current == nil {
+		return errorsx.InvalidParam("接入渠道不存在")
+	}
+	item, err := s.buildChannelModel(req.ID, req.CreateChannelRequest)
+	if err != nil {
+		return err
+	}
+	return repositories.ChannelRepository.Updates(sqls.DB(), req.ID, map[string]any{
+		"channel_type":     item.ChannelType,
+		"channel_code":     item.ChannelCode,
+		"ai_agent_id":      item.AIAgentID,
+		"name":             item.Name,
+		"app_id":           item.AppID,
+		"config_json":      item.ConfigJSON,
+		"sort_no":          item.SortNo,
+		"status":           item.Status,
+		"remark":           item.Remark,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
+}
+
+func (s *channelService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
+	item := s.Get(id)
+	if item == nil {
+		return errorsx.InvalidParam("接入渠道不存在")
+	}
+	if status != int(enums.StatusOk) && status != int(enums.StatusDisabled) {
+		return errorsx.InvalidParam("状态值不合法")
+	}
+	return s.Updates(id, map[string]any{
+		"status":           status,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
+}
+
+func (s *channelService) DeleteChannel(id int64) error {
+	item := s.Get(id)
+	if item == nil {
+		return errorsx.InvalidParam("接入渠道不存在")
+	}
+	s.Delete(id)
+	return nil
+}
+
 func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*WxWorkKFChannelConfig, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -112,4 +189,72 @@ func (s *channelService) GetEnabledWebChannelByAppID(appID string) *models.Chann
 		return nil
 	}
 	return s.Take("channel_type = ? AND app_id = ? AND status = ?", enums.ChannelTypeWeb, appID, enums.StatusOk)
+}
+
+func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRequest) (*models.Channel, error) {
+	channelType := strings.TrimSpace(req.ChannelType)
+	if channelType != enums.ChannelTypeWeb && channelType != enums.ChannelTypeWxWorkKF {
+		return nil, errorsx.InvalidParam("渠道类型不合法")
+	}
+	channelCode := strings.TrimSpace(req.ChannelCode)
+	if channelCode == "" {
+		return nil, errorsx.InvalidParam("渠道编码不能为空")
+	}
+	if exists := s.Take("channel_code = ? AND id <> ?", channelCode, id); exists != nil {
+		return nil, errorsx.InvalidParam("渠道编码已存在")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, errorsx.InvalidParam("渠道名称不能为空")
+	}
+	if req.AIAgentID <= 0 {
+		return nil, errorsx.InvalidParam("请选择 AI Agent")
+	}
+	aiAgent := AIAgentService.Get(req.AIAgentID)
+	if aiAgent == nil || aiAgent.Status != enums.StatusOk {
+		return nil, errorsx.InvalidParam("AI Agent 不存在或未启用")
+	}
+	status := enums.Status(req.Status)
+	if req.Status == 0 {
+		status = enums.StatusOk
+	}
+	if status != enums.StatusOk && status != enums.StatusDisabled {
+		return nil, errorsx.InvalidParam("渠道状态不合法")
+	}
+
+	appID := strings.TrimSpace(req.AppID)
+	configJSON := strings.TrimSpace(req.ConfigJSON)
+	switch channelType {
+	case enums.ChannelTypeWeb:
+		if appID == "" {
+			appID = strs.UUID()
+		}
+		if exists := s.Take("app_id = ? AND channel_type = ? AND id <> ?", appID, enums.ChannelTypeWeb, id); exists != nil {
+			return nil, errorsx.InvalidParam("web 渠道 AppID 已存在")
+		}
+	case enums.ChannelTypeWxWorkKF:
+		appID = ""
+		cfg, err := s.ParseWxWorkKFChannelConfig(configJSON)
+		if err != nil {
+			return nil, errorsx.InvalidParam("企业微信渠道配置不合法")
+		}
+		if cfg == nil || cfg.OpenKfID == "" {
+			return nil, errorsx.InvalidParam("企业微信渠道配置缺少 openKfId")
+		}
+		if channel := s.GetEnabledWxWorkKFChannelByOpenKfID(cfg.OpenKfID); channel != nil && channel.ID != id {
+			return nil, errorsx.InvalidParam("openKfId 已被其他渠道使用")
+		}
+	}
+
+	return &models.Channel{
+		ChannelType: channelType,
+		ChannelCode: channelCode,
+		AIAgentID:   req.AIAgentID,
+		Name:        name,
+		AppID:       appID,
+		ConfigJSON:  configJSON,
+		SortNo:      req.SortNo,
+		Status:      status,
+		Remark:      strings.TrimSpace(req.Remark),
+	}, nil
 }

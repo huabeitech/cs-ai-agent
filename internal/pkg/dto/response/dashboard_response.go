@@ -59,7 +59,7 @@ type DashboardTeamLoadResponse struct {
 
 type DashboardAIStatsResponse struct {
 	EnabledAIAgents                 int64   `json:"enabledAiAgents"`
-	EnabledWidgetSites              int64   `json:"enabledWidgetSites"`
+	EnabledChannels                 int64   `json:"enabledChannels"`
 	TodayKnowledgeRetrieves         int64   `json:"todayKnowledgeRetrieves"`
 	TodayKnowledgeRetrieveFailCount int64   `json:"todayKnowledgeRetrieveFailCount"`
 	TodayKnowledgeRetrieveFailRate  float64 `json:"todayKnowledgeRetrieveFailRate"`

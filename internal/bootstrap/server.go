@@ -151,7 +151,7 @@ func addRouter(app *iris.Application, cfg *config.Config) {
 		m.Party("/ticket-resolution-code").Handle(new(console.TicketResolutionCodeController))
 		m.Party("/ticket-priority-config").Handle(new(console.TicketPriorityConfigController))
 		m.Party("/quick-reply").Handle(new(console.QuickReplyController))
-		m.Party("/widget-site").Handle(new(console.WidgetSiteController))
+		m.Party("/channel").Handle(new(console.ChannelController))
 		m.Party("/agent").Handle(new(console.AgentController))
 		m.Party("/agent-team").Handle(new(console.AgentTeamController))
 		m.Party("/agent-team-schedule").Handle(new(console.AgentTeamScheduleController))

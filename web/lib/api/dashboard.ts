@@ -65,7 +65,7 @@ export type DashboardOverview = {
   }
   aiStats: {
     enabledAiAgents: number
-    enabledWidgetSites: number
+    enabledChannels: number
     todayKnowledgeRetrieves: number
     todayKnowledgeRetrieveFailCount: number
     todayKnowledgeRetrieveFailRate: number

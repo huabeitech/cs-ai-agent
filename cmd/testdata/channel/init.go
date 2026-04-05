@@ -1,4 +1,4 @@
-package widgetsite
+package channel
 
 import (
 	"cs-agent/internal/models"
@@ -16,8 +16,8 @@ type InitResult struct {
 	Updated int
 }
 
-// Init 初始化 WidgetSite 测试数据
-// 依赖于 AI Agent 已初始化
+// Init 初始化 Channel 测试数据。
+// 依赖于 AI Agent 已初始化。
 func Init() (*InitResult, error) {
 	result := &InitResult{}
 
@@ -33,15 +33,13 @@ func Init() (*InitResult, error) {
 	for _, item := range seedItems {
 		itemCopy := item
 		if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-			existing := repositories.WidgetSiteRepository.Take(ctx.Tx, "name = ?", itemCopy.Name)
+			existing := repositories.ChannelRepository.Take(ctx.Tx, "channel_code = ?", itemCopy.ChannelCode)
 			if existing != nil {
-				// 更新
 				if err := ctx.Tx.Model(existing).Updates(&itemCopy).Error; err != nil {
 					return err
 				}
 				result.Updated++
 			} else {
-				// 创建
 				if err := ctx.Tx.Create(&itemCopy).Error; err != nil {
 					return err
 				}
@@ -49,22 +47,24 @@ func Init() (*InitResult, error) {
 			}
 			return nil
 		}); err != nil {
-			return nil, fmt.Errorf("upsert widget site failed: %w", err)
+			return nil, fmt.Errorf("upsert channel failed: %w", err)
 		}
 	}
 
 	return result, nil
 }
 
-func buildSeedItems(aiAgentID int64) []models.WidgetSite {
+func buildSeedItems(aiAgentID int64) []models.Channel {
 	now := time.Now()
-	return []models.WidgetSite{
+	return []models.Channel{
 		{
-			Name:      "官网客服",
-			AppID:     strs.UUID(),
-			AIAgentID: aiAgentID,
-			Status:    enums.StatusOk,
-			Remark:    "Local testdata seed",
+			Name:        "官网客服",
+			ChannelType: enums.ChannelTypeWeb,
+			ChannelCode: "official_site",
+			AppID:       strs.UUID(),
+			AIAgentID:   aiAgentID,
+			Status:      enums.StatusOk,
+			Remark:      "Local testdata seed",
 			AuditFields: models.AuditFields{
 				CreatedAt:      now,
 				CreateUserID:   0,
@@ -75,11 +75,13 @@ func buildSeedItems(aiAgentID int64) []models.WidgetSite {
 			},
 		},
 		{
-			Name:      "APP客服",
-			AppID:     strs.UUID(),
-			AIAgentID: aiAgentID,
-			Status:    enums.StatusOk,
-			Remark:    "Local testdata seed",
+			Name:        "APP客服",
+			ChannelType: enums.ChannelTypeWeb,
+			ChannelCode: "app_site",
+			AppID:       strs.UUID(),
+			AIAgentID:   aiAgentID,
+			Status:      enums.StatusOk,
+			Remark:      "Local testdata seed",
 			AuditFields: models.AuditFields{
 				CreatedAt:      now,
 				CreateUserID:   0,

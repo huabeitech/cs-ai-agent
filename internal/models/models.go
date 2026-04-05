@@ -50,7 +50,6 @@ var Models = []any{
 	&TicketRelation{},
 	&AIAgent{},
 	&Channel{},
-	&WidgetSite{},
 	&AgentProfile{},
 	&AgentTeam{},
 	&AgentTeamSchedule{},
@@ -517,17 +516,6 @@ type AIAgent struct {
 	AllowedMCPTools     string                          `gorm:"type:text"`                                   // AllowedMCPTools 为允许 direct tool 路由的 MCP 工具白名单配置JSON。
 	SortNo              int                             `gorm:"type:int;not null;default:0;index"`           // SortNo 为后台展示排序号。
 	Remark              string                          `gorm:"type:text"`                                   // Remark 为备注。
-	AuditFields
-}
-
-// WidgetSite 嵌入式客服站点配置。
-type WidgetSite struct {
-	ID        int64        `gorm:"primaryKey;autoIncrement"`                         // ID 为站点配置主键。
-	Name      string       `gorm:"type:varchar(100);not null;default:'';index"`      // Name 为站点名称。
-	AppID     string       `gorm:"type:varchar(64);not null;default:'';uniqueIndex"` // AppID 为站点唯一接入标识。
-	AIAgentID int64        `gorm:"type:bigint;not null;default:0;index"`             // AIAgentID 为该站点默认接入的 AI Agent ID。
-	Status    enums.Status `gorm:"type:int;not null;default:0;index"`                // Status 为站点状态。
-	Remark    string       `gorm:"type:text"`                                        // Remark 为备注。
 	AuditFields
 }
 

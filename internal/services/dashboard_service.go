@@ -55,7 +55,7 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 	enabledAIAgentCount := repositories.DashboardRepository.CountAIAgents(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("status = ?", enums.StatusOk)
 	})
-	enabledWidgetSiteCount := repositories.DashboardRepository.CountWidgetSites(db, func(tx *gorm.DB) *gorm.DB {
+	enabledChannelCount := repositories.DashboardRepository.CountChannels(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("status = ?", enums.StatusOk)
 	})
 	knowledgeRetrieveCount := repositories.DashboardRepository.CountKnowledgeRetrieveLogs(db, func(tx *gorm.DB) *gorm.DB {
@@ -98,7 +98,7 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 		},
 		AIStats: response.DashboardAIStatsResponse{
 			EnabledAIAgents:                 enabledAIAgentCount,
-			EnabledWidgetSites:              enabledWidgetSiteCount,
+			EnabledChannels:                 enabledChannelCount,
 			TodayKnowledgeRetrieves:         knowledgeRetrieveCount,
 			TodayKnowledgeRetrieveFailCount: knowledgeRetrieveFailCount,
 			TodayKnowledgeRetrieveFailRate:  calcRate(knowledgeRetrieveFailCount, knowledgeRetrieveCount),
@@ -361,7 +361,7 @@ func buildDashboardQuickLinks() []response.DashboardQuickLinkResponse {
 		{Title: "客服档案", Description: "查看客服状态与分组配置", Link: "/agents"},
 		{Title: "知识库", Description: "维护文档与查看检索日志", Link: "/knowledge"},
 		{Title: "AI Agent", Description: "配置 AI 接待策略与知识绑定", Link: "/ai-agents"},
-		{Title: "接入站点", Description: "管理小组件站点与默认 Agent", Link: "/widget-sites"},
+		{Title: "接入渠道", Description: "管理接入渠道与默认 Agent", Link: "/channels"},
 	}
 }
 

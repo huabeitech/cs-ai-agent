@@ -77,9 +77,9 @@ func (r *dashboardRepository) ListAIAgents(db *gorm.DB, query func(tx *gorm.DB) 
 	return list
 }
 
-func (r *dashboardRepository) CountWidgetSites(db *gorm.DB, query func(tx *gorm.DB) *gorm.DB) int64 {
+func (r *dashboardRepository) CountChannels(db *gorm.DB, query func(tx *gorm.DB) *gorm.DB) int64 {
 	var count int64
-	tx := db.Model(&models.WidgetSite{})
+	tx := db.Model(&models.Channel{})
 	if query != nil {
 		tx = query(tx)
 	}
