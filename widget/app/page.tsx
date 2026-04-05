@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
 import type { WidgetHostConfig } from "@/lib/widget/config";
+import { generateUUID } from "@/lib/utils";
 
 const STORAGE_KEY = "cs-agent-widget-test-config";
 
@@ -18,12 +19,7 @@ function getWidgetSdkUrl(baseUrl: string, pathname: string): string {
 }
 
 function generateRandomSubject(): string {
-  const uuid =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `${Date.now()}${Math.random().toString(16).slice(2)}`;
-
-  return `用户${uuid.replace(/-/g, "").slice(0, 8)}`;
+  return `用户${generateUUID().replace(/-/g, "").slice(0, 8)}`;
 }
 
 function buildDefaultConfig(baseUrl: string): TestConfig {

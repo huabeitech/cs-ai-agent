@@ -7,6 +7,8 @@ import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { ImageIcon, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
 
+import { generateUUID } from "@/lib/utils";
+
 type UploadedImage = {
   url: string;
   filename?: string;
@@ -141,7 +143,7 @@ export function MessageEditor({
     }
     shouldRestoreFocusRef.current = true;
     const objectUrl = URL.createObjectURL(file);
-    const placeholderId = `uploading-${crypto.randomUUID()}`;
+    const placeholderId = `uploading-${generateUUID()}`;
     editor
       .chain()
       .focus()

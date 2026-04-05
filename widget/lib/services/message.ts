@@ -5,6 +5,7 @@ import type {
   WidgetAsset,
   WidgetMessage,
 } from "@/lib/services/types";
+import { generateUUID } from "@/lib/utils";
 
 const DEFAULT_PAGE_LIMIT = 50;
 
@@ -64,7 +65,7 @@ export async function sendMessageWithPayload(
     method: "POST",
     body: JSON.stringify({
       conversationId,
-      clientMsgId: payload.clientMsgId || `client_${crypto.randomUUID()}`,
+      clientMsgId: payload.clientMsgId || `client_${generateUUID()}`,
       messageType: payload.messageType,
       content: payload.content,
       payload: payload.payload || "",

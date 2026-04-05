@@ -29,6 +29,7 @@ import {
   fetchWidgetConfig,
   readWidgetConfig,
 } from "@/lib/services/widget-config";
+import { generateUUID } from "@/lib/utils";
 
 type ChatStatus = "connecting" | "connected" | "disconnected";
 
@@ -523,7 +524,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
           messageType: "attachment",
           content: asset.filename,
           payload: JSON.stringify({ assetId: asset.assetId }),
-          clientMsgId: `widget_attachment_${crypto.randomUUID()}`,
+          clientMsgId: `widget_attachment_${generateUUID()}`,
         });
         set((state) => ({
           messages: state.messages.some((m) => m.id === nextMessage.id)

@@ -1,3 +1,5 @@
+import { generateUUID } from "@/lib/utils";
+
 const EXTERNAL_ID_KEY = "cs-agent:external-id";
 
 export function getOrCreateExternalId() {
@@ -8,7 +10,7 @@ export function getOrCreateExternalId() {
   if (current) {
     return current;
   }
-  const visitorId = `visitor_${crypto.randomUUID()}`;
+  const visitorId = `visitor_${generateUUID()}`;
   window.localStorage.setItem(EXTERNAL_ID_KEY, visitorId);
   return visitorId;
 }
