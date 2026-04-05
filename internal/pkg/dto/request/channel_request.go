@@ -4,7 +4,6 @@ type CreateChannelRequest struct {
 	ChannelType string `json:"channelType"`
 	AIAgentID   int64  `json:"aiAgentId"`
 	Name        string `json:"name"`
-	AppID       string `json:"appId"`
 	ConfigJSON  string `json:"configJson"`
 	Status      int    `json:"status"`
 	Remark      string `json:"remark"`

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -102,9 +103,9 @@ func (s *channelService) UpdateChannel(req request.UpdateChannelRequest, operato
 	}
 	return repositories.ChannelRepository.Updates(sqls.DB(), req.ID, map[string]any{
 		"channel_type":     item.ChannelType,
+		"channel_id":       item.ChannelID,
 		"ai_agent_id":      item.AIAgentID,
 		"name":             item.Name,
-		"app_id":           item.AppID,
 		"config_json":      item.ConfigJSON,
 		"status":           item.Status,
 		"remark":           item.Remark,
@@ -183,12 +184,12 @@ func (s *channelService) GetEnabledWxWorkKFChannelByOpenKfID(openKfID string) *m
 	return nil
 }
 
-func (s *channelService) GetEnabledWebChannelByAppID(appID string) *models.Channel {
-	appID = strings.TrimSpace(appID)
-	if appID == "" {
+func (s *channelService) GetEnabledWebChannelByChannelID(channelID string) *models.Channel {
+	channelID = strings.TrimSpace(channelID)
+	if channelID == "" {
 		return nil
 	}
-	return s.Take("channel_type = ? AND app_id = ? AND status = ?", enums.ChannelTypeWeb, appID, enums.StatusOk)
+	return s.Take("channel_type = ? AND channel_id = ? AND status = ?", enums.ChannelTypeWeb, channelID, enums.StatusOk)
 }
 
 func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRequest) (*models.Channel, error) {
@@ -215,21 +216,30 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 		return nil, errorsx.InvalidParam("渠道状态不合法")
 	}
 
-	appID := strings.TrimSpace(req.AppID)
+	channelID := ""
+	if id > 0 {
+		current := s.Get(id)
+		if current == nil || current.Status == enums.StatusDeleted {
+			return nil, errorsx.InvalidParam("接入渠道不存在")
+		}
+		channelID = strings.TrimSpace(current.ChannelID)
+	}
 	configJSON := strings.TrimSpace(req.ConfigJSON)
 	switch channelType {
 	case enums.ChannelTypeWeb:
-		if appID == "" {
-			appID = strings.TrimSpace(appID)
+		if channelID == "" {
+			channelID = strs.UUID()
 		}
-		if appID == "" {
-			return nil, errorsx.InvalidParam("web 渠道 AppID 不能为空")
-		}
-		if exists := s.Take("app_id = ? AND channel_type = ? AND status <> ? AND id <> ?", appID, enums.ChannelTypeWeb, enums.StatusDeleted, id); exists != nil {
-			return nil, errorsx.InvalidParam("web 渠道 AppID 已存在")
+		if exists := s.Take("channel_id = ? AND status <> ? AND id <> ?", channelID, enums.StatusDeleted, id); exists != nil {
+			return nil, errorsx.InvalidParam("渠道标识已存在")
 		}
 	case enums.ChannelTypeWxWorkKF:
-		appID = ""
+		if channelID == "" {
+			channelID = strs.UUID()
+		}
+		if exists := s.Take("channel_id = ? AND status <> ? AND id <> ?", channelID, enums.StatusDeleted, id); exists != nil {
+			return nil, errorsx.InvalidParam("渠道标识已存在")
+		}
 		cfg, err := s.ParseWxWorkKFChannelConfig(configJSON)
 		if err != nil {
 			return nil, errorsx.InvalidParam("企业微信渠道配置不合法")
@@ -244,9 +254,9 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 
 	return &models.Channel{
 		ChannelType: channelType,
+		ChannelID:   channelID,
 		AIAgentID:   req.AIAgentID,
 		Name:        name,
-		AppID:       appID,
 		ConfigJSON:  configJSON,
 		Status:      status,
 		Remark:      strings.TrimSpace(req.Remark),

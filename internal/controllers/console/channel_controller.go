@@ -25,7 +25,7 @@ func (c *ChannelController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "channelType"},
-		params.QueryFilter{ParamName: "appId", Op: params.Like},
+		params.QueryFilter{ParamName: "channelId", Op: params.Like},
 	).Where("status <> ?", enums.StatusDeleted).Desc("id"))
 	results := make([]response.ChannelResponse, 0, len(list))
 	for _, item := range list {

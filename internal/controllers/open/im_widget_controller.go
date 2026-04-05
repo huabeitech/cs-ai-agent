@@ -18,7 +18,7 @@ func (c *ImWidgetController) AnyConfig() *web.JsonResult {
 	}
 
 	ret := response.WidgetConfigResponse{
-		AppID: channel.AppID,
+		ChannelID: channel.ChannelID,
 	}
 	return web.JsonData(ret)
 }

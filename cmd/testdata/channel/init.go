@@ -60,7 +60,7 @@ func buildSeedItems(aiAgentID int64) []models.Channel {
 		{
 			Name:        "官网客服",
 			ChannelType: enums.ChannelTypeWeb,
-			AppID:       strs.UUID(),
+			ChannelID:   strs.UUID(),
 			AIAgentID:   aiAgentID,
 			Status:      enums.StatusOk,
 			Remark:      "Local testdata seed",

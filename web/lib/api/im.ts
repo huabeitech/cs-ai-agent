@@ -100,8 +100,8 @@ export type ImAsset = {
 const VISITOR_STORAGE_KEY = "cs_agent_im_visitor_id"
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
-const OPEN_IM_APP_ID =
-  process.env.NEXT_PUBLIC_OPEN_IM_APP_ID?.trim() || ""
+const OPEN_IM_CHANNEL_ID =
+  process.env.NEXT_PUBLIC_OPEN_IM_CHANNEL_ID?.trim() || ""
 const OPEN_IM_EXTERNAL_SOURCE =
   process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() || "web_chat"
 
@@ -130,7 +130,7 @@ export function createImWebSocketUrl() {
   const params = new URLSearchParams({
     externalId: getImVisitorId(),
     externalSource: OPEN_IM_EXTERNAL_SOURCE,
-    appId: OPEN_IM_APP_ID,
+    channelId: OPEN_IM_CHANNEL_ID,
   })
   return `${baseUrl}/api/open/im/ws?${params.toString()}`
 }
@@ -139,7 +139,7 @@ function createImHeaders() {
   return {
     "X-External-Source": OPEN_IM_EXTERNAL_SOURCE,
     "X-External-Id": getImVisitorId(),
-    "X-Widget-App-Id": OPEN_IM_APP_ID,
+    "X-Channel-Id": OPEN_IM_CHANNEL_ID,
   }
 }
 

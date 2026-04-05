@@ -10,14 +10,14 @@ import (
 )
 
 func requireEnabledChannel(ctx iris.Context) (*models.Channel, *web.JsonResult) {
-	appID := strings.TrimSpace(ctx.GetHeader("X-Widget-App-Id"))
-	if appID == "" {
-		appID = strings.TrimSpace(ctx.URLParam("appId"))
+	channelID := strings.TrimSpace(ctx.GetHeader("X-Channel-Id"))
+	if channelID == "" {
+		channelID = strings.TrimSpace(ctx.URLParam("channelId"))
 	}
-	if appID == "" {
-		return nil, web.JsonErrorMsg("appId不能为空")
+	if channelID == "" {
+		return nil, web.JsonErrorMsg("channelId不能为空")
 	}
-	channel := services.ChannelService.GetEnabledWebChannelByAppID(appID)
+	channel := services.ChannelService.GetEnabledWebChannelByChannelID(channelID)
 	if channel == nil {
 		return nil, web.JsonErrorMsg("接入渠道不存在或已停用")
 	}

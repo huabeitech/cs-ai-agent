@@ -41,7 +41,6 @@ const schema = z.object({
   channelType: z.enum(["web", "wxwork_kf"], "请选择渠道类型"),
   aiAgentId: z.string().trim().regex(/^\d+$/, "请选择 AI Agent"),
   name: z.string().trim().min(1, "渠道名称不能为空"),
-  appId: z.string().trim(),
   openKfId: z.string().trim(),
   remark: z.string().trim(),
 })
@@ -58,7 +57,6 @@ const emptyForm: EditForm = {
   channelType: "web",
   aiAgentId: "",
   name: "",
-  appId: "",
   openKfId: "",
   remark: "",
 }
@@ -83,7 +81,6 @@ function buildForm(item: AdminChannel | null): EditForm {
     channelType: item.channelType === "wxwork_kf" ? "wxwork_kf" : "web",
     aiAgentId: item.aiAgentId > 0 ? String(item.aiAgentId) : "",
     name: item.name,
-    appId: item.appId || "",
     openKfId: parseOpenKfId(item.configJson),
     remark: item.remark || "",
   }
@@ -91,7 +88,6 @@ function buildForm(item: AdminChannel | null): EditForm {
 
 function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload {
   const channelType = form.channelType
-  const appId = channelType === "web" ? form.appId.trim() : ""
   const configJson =
     channelType === "wxwork_kf"
       ? JSON.stringify({ openKfId: form.openKfId.trim() })
@@ -100,7 +96,6 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
     channelType,
     aiAgentId: Number(form.aiAgentId),
     name: form.name.trim(),
-    appId,
     configJson,
     status,
     remark: form.remark.trim(),
@@ -275,15 +270,7 @@ function ChannelFormBody({
               </FieldContent>
             </Field>
 
-            {channelType === "web" ? (
-              <Field data-invalid={!!errors.appId}>
-                <FieldLabel htmlFor="channel-app-id">AppID</FieldLabel>
-                <FieldContent>
-                  <Input id="channel-app-id" {...register("appId")} />
-                  <FieldError errors={[errors.appId]} />
-                </FieldContent>
-              </Field>
-            ) : (
+            {channelType === "wxwork_kf" ? (
               <Field data-invalid={!!errors.openKfId}>
                 <FieldLabel htmlFor="channel-open-kf-id">OpenKfID</FieldLabel>
                 <FieldContent>
@@ -291,7 +278,7 @@ function ChannelFormBody({
                   <FieldError errors={[errors.openKfId]} />
                 </FieldContent>
               </Field>
-            )}
+            ) : null}
           </div>
 
           <Field data-invalid={!!errors.remark}>

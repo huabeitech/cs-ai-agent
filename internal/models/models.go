@@ -526,11 +526,11 @@ type AIAgent struct {
 //	渠道本身负责定义“入口如何识别、默认接入哪个 AI Agent、渠道专属配置是什么”，
 //	而具体消息收发、会话映射等运行时数据由各自的渠道业务表承载。
 type Channel struct {
-	ID          int64  `gorm:"primaryKey;autoIncrement"`                    // ID 为渠道主键。
-	Name        string `gorm:"type:varchar(100);not null;default:'';index"` // Name 为渠道名称，用于后台展示和业务识别，例如“官网客服”“企业微信主客服”。
-	ChannelType string `gorm:"type:varchar(30);not null;default:'';index"`  // ChannelType 为渠道类型，决定该渠道的接入方式和配置解释规则。当前规划的典型取值包括：web、wxwork_kf。
-	AppID       string `gorm:"type:varchar(64);not null;default:'';index"`  // AppID 为渠道入口标识。 对 web 渠道，该字段用于前端通过 X-Widget-App-Id 标识接入来源；对非 web 渠道，可为空串，实际接入标识改由 ConfigJSON 中的类型化配置承载。
-	AIAgentID   int64  `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为该渠道默认接入的 AI Agent。 当外部客户通过该渠道首次进入系统且尚未命中现有未结束会话时，系统会使用该 AI Agent 作为会话默认接待实例。
+	ID          int64  `gorm:"primaryKey;autoIncrement"`                         // ID 为渠道主键。
+	Name        string `gorm:"type:varchar(100);not null;default:'';index"`      // Name 为渠道名称，用于后台展示和业务识别，例如“官网客服”“企业微信主客服”。
+	ChannelType string `gorm:"type:varchar(30);not null;default:'';index"`       // ChannelType 为渠道类型，决定该渠道的接入方式和配置解释规则。当前规划的典型取值包括：web、wxwork_kf。
+	ChannelID   string `gorm:"type:varchar(64);not null;default:'';uniqueIndex"` // ChannelID 为渠道入口标识，由系统自动生成。对 web 渠道，该字段用于前端通过 X-Channel-Id 标识接入来源；对其他渠道，作为统一的系统内稳定渠道标识保留。
+	AIAgentID   int64  `gorm:"type:bigint;not null;default:0;index"`             // AIAgentID 为该渠道默认接入的 AI Agent。 当外部客户通过该渠道首次进入系统且尚未命中现有未结束会话时，系统会使用该 AI Agent 作为会话默认接待实例。
 	// ConfigJSON 为渠道专属扩展配置，使用 JSON 存储。
 	// 例如：
 	// 1. web 渠道可记录允许域名、品牌配置等；

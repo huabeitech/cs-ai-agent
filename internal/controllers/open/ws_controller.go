@@ -34,7 +34,7 @@ func HandleImWebsocket(ctx iris.Context) {
 		external = ext
 	}
 	if err := services.WsService.UpgradeUserConnection(ctx, principal, external); err != nil {
-		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "appId", channel.AppID, "channel_id", channel.ID)
+		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "channelId", channel.ChannelID, "channel_id", channel.ID)
 		ctx.StopExecution()
 		return
 	}

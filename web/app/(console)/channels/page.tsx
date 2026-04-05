@@ -77,11 +77,11 @@ function ChannelIcon({ channelType }: { channelType: string }) {
 
 export default function DashboardChannelsPage() {
   const [nameInput, setNameInput] = useState("")
-  const [appIdInput, setAppIdInput] = useState("")
+  const [channelIdInput, setChannelIdInput] = useState("")
   const [channelTypeInput, setChannelTypeInput] = useState("all")
   const [statusInput, setStatusInput] = useState("all")
   const [name, setName] = useState("")
-  const [appId, setAppId] = useState("")
+  const [channelId, setChannelId] = useState("")
   const [channelType, setChannelType] = useState("all")
   const [status, setStatus] = useState("all")
   const [page, setPage] = useState(1)
@@ -101,7 +101,7 @@ export default function DashboardChannelsPage() {
     try {
       const data = await fetchChannels({
         name: name.trim() || undefined,
-        appId: appId.trim() || undefined,
+        channelId: channelId.trim() || undefined,
         channelType: channelType === "all" ? undefined : channelType,
         status: status === "all" ? undefined : status,
         page,
@@ -113,7 +113,7 @@ export default function DashboardChannelsPage() {
     } finally {
       setLoading(false)
     }
-  }, [appId, channelType, limit, name, page, status])
+  }, [channelId, channelType, limit, name, page, status])
 
   useEffect(() => {
     void loadData()
@@ -121,7 +121,7 @@ export default function DashboardChannelsPage() {
 
   function applyFilters() {
     setName(nameInput)
-    setAppId(appIdInput)
+    setChannelId(channelIdInput)
     setChannelType(channelTypeInput)
     setStatus(statusInput)
     setPage(1)
@@ -209,10 +209,10 @@ export default function DashboardChannelsPage() {
           <div className="relative min-w-72">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={appIdInput}
-              onChange={(event) => setAppIdInput(event.target.value)}
+              value={channelIdInput}
+              onChange={(event) => setChannelIdInput(event.target.value)}
               onKeyDown={handleFilterKeyDown}
-              placeholder="按 appId 筛选"
+              placeholder="按 channelId 筛选"
               className="pl-9"
             />
           </div>
@@ -256,7 +256,7 @@ export default function DashboardChannelsPage() {
               <TableRow>
                 <TableHead>渠道</TableHead>
                 <TableHead>类型</TableHead>
-                <TableHead>入口标识</TableHead>
+                <TableHead>ChannelID</TableHead>
                 <TableHead>接待 Agent</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="w-[88px] text-right">操作</TableHead>
@@ -286,7 +286,7 @@ export default function DashboardChannelsPage() {
                   <TableCell>
                     <Badge variant="outline">{getChannelTypeLabel(item.channelType)}</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{item.appId || item.configJson || "-"}</TableCell>
+                  <TableCell className="font-mono text-xs">{item.channelId || "-"}</TableCell>
                   <TableCell>{item.aiAgentName || "-"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
