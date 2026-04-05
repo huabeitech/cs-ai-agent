@@ -10,6 +10,7 @@ import (
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/services/storage"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -81,6 +82,20 @@ func (s *assetService) UpdateColumn(id int64, name string, value interface{}) er
 
 func (s *assetService) Delete(id int64) {
 	repositories.AssetRepository.Delete(sqls.DB(), id)
+}
+
+func (s *assetService) OpenReader(asset *models.Asset) (io.ReadCloser, error) {
+	cfg := config.Current()
+	if cfg == nil || asset == nil {
+		return nil, errorsx.InvalidParam("图片资源不存在")
+	}
+	switch asset.Provider {
+	case "", enums.AssetProviderLocal:
+		fullPath := filepath.Join(cfg.Storage.Local.Root, filepath.FromSlash(strings.TrimSpace(asset.StorageKey)))
+		return os.Open(fullPath)
+	default:
+		return nil, errorsx.InvalidParam("当前暂不支持该存储类型的文件读取")
+	}
 }
 
 func (s *assetService) UploadFile(cfg *config.Config, file *multipart.FileHeader, prefix string, principal *dto.AuthPrincipal) (*models.Asset, error) {

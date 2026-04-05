@@ -3,11 +3,8 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -235,7 +232,7 @@ func (s *wxWorkKFOutboundService) sendImageMessage(mapping *models.WxWorkKFConve
 	if asset == nil {
 		return "", fmt.Errorf("图片资源不存在")
 	}
-	fileReader, err := s.openAssetReader(cfg, asset)
+	fileReader, err := AssetService.OpenReader(asset)
 	if err != nil {
 		return "", err
 	}
@@ -429,17 +426,4 @@ func resolveStorageKeyFromAssetURL(baseURL, rawURL string) (string, error) {
 		return "", fmt.Errorf("图片URL不属于当前存储目录")
 	}
 	return strings.TrimLeft(strings.TrimPrefix(rawPath, basePath), "/"), nil
-}
-
-func (s *wxWorkKFOutboundService) openAssetReader(cfg *config.Config, asset *models.Asset) (io.ReadCloser, error) {
-	if cfg == nil || asset == nil {
-		return nil, fmt.Errorf("图片资源不存在")
-	}
-	switch asset.Provider {
-	case "", enums.AssetProviderLocal:
-		fullPath := filepath.Join(cfg.Storage.Local.Root, filepath.FromSlash(strings.TrimSpace(asset.StorageKey)))
-		return os.Open(fullPath)
-	default:
-		return nil, fmt.Errorf("当前暂不支持 %s 存储的企业微信图片下发", asset.Provider)
-	}
 }
