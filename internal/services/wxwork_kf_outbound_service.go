@@ -95,6 +95,13 @@ func (s *wxWorkKFOutboundService) processOutbox(outboxID int64) error {
 	if mapping == nil {
 		return s.markOutboxFailed(outbox, "企业微信会话映射不存在")
 	}
+	if mapping.ChannelID <= 0 {
+		return s.markOutboxFailed(outbox, "企业微信会话映射缺少渠道ID")
+	}
+	channel := ChannelService.Get(mapping.ChannelID)
+	if channel == nil || channel.Status != enums.StatusOk || channel.ChannelType != enums.ChannelTypeWxWorkKF {
+		return s.markOutboxFailed(outbox, "企业微信接入渠道不存在、未启用或类型不匹配")
+	}
 	if strings.TrimSpace(mapping.OpenKfID) == "" || strings.TrimSpace(mapping.ExternalUserID) == "" {
 		return s.markOutboxFailed(outbox, "企业微信会话映射缺少发送必要参数")
 	}

@@ -415,6 +415,7 @@ type WxWorkKFSyncState struct {
 type WxWorkKFConversation struct {
 	ID             int64        `gorm:"primaryKey;autoIncrement"`                                   // ID 为渠道会话映射主键。
 	ConversationID int64        `gorm:"type:bigint;not null;uniqueIndex"`                           // ConversationID 为平台会话ID，一条平台会话仅对应一条当前有效渠道映射。
+	ChannelID      int64        `gorm:"type:bigint;not null;default:0;index"`                       // ChannelID 为所属接入渠道ID，用于标识该会话来自哪个企业微信渠道配置。
 	OpenKfID       string       `gorm:"type:varchar(64);not null;default:'';index:idx_openkf_ext"`  // OpenKfID 为企业微信客服账号ID。
 	ExternalUserID string       `gorm:"type:varchar(128);not null;default:'';index:idx_openkf_ext"` // ExternalUserID 为企业微信客户ID。
 	ServicerUserID string       `gorm:"type:varchar(128);not null;default:'';index"`                // ServicerUserID 为企业微信当前接待客服成员UserID。

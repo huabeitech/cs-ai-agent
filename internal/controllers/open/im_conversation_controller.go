@@ -16,8 +16,8 @@ type ImConversationController struct {
 }
 
 func (c *ImConversationController) GetBy(id int64) *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
@@ -40,16 +40,16 @@ func (c *ImConversationController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
-	site := WidgetSiteFromCtx(c.Ctx)
-	if site == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	channel := ChannelFromCtx(c.Ctx)
+	if channel == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
-	item, err := services.ConversationService.Create(*external, site.AIAgentID)
+	item, err := services.ConversationService.Create(*external, channel.AIAgentID)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -57,8 +57,8 @@ func (c *ImConversationController) PostCreate_or_match() *web.JsonResult {
 }
 
 func (c *ImConversationController) PostClose() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {

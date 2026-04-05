@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,9 +19,8 @@ import (
 )
 
 const (
-	wxWorkKFDefaultAIAgentConfigKey = "wxwork_kf.default_ai_agent_id"
-	wxWorkKFSystemOperatorName      = "wxwork_kf"
-	wxWorkKFSyncMsgLimit            = 1000
+	wxWorkKFSystemOperatorName = "wxwork_kf"
+	wxWorkKFSyncMsgLimit       = 1000
 )
 
 var WxWorkKFInboundService = newWxWorkKFInboundService()
@@ -287,7 +285,11 @@ func (s *wxWorkKFInboundService) handleSessionStatusChangeEvent(item syncmsg.Mes
 	case 3:
 		sessionStatus = enums.WxWorkKFSessionStatusClosed
 	}
-	if err := s.upsertConversationMapping(conversation.ID, payload.Event.OpenKFID, payload.Event.ExternalUserID, payload.Event.NewReceptionistUserID, sessionStatus, payload.SendTime, payload.MsgID, string(item.OriginData)); err != nil {
+	channel, channelErr := s.getChannelByOpenKfID(payload.Event.OpenKFID)
+	if channelErr != nil {
+		return channelErr
+	}
+	if err := s.upsertConversationMapping(conversation.ID, channel.ID, payload.Event.OpenKFID, payload.Event.ExternalUserID, payload.Event.NewReceptionistUserID, sessionStatus, payload.SendTime, payload.MsgID, string(item.OriginData)); err != nil {
 		return err
 	}
 	if err := s.createMessageRef(conversation.ID, 0, item, enums.WxWorkKFMessageDirectionIn, enums.WxWorkKFMessageSendStatusReceived); err != nil {
@@ -342,6 +344,10 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 	if externalID == "" {
 		return nil, errorsx.InvalidParam("企业微信客户ID不能为空")
 	}
+	channel, err := s.getChannelByOpenKfID(base.OpenKFID)
+	if err != nil {
+		return nil, err
+	}
 
 	external := s.buildExternalInfo(externalID)
 	conversation := ConversationService.FindOne(sqls.NewCnd().
@@ -354,11 +360,7 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 		Desc("id"))
 
 	if conversation == nil {
-		aiAgentID, err := s.getDefaultAIAgentID()
-		if err != nil {
-			return nil, err
-		}
-		conversation, err = ConversationService.Create(external, aiAgentID)
+		conversation, err = ConversationService.Create(external, channel.AIAgentID)
 		if err != nil {
 			return nil, err
 		}
@@ -366,6 +368,7 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 
 	if err := s.upsertConversationMapping(
 		conversation.ID,
+		channel.ID,
 		base.OpenKFID,
 		base.ExternalUserID,
 		base.ReceptionistUserID,
@@ -379,12 +382,13 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 	return conversation, nil
 }
 
-func (s *wxWorkKFInboundService) upsertConversationMapping(conversationID int64, openKfID, externalUserID, servicerUserID string, sessionStatus enums.WxWorkKFSessionStatus, sendTime uint64, lastMsgID, rawProfile string) error {
+func (s *wxWorkKFInboundService) upsertConversationMapping(conversationID, channelID int64, openKfID, externalUserID, servicerUserID string, sessionStatus enums.WxWorkKFSessionStatus, sendTime uint64, lastMsgID, rawProfile string) error {
 	now := time.Now()
 	lastMsgTime := s.parseSendTime(sendTime)
 	existing := WxWorkKFConversationService.Take("conversation_id = ?", conversationID)
 	if existing != nil {
 		updates := map[string]any{
+			"channel_id":       channelID,
 			"open_kf_id":       strings.TrimSpace(openKfID),
 			"external_user_id": strings.TrimSpace(externalUserID),
 			"servicer_user_id": strings.TrimSpace(servicerUserID),
@@ -404,6 +408,7 @@ func (s *wxWorkKFInboundService) upsertConversationMapping(conversationID int64,
 
 	return WxWorkKFConversationService.Create(&models.WxWorkKFConversation{
 		ConversationID: conversationID,
+		ChannelID:      channelID,
 		OpenKfID:       strings.TrimSpace(openKfID),
 		ExternalUserID: strings.TrimSpace(externalUserID),
 		ServicerUserID: strings.TrimSpace(servicerUserID),
@@ -493,20 +498,23 @@ func (s *wxWorkKFInboundService) appendConversationEvent(conversationID int64, c
 	})
 }
 
-func (s *wxWorkKFInboundService) getDefaultAIAgentID() (int64, error) {
-	item := SystemConfigService.Take("config_key = ? AND status = ?", wxWorkKFDefaultAIAgentConfigKey, enums.StatusOk)
-	if item == nil {
-		return 0, errorsx.InvalidParam("未配置企业微信客服默认AI Agent")
+func (s *wxWorkKFInboundService) getChannelByOpenKfID(openKfID string) (*models.Channel, error) {
+	openKfID = strings.TrimSpace(openKfID)
+	if openKfID == "" {
+		return nil, errorsx.InvalidParam("企业微信 openKfID 不能为空")
 	}
-	aiAgentID, err := strconv.ParseInt(strings.TrimSpace(item.ConfigValue), 10, 64)
-	if err != nil || aiAgentID <= 0 {
-		return 0, errorsx.InvalidParam("企业微信客服默认AI Agent配置不合法")
+	channel := ChannelService.GetEnabledWxWorkKFChannelByOpenKfID(openKfID)
+	if channel == nil {
+		return nil, errorsx.InvalidParam("未找到匹配的企业微信接入渠道")
 	}
-	agent := AIAgentService.Get(aiAgentID)
+	if channel.AIAgentID <= 0 {
+		return nil, errorsx.InvalidParam("企业微信接入渠道未绑定AI Agent")
+	}
+	agent := AIAgentService.Get(channel.AIAgentID)
 	if agent == nil || agent.Status != enums.StatusOk {
-		return 0, errorsx.InvalidParam("企业微信客服默认AI Agent不存在或已禁用")
+		return nil, errorsx.InvalidParam("企业微信接入渠道绑定的AI Agent不存在或已禁用")
 	}
-	return aiAgentID, nil
+	return channel, nil
 }
 
 func (s *wxWorkKFInboundService) buildExternalInfo(externalUserID string) openidentity.ExternalInfo {

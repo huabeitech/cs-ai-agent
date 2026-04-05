@@ -17,6 +17,7 @@ const (
 )
 
 const (
+	ChannelTypeWeb      = "web"
 	ChannelTypeWxWorkKF = "wxwork_kf"
 )
 

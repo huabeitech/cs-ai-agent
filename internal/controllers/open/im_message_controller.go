@@ -22,8 +22,8 @@ type ImMessageController struct {
 }
 
 func (c *ImMessageController) AnyList() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
@@ -56,8 +56,8 @@ func (c *ImMessageController) AnyList() *web.JsonResult {
 }
 
 func (c *ImMessageController) PostSend() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
@@ -77,8 +77,8 @@ func (c *ImMessageController) PostSend() *web.JsonResult {
 }
 
 func (c *ImMessageController) PostRead() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
@@ -96,8 +96,8 @@ func (c *ImMessageController) PostRead() *web.JsonResult {
 }
 
 func (c *ImMessageController) PostUpload_image() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {
@@ -145,8 +145,8 @@ func (c *ImMessageController) PostUpload_image() *web.JsonResult {
 }
 
 func (c *ImMessageController) PostUpload_attachment() *web.JsonResult {
-	if WidgetSiteFromCtx(c.Ctx) == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	if ChannelFromCtx(c.Ctx) == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 	external := ExternalInfoFromCtx(c.Ctx)
 	if external == nil {

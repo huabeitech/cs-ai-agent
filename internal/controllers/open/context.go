@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	ctxKeyOpenImWidgetSite   = "openImWidgetSite"
+	ctxKeyOpenImChannel      = "openImChannel"
 	ctxKeyOpenImExternalInfo = "openImExternalInfo"
 )
 
-// WidgetSiteFromCtx 返回 OpenImContextMiddleware 注入的接入站点（未走中间件时为 nil）。
-func WidgetSiteFromCtx(ctx iris.Context) *models.WidgetSite {
-	v := ctx.Values().Get(ctxKeyOpenImWidgetSite)
-	site, _ := v.(*models.WidgetSite)
-	return site
+// ChannelFromCtx 返回 OpenImContextMiddleware 注入的接入渠道（未走中间件时为 nil）。
+func ChannelFromCtx(ctx iris.Context) *models.Channel {
+	v := ctx.Values().Get(ctxKeyOpenImChannel)
+	channel, _ := v.(*models.Channel)
+	return channel
 }
 
 // ExternalInfoFromCtx 返回中间件注入的外部访客身份；仅 widget 子路径或未启用中间件时为 nil。

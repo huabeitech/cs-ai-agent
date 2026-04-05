@@ -12,13 +12,13 @@ type ImWidgetController struct {
 }
 
 func (c *ImWidgetController) AnyConfig() *web.JsonResult {
-	site := WidgetSiteFromCtx(c.Ctx)
-	if site == nil {
-		return web.JsonErrorMsg("接入站点未初始化")
+	channel := ChannelFromCtx(c.Ctx)
+	if channel == nil {
+		return web.JsonErrorMsg("接入渠道未初始化")
 	}
 
 	ret := response.WidgetConfigResponse{
-		AppID: site.AppID,
+		AppID: channel.AppID,
 	}
 	return web.JsonData(ret)
 }

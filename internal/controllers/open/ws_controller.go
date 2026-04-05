@@ -11,7 +11,7 @@ import (
 )
 
 func HandleImWebsocket(ctx iris.Context) {
-	site, err := resolveEnabledWidgetSiteForWS(ctx)
+	channel, err := resolveEnabledChannelForWS(ctx)
 	if err != nil {
 		_ = ctx.StopWithJSON(iris.StatusBadRequest, map[string]any{
 			"message": err.Error(),
@@ -34,16 +34,16 @@ func HandleImWebsocket(ctx iris.Context) {
 		external = ext
 	}
 	if err := services.WsService.UpgradeUserConnection(ctx, principal, external); err != nil {
-		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "appId", site.AppID)
+		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "appId", channel.AppID, "channel_id", channel.ID)
 		ctx.StopExecution()
 		return
 	}
 }
 
-func resolveEnabledWidgetSiteForWS(ctx iris.Context) (*models.WidgetSite, error) {
-	site, rsp := requireEnabledWidgetSite(ctx)
+func resolveEnabledChannelForWS(ctx iris.Context) (*models.Channel, error) {
+	channel, rsp := requireEnabledChannel(ctx)
 	if rsp == nil {
-		return site, nil
+		return channel, nil
 	}
-	return nil, errorsx.InvalidParam("接入站点不存在或已停用")
+	return nil, errorsx.InvalidParam("接入渠道不存在或已停用")
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/mlogclub/simple/web"
 )
 
-// OpenImContextMiddleware 校验 X-Widget-App-Id / appId 对应启用站点；除 /api/open/im/widget 外解析并缓存外部访客身份。
+// OpenImContextMiddleware 校验 X-Widget-App-Id / appId 对应启用 web 渠道；除 /api/open/im/widget 外解析并缓存外部访客身份。
 func OpenImContextMiddleware(ctx iris.Context) {
 	appID := strings.TrimSpace(ctx.GetHeader("X-Widget-App-Id"))
 	if appID == "" {
@@ -20,13 +20,13 @@ func OpenImContextMiddleware(ctx iris.Context) {
 		_ = ctx.JSON(web.JsonErrorMsg("appId不能为空"))
 		return
 	}
-	site := services.WidgetSiteService.FindEnabledByAppID(appID)
-	if site == nil {
+	channel := services.ChannelService.GetEnabledWebChannelByAppID(appID)
+	if channel == nil {
 		ctx.StopExecution()
-		_ = ctx.JSON(web.JsonErrorMsg("接入站点不存在或已停用"))
+		_ = ctx.JSON(web.JsonErrorMsg("接入渠道不存在或已停用"))
 		return
 	}
-	ctx.Values().Set(ctxKeyOpenImWidgetSite, site)
+	ctx.Values().Set(ctxKeyOpenImChannel, channel)
 
 	path := ctx.Path()
 	if strings.Contains(path, "/open/im/widget") {
