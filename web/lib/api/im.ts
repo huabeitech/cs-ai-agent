@@ -1,4 +1,5 @@
 import { request } from "@/lib/api/client"
+import { generateUUID } from "@/lib/utils"
 
 export type Paging = {
   page: number
@@ -106,10 +107,7 @@ const OPEN_IM_EXTERNAL_SOURCE =
   process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() || "web_chat"
 
 function buildVisitorId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `visitor_${crypto.randomUUID()}`
-  }
-  return `visitor_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  return `visitor_${generateUUID()}`
 }
 
 export function getImVisitorId() {

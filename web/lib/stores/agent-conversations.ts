@@ -15,6 +15,7 @@ import {
   type AgentMessage,
 } from "@/lib/api/agent"
 import { summarizeIMMessage } from "@/lib/im-message"
+import { generateUUID } from "@/lib/utils"
 
 export const agentConversationFilterOptions = [
   // { value: "mine", label: "我的" },
@@ -454,7 +455,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         conversationId: selectedConversationId,
         messageType: "html",
         content: trimmedContent,
-        clientMsgId: `agent_${crypto.randomUUID()}`,
+        clientMsgId: `agent_${generateUUID()}`,
       })
 
       if (get().selectedConversationId === selectedConversationId) {
@@ -516,7 +517,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         messageType: "attachment",
         content: asset.filename,
         payload: JSON.stringify({ assetId: asset.assetId }),
-        clientMsgId: `agent_attachment_${crypto.randomUUID()}`,
+        clientMsgId: `agent_attachment_${generateUUID()}`,
       })
 
       if (get().selectedConversationId === selectedConversationId) {

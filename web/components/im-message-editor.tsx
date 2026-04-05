@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { fetchQuickReplyListAll, type AdminQuickReply } from "@/lib/api/admin"
+import { generateUUID } from "@/lib/utils"
 
 type UploadedImage = {
   url: string
@@ -182,7 +183,7 @@ export function ImMessageEditor({
     }
     shouldRestoreFocusRef.current = true
     const objectUrl = URL.createObjectURL(file)
-    const placeholderId = `uploading-${crypto.randomUUID()}`
+    const placeholderId = `uploading-${generateUUID()}`
     editor
       .chain()
       .focus()
