@@ -8,6 +8,7 @@ import (
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/repositories"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -403,6 +404,16 @@ func (s *messageService) sendMessage(cfg *config.Config, conversationID int64, s
 		if conversation := ConversationService.Get(conversationID); conversation != nil {
 			WsService.PublishMessageCreated(conversation, ret)
 			WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationUpdated)
+			if senderType == enums.IMSenderTypeAgent && ret != nil {
+				if enqueueErr := ChannelMessageOutboxService.EnqueueWxWorkKFMessage(conversation, ret); enqueueErr != nil {
+					slog.Error("enqueue wxwork kf outbox failed",
+						"conversation_id", conversation.ID,
+						"message_id", ret.ID,
+						"external_source", conversation.ExternalSource,
+						"error", enqueueErr,
+					)
+				}
+			}
 		}
 		if senderType == enums.IMSenderTypeCustomer && ret != nil {
 			AIReplyService.TriggerReplyAsync(ret.ID)

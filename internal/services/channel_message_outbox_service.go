@@ -2,7 +2,11 @@ package services
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/repositories"
+	"encoding/json"
+	"strings"
+	"time"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -65,3 +69,49 @@ func (s *channelMessageOutboxService) Delete(id int64) {
 	repositories.ChannelMessageOutboxRepository.Delete(sqls.DB(), id)
 }
 
+func (s *channelMessageOutboxService) EnqueueWxWorkKFMessage(conversation *models.Conversation, message *models.Message) error {
+	if conversation == nil || message == nil {
+		return nil
+	}
+	if conversation.ExternalSource != enums.ExternalSourceWxWorkKF {
+		return nil
+	}
+	if message.SenderType != enums.IMSenderTypeAgent {
+		return nil
+	}
+	if message.MessageType != enums.IMMessageTypeText {
+		return nil
+	}
+	if existing := s.Take("channel_type = ? AND message_id = ?", enums.ChannelTypeWxWorkKF, message.ID); existing != nil {
+		return nil
+	}
+
+	payload, err := json.Marshal(map[string]any{
+		"conversationId": conversation.ID,
+		"messageId":      message.ID,
+		"messageType":    message.MessageType,
+		"content":        strings.TrimSpace(message.Content),
+		"payload":        strings.TrimSpace(message.Payload),
+		"senderId":       message.SenderID,
+	})
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	return s.Create(&models.ChannelMessageOutbox{
+		ChannelType:    enums.ChannelTypeWxWorkKF,
+		ConversationID: conversation.ID,
+		MessageID:      message.ID,
+		Payload:        string(payload),
+		SendStatus:     string(enums.ChannelMessageOutboxStatusPending),
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   message.UpdateUserID,
+			CreateUserName: message.UpdateUserName,
+			UpdatedAt:      now,
+			UpdateUserID:   message.UpdateUserID,
+			UpdateUserName: message.UpdateUserName,
+		},
+	})
+}
