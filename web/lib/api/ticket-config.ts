@@ -156,7 +156,7 @@ export function deleteTicketResolutionCode(id: number) {
 }
 
 export function fetchTicketPriorityConfigs(query?: Record<string, string | number | undefined>) {
-  return request<PageResult<TicketPriorityConfig>>(
+  return request<TicketPriorityConfig[]>(
     `/api/console/ticket-priority-config/list${toQueryString(query)}`
   )
 }

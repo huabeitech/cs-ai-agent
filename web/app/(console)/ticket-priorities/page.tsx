@@ -25,7 +25,6 @@ import { Controller, type Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod/v4"
 
-import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
 import { ProjectDialog } from "@/components/project-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -44,7 +43,6 @@ import {
   deleteTicketPriorityConfig,
   fetchTicketPriorityConfigs,
   type CreateTicketPriorityConfigPayload,
-  type PageResult,
   type TicketPriorityConfig,
   updateTicketPriorityConfig,
   updateTicketPriorityConfigSort,
@@ -176,17 +174,12 @@ export default function TicketPrioritiesPage() {
   const [statusFilterInput, setStatusFilterInput] = useState("all")
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [sorting, setSorting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<TicketPriorityConfig | null>(null)
-  const [result, setResult] = useState<PageResult<TicketPriorityConfig>>({
-    results: [],
-    page: { page: 1, limit: 20, total: 0 },
-  })
+  const [items, setItems] = useState<TicketPriorityConfig[]>([])
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -200,16 +193,14 @@ export default function TicketPrioritiesPage() {
       const data = await fetchTicketPriorityConfigs({
         name: keyword.trim() || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
-        page,
-        limit,
       })
-      setResult(data)
+      setItems(Array.isArray(data) ? data : [])
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "加载工单优先级失败")
     } finally {
       setLoading(false)
     }
-  }, [keyword, statusFilter, page, limit])
+  }, [keyword, statusFilter])
 
   useEffect(() => {
     void loadData()
@@ -218,7 +209,6 @@ export default function TicketPrioritiesPage() {
   function applyFilters() {
     setKeyword(keywordInput)
     setStatusFilter(statusFilterInput)
-    setPage(1)
   }
 
   async function handleSubmit(payload: CreateTicketPriorityConfigPayload) {
@@ -259,27 +249,21 @@ export default function TicketPrioritiesPage() {
     if (!over || active.id === over.id || sorting || loading) {
       return
     }
-    const previousResults = result.results
+    const previousResults = items
     const oldIndex = previousResults.findIndex((item) => item.id === active.id)
     const newIndex = previousResults.findIndex((item) => item.id === over.id)
     if (oldIndex < 0 || newIndex < 0) {
       return
     }
     const nextResults = arrayMove(previousResults, oldIndex, newIndex)
-    setResult((current) => ({
-      ...current,
-      results: nextResults,
-    }))
+    setItems(nextResults)
     setSorting(true)
     try {
       await updateTicketPriorityConfigSort(nextResults.map((item) => item.id))
       toast.success("工单优先级排序已更新")
       await loadData()
     } catch (error) {
-      setResult((current) => ({
-        ...current,
-        results: previousResults,
-      }))
+      setItems(previousResults)
       toast.error(error instanceof Error ? error.message : "更新排序失败")
     } finally {
       setSorting(false)
@@ -361,9 +345,9 @@ export default function TicketPrioritiesPage() {
                       加载中...
                     </td>
                   </tr>
-                ) : result.results.length > 0 ? (
-                  <SortableContext items={result.results.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-                    {result.results.map((item) => (
+                ) : items.length > 0 ? (
+                  <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                    {items.map((item) => (
                       <SortablePriorityRow
                         key={item.id}
                         item={item}
@@ -388,16 +372,6 @@ export default function TicketPrioritiesPage() {
           </DndContext>
         </div>
 
-        <ListPagination
-          page={result.page.page}
-          limit={result.page.limit}
-          total={result.page.total}
-          onPageChange={setPage}
-          onLimitChange={(nextLimit: number) => {
-            setLimit(nextLimit)
-            setPage(1)
-          }}
-        />
       </div>
 
       <TicketPriorityEditDialog
