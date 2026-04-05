@@ -14,6 +14,7 @@ import (
 
 type TicketBuildContext struct {
 	Categories       map[int64]*models.TicketCategory
+	Priorities       map[int64]*models.TicketPriorityConfig
 	ResolutionCodes  map[string]*models.TicketResolutionCode
 	Users            map[int64]*models.User
 	Teams            map[int64]*models.AgentTeam
@@ -81,6 +82,15 @@ func BuildTicketWithContext(item *models.Ticket, ctx *TicketBuildContext) *respo
 	} else if item.CategoryID > 0 {
 		if category := services.TicketCategoryService.Get(item.CategoryID); category != nil {
 			ret.CategoryName = category.Name
+		}
+	}
+	if item.Priority > 0 && ctx != nil && ctx.Priorities != nil {
+		if priority := ctx.Priorities[item.Priority]; priority != nil {
+			ret.PriorityName = priority.Name
+		}
+	} else if item.Priority > 0 {
+		if priority := services.TicketPriorityConfigService.Get(item.Priority); priority != nil {
+			ret.PriorityName = priority.Name
 		}
 	}
 	if item.ResolutionCode != "" && ctx != nil && ctx.ResolutionCodes != nil {

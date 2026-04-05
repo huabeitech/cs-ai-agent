@@ -9,7 +9,7 @@ type CreateTicketRequest struct {
 	ConversationID    int64          `json:"conversationId"`
 	CategoryID        int64          `json:"categoryId"`
 	Type              string         `json:"type"`
-	Priority          int            `json:"priority"`
+	Priority          int64          `json:"priority"`
 	Severity          int            `json:"severity"`
 	CurrentTeamID     int64          `json:"currentTeamId"`
 	CurrentAssigneeID int64          `json:"currentAssigneeId"`
@@ -22,7 +22,7 @@ type CreateTicketFromConversationRequest struct {
 	Title              string         `json:"title"`
 	Description        string         `json:"description"`
 	CategoryID         int64          `json:"categoryId"`
-	Priority           int            `json:"priority"`
+	Priority           int64          `json:"priority"`
 	Severity           int            `json:"severity"`
 	CurrentTeamID      int64          `json:"currentTeamId"`
 	CurrentAssigneeID  int64          `json:"currentAssigneeId"`
@@ -36,7 +36,7 @@ type UpdateTicketRequest struct {
 	Description       string         `json:"description"`
 	CategoryID        int64          `json:"categoryId"`
 	Type              string         `json:"type"`
-	Priority          int            `json:"priority"`
+	Priority          int64          `json:"priority"`
 	Severity          int            `json:"severity"`
 	CurrentTeamID     int64          `json:"currentTeamId"`
 	CurrentAssigneeID int64          `json:"currentAssigneeId"`

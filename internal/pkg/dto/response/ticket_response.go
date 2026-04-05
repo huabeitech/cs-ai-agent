@@ -58,7 +58,8 @@ type TicketResponse struct {
 	CategoryID          int64                `json:"categoryId"`
 	CategoryName        string               `json:"categoryName,omitempty"`
 	Type                string               `json:"type"`
-	Priority            enums.TicketPriority `json:"priority"`
+	Priority            int64                `json:"priority"`
+	PriorityName        string               `json:"priorityName,omitempty"`
 	Severity            enums.TicketSeverity `json:"severity"`
 	Status              enums.TicketStatus   `json:"status"`
 	CurrentTeamID       int64                `json:"currentTeamId"`

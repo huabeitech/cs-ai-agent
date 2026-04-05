@@ -702,7 +702,7 @@ export default function TicketDetailPage() {
                         ) : null}
                         <InfoRow
                           label="优先级"
-                          value={String(ticket.priority)}
+                          value={ticket.priorityName || String(ticket.priority)}
                         />
                         <InfoRow
                           label="严重度"
@@ -816,12 +816,12 @@ export default function TicketDetailPage() {
                         <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
                           当前工单未生成 SLA 记录，请检查工单 SLA
                           配置；如果系统仍在使用默认策略，也需要确认配置是否已补齐。
-                          <Link
-                            href="/ticket-sla-configs"
-                            className="ml-1 font-medium underline underline-offset-4"
-                          >
-                            前往配置 SLA
-                          </Link>
+                            <Link
+                              href="/ticket-priorities"
+                              className="ml-1 font-medium underline underline-offset-4"
+                            >
+                              前往配置优先级
+                            </Link>
                         </div>
                       )}
                     </DetailSection>

@@ -643,7 +643,7 @@ function RelatedTicketsSection({ conversation }: { conversation: AgentConversati
                     {ticket.ticketNo}
                   </div>
                 </div>
-                <TicketPriorityBadge priority={ticket.priority} />
+                <TicketPriorityBadge priority={ticket.priority} priorityName={ticket.priorityName} />
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <TicketStatusBadge status={ticket.status} />

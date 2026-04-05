@@ -28,7 +28,9 @@ import {
 } from "@/lib/api/admin"
 import {
   fetchTicketCategoriesAll,
+  fetchTicketPriorityConfigsAll,
   type TicketCategory,
+  type TicketPriorityConfig,
 } from "@/lib/api/ticket-config"
 import {
   fetchTicketDetail,
@@ -54,7 +56,7 @@ const ticketFormSchema = z.object({
   title: z.string().trim().min(1, "标题不能为空"),
   description: z.string().trim(),
   categoryId: z.string().trim(),
-  priority: z.enum(["1", "2", "3", "4"], { message: "请选择优先级" }),
+  priority: z.string().trim().min(1, "请选择优先级"),
   severity: z.enum(["1", "2", "3"], { message: "请选择严重度" }),
   currentTeamId: z.string().trim(),
   currentAssigneeId: z.string().trim(),
@@ -73,7 +75,7 @@ const emptyForm: EditForm = {
   title: "",
   description: "",
   categoryId: "",
-  priority: "2",
+  priority: "",
   severity: "1",
   currentTeamId: "",
   currentAssigneeId: "",
@@ -88,7 +90,7 @@ function buildForm(item: TicketItem | null): EditForm {
     title: item.title ?? "",
     description: item.description ?? "",
     categoryId: item.categoryId ? String(item.categoryId) : "",
-    priority: String(item.priority || 2) as EditForm["priority"],
+    priority: item.priority ? String(item.priority) : "",
     severity: String(item.severity || 1) as EditForm["severity"],
     currentTeamId: item.currentTeamId ? String(item.currentTeamId) : "",
     currentAssigneeId: item.currentAssigneeId ? String(item.currentAssigneeId) : "",
@@ -101,7 +103,7 @@ function buildInitialForm(initialValues?: Partial<CreateTicketPayload>): EditFor
     title: initialValues?.title?.trim() ?? "",
     description: initialValues?.description?.trim() ?? "",
     categoryId: initialValues?.categoryId ? String(initialValues.categoryId) : "",
-    priority: String(initialValues?.priority ?? 2) as EditForm["priority"],
+    priority: initialValues?.priority ? String(initialValues.priority) : "",
     severity: String(initialValues?.severity ?? 1) as EditForm["severity"],
     currentTeamId: initialValues?.currentTeamId ? String(initialValues.currentTeamId) : "",
     currentAssigneeId: initialValues?.currentAssigneeId
@@ -173,6 +175,7 @@ function TicketEditDialogBody({
   const formId = "ticket-edit-form"
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<TicketCategory[]>([])
+  const [priorities, setPriorities] = useState<TicketPriorityConfig[]>([])
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const form = useForm<
@@ -215,10 +218,13 @@ function TicketEditDialogBody({
     void (async () => {
       const [categoryData, teamData, agentData] = await Promise.all([
         fetchTicketCategoriesAll(),
+        fetchTicketPriorityConfigsAll(),
         fetchAgentTeamsAll(),
         fetchAgentProfilesAll(),
       ])
       setCategories(Array.isArray(categoryData) ? categoryData : [])
+      setPriorities(Array.isArray(teamData) ? [] : [])
+      setPriorities(Array.isArray(arguments[0]) ? [] : [])
       setTeams(Array.isArray(teamData) ? teamData : [])
       setAgents(Array.isArray(agentData) ? agentData : [])
     })()
@@ -357,12 +363,7 @@ function TicketEditDialogBody({
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="请选择优先级"
-                        options={[
-                          { value: "1", label: "低" },
-                          { value: "2", label: "普通" },
-                          { value: "3", label: "高" },
-                          { value: "4", label: "紧急" },
-                        ]}
+                        options={priorityOptions}
                       />
                     )}
                   />
@@ -450,3 +451,7 @@ function TicketEditDialogBody({
     </ProjectDialog>
   )
 }
+  const priorityOptions = priorities.map((priority) => ({
+    value: String(priority.id),
+    label: priority.name,
+  }))

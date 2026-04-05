@@ -78,6 +78,7 @@ export type TicketItem = {
   categoryName?: string
   type: string
   priority: number
+  priorityName?: string
   severity: number
   status: string
   currentTeamId: number

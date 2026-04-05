@@ -73,6 +73,7 @@ func (c *TicketController) AnyList() *web.JsonResult {
 	return web.JsonData(&web.PageResult{
 		Results: builders.BuildTicketListWithContext(aggregate.List, &builders.TicketBuildContext{
 			Categories:       aggregate.Categories,
+			Priorities:       aggregate.Priorities,
 			ResolutionCodes:  aggregate.ResolutionCodes,
 			Users:            aggregate.Users,
 			Teams:            aggregate.Teams,
@@ -118,6 +119,7 @@ func (c *TicketController) AnyRisk_list() *web.JsonResult {
 	return web.JsonData(&web.PageResult{
 		Results: builders.BuildTicketListWithContext(aggregate.List, &builders.TicketBuildContext{
 			Categories:       aggregate.Categories,
+			Priorities:       aggregate.Priorities,
 			ResolutionCodes:  aggregate.ResolutionCodes,
 			Users:            aggregate.Users,
 			Teams:            aggregate.Teams,

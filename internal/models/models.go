@@ -29,6 +29,10 @@ var Models = []any{
 	&ConversationParticipant{},
 	&ConversationReadState{},
 	&Message{},
+	&WxWorkKFSyncState{},
+	&WxWorkKFConversation{},
+	&WxWorkKFMessageRef{},
+	&ChannelMessageOutbox{},
 	&ConversationAssignment{},
 	&ConversationTag{},
 	&QuickReply{},
@@ -36,7 +40,7 @@ var Models = []any{
 	&Ticket{},
 	&TicketCategory{},
 	&TicketResolutionCode{},
-	&TicketSLAConfig{},
+	&TicketPriorityConfig{},
 	&TicketComment{},
 	&TicketWatcher{},
 	&TicketCollaborator{},
@@ -391,6 +395,72 @@ type Message struct {
 	AuditFields
 }
 
+// WxWorkKFSyncState 企业微信客服消息同步状态表。
+//
+//	按 open_kfid 记录企业微信客服消息同步游标，用于 SyncMsg 增量拉取。
+type WxWorkKFSyncState struct {
+	ID         int64        `gorm:"primaryKey;autoIncrement"`                         // ID 为同步状态主键。
+	OpenKfID   string       `gorm:"type:varchar(64);not null;default:'';uniqueIndex"` // OpenKfID 为企业微信客服账号ID。
+	NextCursor string       `gorm:"type:varchar(128);not null;default:''"`            // NextCursor 为下一次增量同步使用的游标。
+	LastSyncAt *time.Time   `gorm:"type:datetime;index"`                              // LastSyncAt 为最近一次成功同步时间。
+	Status     enums.Status `gorm:"type:int;not null;default:0;index"`                // Status 为同步状态记录状态。
+	Remark     string       `gorm:"type:text"`                                        // Remark 为同步异常、人工备注等补充信息。
+	AuditFields
+}
+
+// WxWorkKFConversation 企业微信客服渠道会话映射表。
+//
+//	维护平台会话与企业微信客服会话上下文的对应关系，供入站同步和下行发送复用。
+type WxWorkKFConversation struct {
+	ID             int64        `gorm:"primaryKey;autoIncrement"`                                   // ID 为渠道会话映射主键。
+	ConversationID int64        `gorm:"type:bigint;not null;uniqueIndex"`                           // ConversationID 为平台会话ID，一条平台会话仅对应一条当前有效渠道映射。
+	OpenKfID       string       `gorm:"type:varchar(64);not null;default:'';index:idx_openkf_ext"`  // OpenKfID 为企业微信客服账号ID。
+	ExternalUserID string       `gorm:"type:varchar(128);not null;default:'';index:idx_openkf_ext"` // ExternalUserID 为企业微信客户ID。
+	ServicerUserID string       `gorm:"type:varchar(128);not null;default:'';index"`                // ServicerUserID 为企业微信当前接待客服成员UserID。
+	SessionStatus  string       `gorm:"type:varchar(30);not null;default:'';index"`                 // SessionStatus 为微信侧会话状态快照，如接入中、转接中、已结束。
+	LastWxMsgID    string       `gorm:"type:varchar(64);not null;default:'';index"`                 // LastWxMsgID 为最近一次同步到的微信消息ID。
+	LastWxMsgTime  *time.Time   `gorm:"type:datetime;index"`                                        // LastWxMsgTime 为最近一次微信消息时间。
+	RawProfile     string       `gorm:"type:text"`                                                  // RawProfile 为微信侧原始会话补充信息JSON。
+	Status         enums.Status `gorm:"type:int;not null;default:0;index"`                          // Status 为渠道会话映射状态。
+	AuditFields
+}
+
+// WxWorkKFMessageRef 企业微信客服消息映射表。
+//
+//	用于实现微信消息幂等消费，并保存平台消息与微信消息的双向映射关系。
+type WxWorkKFMessageRef struct {
+	ID             int64        `gorm:"primaryKey;autoIncrement"`                         // ID 为消息映射主键。
+	ConversationID int64        `gorm:"type:bigint;not null;default:0;index"`             // ConversationID 为所属平台会话ID。
+	MessageID      int64        `gorm:"type:bigint;not null;default:0;index"`             // MessageID 为所属平台消息ID；仅渠道消息尚未生成平台消息时可暂为0。
+	WxMsgID        string       `gorm:"type:varchar(64);not null;default:'';uniqueIndex"` // WxMsgID 为企业微信消息ID，用于幂等去重。
+	Direction      string       `gorm:"type:varchar(20);not null;default:'';index"`       // Direction 为消息方向，如 in/out。
+	Origin         int          `gorm:"type:int;not null;default:0;index"`                // Origin 为企业微信消息来源值，如客户发送、系统事件、企微客户端发送。
+	OpenKfID       string       `gorm:"type:varchar(64);not null;default:'';index"`       // OpenKfID 为发送或接收该消息的客服账号ID。
+	ExternalUserID string       `gorm:"type:varchar(128);not null;default:'';index"`      // ExternalUserID 为消息对应的企业微信客户ID。
+	SendStatus     string       `gorm:"type:varchar(30);not null;default:'';index"`       // SendStatus 为渠道发送状态快照，如 sent、failed。
+	FailReason     string       `gorm:"type:text"`                                        // FailReason 为渠道发送失败原因或补偿说明。
+	RawPayload     string       `gorm:"type:text"`                                        // RawPayload 为企业微信原始消息JSON。
+	Status         enums.Status `gorm:"type:int;not null;default:0;index"`                // Status 为消息映射状态。
+	AuditFields
+}
+
+// ChannelMessageOutbox 外部渠道消息投递任务表。
+//
+//	用于记录平台消息提交后的渠道发送任务，保证第三方发送动作与主事务解耦。
+type ChannelMessageOutbox struct {
+	ID             int64      `gorm:"primaryKey;autoIncrement"`                                                  // ID 为投递任务主键。
+	ChannelType    string     `gorm:"type:varchar(30);not null;default:'';index;uniqueIndex:uk_channel_message"` // ChannelType 为目标渠道类型，如 wxwork_kf。
+	ConversationID int64      `gorm:"type:bigint;not null;default:0;index"`                                      // ConversationID 为所属平台会话ID。
+	MessageID      int64      `gorm:"type:bigint;not null;default:0;uniqueIndex:uk_channel_message"`             // MessageID 为待投递的平台消息ID。
+	Payload        string     `gorm:"type:text"`                                                                 // Payload 为渠道发送所需的标准化请求数据JSON。
+	SendStatus     string     `gorm:"type:varchar(30);not null;default:'';index"`                                // SendStatus 为当前投递状态，如 pending、sending、sent、failed。
+	RetryCount     int        `gorm:"type:int;not null;default:0"`                                               // RetryCount 为已重试次数。
+	NextRetryAt    *time.Time `gorm:"type:datetime;index"`                                                       // NextRetryAt 为下一次允许重试时间。
+	LastError      string     `gorm:"type:text"`                                                                 // LastError 为最近一次发送失败信息。
+	SentAt         *time.Time `gorm:"type:datetime;index"`                                                       // SentAt 为最终发送成功时间。
+	AuditFields
+}
+
 // ConversationAssignment 会话接待关系。
 type ConversationAssignment struct {
 	ID             int64                    `gorm:"primaryKey;autoIncrement"`
@@ -483,7 +553,7 @@ type Ticket struct {
 	ConversationID      int64                `gorm:"type:bigint;not null;default:0;index"`
 	CategoryID          int64                `gorm:"type:bigint;not null;default:0;index"`
 	Type                string               `gorm:"type:varchar(50);not null;default:'';index"`
-	Priority            enums.TicketPriority `gorm:"type:int;not null;default:2;index"`
+	Priority            int64                `gorm:"type:bigint;not null;default:0;index"`
 	Severity            enums.TicketSeverity `gorm:"type:int;not null;default:1;index"`
 	Status              enums.TicketStatus   `gorm:"type:varchar(50);not null;default:'new';index"`
 	CurrentTeamID       int64                `gorm:"type:bigint;not null;default:0;index"`
@@ -527,15 +597,15 @@ type TicketResolutionCode struct {
 	AuditFields
 }
 
-// TicketSLAConfig 工单 SLA 配置。
-type TicketSLAConfig struct {
-	ID                   int64                `gorm:"primaryKey;autoIncrement"`
-	Name                 string               `gorm:"type:varchar(100);not null;default:'';index"`
-	Priority             enums.TicketPriority `gorm:"type:int;not null;default:2;uniqueIndex"`
-	FirstResponseMinutes int                  `gorm:"type:int;not null;default:0"`
-	ResolutionMinutes    int                  `gorm:"type:int;not null;default:0"`
-	Status               enums.Status         `gorm:"type:int;not null;default:0;index"`
-	Remark               string               `gorm:"type:text"`
+// TicketPriorityConfig 工单优先级配置。
+type TicketPriorityConfig struct {
+	ID                   int64        `gorm:"primaryKey;autoIncrement"`
+	Name                 string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"`
+	SortNo               int          `gorm:"type:int;not null;default:0;index"`
+	FirstResponseMinutes int          `gorm:"type:int;not null;default:0"`
+	ResolutionMinutes    int          `gorm:"type:int;not null;default:0"`
+	Status               enums.Status `gorm:"type:int;not null;default:0;index"`
+	Remark               string       `gorm:"type:text"`
 	AuditFields
 }
 

@@ -37,20 +37,20 @@ type DeleteTicketResolutionCodeRequest struct {
 	ID int64 `json:"id"`
 }
 
-type CreateTicketSLAConfigRequest struct {
-	Name                 string               `json:"name"`
-	Priority             enums.TicketPriority `json:"priority"`
-	FirstResponseMinutes int                  `json:"firstResponseMinutes"`
-	ResolutionMinutes    int                  `json:"resolutionMinutes"`
-	Status               enums.Status         `json:"status"`
-	Remark               string               `json:"remark"`
+type CreateTicketPriorityConfigRequest struct {
+	Name                 string       `json:"name"`
+	SortNo               int          `json:"sortNo"`
+	FirstResponseMinutes int          `json:"firstResponseMinutes"`
+	ResolutionMinutes    int          `json:"resolutionMinutes"`
+	Status               enums.Status `json:"status"`
+	Remark               string       `json:"remark"`
 }
 
-type UpdateTicketSLAConfigRequest struct {
+type UpdateTicketPriorityConfigRequest struct {
 	ID int64 `json:"id"`
-	CreateTicketSLAConfigRequest
+	CreateTicketPriorityConfigRequest
 }
 
-type DeleteTicketSLAConfigRequest struct {
+type DeleteTicketPriorityConfigRequest struct {
 	ID int64 `json:"id"`
 }

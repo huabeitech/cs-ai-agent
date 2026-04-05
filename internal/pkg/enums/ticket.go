@@ -45,42 +45,6 @@ func IsValidTicketStatus(status string) bool {
 	return false
 }
 
-type TicketPriority int
-
-const (
-	TicketPriorityLow    TicketPriority = 1
-	TicketPriorityNormal TicketPriority = 2
-	TicketPriorityHigh   TicketPriority = 3
-	TicketPriorityUrgent TicketPriority = 4
-)
-
-var TicketPriorityValues = []TicketPriority{
-	TicketPriorityLow,
-	TicketPriorityNormal,
-	TicketPriorityHigh,
-	TicketPriorityUrgent,
-}
-
-var ticketPriorityLabelMap = map[TicketPriority]string{
-	TicketPriorityLow:    "低",
-	TicketPriorityNormal: "普通",
-	TicketPriorityHigh:   "高",
-	TicketPriorityUrgent: "紧急",
-}
-
-func GetTicketPriorityLabel(priority TicketPriority) string {
-	return ticketPriorityLabelMap[priority]
-}
-
-func IsValidTicketPriority(priority int) bool {
-	for _, item := range TicketPriorityValues {
-		if int(item) == priority {
-			return true
-		}
-	}
-	return false
-}
-
 type TicketSeverity int
 
 const (

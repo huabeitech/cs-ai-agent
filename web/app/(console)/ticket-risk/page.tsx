@@ -77,7 +77,7 @@ function RiskTable({ title, description, items, emptyText }: RiskTableProps) {
                   </TableCell>
                   <TableCell>{item.categoryName || "未分类"}</TableCell>
                   <TableCell>
-                    <TicketPriorityBadge priority={item.priority} />
+                    <TicketPriorityBadge priority={item.priority} priorityName={item.priorityName} />
                   </TableCell>
                   <TableCell>
                     <TicketStatusBadge status={item.status} />

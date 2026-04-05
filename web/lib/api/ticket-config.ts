@@ -31,10 +31,10 @@ export type TicketResolutionCode = {
   remark: string
 }
 
-export type TicketSLAConfig = {
+export type TicketPriorityConfig = {
   id: number
   name: string
-  priority: number
+  sortNo: number
   firstResponseMinutes: number
   resolutionMinutes: number
   status: number
@@ -66,16 +66,16 @@ export type UpdateTicketResolutionCodePayload = CreateTicketResolutionCodePayloa
   id: number
 }
 
-export type CreateTicketSLAConfigPayload = {
+export type CreateTicketPriorityConfigPayload = {
   name: string
-  priority: number
+  sortNo: number
   firstResponseMinutes: number
   resolutionMinutes: number
   status: number
   remark: string
 }
 
-export type UpdateTicketSLAConfigPayload = CreateTicketSLAConfigPayload & {
+export type UpdateTicketPriorityConfigPayload = CreateTicketPriorityConfigPayload & {
   id: number
 }
 
@@ -156,28 +156,32 @@ export function deleteTicketResolutionCode(id: number) {
   })
 }
 
-export function fetchTicketSLAConfigs(query?: Record<string, string | number | undefined>) {
-  return request<PageResult<TicketSLAConfig>>(
-    `/api/console/ticket-sla-config/list${toQueryString(query)}`
+export function fetchTicketPriorityConfigs(query?: Record<string, string | number | undefined>) {
+  return request<PageResult<TicketPriorityConfig>>(
+    `/api/console/ticket-priority-config/list${toQueryString(query)}`
   )
 }
 
-export function createTicketSLAConfig(payload: CreateTicketSLAConfigPayload) {
-  return request<TicketSLAConfig>("/api/console/ticket-sla-config/create", {
+export function fetchTicketPriorityConfigsAll() {
+  return request<TicketPriorityConfig[]>("/api/console/ticket-priority-config/list_all")
+}
+
+export function createTicketPriorityConfig(payload: CreateTicketPriorityConfigPayload) {
+  return request<TicketPriorityConfig>("/api/console/ticket-priority-config/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function updateTicketSLAConfig(payload: UpdateTicketSLAConfigPayload) {
-  return request<void>("/api/console/ticket-sla-config/update", {
+export function updateTicketPriorityConfig(payload: UpdateTicketPriorityConfigPayload) {
+  return request<void>("/api/console/ticket-priority-config/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function deleteTicketSLAConfig(id: number) {
-  return request<void>("/api/console/ticket-sla-config/delete", {
+export function deleteTicketPriorityConfig(id: number) {
+  return request<void>("/api/console/ticket-priority-config/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

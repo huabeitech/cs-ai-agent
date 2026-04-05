@@ -77,6 +77,7 @@ type TicketListAggregate struct {
 	List             []models.Ticket
 	Paging           *sqls.Paging
 	Categories       map[int64]*models.TicketCategory
+	Priorities       map[int64]*models.TicketPriorityConfig
 	ResolutionCodes  map[string]*models.TicketResolutionCode
 	Users            map[int64]*models.User
 	Teams            map[int64]*models.AgentTeam
@@ -537,6 +538,7 @@ func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Tick
 		List:             list,
 		Paging:           paging,
 		Categories:       make(map[int64]*models.TicketCategory),
+		Priorities:       make(map[int64]*models.TicketPriorityConfig),
 		ResolutionCodes:  make(map[string]*models.TicketResolutionCode),
 		Users:            make(map[int64]*models.User),
 		Teams:            make(map[int64]*models.AgentTeam),
@@ -549,6 +551,7 @@ func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Tick
 	}
 
 	categoryIDs := make([]int64, 0)
+	priorityIDs := make([]int64, 0)
 	customerIDs := make([]int64, 0)
 	teamIDs := make([]int64, 0)
 	userIDs := make([]int64, 0)
@@ -556,6 +559,7 @@ func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Tick
 	resolutionCodes := make([]string, 0)
 
 	categorySeen := map[int64]struct{}{}
+	prioritySeen := map[int64]struct{}{}
 	customerSeen := map[int64]struct{}{}
 	teamSeen := map[int64]struct{}{}
 	userSeen := map[int64]struct{}{}
@@ -572,6 +576,12 @@ func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Tick
 			if _, ok := categorySeen[item.CategoryID]; !ok {
 				categorySeen[item.CategoryID] = struct{}{}
 				categoryIDs = append(categoryIDs, item.CategoryID)
+			}
+		}
+		if item.Priority > 0 {
+			if _, ok := prioritySeen[item.Priority]; !ok {
+				prioritySeen[item.Priority] = struct{}{}
+				priorityIDs = append(priorityIDs, item.Priority)
 			}
 		}
 		if item.CustomerID > 0 {
@@ -606,6 +616,13 @@ func (s *ticketService) buildTicketListAggregate(db *gorm.DB, list []models.Tick
 		for i := range categories {
 			item := categories[i]
 			aggregate.Categories[item.ID] = &item
+		}
+	}
+	if len(priorityIDs) > 0 {
+		priorities := repositories.TicketPriorityConfigRepository.Find(db, sqls.NewCnd().In("id", priorityIDs))
+		for i := range priorities {
+			item := priorities[i]
+			aggregate.Priorities[item.ID] = &item
 		}
 	}
 	if len(resolutionCodes) > 0 {
@@ -679,12 +696,17 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 		return nil, errorsx.InvalidParam("工单来源不合法")
 	}
 
-	priority := enums.TicketPriority(req.Priority)
-	if req.Priority == 0 {
-		priority = enums.TicketPriorityNormal
+	priority := req.Priority
+	if priority == 0 {
+		defaultPriority := TicketPriorityConfigService.GetDefaultActive()
+		if defaultPriority == nil {
+			return nil, errorsx.InvalidParam("请先配置启用中的工单优先级")
+		}
+		priority = defaultPriority.ID
 	}
-	if !enums.IsValidTicketPriority(int(priority)) {
-		return nil, errorsx.InvalidParam("工单优先级不合法")
+	priorityConfig := TicketPriorityConfigService.Get(priority)
+	if priorityConfig == nil || priorityConfig.Status != enums.StatusOk {
+		return nil, errorsx.InvalidParam("工单优先级不存在")
 	}
 
 	severity := enums.TicketSeverity(req.Severity)
@@ -817,8 +839,9 @@ func (s *ticketService) UpdateTicket(req request.UpdateTicketRequest, operator *
 	if title == "" {
 		return errorsx.InvalidParam("工单标题不能为空")
 	}
-	if !enums.IsValidTicketPriority(req.Priority) {
-		return errorsx.InvalidParam("工单优先级不合法")
+	priorityConfig := TicketPriorityConfigService.Get(req.Priority)
+	if priorityConfig == nil || priorityConfig.Status != enums.StatusOk {
+		return errorsx.InvalidParam("工单优先级不存在")
 	}
 	if !enums.IsValidTicketSeverity(req.Severity) {
 		return errorsx.InvalidParam("工单严重度不合法")
@@ -1477,16 +1500,15 @@ func (s *ticketService) normalizeAssignmentTx(db *gorm.DB, teamID, assigneeID in
 }
 
 func (s *ticketService) initSLAs(tx *gorm.DB, ticket *models.Ticket, now time.Time) error {
-	firstResponseTarget, resolutionTarget := ticketSLATargetMinutes(ticket.Priority)
-	if config := repositories.TicketSLAConfigRepository.FindOne(tx, sqls.NewCnd().Eq("priority", ticket.Priority).Eq("status", enums.StatusOk)); config != nil {
-		firstResponseTarget = config.FirstResponseMinutes
-		resolutionTarget = config.ResolutionMinutes
+	priorityConfig := repositories.TicketPriorityConfigRepository.Get(tx, ticket.Priority)
+	if priorityConfig == nil || priorityConfig.Status != enums.StatusOk {
+		return errorsx.InvalidParam("工单优先级不存在")
 	}
 	records := []*models.TicketSLARecord{
 		{
 			TicketID:      ticket.ID,
 			SLAType:       enums.TicketSLATypeFirstResponse,
-			TargetMinutes: firstResponseTarget,
+			TargetMinutes: priorityConfig.FirstResponseMinutes,
 			Status:        enums.TicketSLAStatusRunning,
 			StartedAt:     &now,
 			CreatedAt:     now,
@@ -1495,7 +1517,7 @@ func (s *ticketService) initSLAs(tx *gorm.DB, ticket *models.Ticket, now time.Ti
 		{
 			TicketID:      ticket.ID,
 			SLAType:       enums.TicketSLATypeResolution,
-			TargetMinutes: resolutionTarget,
+			TargetMinutes: priorityConfig.ResolutionMinutes,
 			Status:        enums.TicketSLAStatusRunning,
 			StartedAt:     &now,
 			CreatedAt:     now,
@@ -1692,17 +1714,6 @@ func activeTicketStatuses() []enums.TicketStatus {
 		enums.TicketStatusOpen,
 		enums.TicketStatusPendingCustomer,
 		enums.TicketStatusPendingInternal,
-	}
-}
-
-func ticketSLATargetMinutes(priority enums.TicketPriority) (int, int) {
-	switch priority {
-	case enums.TicketPriorityHigh:
-		return 10, 240
-	case enums.TicketPriorityUrgent:
-		return 5, 120
-	default:
-		return 30, 1440
 	}
 }
 

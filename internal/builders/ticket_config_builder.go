@@ -67,14 +67,14 @@ func BuildTicketResolutionCodeList(list []models.TicketResolutionCode) []respons
 	return ret
 }
 
-func BuildTicketSLAConfig(item *models.TicketSLAConfig) *response.TicketSLAConfigResponse {
+func BuildTicketPriorityConfig(item *models.TicketPriorityConfig) *response.TicketPriorityConfigResponse {
 	if item == nil {
 		return nil
 	}
-	return &response.TicketSLAConfigResponse{
+	return &response.TicketPriorityConfigResponse{
 		ID:                   item.ID,
 		Name:                 item.Name,
-		Priority:             item.Priority,
+		SortNo:               item.SortNo,
 		FirstResponseMinutes: item.FirstResponseMinutes,
 		ResolutionMinutes:    item.ResolutionMinutes,
 		Status:               item.Status,
@@ -82,13 +82,13 @@ func BuildTicketSLAConfig(item *models.TicketSLAConfig) *response.TicketSLAConfi
 	}
 }
 
-func BuildTicketSLAConfigList(list []models.TicketSLAConfig) []response.TicketSLAConfigResponse {
+func BuildTicketPriorityConfigList(list []models.TicketPriorityConfig) []response.TicketPriorityConfigResponse {
 	if len(list) == 0 {
-		return make([]response.TicketSLAConfigResponse, 0)
+		return make([]response.TicketPriorityConfigResponse, 0)
 	}
-	ret := make([]response.TicketSLAConfigResponse, 0, len(list))
+	ret := make([]response.TicketPriorityConfigResponse, 0, len(list))
 	for i := range list {
-		if item := BuildTicketSLAConfig(&list[i]); item != nil {
+		if item := BuildTicketPriorityConfig(&list[i]); item != nil {
 			ret = append(ret, *item)
 		}
 	}

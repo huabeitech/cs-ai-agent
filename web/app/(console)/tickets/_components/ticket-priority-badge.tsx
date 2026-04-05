@@ -1,32 +1,43 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react"
 
-const priorityLabelMap: Record<number, string> = {
-  1: "低",
-  2: "普通",
-  3: "高",
-  4: "紧急",
-}
+import { Badge } from "@/components/ui/badge"
+import { getTicketPriorityMap } from "@/lib/ticket-priority"
 
 const priorityClassNameMap: Record<number, string> = {
-  1: "bg-slate-500/10 text-slate-700 border-slate-500/20",
-  2: "bg-blue-500/10 text-blue-700 border-blue-500/20",
-  3: "bg-orange-500/10 text-orange-700 border-orange-500/20",
-  4: "bg-red-500/10 text-red-700 border-red-500/20",
+  0: "bg-slate-500/10 text-slate-700 border-slate-500/20",
+  1: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+  2: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  3: "bg-red-500/10 text-red-700 border-red-500/20",
+  4: "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/20",
 }
 
-export function ticketPriorityLabel(priority: number) {
-  return priorityLabelMap[priority] ?? `P${priority}`
+export function ticketPriorityLabel(priority: number, priorityName?: string) {
+  return priorityName?.trim() || `P${priority}`
 }
 
-export function TicketPriorityBadge({ priority }: { priority: number }) {
+export function TicketPriorityBadge({
+  priority,
+  priorityName,
+}: {
+  priority: number
+  priorityName?: string
+}) {
+  const [priorityMap, setPriorityMap] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    void (async () => {
+      setPriorityMap(await getTicketPriorityMap())
+    })()
+  }, [])
+
   return (
     <Badge
       variant="outline"
-      className={priorityClassNameMap[priority] ?? priorityClassNameMap[2]}
+      className={priorityClassNameMap[priority] ?? priorityClassNameMap[0]}
     >
-      {ticketPriorityLabel(priority)}
+      {ticketPriorityLabel(priority, priorityName || priorityMap[priority])}
     </Badge>
   )
 }

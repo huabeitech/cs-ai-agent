@@ -162,10 +162,10 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         requiredPermission: "ticketResolutionCode.view",
       },
       {
-        title: "工单SLA",
-        url: "/ticket-sla-configs",
+        title: "工单优先级",
+        url: "/ticket-priorities",
         icon: <Settings2Icon />,
-        requiredPermission: "ticketSLAConfig.view",
+        requiredPermission: "ticketPriorityConfig.view",
       },
     ],
   },

@@ -22,12 +22,12 @@ type TicketResolutionCodeResponse struct {
 	Remark string       `json:"remark"`
 }
 
-type TicketSLAConfigResponse struct {
-	ID                   int64                `json:"id"`
-	Name                 string               `json:"name"`
-	Priority             enums.TicketPriority `json:"priority"`
-	FirstResponseMinutes int                  `json:"firstResponseMinutes"`
-	ResolutionMinutes    int                  `json:"resolutionMinutes"`
-	Status               enums.Status         `json:"status"`
-	Remark               string               `json:"remark"`
+type TicketPriorityConfigResponse struct {
+	ID                   int64        `json:"id"`
+	Name                 string       `json:"name"`
+	SortNo               int          `json:"sortNo"`
+	FirstResponseMinutes int          `json:"firstResponseMinutes"`
+	ResolutionMinutes    int          `json:"resolutionMinutes"`
+	Status               enums.Status `json:"status"`
+	Remark               string       `json:"remark"`
 }
