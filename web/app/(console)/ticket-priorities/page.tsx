@@ -25,7 +25,7 @@ import {
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
-  Trash2Icon
+  Trash2Icon,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
@@ -338,24 +338,6 @@ export default function TicketPrioritiesPage() {
   return (
     <>
       <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">工单优先级</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              统一维护优先级名称、排序和 SLA 时长
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              setEditingItem(null);
-              setDialogOpen(true);
-            }}
-          >
-            <PlusIcon className="size-4" />
-            新建优先级
-          </Button>
-        </div>
-
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="relative min-w-72">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -393,6 +375,15 @@ export default function TicketPrioritiesPage() {
             disabled={loading}
           >
             <RefreshCwIcon className="size-4" />
+          </Button>
+          <Button
+            onClick={() => {
+              setEditingItem(null);
+              setDialogOpen(true);
+            }}
+          >
+            <PlusIcon className="size-4" />
+            新建优先级
           </Button>
         </div>
 
