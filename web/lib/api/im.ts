@@ -100,7 +100,7 @@ export type ImAsset = {
 
 const VISITOR_STORAGE_KEY = "cs_agent_im_visitor_id"
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
+  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
 const OPEN_IM_CHANNEL_ID =
   process.env.NEXT_PUBLIC_OPEN_IM_CHANNEL_ID?.trim() || ""
 const OPEN_IM_EXTERNAL_SOURCE =

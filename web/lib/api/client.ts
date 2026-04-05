@@ -1,7 +1,7 @@
 import { clearSession, readSession, writeSession, type AuthSession } from "@/lib/auth"
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
+  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
 
 type JsonResult<T> = {
   errorCode: number
