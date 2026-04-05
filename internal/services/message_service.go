@@ -404,7 +404,7 @@ func (s *messageService) sendMessage(cfg *config.Config, conversationID int64, s
 		if conversation := ConversationService.Get(conversationID); conversation != nil {
 			WsService.PublishMessageCreated(conversation, ret)
 			WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationUpdated)
-			if senderType == enums.IMSenderTypeAgent && ret != nil {
+			if ret != nil {
 				if enqueueErr := ChannelMessageOutboxService.EnqueueWxWorkKFMessage(conversation, ret); enqueueErr != nil {
 					slog.Error("enqueue wxwork kf outbox failed",
 						"conversation_id", conversation.ID,

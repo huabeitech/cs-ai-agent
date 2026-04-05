@@ -76,10 +76,10 @@ func (s *channelMessageOutboxService) EnqueueWxWorkKFMessage(conversation *model
 	if conversation.ExternalSource != enums.ExternalSourceWxWorkKF {
 		return nil
 	}
-	if message.SenderType != enums.IMSenderTypeAgent {
+	if message.SenderType != enums.IMSenderTypeAgent && message.SenderType != enums.IMSenderTypeAI {
 		return nil
 	}
-	if message.MessageType != enums.IMMessageTypeText {
+	if message.MessageType != enums.IMMessageTypeText && message.MessageType != enums.IMMessageTypeHTML {
 		return nil
 	}
 	if existing := s.Take("channel_type = ? AND message_id = ?", enums.ChannelTypeWxWorkKF, message.ID); existing != nil {
