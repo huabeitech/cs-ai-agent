@@ -73,22 +73,6 @@ func buildSeedItems(aiAgentID int64) []models.Channel {
 				UpdateUserName: "System",
 			},
 		},
-		{
-			Name:        "APP客服",
-			ChannelType: enums.ChannelTypeWeb,
-			AppID:       strs.UUID(),
-			AIAgentID:   aiAgentID,
-			Status:      enums.StatusOk,
-			Remark:      "Local testdata seed",
-			AuditFields: models.AuditFields{
-				CreatedAt:      now,
-				CreateUserID:   0,
-				CreateUserName: "System",
-				UpdatedAt:      now,
-				UpdateUserID:   0,
-				UpdateUserName: "System",
-			},
-		},
 	}
 }
 
