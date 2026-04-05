@@ -161,7 +161,7 @@ func TestFindPageAggregateByCndBuildsWatcherAndLookupMaps(t *testing.T) {
 		Title:             "aggregate-ticket",
 		CustomerID:        customerID,
 		CategoryID:        categoryID,
-		Priority:          int(enums.TicketPriorityHigh),
+		Priority:          3,
 		Severity:          int(enums.TicketSeverityMajor),
 		CurrentTeamID:     teamID,
 		CurrentAssigneeID: assigneeID,
@@ -358,7 +358,7 @@ func TestBuildTicketDetailUsesAggregatedWatcherCollaboratorAndRelationLookups(t 
 	}
 	child, err := services.TicketService.CreateTicket(request.CreateTicketRequest{
 		Title:             "detail-child",
-		Priority:          int(enums.TicketPriorityNormal),
+		Priority:          1,
 		Severity:          int(enums.TicketSeverityMinor),
 		CurrentTeamID:     teamID,
 		CurrentAssigneeID: assigneeID,
@@ -716,7 +716,7 @@ func setupTicketTestDB(t *testing.T) {
 func createTestTicketRequest(title string) request.CreateTicketRequest {
 	return request.CreateTicketRequest{
 		Title:    title,
-		Priority: int(enums.TicketPriorityNormal),
+		Priority: 1,
 		Severity: int(enums.TicketSeverityMinor),
 	}
 }

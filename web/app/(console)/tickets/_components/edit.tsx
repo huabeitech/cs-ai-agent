@@ -216,15 +216,14 @@ function TicketEditDialogBody({
       return
     }
     void (async () => {
-      const [categoryData, teamData, agentData] = await Promise.all([
+      const [categoryData, priorityData, teamData, agentData] = await Promise.all([
         fetchTicketCategoriesAll(),
         fetchTicketPriorityConfigsAll(),
         fetchAgentTeamsAll(),
         fetchAgentProfilesAll(),
       ])
       setCategories(Array.isArray(categoryData) ? categoryData : [])
-      setPriorities(Array.isArray(teamData) ? [] : [])
-      setPriorities(Array.isArray(arguments[0]) ? [] : [])
+      setPriorities(Array.isArray(priorityData) ? priorityData : [])
       setTeams(Array.isArray(teamData) ? teamData : [])
       setAgents(Array.isArray(agentData) ? agentData : [])
     })()
@@ -238,6 +237,10 @@ function TicketEditDialogBody({
         : category.name,
     })),
   )
+  const priorityOptions = priorities.map((priority) => ({
+    value: String(priority.id),
+    label: priority.name,
+  }))
 
   const teamOptions = [{ value: "", label: "不指定团队" }].concat(
     teams.map((team) => ({
@@ -451,7 +454,3 @@ function TicketEditDialogBody({
     </ProjectDialog>
   )
 }
-  const priorityOptions = priorities.map((priority) => ({
-    value: String(priority.id),
-    label: priority.name,
-  }))

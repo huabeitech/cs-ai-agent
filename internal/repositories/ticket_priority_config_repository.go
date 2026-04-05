@@ -46,13 +46,14 @@ func (r *ticketPriorityConfigRepository) FindOne(db *gorm.DB, cnd *sqls.Cnd) *mo
 }
 
 func (r *ticketPriorityConfigRepository) FindPageByParams(db *gorm.DB, queryParams *params.QueryParams) (list []models.TicketPriorityConfig, paging *sqls.Paging) {
-	return r.FindPageByCnd(db, queryParams.Cnd())
+	return r.FindPageByCnd(db, &queryParams.Cnd)
 }
 
 func (r *ticketPriorityConfigRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []models.TicketPriorityConfig, paging *sqls.Paging) {
-	count := cnd.Count(db, &models.TicketPriorityConfig{})
 	cnd.Find(db, &list)
-	return list, sqls.NewPaging(cnd.PageNo(), cnd.LimitSize(), count)
+	count := cnd.Count(db, &models.TicketPriorityConfig{})
+	paging = &sqls.Paging{Page: cnd.Paging.Page, Limit: cnd.Paging.Limit, Total: count}
+	return
 }
 
 func (r *ticketPriorityConfigRepository) Count(db *gorm.DB, cnd *sqls.Cnd) int64 {

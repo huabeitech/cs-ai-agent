@@ -370,7 +370,7 @@ export default function TicketDetailPage() {
                     </div>
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <TicketStatusBadge status={ticket.status} />
-                      <TicketPriorityBadge priority={ticket.priority} />
+                      <TicketPriorityBadge priority={ticket.priority} priorityName={ticket.priorityName} />
                       <TicketSLABadge ticket={ticket} />
                     </div>
                   </div>

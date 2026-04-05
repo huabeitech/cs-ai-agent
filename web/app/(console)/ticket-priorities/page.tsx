@@ -257,11 +257,7 @@ export default function TicketPrioritiesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            操作
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger>操作</DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
@@ -296,10 +292,10 @@ export default function TicketPrioritiesPage() {
 
         <ListPagination
           page={result.page.page}
-          pageSize={result.page.limit}
+          limit={result.page.limit}
           total={result.page.total}
           onPageChange={setPage}
-          onPageSizeChange={(nextLimit) => {
+          onLimitChange={(nextLimit: number) => {
             setLimit(nextLimit)
             setPage(1)
           }}
@@ -364,12 +360,23 @@ function TicketPriorityEditDialog({
       onOpenChange={onOpenChange}
       title={item ? "编辑工单优先级" : "新建工单优先级"}
       description="优先级同时承载首响与解决时长配置。"
-      onConfirm={() => void handleSubmit(async (values) => onSubmit(buildPayload(values)))()}
-      confirmLoading={saving}
-      confirmText="保存"
-      contentClassName="sm:max-w-xl"
+      size="md"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            取消
+          </Button>
+          <Button type="submit" form={formId} disabled={saving}>
+            {saving ? "保存中..." : item ? "保存" : "创建"}
+          </Button>
+        </>
+      }
     >
-      <form id={formId} className="space-y-4" onSubmit={(event) => void handleSubmit(async (values) => onSubmit(buildPayload(values)))(event)}>
+      <form
+        id={formId}
+        className="space-y-4"
+        onSubmit={handleSubmit(async (values) => onSubmit(buildPayload(values)))}
+      >
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel htmlFor="ticket-priority-name">名称</FieldLabel>
           <FieldContent>

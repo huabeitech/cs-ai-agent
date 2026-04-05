@@ -18,7 +18,9 @@ import (
 
 var TicketPriorityConfigService = newTicketPriorityConfigService()
 
-func newTicketPriorityConfigService() *ticketPriorityConfigService { return &ticketPriorityConfigService{} }
+func newTicketPriorityConfigService() *ticketPriorityConfigService {
+	return &ticketPriorityConfigService{}
+}
 
 type ticketPriorityConfigService struct{}
 

@@ -37,7 +37,12 @@ import {
   type AdminAgentProfile,
   type AdminAgentTeam,
 } from "@/lib/api/admin"
-import { fetchTicketCategoriesAll, type TicketCategory } from "@/lib/api/ticket-config"
+import {
+  fetchTicketCategoriesAll,
+  fetchTicketPriorityConfigsAll,
+  type TicketCategory,
+  type TicketPriorityConfig,
+} from "@/lib/api/ticket-config"
 import {
   createTicket,
   batchWatchTickets,
@@ -199,6 +204,7 @@ export default function TicketsPage() {
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const [categories, setCategories] = useState<TicketCategory[]>([])
+  const [priorities, setPriorities] = useState<TicketPriorityConfig[]>([])
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([])
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
@@ -320,14 +326,16 @@ export default function TicketsPage() {
 
   useEffect(() => {
     void (async () => {
-      const [teamData, agentData, categoryData] = await Promise.all([
+      const [teamData, agentData, categoryData, priorityData] = await Promise.all([
         fetchAgentTeamsAll(),
         fetchAgentProfilesAll(),
         fetchTicketCategoriesAll(),
+        fetchTicketPriorityConfigsAll(),
       ])
       setTeams(Array.isArray(teamData) ? teamData : [])
       setAgents(Array.isArray(agentData) ? agentData : [])
       setCategories(Array.isArray(categoryData) ? categoryData : [])
+      setPriorities(Array.isArray(priorityData) ? priorityData : [])
     })()
   }, [])
 
@@ -595,6 +603,12 @@ export default function TicketsPage() {
       label: category.parentName ? `${category.parentName} / ${category.name}` : category.name,
     })),
   )
+  const priorityOptions = [{ value: "all", label: "全部优先级" }].concat(
+    priorities.map((priority) => ({
+      value: String(priority.id),
+      label: priority.name,
+    })),
+  )
 
   const teamOptions = [{ value: "all", label: "全部团队" }].concat(
     teams.map((team) => ({ value: String(team.id), label: team.name })),
@@ -834,13 +848,7 @@ export default function TicketsPage() {
               resetToFirstPage()
             }}
             placeholder="全部优先级"
-            options={[
-              { value: "all", label: "全部优先级" },
-              { value: "1", label: "低" },
-              { value: "2", label: "普通" },
-              { value: "3", label: "高" },
-              { value: "4", label: "紧急" },
-            ]}
+            options={priorityOptions}
           />
           <OptionCombobox
             value={severityFilter}
@@ -1043,7 +1051,7 @@ export default function TicketsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <TicketPriorityBadge priority={item.priority} />
+                      <TicketPriorityBadge priority={item.priority} priorityName={item.priorityName} />
                     </TableCell>
                     <TableCell>
                       <TicketStatusBadge status={item.status} />
