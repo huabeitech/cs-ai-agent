@@ -2,7 +2,7 @@ import type { NextConfig } from "next"
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants"
 
 const backendBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
+  process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
 
 export default function nextConfig(phase: string): NextConfig {
   const config: NextConfig = {
