@@ -21,28 +21,23 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   GripVerticalIcon,
-  MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
-  Trash2Icon,
+  Trash2Icon
 } from "lucide-react";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
-import { Controller, type Resolver, useForm } from "react-hook-form";
+import { Controller, useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 
+import { useConfirm } from "@/components/confirm-provider";
 import { OptionCombobox } from "@/components/option-combobox";
 import { ProjectDialog } from "@/components/project-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Field,
   FieldContent,
@@ -55,15 +50,14 @@ import {
   createTicketPriorityConfig,
   deleteTicketPriorityConfig,
   fetchTicketPriorityConfigs,
-  type CreateTicketPriorityConfigPayload,
-  type TicketPriorityConfig,
   updateTicketPriorityConfig,
   updateTicketPriorityConfigSort,
+  type CreateTicketPriorityConfigPayload,
+  type TicketPriorityConfig,
 } from "@/lib/api/ticket-config";
 import { getEnumOptions } from "@/lib/enums";
 import { Status, StatusLabels } from "@/lib/generated/enums";
 import { cn } from "@/lib/utils";
-import { ButtonGroup } from "@/components/ui/button-group";
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
@@ -222,7 +216,9 @@ export default function TicketPrioritiesPage() {
   const [editingItem, setEditingItem] = useState<TicketPriorityConfig | null>(
     null,
   );
+  const [deleting, setDeleting] = useState(false);
   const [items, setItems] = useState<TicketPriorityConfig[]>([]);
+  const confirm = useConfirm();
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -286,6 +282,20 @@ export default function TicketPrioritiesPage() {
   }
 
   async function handleDelete(item: TicketPriorityConfig) {
+    if (deleting) {
+      return;
+    }
+    const confirmed = await confirm({
+      title: "确认删除优先级",
+      description: `删除后将无法恢复。确定要删除工单优先级“${item.name}”吗？`,
+      confirmText: "确认删除",
+      cancelText: "取消",
+      variant: "destructive",
+    });
+    if (!confirmed) {
+      return;
+    }
+    setDeleting(true);
     try {
       await deleteTicketPriorityConfig(item.id);
       toast.success(`已删除工单优先级：${item.name}`);
@@ -294,6 +304,8 @@ export default function TicketPrioritiesPage() {
       toast.error(
         error instanceof Error ? error.message : "删除工单优先级失败",
       );
+    } finally {
+      setDeleting(false);
     }
   }
 
