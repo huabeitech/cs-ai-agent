@@ -20,7 +20,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   if (externalName) {
     headers.set("X-External-Name", encodeURIComponent(externalName));
   }
-  headers.set("X-Widget-App-Id", config.appId);
+  headers.set("X-Channel-Id", config.channelId);
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers,

@@ -5,7 +5,7 @@ import { readWidgetConfig } from "@/lib/widget/config";
 export async function fetchWidgetConfig() {
   const config = readWidgetConfig();
   const result = await requestJson<JsonResult<WidgetConfigResponse>>(
-    `/api/open/im/widget/config?appId=${encodeURIComponent(config.appId)}`,
+    `/api/open/im/widget/config?channelId=${encodeURIComponent(config.channelId)}`,
   );
   return result.data ?? {};
 }

@@ -6,8 +6,8 @@
 
   var config = window.CSAgentConfig || {};
   var baseUrl = String(config.baseUrl || "").replace(/\/$/, "");
-  if (!config.appId || !baseUrl) {
-    console.error("[cs-agent-widget] appId and baseUrl are required");
+  if (!config.channelId || !baseUrl) {
+    console.error("[cs-agent-widget] channelId and baseUrl are required");
     return;
   }
 
@@ -43,7 +43,7 @@
 
   var widgetBaseUrl = resolveWidgetBaseUrl();
   var frameUrl = new URL(widgetBaseUrl + "/frame/");
-  frameUrl.searchParams.set("appId", config.appId);
+  frameUrl.searchParams.set("channelId", config.channelId);
   frameUrl.searchParams.set("baseUrl", baseUrl);
   if (config.apiBaseUrl) frameUrl.searchParams.set("apiBaseUrl", config.apiBaseUrl);
   if (config.title) frameUrl.searchParams.set("title", config.title);

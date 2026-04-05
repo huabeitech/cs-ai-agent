@@ -28,7 +28,7 @@ function generateRandomSubject(): string {
 
 function buildDefaultConfig(baseUrl: string): TestConfig {
   return {
-    appId: "",
+    channelId: "",
     baseUrl,
     apiBaseUrl: baseUrl,
     title: "在线客服",
@@ -55,7 +55,7 @@ function getInitialConfig(): TestConfig {
   return {
     ...buildDefaultConfig(origin),
     ...savedConfig,
-    appId: query.get("appId") ?? savedConfig.appId ?? "",
+    channelId: query.get("channelId") ?? savedConfig.channelId ?? "",
     baseUrl: query.get("baseUrl") ?? savedConfig.baseUrl ?? origin,
     apiBaseUrl:
       query.get("apiBaseUrl") ??
@@ -99,11 +99,11 @@ function injectWidget(config: TestConfig) {
 function WidgetTestPageInner() {
   const [config, setConfig] = useState<TestConfig>(getInitialConfig);
   const [status, setStatus] = useState(() =>
-    getInitialConfig().appId ? "Widget 已挂载" : "请先填写 appId",
+    getInitialConfig().channelId ? "Widget 已挂载" : "请先填写 channelId",
   );
 
   useEffect(() => {
-    if (config.appId) {
+    if (config.channelId) {
       injectWidget(config);
     } else {
       removeMountedWidget();
@@ -126,7 +126,7 @@ function WidgetTestPageInner() {
   function handleApply() {
     const nextConfig = {
       ...currentConfig,
-      appId: currentConfig.appId.trim(),
+      channelId: currentConfig.channelId.trim(),
       baseUrl: currentConfig.baseUrl.trim() || window.location.origin,
       apiBaseUrl:
         currentConfig.apiBaseUrl?.trim() ||
@@ -141,9 +141,9 @@ function WidgetTestPageInner() {
     setConfig(nextConfig);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextConfig));
 
-    if (!nextConfig.appId) {
+    if (!nextConfig.channelId) {
       removeMountedWidget();
-      setStatus("请先填写 appId");
+      setStatus("请先填写 channelId");
       return;
     }
 
@@ -155,7 +155,7 @@ function WidgetTestPageInner() {
 
   const snippet = `<script>
   window.CSAgentConfig = {
-    appId: "${currentConfig.appId || ""}",
+    channelId: "${currentConfig.channelId || ""}",
     baseUrl: "${currentConfig.baseUrl}",
     apiBaseUrl: "${currentConfig.apiBaseUrl || currentConfig.baseUrl}",
     title: "${currentConfig.title || "在线客服"}",
@@ -181,12 +181,12 @@ function WidgetTestPageInner() {
           <div className="grid gap-3 md:grid-cols-2">
             <label className="block">
               <div className="mb-1.5 text-xs font-medium text-slate-700">
-                appId
+                channelId
               </div>
               <input
-                value={currentConfig.appId}
-                onChange={(event) => updateField("appId", event.target.value)}
-                placeholder="请输入后台嵌入站点 appId"
+                value={currentConfig.channelId}
+                onChange={(event) => updateField("channelId", event.target.value)}
+                placeholder="请输入后台渠道 channelId"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-400"
               />
             </label>

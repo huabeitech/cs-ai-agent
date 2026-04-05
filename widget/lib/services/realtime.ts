@@ -29,7 +29,7 @@ export function createRealtimeConnection(onEvent: (event: RealtimeEnvelope) => v
       ? `&externalName=${encodeURIComponent(externalName)}`
       : "";
   const socket = new WebSocket(
-    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&appId=${encodeURIComponent(config.appId)}${nameQuery}`,
+    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&channelId=${encodeURIComponent(config.channelId)}${nameQuery}`,
   );
   socket.addEventListener("message", (event) => {
     try {

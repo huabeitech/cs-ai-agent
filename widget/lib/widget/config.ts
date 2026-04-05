@@ -1,5 +1,5 @@
 export type WidgetHostConfig = {
-  appId: string;
+  channelId: string;
   baseUrl: string;
   apiBaseUrl?: string;
   /** 与后端 enums.ExternalSource 一致，默认 web_chat */
@@ -23,14 +23,14 @@ declare global {
 export function readWidgetConfig(): WidgetHostConfig {
   if (typeof window === "undefined") {
     return {
-      appId: "",
+      channelId: "",
       baseUrl: "",
       apiBaseUrl: "",
     };
   }
   const query = new URLSearchParams(window.location.search);
   const fallback = {
-    appId: query.get("appId") ?? "",
+    channelId: query.get("channelId") ?? "",
     baseUrl: query.get("baseUrl") ?? "",
     apiBaseUrl: query.get("apiBaseUrl") ?? undefined,
     externalSource: query.get("externalSource") ?? undefined,
