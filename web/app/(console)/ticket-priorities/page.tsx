@@ -1,8 +1,26 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react"
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { GripVerticalIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react"
+import { useCallback, useEffect, useState, type CSSProperties } from "react"
 import { Controller, type Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod/v4"
@@ -29,9 +47,11 @@ import {
   type PageResult,
   type TicketPriorityConfig,
   updateTicketPriorityConfig,
+  updateTicketPriorityConfigSort,
 } from "@/lib/api/ticket-config"
 import { getEnumOptions } from "@/lib/enums"
 import { Status, StatusLabels } from "@/lib/generated/enums"
+import { cn } from "@/lib/utils"
 
 const listStatusOptions = [
   { value: "all", label: "全部状态" },
@@ -42,7 +62,6 @@ const listStatusOptions = [
 
 const formSchema = z.object({
   name: z.string().trim().min(1, "优先级名称不能为空"),
-  sortNo: z.string().trim().min(1, "排序号不能为空").regex(/^-?\d+$/, "请输入整数"),
   firstResponseMinutes: z.string().trim().min(1, "首响时长不能为空").regex(/^\d+$/, "请输入正整数"),
   resolutionMinutes: z.string().trim().min(1, "解决时长不能为空").regex(/^\d+$/, "请输入正整数"),
   status: z.enum([String(Status.Ok), String(Status.Disabled)], {
@@ -61,7 +80,6 @@ const resolver = zodResolver(formSchema as never) as Resolver<
 
 const emptyForm: EditForm = {
   name: "",
-  sortNo: "0",
   firstResponseMinutes: "30",
   resolutionMinutes: "1440",
   status: String(Status.Ok),
@@ -74,7 +92,6 @@ function buildForm(item: TicketPriorityConfig | null): EditForm {
   }
   return {
     name: item.name,
-    sortNo: String(item.sortNo),
     firstResponseMinutes: String(item.firstResponseMinutes),
     resolutionMinutes: String(item.resolutionMinutes),
     status: String(item.status) as EditForm["status"],
@@ -85,12 +102,73 @@ function buildForm(item: TicketPriorityConfig | null): EditForm {
 function buildPayload(form: EditForm): CreateTicketPriorityConfigPayload {
   return {
     name: form.name.trim(),
-    sortNo: Number(form.sortNo),
     firstResponseMinutes: Number(form.firstResponseMinutes),
     resolutionMinutes: Number(form.resolutionMinutes),
     status: Number(form.status),
     remark: form.remark.trim(),
   }
+}
+
+type SortablePriorityRowProps = {
+  item: TicketPriorityConfig
+  disabled: boolean
+  onEdit: (item: TicketPriorityConfig) => void
+  onDelete: (item: TicketPriorityConfig) => void
+}
+
+function SortablePriorityRow({ item, disabled, onEdit, onDelete }: SortablePriorityRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    disabled,
+  })
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={cn("border-t", isDragging && "relative z-10 bg-muted/60 shadow-sm")}
+    >
+      <td className="w-14 px-4 py-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 cursor-grab active:cursor-grabbing"
+          disabled={disabled}
+          aria-label={`拖拽排序 ${item.name}`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVerticalIcon className="size-4 text-muted-foreground" />
+        </Button>
+      </td>
+      <td className="px-4 py-3">{item.name}</td>
+      <td className="px-4 py-3">{item.firstResponseMinutes} 分钟</td>
+      <td className="px-4 py-3">{item.resolutionMinutes} 分钟</td>
+      <td className="px-4 py-3">
+        <Badge variant={item.status === Status.Ok ? "default" : "secondary"}>
+          {item.status === Status.Ok ? "启用" : "停用"}
+        </Badge>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger>操作</DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(item)}>编辑</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => void onDelete(item)}>
+              <Trash2Icon className="size-4" />
+              删除
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+    </tr>
+  )
 }
 
 export default function TicketPrioritiesPage() {
@@ -102,12 +180,19 @@ export default function TicketPrioritiesPage() {
   const [limit, setLimit] = useState(20)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [sorting, setSorting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<TicketPriorityConfig | null>(null)
   const [result, setResult] = useState<PageResult<TicketPriorityConfig>>({
     results: [],
     page: { page: 1, limit: 20, total: 0 },
   })
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -169,6 +254,38 @@ export default function TicketPrioritiesPage() {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id || sorting || loading) {
+      return
+    }
+    const previousResults = result.results
+    const oldIndex = previousResults.findIndex((item) => item.id === active.id)
+    const newIndex = previousResults.findIndex((item) => item.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) {
+      return
+    }
+    const nextResults = arrayMove(previousResults, oldIndex, newIndex)
+    setResult((current) => ({
+      ...current,
+      results: nextResults,
+    }))
+    setSorting(true)
+    try {
+      await updateTicketPriorityConfigSort(nextResults.map((item) => item.id))
+      toast.success("工单优先级排序已更新")
+      await loadData()
+    } catch (error) {
+      setResult((current) => ({
+        ...current,
+        results: previousResults,
+      }))
+      toast.error(error instanceof Error ? error.message : "更新排序失败")
+    } finally {
+      setSorting(false)
+    }
+  }
+
   return (
     <>
       <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
@@ -225,69 +342,50 @@ export default function TicketPrioritiesPage() {
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-background">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/35">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">名称</th>
-                <th className="px-4 py-3 text-left font-medium">排序</th>
-                <th className="px-4 py-3 text-left font-medium">首响时长</th>
-                <th className="px-4 py-3 text-left font-medium">解决时长</th>
-                <th className="px-4 py-3 text-left font-medium">状态</th>
-                <th className="px-4 py-3 text-right font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <table className="w-full text-sm">
+              <thead className="bg-muted/35">
                 <tr>
-                  <td colSpan={6} className="h-32 text-center text-muted-foreground">
-                    加载中...
-                  </td>
+                  <th className="w-14 px-4 py-3 text-left font-medium"></th>
+                  <th className="px-4 py-3 text-left font-medium">名称</th>
+                  <th className="px-4 py-3 text-left font-medium">首响时长</th>
+                  <th className="px-4 py-3 text-left font-medium">解决时长</th>
+                  <th className="px-4 py-3 text-left font-medium">状态</th>
+                  <th className="px-4 py-3 text-right font-medium">操作</th>
                 </tr>
-              ) : result.results.length > 0 ? (
-                result.results.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="px-4 py-3">{item.name}</td>
-                    <td className="px-4 py-3">{item.sortNo}</td>
-                    <td className="px-4 py-3">{item.firstResponseMinutes} 分钟</td>
-                    <td className="px-4 py-3">{item.resolutionMinutes} 分钟</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={item.status === Status.Ok ? "default" : "secondary"}>
-                        {item.status === Status.Ok ? "启用" : "停用"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>操作</DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingItem(item)
-                              setDialogOpen(true)
-                            }}
-                          >
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => void handleDelete(item)}
-                          >
-                            <Trash2Icon className="size-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="h-32 text-center text-muted-foreground">
+                      加载中...
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="h-32 text-center text-muted-foreground">
-                    暂无工单优先级
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ) : result.results.length > 0 ? (
+                  <SortableContext items={result.results.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                    {result.results.map((item) => (
+                      <SortablePriorityRow
+                        key={item.id}
+                        item={item}
+                        disabled={sorting}
+                        onEdit={(current) => {
+                          setEditingItem(current)
+                          setDialogOpen(true)
+                        }}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </SortableContext>
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="h-32 text-center text-muted-foreground">
+                      暂无工单优先级
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </DndContext>
         </div>
 
         <ListPagination
@@ -359,7 +457,7 @@ function TicketPriorityEditDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={item ? "编辑工单优先级" : "新建工单优先级"}
-      description="优先级同时承载首响与解决时长配置。"
+      description="优先级同时承载首响与解决时长配置。排序请在列表中拖动调整。"
       size="md"
       footer={
         <>
@@ -372,24 +470,12 @@ function TicketPriorityEditDialog({
         </>
       }
     >
-      <form
-        id={formId}
-        className="space-y-4"
-        onSubmit={handleSubmit(async (values) => onSubmit(buildPayload(values)))}
-      >
+      <form id={formId} className="space-y-4" onSubmit={handleSubmit(async (values) => onSubmit(buildPayload(values)))}>
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel htmlFor="ticket-priority-name">名称</FieldLabel>
           <FieldContent>
             <Input id="ticket-priority-name" placeholder="请输入优先级名称" {...register("name")} />
             {errors.name ? <FieldError errors={[errors.name]} /> : null}
-          </FieldContent>
-        </Field>
-
-        <Field data-invalid={Boolean(errors.sortNo)}>
-          <FieldLabel htmlFor="ticket-priority-sort-no">排序号</FieldLabel>
-          <FieldContent>
-            <Input id="ticket-priority-sort-no" placeholder="数值越小越靠前" {...register("sortNo")} />
-            {errors.sortNo ? <FieldError errors={[errors.sortNo]} /> : null}
           </FieldContent>
         </Field>
 

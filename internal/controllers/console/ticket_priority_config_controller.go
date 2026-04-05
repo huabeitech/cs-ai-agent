@@ -69,6 +69,20 @@ func (c *TicketPriorityConfigController) PostUpdate() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *TicketPriorityConfigController) PostUpdate_sort() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketPriorityConfigUpdate); err != nil {
+		return web.JsonError(err)
+	}
+	var ids []int64
+	if err := c.Ctx.ReadJSON(&ids); err != nil {
+		return web.JsonError(err)
+	}
+	if err := services.TicketPriorityConfigService.UpdateSort(ids); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
 func (c *TicketPriorityConfigController) PostDelete() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketPriorityConfigDelete)
 	if err != nil {

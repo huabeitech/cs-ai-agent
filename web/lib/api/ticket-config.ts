@@ -68,7 +68,6 @@ export type UpdateTicketResolutionCodePayload = CreateTicketResolutionCodePayloa
 
 export type CreateTicketPriorityConfigPayload = {
   name: string
-  sortNo: number
   firstResponseMinutes: number
   resolutionMinutes: number
   status: number
@@ -177,6 +176,13 @@ export function updateTicketPriorityConfig(payload: UpdateTicketPriorityConfigPa
   return request<void>("/api/console/ticket-priority-config/update", {
     method: "POST",
     body: JSON.stringify(payload),
+  })
+}
+
+export function updateTicketPriorityConfigSort(ids: number[]) {
+  return request<void>("/api/console/ticket-priority-config/update_sort", {
+    method: "POST",
+    body: JSON.stringify(ids),
   })
 }
 

@@ -72,6 +72,10 @@ func (r *ticketPriorityConfigRepository) Updates(db *gorm.DB, id int64, columns 
 	return db.Model(&models.TicketPriorityConfig{}).Where("id = ?", id).Updates(columns).Error
 }
 
+func (r *ticketPriorityConfigRepository) UpdateColumn(db *gorm.DB, id int64, name string, value any) error {
+	return db.Model(&models.TicketPriorityConfig{}).Where("id = ?", id).UpdateColumn(name, value).Error
+}
+
 func (r *ticketPriorityConfigRepository) Delete(db *gorm.DB, id int64) error {
 	return db.Delete(&models.TicketPriorityConfig{}, "id = ?", id).Error
 }

@@ -64,10 +64,11 @@ func (s *ticketPriorityConfigService) CreateTicketPriorityConfig(req request.Cre
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
 	}
-	item, err := s.buildPriorityConfigModel(0, req.Name, req.SortNo, req.FirstResponseMinutes, req.ResolutionMinutes, int(req.Status), req.Remark)
+	item, err := s.buildPriorityConfigModel(0, req.Name, req.FirstResponseMinutes, req.ResolutionMinutes, int(req.Status), req.Remark)
 	if err != nil {
 		return nil, err
 	}
+	item.SortNo = s.nextSortNo()
 	item.AuditFields = utils.BuildAuditFields(operator)
 	if err := s.Create(item); err != nil {
 		return nil, err
@@ -83,13 +84,12 @@ func (s *ticketPriorityConfigService) UpdateTicketPriorityConfig(req request.Upd
 	if current == nil || current.Status == enums.StatusDeleted {
 		return errorsx.InvalidParam("工单优先级配置不存在")
 	}
-	item, err := s.buildPriorityConfigModel(req.ID, req.Name, req.SortNo, req.FirstResponseMinutes, req.ResolutionMinutes, int(req.Status), req.Remark)
+	item, err := s.buildPriorityConfigModel(req.ID, req.Name, req.FirstResponseMinutes, req.ResolutionMinutes, int(req.Status), req.Remark)
 	if err != nil {
 		return err
 	}
 	return s.Updates(req.ID, map[string]any{
 		"name":                   item.Name,
-		"sort_no":                item.SortNo,
 		"first_response_minutes": item.FirstResponseMinutes,
 		"resolution_minutes":     item.ResolutionMinutes,
 		"status":                 item.Status,
@@ -97,6 +97,17 @@ func (s *ticketPriorityConfigService) UpdateTicketPriorityConfig(req request.Upd
 		"update_user_id":         operator.UserID,
 		"update_user_name":       operator.Username,
 		"updated_at":             time.Now(),
+	})
+}
+
+func (s *ticketPriorityConfigService) UpdateSort(ids []int64) error {
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		for i, id := range ids {
+			if err := repositories.TicketPriorityConfigRepository.UpdateColumn(ctx.Tx, id, "sort_no", i+1); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
@@ -119,7 +130,7 @@ func (s *ticketPriorityConfigService) DeleteTicketPriorityConfig(id int64, opera
 	})
 }
 
-func (s *ticketPriorityConfigService) buildPriorityConfigModel(id int64, name string, sortNo, firstResponseMinutes, resolutionMinutes, status int, remark string) (*models.TicketPriorityConfig, error) {
+func (s *ticketPriorityConfigService) buildPriorityConfigModel(id int64, name string, firstResponseMinutes, resolutionMinutes, status int, remark string) (*models.TicketPriorityConfig, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, errorsx.InvalidParam("工单优先级名称不能为空")
@@ -135,10 +146,17 @@ func (s *ticketPriorityConfigService) buildPriorityConfigModel(id int64, name st
 	}
 	return &models.TicketPriorityConfig{
 		Name:                 name,
-		SortNo:               sortNo,
 		FirstResponseMinutes: firstResponseMinutes,
 		ResolutionMinutes:    resolutionMinutes,
 		Status:               enums.Status(status),
 		Remark:               strings.TrimSpace(remark),
 	}, nil
+}
+
+func (s *ticketPriorityConfigService) nextSortNo() int {
+	list := s.Find(sqls.NewCnd().NotEq("status", enums.StatusDeleted).Desc("sort_no").Desc("id").Limit(1))
+	if len(list) == 0 {
+		return 1
+	}
+	return list[0].SortNo + 1
 }

@@ -39,7 +39,6 @@ type DeleteTicketResolutionCodeRequest struct {
 
 type CreateTicketPriorityConfigRequest struct {
 	Name                 string       `json:"name"`
-	SortNo               int          `json:"sortNo"`
 	FirstResponseMinutes int          `json:"firstResponseMinutes"`
 	ResolutionMinutes    int          `json:"resolutionMinutes"`
 	Status               enums.Status `json:"status"`
