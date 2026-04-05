@@ -46,8 +46,6 @@ func kf_msg_or_event_handler(message kf.CallbackMessage) {
 				"event", item.EventType,
 			)
 
-			// TODO 存储微信消息记录，存储的时候需要去重
-			// TODO 消息转成客服会话，然后将客服会话消息转给客服控制台
 		}
 
 		if result.HasMore != 1 || strings.TrimSpace(result.NextCursor) == "" {
