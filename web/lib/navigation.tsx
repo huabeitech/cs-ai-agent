@@ -156,16 +156,16 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         requiredPermission: "ticketCategory.view",
       },
       {
-        title: "解决码",
-        url: "/ticket-resolution-codes",
-        icon: <KeyRoundIcon />,
-        requiredPermission: "ticketResolutionCode.view",
-      },
-      {
         title: "工单优先级",
         url: "/ticket-priorities",
         icon: <Settings2Icon />,
         requiredPermission: "ticketPriorityConfig.view",
+      },
+      {
+        title: "解决码",
+        url: "/ticket-resolution-codes",
+        icon: <KeyRoundIcon />,
+        requiredPermission: "ticketResolutionCode.view",
       },
     ],
   },
