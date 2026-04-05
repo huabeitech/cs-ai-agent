@@ -2,12 +2,10 @@ package request
 
 type CreateChannelRequest struct {
 	ChannelType string `json:"channelType"`
-	ChannelCode string `json:"channelCode"`
 	AIAgentID   int64  `json:"aiAgentId"`
 	Name        string `json:"name"`
 	AppID       string `json:"appId"`
 	ConfigJSON  string `json:"configJson"`
-	SortNo      int    `json:"sortNo"`
 	Status      int    `json:"status"`
 	Remark      string `json:"remark"`
 }

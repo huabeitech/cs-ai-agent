@@ -78,12 +78,10 @@ function ChannelIcon({ channelType }: { channelType: string }) {
 export default function DashboardChannelsPage() {
   const [nameInput, setNameInput] = useState("")
   const [appIdInput, setAppIdInput] = useState("")
-  const [channelCodeInput, setChannelCodeInput] = useState("")
   const [channelTypeInput, setChannelTypeInput] = useState("all")
   const [statusInput, setStatusInput] = useState("all")
   const [name, setName] = useState("")
   const [appId, setAppId] = useState("")
-  const [channelCode, setChannelCode] = useState("")
   const [channelType, setChannelType] = useState("all")
   const [status, setStatus] = useState("all")
   const [page, setPage] = useState(1)
@@ -104,7 +102,6 @@ export default function DashboardChannelsPage() {
       const data = await fetchChannels({
         name: name.trim() || undefined,
         appId: appId.trim() || undefined,
-        channelCode: channelCode.trim() || undefined,
         channelType: channelType === "all" ? undefined : channelType,
         status: status === "all" ? undefined : status,
         page,
@@ -116,7 +113,7 @@ export default function DashboardChannelsPage() {
     } finally {
       setLoading(false)
     }
-  }, [appId, channelCode, channelType, limit, name, page, status])
+  }, [appId, channelType, limit, name, page, status])
 
   useEffect(() => {
     void loadData()
@@ -125,7 +122,6 @@ export default function DashboardChannelsPage() {
   function applyFilters() {
     setName(nameInput)
     setAppId(appIdInput)
-    setChannelCode(channelCodeInput)
     setChannelType(channelTypeInput)
     setStatus(statusInput)
     setPage(1)
@@ -210,13 +206,6 @@ export default function DashboardChannelsPage() {
             placeholder="按渠道名称筛选"
             className="w-full xl:w-56"
           />
-          <Input
-            value={channelCodeInput}
-            onChange={(event) => setChannelCodeInput(event.target.value)}
-            onKeyDown={handleFilterKeyDown}
-            placeholder="按渠道编码筛选"
-            className="w-full xl:w-56"
-          />
           <div className="relative min-w-72">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -290,7 +279,7 @@ export default function DashboardChannelsPage() {
                       </div>
                       <div>
                         <div className="font-medium">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">{item.channelCode}</div>
+                        <div className="text-xs text-muted-foreground">{getChannelTypeLabel(item.channelType)}</div>
                       </div>
                     </div>
                   </TableCell>

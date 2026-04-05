@@ -33,7 +33,7 @@ func Init() (*InitResult, error) {
 	for _, item := range seedItems {
 		itemCopy := item
 		if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-			existing := repositories.ChannelRepository.Take(ctx.Tx, "channel_code = ?", itemCopy.ChannelCode)
+			existing := repositories.ChannelRepository.Take(ctx.Tx, "name = ? AND channel_type = ?", itemCopy.Name, itemCopy.ChannelType)
 			if existing != nil {
 				if err := ctx.Tx.Model(existing).Updates(&itemCopy).Error; err != nil {
 					return err
@@ -60,7 +60,6 @@ func buildSeedItems(aiAgentID int64) []models.Channel {
 		{
 			Name:        "官网客服",
 			ChannelType: enums.ChannelTypeWeb,
-			ChannelCode: "official_site",
 			AppID:       strs.UUID(),
 			AIAgentID:   aiAgentID,
 			Status:      enums.StatusOk,
@@ -77,7 +76,6 @@ func buildSeedItems(aiAgentID int64) []models.Channel {
 		{
 			Name:        "APP客服",
 			ChannelType: enums.ChannelTypeWeb,
-			ChannelCode: "app_site",
 			AppID:       strs.UUID(),
 			AIAgentID:   aiAgentID,
 			Status:      enums.StatusOk,

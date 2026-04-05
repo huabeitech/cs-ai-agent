@@ -39,12 +39,10 @@ const channelTypeOptions = [
 
 const schema = z.object({
   channelType: z.enum(["web", "wxwork_kf"], "请选择渠道类型"),
-  channelCode: z.string().trim().min(1, "渠道编码不能为空"),
   aiAgentId: z.string().trim().regex(/^\d+$/, "请选择 AI Agent"),
   name: z.string().trim().min(1, "渠道名称不能为空"),
   appId: z.string().trim(),
   openKfId: z.string().trim(),
-  sortNo: z.string().trim(),
   remark: z.string().trim(),
 })
 
@@ -58,12 +56,10 @@ const resolver = zodResolver(schema as never) as Resolver<
 
 const emptyForm: EditForm = {
   channelType: "web",
-  channelCode: "",
   aiAgentId: "",
   name: "",
   appId: "",
   openKfId: "",
-  sortNo: "0",
   remark: "",
 }
 
@@ -85,12 +81,10 @@ function buildForm(item: AdminChannel | null): EditForm {
   }
   return {
     channelType: item.channelType === "wxwork_kf" ? "wxwork_kf" : "web",
-    channelCode: item.channelCode,
     aiAgentId: item.aiAgentId > 0 ? String(item.aiAgentId) : "",
     name: item.name,
     appId: item.appId || "",
     openKfId: parseOpenKfId(item.configJson),
-    sortNo: String(item.sortNo ?? 0),
     remark: item.remark || "",
   }
 }
@@ -104,12 +98,10 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
       : ""
   return {
     channelType,
-    channelCode: form.channelCode.trim(),
     aiAgentId: Number(form.aiAgentId),
     name: form.name.trim(),
     appId,
     configJson,
-    sortNo: Number(form.sortNo || "0"),
     status,
     remark: form.remark.trim(),
   }
@@ -254,14 +246,6 @@ function ChannelFormBody({
               </FieldContent>
             </Field>
 
-            <Field data-invalid={!!errors.channelCode}>
-              <FieldLabel htmlFor="channel-code">渠道编码</FieldLabel>
-              <FieldContent>
-                <Input id="channel-code" {...register("channelCode")} />
-                <FieldError errors={[errors.channelCode]} />
-              </FieldContent>
-            </Field>
-
             <Field data-invalid={!!errors.aiAgentId}>
               <FieldLabel>接待 Agent</FieldLabel>
               <FieldContent>
@@ -288,14 +272,6 @@ function ChannelFormBody({
               <FieldContent>
                 <Input id="channel-name" {...register("name")} />
                 <FieldError errors={[errors.name]} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={!!errors.sortNo}>
-              <FieldLabel htmlFor="channel-sort-no">排序号</FieldLabel>
-              <FieldContent>
-                <Input id="channel-sort-no" {...register("sortNo")} />
-                <FieldError errors={[errors.sortNo]} />
               </FieldContent>
             </Field>
 

@@ -113,6 +113,12 @@ var (
 	PermissionCompanyUpdate = Permission{Name: "更新公司", Code: "company.update", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/update", SortNo: 610}
 	PermissionCompanyDelete = Permission{Name: "删除公司", Code: "company.delete", Type: "api", GroupName: "company", Method: "POST", APIPath: "/api/console/company/delete", SortNo: 620}
 
+	// 接入渠道相关权限
+	PermissionChannelView   = Permission{Name: "查看接入渠道", Code: "channel.view", Type: "api", GroupName: "channel", Method: "ANY", APIPath: "/api/console/channel/list", SortNo: 625}
+	PermissionChannelCreate = Permission{Name: "创建接入渠道", Code: "channel.create", Type: "api", GroupName: "channel", Method: "POST", APIPath: "/api/console/channel/create", SortNo: 626}
+	PermissionChannelUpdate = Permission{Name: "更新接入渠道", Code: "channel.update", Type: "api", GroupName: "channel", Method: "POST", APIPath: "/api/console/channel/update", SortNo: 627}
+	PermissionChannelDelete = Permission{Name: "删除接入渠道", Code: "channel.delete", Type: "api", GroupName: "channel", Method: "POST", APIPath: "/api/console/channel/delete", SortNo: 628}
+
 	// 客户相关权限
 	PermissionCustomerView   = Permission{Name: "查看客户", Code: "customer.view", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/list", SortNo: 630}
 	PermissionCustomerCreate = Permission{Name: "创建客户", Code: "customer.create", Type: "api", GroupName: "customer", Method: "POST", APIPath: "/api/console/customer/create", SortNo: 640}
@@ -235,6 +241,10 @@ var Permissions = []Permission{
 	PermissionCompanyCreate,
 	PermissionCompanyUpdate,
 	PermissionCompanyDelete,
+	PermissionChannelView,
+	PermissionChannelCreate,
+	PermissionChannelUpdate,
+	PermissionChannelDelete,
 	PermissionCustomerView,
 	PermissionCustomerCreate,
 	PermissionCustomerUpdate,
@@ -319,6 +329,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
+		PermissionChannelView, PermissionChannelCreate, PermissionChannelUpdate, PermissionChannelDelete,
 		PermissionCustomerView, PermissionCustomerCreate, PermissionCustomerUpdate, PermissionCustomerDelete,
 		PermissionAgentView, PermissionAgentCreate, PermissionAgentUpdate, PermissionAgentDelete, PermissionAgentUpdateStatus, PermissionAgentConfig,
 		PermissionAgentTeamView, PermissionAgentTeamCreate, PermissionAgentTeamUpdate, PermissionAgentTeamDelete,
@@ -340,6 +351,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView,
+		PermissionChannelView, PermissionChannelCreate, PermissionChannelUpdate,
 		PermissionCustomerView, PermissionCustomerCreate, PermissionCustomerUpdate,
 		PermissionAgentView, PermissionAgentUpdate,
 		PermissionAgentTeamView,
@@ -358,6 +370,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionQuickReplyView,
 		PermissionTagView,
 		PermissionCompanyView,
+		PermissionChannelView,
 		PermissionCustomerView,
 		PermissionAssetView,
 		PermissionAgentView,

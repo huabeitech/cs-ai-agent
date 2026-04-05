@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
 )
@@ -74,10 +73,6 @@ func (s *channelService) UpdateColumn(id int64, name string, value interface{}) 
 	return repositories.ChannelRepository.UpdateColumn(sqls.DB(), id, name, value)
 }
 
-func (s *channelService) Delete(id int64) {
-	repositories.ChannelRepository.Delete(sqls.DB(), id)
-}
-
 func (s *channelService) CreateChannel(req request.CreateChannelRequest, operator *dto.AuthPrincipal) (*models.Channel, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
@@ -98,7 +93,7 @@ func (s *channelService) UpdateChannel(req request.UpdateChannelRequest, operato
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
 	current := s.Get(req.ID)
-	if current == nil {
+	if current == nil || current.Status == enums.StatusDeleted {
 		return errorsx.InvalidParam("接入渠道不存在")
 	}
 	item, err := s.buildChannelModel(req.ID, req.CreateChannelRequest)
@@ -107,12 +102,10 @@ func (s *channelService) UpdateChannel(req request.UpdateChannelRequest, operato
 	}
 	return repositories.ChannelRepository.Updates(sqls.DB(), req.ID, map[string]any{
 		"channel_type":     item.ChannelType,
-		"channel_code":     item.ChannelCode,
 		"ai_agent_id":      item.AIAgentID,
 		"name":             item.Name,
 		"app_id":           item.AppID,
 		"config_json":      item.ConfigJSON,
-		"sort_no":          item.SortNo,
 		"status":           item.Status,
 		"remark":           item.Remark,
 		"update_user_id":   operator.UserID,
@@ -126,7 +119,7 @@ func (s *channelService) UpdateStatus(id int64, status int, operator *dto.AuthPr
 		return errorsx.Unauthorized("未登录或登录已过期")
 	}
 	item := s.Get(id)
-	if item == nil {
+	if item == nil || item.Status == enums.StatusDeleted {
 		return errorsx.InvalidParam("接入渠道不存在")
 	}
 	if status != int(enums.StatusOk) && status != int(enums.StatusDisabled) {
@@ -140,13 +133,20 @@ func (s *channelService) UpdateStatus(id int64, status int, operator *dto.AuthPr
 	})
 }
 
-func (s *channelService) DeleteChannel(id int64) error {
+func (s *channelService) DeleteChannel(id int64, operator *dto.AuthPrincipal) error {
+	if operator == nil {
+		return errorsx.Unauthorized("未登录或登录已过期")
+	}
 	item := s.Get(id)
-	if item == nil {
+	if item == nil || item.Status == enums.StatusDeleted {
 		return errorsx.InvalidParam("接入渠道不存在")
 	}
-	s.Delete(id)
-	return nil
+	return s.Updates(id, map[string]any{
+		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	})
 }
 
 func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*WxWorkKFChannelConfig, error) {
@@ -196,13 +196,6 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 	if channelType != enums.ChannelTypeWeb && channelType != enums.ChannelTypeWxWorkKF {
 		return nil, errorsx.InvalidParam("渠道类型不合法")
 	}
-	channelCode := strings.TrimSpace(req.ChannelCode)
-	if channelCode == "" {
-		return nil, errorsx.InvalidParam("渠道编码不能为空")
-	}
-	if exists := s.Take("channel_code = ? AND id <> ?", channelCode, id); exists != nil {
-		return nil, errorsx.InvalidParam("渠道编码已存在")
-	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return nil, errorsx.InvalidParam("渠道名称不能为空")
@@ -227,9 +220,12 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 	switch channelType {
 	case enums.ChannelTypeWeb:
 		if appID == "" {
-			appID = strs.UUID()
+			appID = strings.TrimSpace(appID)
 		}
-		if exists := s.Take("app_id = ? AND channel_type = ? AND id <> ?", appID, enums.ChannelTypeWeb, id); exists != nil {
+		if appID == "" {
+			return nil, errorsx.InvalidParam("web 渠道 AppID 不能为空")
+		}
+		if exists := s.Take("app_id = ? AND channel_type = ? AND status <> ? AND id <> ?", appID, enums.ChannelTypeWeb, enums.StatusDeleted, id); exists != nil {
 			return nil, errorsx.InvalidParam("web 渠道 AppID 已存在")
 		}
 	case enums.ChannelTypeWxWorkKF:
@@ -248,12 +244,10 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 
 	return &models.Channel{
 		ChannelType: channelType,
-		ChannelCode: channelCode,
 		AIAgentID:   req.AIAgentID,
 		Name:        name,
 		AppID:       appID,
 		ConfigJSON:  configJSON,
-		SortNo:      req.SortNo,
 		Status:      status,
 		Remark:      strings.TrimSpace(req.Remark),
 	}, nil

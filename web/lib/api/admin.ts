@@ -169,25 +169,21 @@ export type AdminQuickReply = {
 export type AdminChannel = {
   id: number
   channelType: string
-  channelCode: string
   aiAgentId: number
   aiAgentName?: string
   name: string
   appId: string
   configJson: string
-  sortNo: number
   status: number
   remark: string
 }
 
 export type CreateAdminChannelPayload = {
   channelType: string
-  channelCode: string
   aiAgentId: number
   name: string
   appId: string
   configJson: string
-  sortNo: number
   status: number
   remark: string
 }
