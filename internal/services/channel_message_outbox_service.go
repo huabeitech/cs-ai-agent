@@ -115,3 +115,18 @@ func (s *channelMessageOutboxService) EnqueueWxWorkKFMessage(conversation *model
 		},
 	})
 }
+
+func (s *channelMessageOutboxService) ListPending(channelType string, limit int) []models.ChannelMessageOutbox {
+	if limit <= 0 {
+		limit = 20
+	}
+	cnd := sqls.NewCnd().
+		Eq("channel_type", strings.TrimSpace(channelType)).
+		In("send_status", []string{
+			string(enums.ChannelMessageOutboxStatusPending),
+			string(enums.ChannelMessageOutboxStatusFailed),
+		}).
+		Asc("id").
+		Limit(limit)
+	return s.Find(cnd)
+}

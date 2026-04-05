@@ -21,6 +21,17 @@ func Init() {
 		}
 	})
 
+	addFunc(c, "@every 15s", func() {
+		count, err := services.WxWorkKFOutboundService.DispatchPendingOutbox(20)
+		if err != nil {
+			slog.Warn("dispatch wxwork kf outbox failed", "error", err)
+			return
+		}
+		if count > 0 {
+			slog.Info("wxwork kf outbox dispatched", "count", count)
+		}
+	})
+
 	addFunc(c, "@every 1m", func() {
 		count, err := services.TicketService.ScanAndMarkBreachedSLAs(200)
 		if err != nil {
