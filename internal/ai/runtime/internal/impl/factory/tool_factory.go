@@ -2,13 +2,12 @@ package factory
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"cs-agent/internal/ai/mcps"
 	impladapter "cs-agent/internal/ai/runtime/internal/impl/adapter"
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/toolx"
 
 	einotool "github.com/cloudwego/eino/components/tool"
 )
@@ -23,13 +22,16 @@ func (f *ToolFactory) BuildMCPTools(aiAgent *models.AIAgent) ([]impladapter.MCPT
 	if aiAgent == nil || strings.TrimSpace(aiAgent.AllowedMCPTools) == "" {
 		return nil, nil
 	}
-	var raw []request.AIAgentMCPToolRequest
-	if err := json.Unmarshal([]byte(aiAgent.AllowedMCPTools), &raw); err != nil {
+	raw, err := toolx.ParseAgentMCPToolsJSON(aiAgent.AllowedMCPTools)
+	if err != nil {
 		return nil, err
 	}
 	ret := make([]impladapter.MCPToolDefinition, 0, len(raw))
 	for _, item := range raw {
-		toolCode := strings.TrimSpace(item.ServerCode) + "/" + strings.TrimSpace(item.ToolName)
+		toolCode := strings.TrimSpace(item.ToolCode)
+		if toolCode == "" {
+			toolCode = toolx.BuildMCPToolCode(item.ServerCode, item.ToolName)
+		}
 		definition := impladapter.MCPToolDefinition{
 			ToolCode:    toolCode,
 			ServerCode:  strings.TrimSpace(item.ServerCode),
@@ -80,7 +82,7 @@ func (f *ToolFactory) loadToolMetadata(ctx context.Context, definitions []implad
 		}
 		for i := range toolInfos {
 			toolInfo := toolInfos[i]
-			toolCode := strings.TrimSpace(serverCode) + "/" + strings.TrimSpace(toolInfo.Name)
+			toolCode := toolx.BuildMCPToolCode(serverCode, toolInfo.Name)
 			toolInfoCopy := toolInfo
 			toolsByCode[toolCode] = &toolInfoCopy
 		}

@@ -3,6 +3,7 @@ package request
 import "cs-agent/internal/pkg/enums"
 
 type AIAgentMCPToolRequest struct {
+	ToolCode    string            `json:"toolCode"`
 	ServerCode  string            `json:"serverCode"`
 	ToolName    string            `json:"toolName"`
 	Title       string            `json:"title"`

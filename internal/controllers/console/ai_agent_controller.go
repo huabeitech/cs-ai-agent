@@ -8,6 +8,7 @@ import (
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/toolx"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/services"
 
@@ -117,15 +118,15 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 		StatusName:          enums.GetStatusLabel(item.Status),
 		AIConfigID:          item.AIConfigID,
 		ServiceMode:         item.ServiceMode,
-		ServiceModeName:     enums.GetIMConversationServiceModeLabel(enums.IMConversationServiceMode(item.ServiceMode)),
+		ServiceModeName:     enums.GetIMConversationServiceModeLabel(item.ServiceMode),
 		SystemPrompt:        item.SystemPrompt,
 		WelcomeMessage:      item.WelcomeMessage,
 		ReplyTimeoutSeconds: item.ReplyTimeoutSeconds,
 		HandoffMode:         item.HandoffMode,
-		HandoffModeName:     enums.GetAIAgentHandoffModeLabel(enums.AIAgentHandoffMode(item.HandoffMode)),
+		HandoffModeName:     enums.GetAIAgentHandoffModeLabel(item.HandoffMode),
 		MaxAIReplyRounds:    item.MaxAIReplyRounds,
 		FallbackMode:        item.FallbackMode,
-		FallbackModeName:    enums.GetAIAgentFallbackModeLabel(enums.AIAgentFallbackMode(item.FallbackMode)),
+		FallbackModeName:    enums.GetAIAgentFallbackModeLabel(item.FallbackMode),
 		FallbackMessage:     item.FallbackMessage,
 		KnowledgeIDs:        utils.SplitInt64s(item.KnowledgeIDs),
 		SkillIDs:            utils.SplitInt64s(item.SkillIDs),
@@ -169,7 +170,12 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 		var directTools []request.AIAgentMCPToolRequest
 		if err := json.Unmarshal([]byte(raw), &directTools); err == nil {
 			for _, tool := range directTools {
+				toolCode := strings.TrimSpace(tool.ToolCode)
+				if toolCode == "" {
+					toolCode = toolx.BuildMCPToolCode(tool.ServerCode, tool.ToolName)
+				}
 				ret.DirectTools = append(ret.DirectTools, response.AIAgentMCPToolResponse{
+					ToolCode:    toolCode,
 					ServerCode:  strings.TrimSpace(tool.ServerCode),
 					ToolName:    strings.TrimSpace(tool.ToolName),
 					Title:       strings.TrimSpace(tool.Title),

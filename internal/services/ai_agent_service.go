@@ -12,6 +12,7 @@ import (
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/toolx"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
@@ -294,37 +295,20 @@ func (s *aIAgentService) normalizeDirectTools(input []request.AIAgentMCPToolRequ
 	ret := make([]request.AIAgentMCPToolRequest, 0, len(input))
 	seen := make(map[string]struct{})
 	for _, item := range input {
-		serverCode := strings.TrimSpace(item.ServerCode)
-		toolName := strings.TrimSpace(item.ToolName)
-		if serverCode == "" || toolName == "" {
-			return nil, errorsx.InvalidParam("Direct Tool 的 serverCode 和 toolName 不能为空")
+		normalized, err := toolx.NormalizeMCPToolRequest(item)
+		if err != nil {
+			return nil, err
 		}
+		serverCode := strings.TrimSpace(normalized.ServerCode)
 		server, ok := cfg.MCP.Servers[serverCode]
 		if !ok || !server.Enabled {
 			return nil, errorsx.InvalidParam("Direct Tool 绑定的 MCP 服务不存在或未启用")
 		}
-		key := serverCode + "/" + toolName
+		key := strings.TrimSpace(normalized.ToolCode)
 		if _, exists := seen[key]; exists {
 			continue
 		}
 		seen[key] = struct{}{}
-		normalized := request.AIAgentMCPToolRequest{
-			ServerCode:  serverCode,
-			ToolName:    toolName,
-			Title:       strings.TrimSpace(item.Title),
-			Description: strings.TrimSpace(item.Description),
-		}
-		if len(item.Arguments) > 0 {
-			normalized.Arguments = make(map[string]string, len(item.Arguments))
-			for key, value := range item.Arguments {
-				key = strings.TrimSpace(key)
-				value = strings.TrimSpace(value)
-				if key == "" || value == "" {
-					continue
-				}
-				normalized.Arguments[key] = value
-			}
-		}
 		ret = append(ret, normalized)
 	}
 	return ret, nil
