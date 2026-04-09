@@ -2,6 +2,8 @@ package factory
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	einoadapter "cs-agent/internal/ai/runtime/internal/impl/adapter"
@@ -27,7 +29,7 @@ func NewAgentFactory() *AgentFactory {
 }
 
 func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *models.AIAgent, aiConfig *models.AIConfig,
-	toolDefinitions []einoadapter.MCPToolDefinition, extraTools []einobasetool.BaseTool, extraToolCodes map[string]string,
+	selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraTools []einobasetool.BaseTool, extraToolCodes map[string]string,
 	collector *einocallbacks.RuntimeTraceCollector) (*einoagents.CustomerServiceAgent, error) {
 	if aiAgent == nil || aiConfig == nil {
 		return nil, nil
@@ -58,7 +60,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        strings.TrimSpace(aiAgent.Name),
 		Description: strings.TrimSpace(aiAgent.Description),
-		Instruction: buildAgentInstruction(aiAgent, extraToolCodes),
+		Instruction: buildAgentInstruction(aiAgent, selectedSkill, toolDefinitions, extraToolCodes),
 		Model:       chatModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
@@ -73,12 +75,15 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	return &einoagents.CustomerServiceAgent{Inner: inner}, nil
 }
 
-func buildAgentInstruction(aiAgent *models.AIAgent, extraToolCodes map[string]string) string {
+func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraToolCodes map[string]string) string {
 	baseInstruction := ""
 	if aiAgent != nil {
 		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
 	}
-	appendixParts := make([]string, 0, 1)
+	appendixParts := make([]string, 0, 2)
+	if skillInstruction := buildSelectedSkillInstruction(selectedSkill, toolDefinitions); skillInstruction != "" {
+		appendixParts = append(appendixParts, skillInstruction)
+	}
 	if hasToolCode(extraToolCodes, "builtin/create_ticket_with_confirmation") {
 		appendixParts = append(appendixParts, strings.TrimSpace(`
 你可以在确认信息充分后调用 create_ticket_with_confirmation 工具来创建工单，但必须遵守以下规则：
@@ -98,6 +103,44 @@ func buildAgentInstruction(aiAgent *models.AIAgent, extraToolCodes map[string]st
 	return baseInstruction + "\n\n" + strings.Join(appendixParts, "\n\n")
 }
 
+func buildSelectedSkillInstruction(skill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition) string {
+	if skill == nil {
+		return ""
+	}
+	lines := []string{
+		"当前命中的专项技能：",
+		fmt.Sprintf("- code: %s", strings.TrimSpace(skill.Code)),
+		fmt.Sprintf("- name: %s", strings.TrimSpace(skill.Name)),
+	}
+	if desc := strings.TrimSpace(skill.Description); desc != "" {
+		lines = append(lines, fmt.Sprintf("- description: %s", desc))
+	}
+	if content := strings.TrimSpace(skill.Content); content != "" {
+		lines = append(lines, "", "技能说明：", content)
+	}
+	if examples := parseJSONStringArray(skill.Examples); len(examples) > 0 {
+		lines = append(lines, "", "典型示例问法：")
+		for _, item := range examples {
+			lines = append(lines, "- "+item)
+		}
+	}
+	if len(toolDefinitions) > 0 {
+		lines = append(lines, "", "当前技能允许使用的工具：")
+		for _, item := range toolDefinitions {
+			if strings.TrimSpace(item.ToolCode) == "" {
+				continue
+			}
+			line := "- " + strings.TrimSpace(item.ToolCode)
+			if title := strings.TrimSpace(item.Title); title != "" {
+				line += " | " + title
+			}
+			lines = append(lines, line)
+		}
+	}
+	lines = append(lines, "", "执行要求：", "- 优先遵循该技能说明完成任务。", "- 如果关键信息不足，先向用户追问。", "- 不得调用当前技能未授权的工具。")
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
 func hasToolCode(toolCodes map[string]string, target string) bool {
 	target = strings.TrimSpace(target)
 	if target == "" {
@@ -109,4 +152,24 @@ func hasToolCode(toolCodes map[string]string, target string) bool {
 		}
 	}
 	return false
+}
+
+func parseJSONStringArray(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var ret []string
+	if err := json.Unmarshal([]byte(raw), &ret); err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(ret))
+	for _, item := range ret {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
 }

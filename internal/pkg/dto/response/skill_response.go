@@ -21,13 +21,19 @@ type SkillDefinitionResponse struct {
 }
 
 type SkillDebugRunResponse struct {
-	SkillCode      string `json:"skillCode"`
-	SkillName      string `json:"skillName"`
-	ReplyText      string `json:"replyText"`
-	RunLogID       int64  `json:"runLogId"`
-	TraceData      string `json:"traceData"`
-	ConversationID int64  `json:"conversationId"`
-	AIAgentID      int64  `json:"aiAgentId"`
+	SkillCode        string   `json:"skillCode"`
+	SkillName        string   `json:"skillName"`
+	ReplyText        string   `json:"replyText"`
+	PlanReason       string   `json:"planReason"`
+	SkillRouteTrace  string   `json:"skillRouteTrace"`
+	ToolCodes        []string `json:"toolCodes"`
+	InvokedToolCodes []string `json:"invokedToolCodes"`
+	CheckPointID     string   `json:"checkPointId"`
+	Interrupted      bool     `json:"interrupted"`
+	TraceData        string   `json:"traceData"`
+	ErrorMessage     string   `json:"errorMessage"`
+	ConversationID   int64    `json:"conversationId"`
+	AIAgentID        int64    `json:"aiAgentId"`
 }
 
 type AgentRunLogResponse struct {

@@ -11,7 +11,7 @@ type RuntimeContext struct {
 	IntentCode      string // IntentCode 为上游识别出的意图编码。
 }
 
-// ExecutionPlan 表示 Skill Runtime 计算出的最终执行计划。
+// ExecutionPlan 表示 Skill Runtime 计算出的最终路由结果。
 type ExecutionPlan struct {
 	AIAgent     *models.AIAgent         // AIAgent 为本次请求所属的 AI Agent。
 	AIConfig    *models.AIConfig        // AIConfig 为本次请求实际使用的模型配置。
@@ -20,21 +20,17 @@ type ExecutionPlan struct {
 	RouteTrace  *RouteTrace             // RouteTrace 为匹配阶段的路由追踪。
 }
 
-// ExecutionResult 表示一次 Skill 执行的最终结果。
+// ExecutionResult 表示一次 Skill 路由的最终结果。
 type ExecutionResult struct {
-	Plan      *ExecutionPlan
-	ReplyText string
-	RunLog    *models.SkillRunLog
-	Trace     *ExecutionTrace
+	Plan   *ExecutionPlan
+	RunLog *models.SkillRunLog
+	Trace  *ExecutionTrace
 }
 
 type ExecutionTrace struct {
-	Status        string             `json:"status"`
-	MatchReason   string             `json:"matchReason,omitempty"`
-	Route         *RouteTrace        `json:"route,omitempty"`
-	ExecutionMode string             `json:"executionMode,omitempty"`
-	Prompt        *PromptTrace       `json:"prompt,omitempty"`
-	MCP           *MCPExecutionTrace `json:"mcp,omitempty"`
+	Status      string      `json:"status"`
+	MatchReason string      `json:"matchReason,omitempty"`
+	Route       *RouteTrace `json:"route,omitempty"`
 }
 
 type RouteTrace struct {
@@ -53,18 +49,4 @@ type PromptTrace struct {
 	PromptTokens     int    `json:"promptTokens,omitempty"`
 	CompletionTokens int    `json:"completionTokens,omitempty"`
 	Error            string `json:"error,omitempty"`
-}
-
-type MCPExecutionTrace struct {
-	Status               string         `json:"status"`
-	ServerCode           string         `json:"serverCode,omitempty"`
-	ToolName             string         `json:"toolName,omitempty"`
-	Arguments            map[string]any `json:"arguments,omitempty"`
-	LatencyMs            int64          `json:"latencyMs,omitempty"`
-	IsError              bool           `json:"isError,omitempty"`
-	ContentItemCount     int            `json:"contentItemCount,omitempty"`
-	HasStructuredContent bool           `json:"hasStructuredContent,omitempty"`
-	ResultPreview        string         `json:"resultPreview,omitempty"`
-	Error                string         `json:"error,omitempty"`
-	SummaryPrompt        *PromptTrace   `json:"summaryPrompt,omitempty"`
 }

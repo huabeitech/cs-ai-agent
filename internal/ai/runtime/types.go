@@ -7,13 +7,17 @@ import (
 )
 
 type Request struct {
-	Conversation   *models.Conversation
-	UserMessage    *models.Message
-	AIAgent        *models.AIAgent
-	AIConfig       *models.AIConfig
-	CheckPointID   string
-	ExtraTools     []einotool.BaseTool
-	ExtraToolCodes map[string]string
+	Conversation     *models.Conversation
+	UserMessage      *models.Message
+	AIAgent          *models.AIAgent
+	AIConfig         *models.AIConfig
+	ManualSkillCode  string
+	SelectedSkill    *models.SkillDefinition
+	SkillRouteReason string
+	SkillRouteTrace  string
+	CheckPointID     string
+	ExtraTools       []einotool.BaseTool
+	ExtraToolCodes   map[string]string
 }
 
 type ResumeRequest struct {
@@ -38,6 +42,7 @@ type Summary struct {
 	ReplyText           string
 	PlannedSkillCode    string
 	PlanReason          string
+	SkillRouteTrace     string
 	ModelName           string
 	PromptTokens        int
 	CompletionTokens    int

@@ -11,6 +11,7 @@ import (
 	"cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/ai/runtime/internal/impl/factory"
 	"cs-agent/internal/ai/runtime/internal/impl/retrievers"
+	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/utils"
 
 	"github.com/cloudwego/eino/adk"
@@ -74,8 +75,9 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 		summary.TraceData = collector.Marshal()
 		return summary, err
 	}
-	toolDefsByModelName := make(map[string]string, len(toolDefs))
-	for _, item := range toolDefs {
+	filteredToolDefs := filterToolDefinitionsBySkill(toolDefs, req.SelectedSkill)
+	toolDefsByModelName := make(map[string]string, len(filteredToolDefs))
+	for _, item := range filteredToolDefs {
 		summary.ToolCodes = append(summary.ToolCodes, item.ToolCode)
 		toolDefsByModelName[item.ModelName] = item.ToolCode
 	}
@@ -92,8 +94,14 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 
 	collector.Data.Model.Provider = string(req.AIConfig.Provider)
 	collector.Data.Model.Name = req.AIConfig.ModelName
+	summary.SelectedSkillCode = ""
+	summary.SkillRouteReason = strings.TrimSpace(req.SkillRouteReason)
+	summary.SkillRouteTrace = strings.TrimSpace(req.SkillRouteTrace)
+	if req.SelectedSkill != nil {
+		summary.SelectedSkillCode = strings.TrimSpace(req.SelectedSkill.Code)
+	}
 
-	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, toolDefs, req.ExtraTools, req.ExtraToolCodes, collector)
+	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, req.SelectedSkill, filteredToolDefs, req.ExtraTools, req.ExtraToolCodes, collector)
 	if err != nil {
 		summary.Status = "error"
 		summary.ErrorMessage = err.Error()
@@ -217,7 +225,7 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 	collector.Data.Input.ToolCodes = append(collector.Data.Input.ToolCodes, summary.ToolCodes...)
 	collector.Data.Model.Provider = string(req.AIConfig.Provider)
 	collector.Data.Model.Name = req.AIConfig.ModelName
-	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, toolDefs, req.ExtraTools, req.ExtraToolCodes, collector)
+	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, nil, toolDefs, req.ExtraTools, req.ExtraToolCodes, collector)
 	if err != nil {
 		summary.Status = "error"
 		summary.ErrorMessage = err.Error()
@@ -259,6 +267,43 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 	collector.Data.Output.FinishReason = summary.Status
 	summary.TraceData = collector.Marshal()
 	return summary, nil
+}
+
+func filterToolDefinitionsBySkill(definitions []adapter.MCPToolDefinition, skill *models.SkillDefinition) []adapter.MCPToolDefinition {
+	if len(definitions) == 0 || skill == nil {
+		return definitions
+	}
+	allowed := parseJSONArraySet(skill.AllowedToolCodes)
+	if len(allowed) == 0 {
+		return definitions
+	}
+	ret := make([]adapter.MCPToolDefinition, 0, len(definitions))
+	for _, item := range definitions {
+		if _, ok := allowed[strings.TrimSpace(item.ToolCode)]; ok {
+			ret = append(ret, item)
+		}
+	}
+	return ret
+}
+
+func parseJSONArraySet(raw string) map[string]struct{} {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var items []string
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return nil
+	}
+	ret := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		ret[item] = struct{}{}
+	}
+	return ret
 }
 
 func buildRunOptions(checkPointID string) []adk.AgentRunOption {
