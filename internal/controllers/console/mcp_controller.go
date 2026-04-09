@@ -24,6 +24,29 @@ func (c *MCPController) AnyList_servers() *web.JsonResult {
 	return web.JsonData(response.BuildMCPServerInfoResponses(services.MCPDebugService.ListServers()))
 }
 
+func (c *MCPController) AnyCatalog() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
+		return web.JsonError(err)
+	}
+	items, err := services.ToolCatalogService.ListMCPTools(context.Background())
+	if err != nil {
+		return web.JsonError(err)
+	}
+	ret := make([]response.MCPToolCatalogResponse, 0, len(items))
+	for _, item := range items {
+		ret = append(ret, response.MCPToolCatalogResponse{
+			ToolCode:     item.ToolCode,
+			ServerCode:   item.ServerCode,
+			ToolName:     item.ToolName,
+			Title:        item.Title,
+			Description:  item.Description,
+			InputSchema:  item.InputSchema,
+			OutputSchema: item.OutputSchema,
+		})
+	}
+	return web.JsonData(ret)
+}
+
 func (c *MCPController) PostTest_connection() *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionMCPView); err != nil {
 		return web.JsonError(err)

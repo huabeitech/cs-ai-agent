@@ -257,8 +257,14 @@ func validateSkillDefinitionRequest(req request.CreateSkillDefinitionRequest) er
 	if _, err := normalizeJSONStringArray(req.Examples); err != nil {
 		return err
 	}
-	if _, err := normalizeJSONStringArray(req.AllowedToolCodes); err != nil {
+	allowedToolCodes, err := normalizeJSONStringArray(req.AllowedToolCodes)
+	if err != nil {
 		return err
+	}
+	for _, toolCode := range allowedToolCodes {
+		if err := services.ToolCatalogService.ValidateMCPToolCode(toolCode); err != nil {
+			return err
+		}
 	}
 	return nil
 }

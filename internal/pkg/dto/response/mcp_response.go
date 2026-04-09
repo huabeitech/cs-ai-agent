@@ -65,6 +65,16 @@ func BuildMCPToolInfoResponses(items []mcps.ToolInfo) []MCPToolInfoResponse {
 	return ret
 }
 
+type MCPToolCatalogResponse struct {
+	ToolCode     string `json:"toolCode"`
+	ServerCode   string `json:"serverCode"`
+	ToolName     string `json:"toolName"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	InputSchema  any    `json:"inputSchema"`
+	OutputSchema any    `json:"outputSchema,omitempty"`
+}
+
 type MCPToolResultContentResponse struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
