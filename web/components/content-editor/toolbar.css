@@ -1,0 +1,12 @@
+.content-editor-toolbar {
+  scrollbar-width: none;
+  cursor: grab;
+}
+
+.content-editor-toolbar::-webkit-scrollbar {
+  height: 0 !important;
+}
+
+.content-editor-toolbar:active {
+  cursor: grabbing;
+}

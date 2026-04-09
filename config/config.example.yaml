@@ -1,0 +1,84 @@
+server:
+  port: 8083
+
+db:
+  type: sqlite
+  dsn: file:./data/app.db?_busy_timeout=5000
+  maxIdleConns: 5
+  maxOpenConns: 20
+  connMaxIdleTimeSeconds: 300
+  connMaxLifetimeSeconds: 1800
+
+logger:
+  level: info
+  format: text
+  addSource: false
+
+auth:
+  accessTokenTTLHours: 12
+  refreshTokenTTLDays: 7
+  maxFailedAttempts: 5
+  credentialLockMinute: 15
+
+storage:
+  default: local
+  maxUploadSizeMB: 20
+  local:
+    root: data/storage
+    baseUrl: /storage
+  oss:
+    endpoint: ""
+    bucket: ""
+    accessKeyId: ""
+    accessKeySecret: ""
+    baseUrl: ""
+    private: false
+    signedUrlExpireSeconds: 600
+
+vectorDB:
+  type: qdrant
+  host: 127.0.0.1
+  grpcPort: 6334
+  apiKey: ""
+  useTls: false
+
+mcp:
+  enabled: true
+  servers:
+    system:
+      enabled: true
+      endpoint: "http://127.0.0.1:8083/api/mcp"
+      timeoutMs: 15000
+      headers: {}
+
+wxWork:
+  # 是否启用企业微信登录能力。
+  # false 时不会初始化企业微信 SDK，/api/auth/wxwork/* 接口不可用。
+  enabled: false
+  # 企业微信公司 ID。
+  # 例如：wwxxxxxxxxxxxxxxxx，来自企业微信管理后台。
+  corpId: 
+  # 企业微信应用 Secret。
+  # 用于后端换取 access_token 和用户身份，必须保密。
+  corpSecret: ""
+  # 企业微信自建应用 AgentID。
+  # 网页授权 scope=snsapi_privateinfo 时会使用该字段。
+  agentId: 
+  # 企业微信网页授权回调地址。
+  # 必须是完整 URL，且应指向后端接口：
+  # 例如：http://127.0.0.1:8083/api/auth/wxwork_callback
+  # 线上环境应填写可被企业微信访问的正式域名，并确保域名已在企业微信后台配置。
+  oauthRedirect: ""
+  # 企业微信登录 state 签名密钥。
+  # 用于防篡改、防重放校验，建议填写独立随机字符串。
+  # 若留空，代码会退回使用 corpSecret，但不建议这样做。
+  stateSecret: ""
+  # 企业微信回调解密私钥。
+  # 当前登录流程未使用，保留给消息回调等场景。
+  rsaPrivateKey: ""
+  # 企业微信回调 Token。
+  # 当前登录流程未使用，保留给消息回调等场景。
+  token: ""
+  # 企业微信消息加解密 EncodingAESKey。
+  # 当前登录流程未使用，保留给消息回调等场景。
+  encodingAESKey: ""

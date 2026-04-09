@@ -1,0 +1,150 @@
+package bootstrap
+
+import (
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
+	"cs-agent/internal/ai/mcps"
+	_ "cs-agent/internal/ai/runtime"
+	"cs-agent/internal/controllers/api"
+	"cs-agent/internal/controllers/console"
+	"cs-agent/internal/controllers/open"
+	"cs-agent/internal/controllers/third"
+	"cs-agent/internal/middleware"
+	"cs-agent/internal/pkg/config"
+
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/cors"
+	"github.com/kataras/iris/v12/middleware/recover"
+	"github.com/kataras/iris/v12/mvc"
+
+	_ "cs-agent/internal/services/wx_callback_handlers"
+)
+
+func NewServer() (*iris.Application, error) {
+	cfg := config.Current()
+	app := iris.New()
+	corsHandler := cors.New().
+		AllowOrigin("*").
+		AllowHeaders("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Visitor-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
+		MaxAge(600).
+		ExposeHeaders("Content-Length", "Content-Type", "Authorization", "X-Visitor-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
+		Handler()
+	app.UseRouter(func(ctx iris.Context) {
+		// WebSocket upgrade is validated by the upgrader's origin policy.
+		if isWebsocketUpgrade(ctx) {
+			ctx.Next()
+			return
+		}
+		corsHandler(ctx)
+	})
+	app.UseRouter(recover.New())
+	app.UseRouter(func(ctx iris.Context) {
+		start := time.Now()
+		path := ctx.Path()
+		method := ctx.Method()
+		ctx.Next()
+
+		slog.Info("http request",
+			"method", method,
+			"path", path,
+			"status", ctx.GetStatusCode(),
+			"elapsed", time.Since(start).Milliseconds(),
+			"clientIp", ctx.RemoteAddr(),
+		)
+	})
+	app.UseRouter(func(ctx iris.Context) {
+		ctx.SetMaxRequestBodySize(cfg.Storage.MaxRequestBodySizeBytes())
+		ctx.Next()
+	})
+
+	// 注册路由
+	addRouter(app)
+
+	// 注册本地存储静态资源服务
+	app.HandleDir(cfg.Storage.Local.BaseURL, iris.Dir(cfg.Storage.Local.Root), iris.DirOptions{
+		ShowList: false,
+	})
+
+	// 注册web静态资源服务
+	app.HandleDir("/", iris.Dir("web/out"), iris.DirOptions{
+		IndexName: "index.html",
+		Compress:  true,
+		ShowList:  false,
+	})
+
+	// 注册widget静态资源服务
+	app.HandleDir("/widget", iris.Dir("widget/out"), iris.DirOptions{
+		IndexName: "index.html",
+		Compress:  true,
+		ShowList:  false,
+	})
+
+	return app, nil
+}
+
+func isWebsocketUpgrade(ctx iris.Context) bool {
+	if !strings.EqualFold(ctx.GetHeader("Upgrade"), "websocket") {
+		return false
+	}
+	return strings.Contains(strings.ToLower(ctx.GetHeader("Connection")), "upgrade")
+}
+
+func addRouter(app *iris.Application) {
+	mcpHandler := mcps.NewHTTPHandler()
+
+	app.Any("/api/mcp", iris.FromStd(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mcpHandler.ServeHTTP(w, r)
+	})))
+
+	app.Get("/api/console/ws", middleware.AuthMiddleware, middleware.ConsoleWsMiddleware)
+	app.Get("/api/open/im/ws", middleware.OpenImWsMiddleware)
+
+	mvc.Configure(app.Party("/api/auth"), func(m *mvc.Application) {
+		m.Handle(new(api.AuthController))
+	})
+
+	mvc.Configure(app.Party("/api/console", middleware.AuthMiddleware), func(m *mvc.Application) {
+		m.Party("/dashboard").Handle(new(console.DashboardController))
+		m.Party("/user").Handle(new(console.UserController))
+		m.Party("/company").Handle(new(console.CompanyController))
+		m.Party("/customer").Handle(new(console.CustomerController))
+		m.Party("/customer-contact").Handle(new(console.CustomerContactController))
+		m.Party("/role").Handle(new(console.RoleController))
+		m.Party("/permission").Handle(new(console.PermissionController))
+		m.Party("/session").Handle(new(console.SessionController))
+		m.Party("/tag").Handle(new(console.TagController))
+		m.Party("/conversation").Handle(new(console.ConversationController))
+		m.Party("/ticket").Handle(new(console.TicketController))
+		m.Party("/ticket-resolution-code").Handle(new(console.TicketResolutionCodeController))
+		m.Party("/ticket-priority-config").Handle(new(console.TicketPriorityConfigController))
+		m.Party("/quick-reply").Handle(new(console.QuickReplyController))
+		m.Party("/channel").Handle(new(console.ChannelController))
+		m.Party("/agent").Handle(new(console.AgentController))
+		m.Party("/agent-team").Handle(new(console.AgentTeamController))
+		m.Party("/agent-team-schedule").Handle(new(console.AgentTeamScheduleController))
+		m.Party("/ai-agent").Handle(new(console.AIAgentController))
+		m.Party("/ai-config").Handle(new(console.AIConfigController))
+		m.Party("/asset").Handle(new(console.AssetController))
+		m.Party("/knowledge-base").Handle(new(console.KnowledgeBaseController))
+		m.Party("/knowledge-document").Handle(new(console.KnowledgeDocumentController))
+		m.Party("/knowledge-faq").Handle(new(console.KnowledgeFAQController))
+		m.Party("/knowledge-retrieve").Handle(new(console.KnowledgeRetrieveController))
+		m.Party("/knowledge-retrieve-log").Handle(new(console.KnowledgeRetrieveLogController))
+		m.Party("/agent-run-log").Handle(new(console.AgentRunLogController))
+		m.Party("/skill-definition").Handle(new(console.SkillDefinitionController))
+		m.Party("/mcp").Handle(new(console.MCPController))
+	})
+
+	mvc.Configure(app.Party("/api/open/im", middleware.OpenImContextMiddleware), func(m *mvc.Application) {
+		m.Party("/widget").Handle(new(open.ImWidgetController))
+		m.Party("/conversation").Handle(new(open.ImConversationController))
+		m.Party("/message").Handle(new(open.ImMessageController))
+	})
+
+	mvc.Configure(app.Party("/api/third"), func(m *mvc.Application) {
+		m.Party("/wechat").Handle(new(third.WechatController))
+	})
+}

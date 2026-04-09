@@ -1,0 +1,6 @@
+[submodule "qdrant"]
+	path = qdrant
+	url = git@github.com:huabeitech/cs-ai-agend-qdrant.git
+[submodule "docs"]
+	path = docs
+	url = git@github.com:huabeitech/cs-ai-agent-docs.git

@@ -1,0 +1,76 @@
+# 使用的时候，将文件复制到 cmd/testdata/aiconfig/ 目录下，并重命名为 ai_config.yaml
+#
+# 配置规则说明：
+# 1. name: 配置的唯一标识，系统通过此字段进行去重和更新
+# 2. provider: 模型提供商，固定写：openai，系统目前ai接口调用都走的openai协议
+# 3. baseUrl: API 服务地址
+# 4. apiKey: API 密钥
+# 5. modelType: 模型类型，必须为以下之一：
+#    - llm: 大语言模型，用于对话和推理
+#    - embedding: 文本向量化模型，用于生成文本嵌入向量
+#    - rerank: 排序模型，用于重排序搜索结果
+# 6. modelName: 具体的模型名称，由提供商指定
+# 7. dimension: 向量维度
+#    - llm 和 rerank: 通常设为 0
+#    - embedding: 向量维度数，如 OpenAI text-embedding-3-small 为 1536
+# 8. maxContextTokens: 最大上下文令牌数，0 表示无限制
+#    - llm 和 embedding: 分别表示模型支持的最大输入令牌数
+#    - rerank: 通常设为 0
+# 9. maxOutputTokens: 最大输出令牌数
+#    - llm: 模型支持的最大输出令牌数
+#    - embedding 和 rerank: 通常设为 0
+# 10. timeoutMs: 请求超时时间（毫秒）
+# 11. maxRetryCount: 失败重试次数
+# 12. rpmLimit: 每分钟请求限制，0 表示无限制
+# 13. tpmLimit: 每分钟令牌限制，0 表示无限制
+# 15. sortNo: 排序号，用于同类型模型的优先级排序（数字越小优先级越高）
+# 16. remark: 备注信息，用于描述此配置的用途或特殊说明
+#
+items:
+  - name: LLM模型
+    provider: openai
+    baseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1
+    apiKey: <REPLACE_WITH_REAL_KEY>
+    modelType: llm
+    modelName: qwen3.5-plus
+    dimension: 0
+    maxContextTokens: 128000
+    maxOutputTokens: 4096
+    timeoutMs: 30000
+    maxRetryCount: 1
+    rpmLimit: 0
+    tpmLimit: 0
+    sortNo: 10
+    remark: LLM模型
+
+  - name: 向量模型
+    provider: openai
+    baseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1
+    apiKey: <REPLACE_WITH_REAL_KEY>
+    modelType: embedding
+    modelName: text-embedding-v4
+    dimension: 1536
+    maxContextTokens: 0
+    maxOutputTokens: 0
+    timeoutMs: 30000
+    maxRetryCount: 1
+    rpmLimit: 0
+    tpmLimit: 0
+    sortNo: 20
+    remark: 向量模型
+
+  - name: 重排模型
+    provider: openai
+    baseUrl: https://api.cohere.com/v1
+    apiKey: <REPLACE_WITH_REAL_KEY>
+    modelType: rerank
+    modelName: qwen3-vl-rerank
+    dimension: 0
+    maxContextTokens: 0
+    maxOutputTokens: 0
+    timeoutMs: 30000
+    maxRetryCount: 1
+    rpmLimit: 0
+    tpmLimit: 0
+    sortNo: 30
+    remark: 重排模型
