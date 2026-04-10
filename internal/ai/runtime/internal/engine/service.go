@@ -81,6 +81,10 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 		summary.ToolCodes = append(summary.ToolCodes, item.ToolCode)
 		toolDefsByModelName[item.ModelName] = item.ToolCode
 	}
+	if len(filteredToolDefs) > 0 {
+		summary.ToolCodes = appendIfMissing(summary.ToolCodes, "builtin/tool_search")
+		toolDefsByModelName["tool_search"] = "builtin/tool_search"
+	}
 	for modelName, toolCode := range req.ExtraToolCodes {
 		toolCode = strings.TrimSpace(toolCode)
 		modelName = strings.TrimSpace(modelName)
@@ -220,6 +224,10 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 	for _, item := range toolDefs {
 		summary.ToolCodes = append(summary.ToolCodes, item.ToolCode)
 		toolDefsByModelName[item.ModelName] = item.ToolCode
+	}
+	if len(toolDefs) > 0 {
+		summary.ToolCodes = appendIfMissing(summary.ToolCodes, "builtin/tool_search")
+		toolDefsByModelName["tool_search"] = "builtin/tool_search"
 	}
 	for modelName, toolCode := range req.ExtraToolCodes {
 		toolCode = strings.TrimSpace(toolCode)

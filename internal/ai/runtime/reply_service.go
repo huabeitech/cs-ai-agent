@@ -580,6 +580,12 @@ func firstToolSearchTargetToolCode(summary *Summary) string {
 		if toolCode != "" {
 			return toolCode
 		}
+		if len(item.CandidateToolCodes) == 1 {
+			toolCode = strings.TrimSpace(item.CandidateToolCodes[0])
+			if toolCode != "" {
+				return toolCode
+			}
+		}
 	}
 	return ""
 }
@@ -588,7 +594,8 @@ type runtimeTraceProjection struct {
 	ToolSearch struct {
 		Raw   json.RawMessage `json:"-"`
 		Items []struct {
-			TargetToolCode string `json:"targetToolCode"`
+			TargetToolCode     string   `json:"targetToolCode"`
+			CandidateToolCodes []string `json:"candidateToolCodes"`
 		} `json:"items"`
 	} `json:"toolSearch"`
 }

@@ -59,7 +59,7 @@ func (h *RuntimeTraceHandler) WrapInvokableToolCall(_ context.Context, endpoint 
 		}
 		h.collector.AddToolItem(item)
 		if metadata, ok := h.resolveToolMetadata(item.ToolName); ok && strings.TrimSpace(metadata.ToolCode) == toolx.BuiltinToolSearchToolCode {
-			h.collector.AddToolSearchItem(buildToolSearchTraceItem(argumentsInJSON, result, err))
+			h.collector.AddToolSearchItem(h.buildToolSearchTraceItem(argumentsInJSON, result, err))
 		}
 		return result, err
 	}, nil
@@ -72,6 +72,13 @@ func (h *RuntimeTraceHandler) resolveToolMetadata(modelToolName string) (ToolMet
 	modelToolName = strings.TrimSpace(modelToolName)
 	if modelToolName == "" {
 		return ToolMetadata{}, false
+	}
+	if modelToolName == toolx.BuiltinToolSearchToolName {
+		return ToolMetadata{
+			ToolCode:   toolx.BuiltinToolSearchToolCode,
+			ServerCode: toolx.BuiltinToolCatalogServerCode,
+			ToolName:   toolx.BuiltinToolSearchToolName,
+		}, true
 	}
 	metadata, ok := h.toolMetadataBy[modelToolName]
 	return metadata, ok
@@ -101,19 +108,13 @@ func previewToolText(text string, limit int) string {
 	return string(runes[:limit]) + "..."
 }
 
-func buildToolSearchTraceItem(argumentsInJSON string, result string, runErr error) ToolSearchTraceItem {
+func (h *RuntimeTraceHandler) buildToolSearchTraceItem(argumentsInJSON string, result string, runErr error) ToolSearchTraceItem {
 	item := ToolSearchTraceItem{
+		Action: "search",
 		Status: "ok",
 	}
 	args := parseToolArguments(argumentsInJSON)
-	item.Query = strings.TrimSpace(readToolSearchString(args, "query"))
-	item.TargetToolCode = strings.TrimSpace(readToolSearchString(args, "toolCode"))
-	if item.TargetToolCode != "" {
-		item.Action = "invoke"
-		item.TargetServerCode, item.TargetToolName = toolx.SplitMCPToolCode(item.TargetToolCode)
-	} else {
-		item.Action = "search"
-	}
+	item.Query = strings.TrimSpace(readToolSearchString(args, "regex_pattern"))
 	if runErr != nil {
 		item.Status = "error"
 		item.ErrorMessage = runErr.Error()
@@ -123,8 +124,8 @@ func buildToolSearchTraceItem(argumentsInJSON string, result string, runErr erro
 	if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
 		return item
 	}
-	candidateItems, _ := payload["candidates"].([]any)
-	item.CandidateToolCodes = extractCandidateToolCodes(candidateItems)
+	selectedTools, _ := payload["selectedTools"].([]any)
+	item.CandidateToolCodes = h.extractSelectedToolCodes(selectedTools)
 	return item
 }
 
@@ -140,18 +141,24 @@ func readToolSearchString(data map[string]any, key string) string {
 	return text
 }
 
-func extractCandidateToolCodes(items []any) []string {
+func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []any) []string {
 	if len(items) == 0 {
 		return nil
 	}
 	ret := make([]string, 0, len(items))
 	for _, item := range items {
-		payload, ok := item.(map[string]any)
+		toolName, ok := item.(string)
 		if !ok {
 			continue
 		}
-		toolCode, _ := payload["toolCode"].(string)
-		toolCode = strings.TrimSpace(toolCode)
+		toolName = strings.TrimSpace(toolName)
+		if toolName == "" {
+			continue
+		}
+		toolCode := toolName
+		if metadata, ok := h.resolveToolMetadata(toolName); ok && strings.TrimSpace(metadata.ToolCode) != "" {
+			toolCode = strings.TrimSpace(metadata.ToolCode)
+		}
 		if toolCode == "" {
 			continue
 		}

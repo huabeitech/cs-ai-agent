@@ -14,6 +14,7 @@ import (
 	"cs-agent/internal/pkg/toolx"
 
 	"github.com/cloudwego/eino/adk"
+	einotoolsearch "github.com/cloudwego/eino/adk/middlewares/dynamictool/toolsearch"
 	einobasetool "github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 )
@@ -43,14 +44,22 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	if err != nil {
 		return nil, err
 	}
-	baseTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, mcpToolDefinitions)
+	dynamicTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, mcpToolDefinitions)
 	if err != nil {
 		return nil, err
 	}
-	allTools := make([]einobasetool.BaseTool, 0, len(baseTools)+len(extraTools))
+	allTools := make([]einobasetool.BaseTool, 0, len(extraTools))
 	allTools = append(allTools, extraTools...)
-	allTools = append(allTools, baseTools...)
 	handlers := make([]adk.ChatModelAgentMiddleware, 0, 1)
+	if len(dynamicTools) > 0 {
+		toolSearchHandler, toolSearchErr := einotoolsearch.New(ctx, &einotoolsearch.Config{
+			DynamicTools: dynamicTools,
+		})
+		if toolSearchErr != nil {
+			return nil, toolSearchErr
+		}
+		handlers = append(handlers, toolSearchHandler)
+	}
 	if collector != nil {
 		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(mcpToolDefinitions)+len(extraToolCodes))
 		for _, item := range mcpToolDefinitions {
@@ -109,13 +118,12 @@ func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillD
 	if skillInstruction := buildSelectedSkillInstruction(selectedSkill, toolDefinitions); skillInstruction != "" {
 		appendixParts = append(appendixParts, skillInstruction)
 	}
-	if hasToolCode(extraToolCodes, toolx.BuiltinToolSearchToolCode) {
+	if len(toolDefinitions) > 0 {
 		appendixParts = append(appendixParts, strings.TrimSpace(`
 当你需要使用长尾 MCP 能力时，优先使用 tool_search 工具，并遵守以下规则：
-1. 先用 query 搜索候选工具，再根据返回的 toolCode 选择真正的目标工具。
-2. 只有在你已经明确要调用哪个动态工具时，才传入 toolCode 和 arguments 进行执行。
-3. 不要臆造 toolCode；必须以 tool_search 返回的候选结果为准。
-4. 如果当前已有固定内置工具可以完成任务，优先使用固定工具，不要滥用 tool_search。
+1. 先调用 tool_search 搜索需要的动态工具，再继续使用已选中的真实工具。
+2. 不要假设所有长尾工具一开始就可见；只有被 tool_search 选中的工具，后续模型调用才会暴露出来。
+3. 如果当前已有固定内置工具可以完成任务，优先使用固定工具，不要滥用 tool_search。
 `))
 	}
 	if hasToolCode(extraToolCodes, toolx.BuiltinCreateTicketConfirmToolCode) {
