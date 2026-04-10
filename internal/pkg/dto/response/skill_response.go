@@ -29,6 +29,10 @@ type SkillDebugRunResponse struct {
 	SkillAllowedToolCodes []string `json:"skillAllowedToolCodes"`
 	ToolCodes             []string `json:"toolCodes"`
 	InvokedToolCodes      []string `json:"invokedToolCodes"`
+	ToolSearchTrace       string   `json:"toolSearchTrace"`
+	GraphToolTrace        string   `json:"graphToolTrace"`
+	GraphToolCode         string   `json:"graphToolCode"`
+	InterruptType         string   `json:"interruptType"`
 	CheckPointID          string   `json:"checkPointId"`
 	Interrupted           bool     `json:"interrupted"`
 	TraceData             string   `json:"traceData"`

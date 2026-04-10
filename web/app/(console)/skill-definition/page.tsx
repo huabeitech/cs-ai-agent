@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { useCallback, useEffect, useState, type CSSProperties } from "react"
 import {
   BrainCircuitIcon,
+  BugIcon,
   GripVerticalIcon,
   MoreHorizontalIcon,
   PlusIcon,
@@ -69,6 +70,7 @@ import {
 import { getEnumLabel, getEnumOptions } from "@/lib/enums"
 import { cn, formatDateTime } from "@/lib/utils"
 import { EditDialog } from "./_components/edit"
+import { DebugDialog } from "./_components/debug-dialog"
 
 const statusFilterOptions = [
   { value: "all", label: "全部状态" },
@@ -83,6 +85,7 @@ type SortableSkillRowProps = {
   disabled: boolean
   actionLoadingId: number | null
   openEditDialog: (item: SkillDefinition) => void
+  openDebugDialog: (item: SkillDefinition) => void
   handleToggleStatus: (item: SkillDefinition) => void
   handleDelete: (item: SkillDefinition) => void
 }
@@ -92,6 +95,7 @@ function SortableSkillRow({
   disabled,
   actionLoadingId,
   openEditDialog,
+  openDebugDialog,
   handleToggleStatus,
   handleDelete,
 }: SortableSkillRowProps) {
@@ -187,6 +191,14 @@ function SortableSkillRow({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => openDebugDialog(item)}
+          >
+            <BugIcon />
+            调试
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => openEditDialog(item)}
           >
             编辑
@@ -229,7 +241,9 @@ export default function DashboardSkillsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [sorting, setSorting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [debugDialogOpen, setDebugDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<SkillDefinition | null>(null)
+  const [debuggingItem, setDebuggingItem] = useState<SkillDefinition | null>(null)
   const [result, setResult] = useState<PageResult<SkillDefinition>>({
     results: [],
     page: { page: 1, limit: 20, total: 0 },
@@ -301,6 +315,11 @@ export default function DashboardSkillsPage() {
     setDialogOpen(true)
   }
 
+  function openDebugDialog(item: SkillDefinition) {
+    setDebuggingItem(item)
+    setDebugDialogOpen(true)
+  }
+
   function handleDialogOpenChange(open: boolean) {
     if (saving) {
       return
@@ -309,6 +328,13 @@ export default function DashboardSkillsPage() {
       setEditingItem(null)
     }
     setDialogOpen(open)
+  }
+
+  function handleDebugDialogOpenChange(open: boolean) {
+    if (!open) {
+      setDebuggingItem(null)
+    }
+    setDebugDialogOpen(open)
   }
 
   async function handleSubmit(payload: CreateSkillDefinitionPayload) {
@@ -464,7 +490,7 @@ export default function DashboardSkillsPage() {
                     <TableHead>状态</TableHead>
                     <TableHead>优先级</TableHead>
                     <TableHead>最近更新</TableHead>
-                    <TableHead className="w-[92px] text-right">操作</TableHead>
+                    <TableHead className="w-[168px] text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -486,6 +512,7 @@ export default function DashboardSkillsPage() {
                         disabled={sorting}
                         actionLoadingId={actionLoadingId}
                         openEditDialog={openEditDialog}
+                        openDebugDialog={openDebugDialog}
                         handleToggleStatus={handleToggleStatus}
                         handleDelete={handleDelete}
                       />
@@ -517,6 +544,12 @@ export default function DashboardSkillsPage() {
         itemId={editingItem?.id ?? null}
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleSubmit}
+      />
+      <DebugDialog
+        open={debugDialogOpen}
+        skillCode={debuggingItem?.code ?? ""}
+        skillName={debuggingItem?.name ?? ""}
+        onOpenChange={handleDebugDialogOpenChange}
       />
     </>
   )

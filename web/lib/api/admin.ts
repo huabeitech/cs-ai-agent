@@ -301,6 +301,34 @@ export type UpdateSkillDefinitionPayload = CreateSkillDefinitionPayload & {
   id: number
 }
 
+export type SkillDebugRunPayload = {
+  aiAgentId: number
+  conversationId?: number
+  skillCode: string
+  userMessage: string
+}
+
+export type SkillDebugRunResult = {
+  skillCode: string
+  skillName: string
+  replyText: string
+  planReason: string
+  skillRouteTrace: string
+  skillAllowedToolCodes: string[]
+  toolCodes: string[]
+  invokedToolCodes: string[]
+  toolSearchTrace: string
+  graphToolTrace: string
+  graphToolCode: string
+  interruptType: string
+  checkPointId: string
+  interrupted: boolean
+  traceData: string
+  errorMessage: string
+  conversationId: number
+  aiAgentId: number
+}
+
 export type MCPConnectionResult = {
   serverCode: string
   endpoint: string
@@ -878,6 +906,13 @@ export function updateSkillDefinitionPriority(ids: number[]) {
   return request<void>("/api/console/skill-definition/update_priority", {
     method: "POST",
     body: JSON.stringify(ids),
+  })
+}
+
+export function debugRunSkillDefinition(payload: SkillDebugRunPayload) {
+  return request<SkillDebugRunResult>("/api/console/skill-definition/debug_run", {
+    method: "POST",
+    body: JSON.stringify(payload),
   })
 }
 
