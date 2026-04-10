@@ -186,6 +186,9 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 				} else if toolCode == toolx.GraphCreateTicketConfirmToolCode {
 					serverCode = toolx.GraphToolCatalogServerCode
 					toolName = toolx.GraphCreateTicketConfirmToolName
+				} else if toolCode == toolx.GraphHandoffConversationToolCode {
+					serverCode = toolx.GraphToolCatalogServerCode
+					toolName = toolx.GraphHandoffConversationToolName
 				} else if parsedServerCode, parsedToolName := toolx.SplitMCPToolCode(toolCode); parsedServerCode != "" && parsedToolName != "" {
 					serverCode = parsedServerCode
 					toolName = parsedToolName
@@ -197,6 +200,8 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 						title = toolx.BuiltinToolSearchToolTitle
 					case toolx.GraphCreateTicketConfirmToolCode:
 						title = toolx.GraphCreateTicketConfirmToolTitle
+					case toolx.GraphHandoffConversationToolCode:
+						title = toolx.GraphHandoffConversationToolTitle
 					}
 				}
 				description := strings.TrimSpace(tool.Description)
@@ -206,6 +211,8 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 						description = toolx.BuiltinToolSearchToolDescription
 					case toolx.GraphCreateTicketConfirmToolCode:
 						description = toolx.GraphCreateTicketConfirmToolDescription
+					case toolx.GraphHandoffConversationToolCode:
+						description = toolx.GraphHandoffConversationToolDescription
 					}
 				}
 				ret.DirectTools = append(ret.DirectTools, response.AIAgentMCPToolResponse{

@@ -83,6 +83,9 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 			} else if toolCode == toolx.GraphCreateTicketConfirmToolCode {
 				serverCode = toolx.GraphToolCatalogServerCode
 				toolName = toolx.GraphCreateTicketConfirmToolName
+			} else if toolCode == toolx.GraphHandoffConversationToolCode {
+				serverCode = toolx.GraphToolCatalogServerCode
+				toolName = toolx.GraphHandoffConversationToolName
 			}
 			toolMetadataBy[modelName] = einocallbacks.ToolMetadata{
 				ToolCode:   toolCode,
@@ -150,6 +153,16 @@ func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillD
 3. 一旦准备创建工单，必须调用 create_ticket_with_confirmation 工具，禁止直接口头宣称“已经创建工单”。
 4. 该 Graph Tool 会先向用户发起确认。用户确认后才会真正创建工单；用户取消则结束本次建单流程。
 5. 如果用户只是咨询、抱怨或泛泛表达不满，但没有明确要求建单，优先继续澄清，不要主动创建工单。
+`))
+	}
+	if hasToolCode(extraToolCodes, toolx.GraphHandoffConversationToolCode) {
+		appendixParts = append(appendixParts, strings.TrimSpace(`
+你可以在确认需要人工介入后调用 handoff_to_human 这个 Graph Tool 来转人工，但必须遵守以下规则：
+1. 只有在用户明确要求人工客服，或你已经判断该问题必须由人工继续处理时，才调用该工具。
+2. 调用前先尽量整理清楚转人工原因；如果理由含糊，先追问或澄清，不要直接转人工。
+3. 一旦决定转人工，必须调用 handoff_to_human 工具，禁止只在回复里口头说“我帮你转人工了”。
+4. 该 Graph Tool 会先向用户发起确认。用户确认后才会真正转人工；用户取消则结束本次转人工流程。
+5. 如果问题仍可由当前对话继续解决，优先继续解答，不要过早转人工。
 `))
 	}
 	projectRoot, _ := os.Getwd()

@@ -20,6 +20,7 @@ func newService() *service {
 		runtime: engine.NewService(),
 		registry: registry.NewRegistry(
 			tools.NewCreateTicketGraphTool(),
+			tools.NewHandoffGraphTool(),
 		),
 	}
 }

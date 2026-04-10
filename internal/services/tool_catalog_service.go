@@ -33,7 +33,7 @@ type MCPToolCatalogItem struct {
 
 func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalogItem, error) {
 	cfg := config.Current()
-	ret := make([]MCPToolCatalogItem, 0, 2)
+	ret := make([]MCPToolCatalogItem, 0, 3)
 	ret = append(ret, MCPToolCatalogItem{
 		ToolCode:     toolx.GraphCreateTicketConfirmToolCode,
 		ServerCode:   toolx.GraphToolCatalogServerCode,
@@ -42,6 +42,15 @@ func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalog
 		AutoInjected: false,
 		Title:        toolx.GraphCreateTicketConfirmToolTitle,
 		Description:  toolx.GraphCreateTicketConfirmToolDescription,
+	})
+	ret = append(ret, MCPToolCatalogItem{
+		ToolCode:     toolx.GraphHandoffConversationToolCode,
+		ServerCode:   toolx.GraphToolCatalogServerCode,
+		ToolName:     toolx.GraphHandoffConversationToolName,
+		SourceType:   toolx.GraphToolCatalogServerCode,
+		AutoInjected: false,
+		Title:        toolx.GraphHandoffConversationToolTitle,
+		Description:  toolx.GraphHandoffConversationToolDescription,
 	})
 	if !cfg.MCP.Enabled {
 		return ret, nil
@@ -96,7 +105,7 @@ func (s *toolCatalogService) ValidateToolCode(toolCode string) error {
 		return errorsx.InvalidParam("toolCode不能为空")
 	}
 	switch toolCode {
-	case toolx.BuiltinToolSearchToolCode, toolx.BuiltinCreateTicketConfirmToolCode, toolx.GraphCreateTicketConfirmToolCode:
+	case toolx.BuiltinToolSearchToolCode, toolx.BuiltinCreateTicketConfirmToolCode, toolx.GraphCreateTicketConfirmToolCode, toolx.GraphHandoffConversationToolCode:
 		return nil
 	}
 	serverCode, toolName := toolx.SplitMCPToolCode(toolCode)

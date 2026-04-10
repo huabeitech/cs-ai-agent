@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/constants"
@@ -280,6 +281,44 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 	}
 	if conversation := s.Get(conversationID); conversation != nil {
 		WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationTransferred)
+	}
+	return nil
+}
+
+func (s *conversationService) HandoffByAI(conversationID int64, aiAgent *models.AIAgent, reason string) error {
+	if conversationID <= 0 {
+		return errorsx.InvalidParam("会话不存在")
+	}
+	if aiAgent == nil {
+		return errorsx.InvalidParam("AI Agent 不存在")
+	}
+	now := time.Now()
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
+		if conversation == nil {
+			return errorsx.InvalidParam("会话不存在")
+		}
+		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
+			"handoff_at":          now,
+			"handoff_reason":      strings.TrimSpace(reason),
+			"status":              enums.IMConversationStatusPending,
+			"current_team_id":     0,
+			"current_assignee_id": 0,
+			"update_user_id":      0,
+			"update_user_name":    aiAgent.Name,
+			"updated_at":          now,
+		}); err != nil {
+			return err
+		}
+		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason))
+	}); err != nil {
+		return err
+	}
+	if _, err := ConversationDispatchService.DispatchConversation(conversationID); err != nil {
+		slog.Warn("auto dispatch conversation after ai handoff failed",
+			"conversation_id", conversationID,
+			"ai_agent_id", aiAgent.ID,
+			"error", err)
 	}
 	return nil
 }

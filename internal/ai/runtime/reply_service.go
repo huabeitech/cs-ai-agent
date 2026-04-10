@@ -673,32 +673,11 @@ func isCheckpointMissingError(err error) bool {
 }
 
 func (s *aiReplyService) handoffConversation(conversation models.Conversation, aiAgent models.AIAgent, reason string) error {
-	now := time.Now()
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversation.ID, map[string]any{
-			"handoff_at":          now,
-			"handoff_reason":      strings.TrimSpace(reason),
-			"status":              enums.IMConversationStatusPending,
-			"current_team_id":     0,
-			"current_assignee_id": 0,
-			"update_user_id":      0,
-			"update_user_name":    aiAgent.Name,
-			"updated_at":          now,
-		}); err != nil {
-			return err
-		}
-		return svc.ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason))
-	}); err != nil {
+	if err := svc.ConversationService.HandoffByAI(conversation.ID, &aiAgent, reason); err != nil {
 		return err
 	}
 	if _, err := svc.MessageService.SendAIMessage(conversation.ID, aiAgent.ID, fmt.Sprintf("ai_handoff_%d", conversation.LastMessageID), enums.IMMessageTypeText, "已为你转接人工客服，请稍候。", "", s.buildAIPrincipal(aiAgent)); err != nil {
 		return err
-	}
-	if _, err := svc.ConversationDispatchService.DispatchConversation(conversation.ID); err != nil {
-		slog.Warn("auto dispatch conversation after ai handoff failed",
-			"conversation_id", conversation.ID,
-			"ai_agent_id", aiAgent.ID,
-			"error", err)
 	}
 	return nil
 }
