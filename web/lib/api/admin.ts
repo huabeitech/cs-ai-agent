@@ -334,6 +334,7 @@ export type MCPToolCatalogItem = {
   serverCode: string
   toolName: string
   sourceType: string
+  autoInjected: boolean
   title: string
   description: string
   inputSchema: unknown

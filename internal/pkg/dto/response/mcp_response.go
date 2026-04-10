@@ -70,6 +70,7 @@ type MCPToolCatalogResponse struct {
 	ServerCode   string `json:"serverCode"`
 	ToolName     string `json:"toolName"`
 	SourceType   string `json:"sourceType"`
+	AutoInjected bool   `json:"autoInjected"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	InputSchema  any    `json:"inputSchema"`

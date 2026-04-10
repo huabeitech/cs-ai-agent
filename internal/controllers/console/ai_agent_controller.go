@@ -174,6 +174,9 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 				if toolCode == "" {
 					toolCode = toolx.BuildMCPToolCode(tool.ServerCode, tool.ToolName)
 				}
+				if toolx.IsAutoInjectedToolCode(toolCode) {
+					continue
+				}
 				serverCode := strings.TrimSpace(tool.ServerCode)
 				toolName := strings.TrimSpace(tool.ToolName)
 				if toolCode == toolx.BuiltinToolSearchToolCode {

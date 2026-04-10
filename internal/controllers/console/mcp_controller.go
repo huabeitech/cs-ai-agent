@@ -39,6 +39,7 @@ func (c *MCPController) AnyCatalog() *web.JsonResult {
 			ServerCode:   item.ServerCode,
 			ToolName:     item.ToolName,
 			SourceType:   item.SourceType,
+			AutoInjected: item.AutoInjected,
 			Title:        item.Title,
 			Description:  item.Description,
 			InputSchema:  item.InputSchema,

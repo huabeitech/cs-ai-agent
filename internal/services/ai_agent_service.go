@@ -294,6 +294,9 @@ func (s *aIAgentService) normalizeDirectTools(input []request.AIAgentMCPToolRequ
 		if err != nil {
 			return nil, err
 		}
+		if toolx.IsAutoInjectedToolCode(strings.TrimSpace(normalized.ToolCode)) {
+			continue
+		}
 		if err := ToolCatalogService.ValidateToolCode(normalized.ToolCode); err != nil {
 			return nil, err
 		}

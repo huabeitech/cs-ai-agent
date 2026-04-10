@@ -66,6 +66,7 @@ type DirectToolOption = {
   label: string;
   meta: DirectToolItem;
   sourceType: string;
+  autoInjected: boolean;
   groupLabel: string;
 };
 
@@ -354,23 +355,26 @@ function EditDialogBody({
         const catalog = await fetchMCPCatalog();
         setToolCatalog(catalog);
         setDirectToolOptions(
-          catalog.map((tool) => ({
-            value: tool.toolCode,
-            label: `${tool.title || tool.toolName} · ${tool.toolCode}`,
-            sourceType: tool.sourceType,
-            groupLabel:
-              tool.sourceType === "builtin"
-                ? "内置工具"
-                : tool.serverCode,
-            meta: {
-              toolCode: tool.toolCode,
-              serverCode: tool.serverCode,
-              toolName: tool.toolName,
-              title: tool.title || tool.toolName,
-              description: tool.description || "",
-              arguments: undefined,
-            },
-          })),
+          catalog
+            .filter((tool) => !tool.autoInjected)
+            .map((tool) => ({
+              value: tool.toolCode,
+              label: `${tool.title || tool.toolName} · ${tool.toolCode}`,
+              sourceType: tool.sourceType,
+              autoInjected: tool.autoInjected,
+              groupLabel:
+                tool.sourceType === "builtin"
+                  ? "内置工具"
+                  : tool.serverCode,
+              meta: {
+                toolCode: tool.toolCode,
+                serverCode: tool.serverCode,
+                toolName: tool.toolName,
+                title: tool.title || tool.toolName,
+                description: tool.description || "",
+                arguments: undefined,
+              },
+            })),
         );
       } catch (error) {
         toast.error(
@@ -869,6 +873,7 @@ function EditDialogBody({
                 <div className="mb-1 text-sm font-medium">Direct Tools</div>
                 <div className="mb-4 text-xs text-muted-foreground">
                   用于低风险、原子化的实时查询。可选择 MCP 工具，也可选择系统内置工具。
+                  `tool_search` 会由 Runtime 自动注入，这里不需要手动添加。
                 </div>
                 <Field>
                   <FieldContent className="space-y-3">

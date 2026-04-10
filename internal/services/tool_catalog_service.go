@@ -24,6 +24,7 @@ type MCPToolCatalogItem struct {
 	ServerCode   string
 	ToolName     string
 	SourceType   string
+	AutoInjected bool
 	Title        string
 	Description  string
 	InputSchema  any
@@ -34,23 +35,25 @@ func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalog
 	cfg := config.Current()
 	ret := make([]MCPToolCatalogItem, 0, 2)
 	ret = append(ret, MCPToolCatalogItem{
-		ToolCode:    toolx.BuiltinCreateTicketConfirmToolCode,
-		ServerCode:  toolx.BuiltinToolCatalogServerCode,
-		ToolName:    toolx.BuiltinCreateTicketConfirmToolName,
-		SourceType:  toolx.BuiltinToolCatalogServerCode,
-		Title:       toolx.BuiltinCreateTicketConfirmToolTitle,
-		Description: toolx.BuiltinCreateTicketConfirmToolDescription,
+		ToolCode:     toolx.BuiltinCreateTicketConfirmToolCode,
+		ServerCode:   toolx.BuiltinToolCatalogServerCode,
+		ToolName:     toolx.BuiltinCreateTicketConfirmToolName,
+		SourceType:   toolx.BuiltinToolCatalogServerCode,
+		AutoInjected: false,
+		Title:        toolx.BuiltinCreateTicketConfirmToolTitle,
+		Description:  toolx.BuiltinCreateTicketConfirmToolDescription,
 	})
 	if !cfg.MCP.Enabled {
 		return ret, nil
 	}
 	ret = append(ret, MCPToolCatalogItem{
-		ToolCode:    toolx.BuiltinToolSearchToolCode,
-		ServerCode:  toolx.BuiltinToolCatalogServerCode,
-		ToolName:    toolx.BuiltinToolSearchToolName,
-		SourceType:  toolx.BuiltinToolCatalogServerCode,
-		Title:       toolx.BuiltinToolSearchToolTitle,
-		Description: toolx.BuiltinToolSearchToolDescription,
+		ToolCode:     toolx.BuiltinToolSearchToolCode,
+		ServerCode:   toolx.BuiltinToolCatalogServerCode,
+		ToolName:     toolx.BuiltinToolSearchToolName,
+		SourceType:   toolx.BuiltinToolCatalogServerCode,
+		AutoInjected: true,
+		Title:        toolx.BuiltinToolSearchToolTitle,
+		Description:  toolx.BuiltinToolSearchToolDescription,
 	})
 	serverCodes := make([]string, 0, len(cfg.MCP.Servers))
 	for serverCode, server := range cfg.MCP.Servers {
@@ -71,6 +74,7 @@ func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalog
 				ServerCode:   serverCode,
 				ToolName:     strings.TrimSpace(item.Name),
 				SourceType:   "mcp",
+				AutoInjected: false,
 				Title:        strings.TrimSpace(item.Title),
 				Description:  strings.TrimSpace(item.Description),
 				InputSchema:  item.InputSchema,
