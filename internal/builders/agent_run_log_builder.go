@@ -22,6 +22,8 @@ func BuildAgentRunLog(item *models.AgentRunLog) response.AgentRunLogResponse {
 		SkillRouteTrace:  item.SkillRouteTrace,
 		ToolSearchTrace:  item.ToolSearchTrace,
 		GraphToolTrace:   item.GraphToolTrace,
+		GraphToolCode:    item.GraphToolCode,
+		HandoffReason:    item.HandoffReason,
 		PlannedToolCode:  item.PlannedToolCode,
 		PlanReason:       item.PlanReason,
 		InterruptType:    item.InterruptType,

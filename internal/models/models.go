@@ -952,6 +952,8 @@ type AgentRunLog struct {
 	SkillRouteTrace  string    `gorm:"type:text"`
 	ToolSearchTrace  string    `gorm:"type:text"`
 	GraphToolTrace   string    `gorm:"type:text"`
+	GraphToolCode    string    `gorm:"type:varchar(200);not null;default:'';index"`
+	HandoffReason    string    `gorm:"type:varchar(500);not null;default:''"`
 	PlannedToolCode  string    `gorm:"type:varchar(200);not null;default:'';index"`
 	PlanReason       string    `gorm:"type:varchar(500);not null;default:''"`
 	InterruptType    string    `gorm:"type:varchar(50);not null;default:'';index"`

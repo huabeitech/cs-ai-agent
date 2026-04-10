@@ -26,6 +26,11 @@ func (c *AgentRunLogController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "aiAgentId"},
 		params.QueryFilter{ParamName: "plannedAction"},
 		params.QueryFilter{ParamName: "plannedSkillCode", Op: params.Like},
+		params.QueryFilter{ParamName: "graphToolCode"},
+		params.QueryFilter{ParamName: "interruptType"},
+		params.QueryFilter{ParamName: "resumeSource"},
+		params.QueryFilter{ParamName: "finalStatus"},
+		params.QueryFilter{ParamName: "handoffReason", Op: params.Like},
 		params.QueryFilter{ParamName: "finalAction"},
 		params.QueryFilter{ParamName: "userMessage", Op: params.Like},
 	).Desc("id")

@@ -51,6 +51,15 @@ const actionOptions = [
   { value: "fallback", label: "兜底" },
 ]
 
+const finalStatusOptions = [
+  { value: "all", label: "全部状态" },
+  { value: "completed", label: "completed" },
+  { value: "interrupted", label: "interrupted" },
+  { value: "expired", label: "expired" },
+  { value: "error", label: "error" },
+  { value: "fallback", label: "fallback" },
+]
+
 function actionBadgeVariant(action: string) {
   switch (action) {
     case "handoff":
@@ -74,10 +83,12 @@ export default function DashboardAgentRunLogsPage() {
   const [keywordInput, setKeywordInput] = useState("")
   const [plannedActionInput, setPlannedActionInput] = useState("all")
   const [finalActionInput, setFinalActionInput] = useState("all")
+  const [finalStatusInput, setFinalStatusInput] = useState("all")
   const [aiAgentIdInput, setAiAgentIdInput] = useState("all")
   const [keyword, setKeyword] = useState("")
   const [plannedAction, setPlannedAction] = useState("all")
   const [finalAction, setFinalAction] = useState("all")
+  const [finalStatus, setFinalStatus] = useState("all")
   const [aiAgentId, setAiAgentId] = useState("all")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
@@ -121,6 +132,7 @@ export default function DashboardAgentRunLogsPage() {
         userMessage: keyword.trim() || undefined,
         plannedAction: plannedAction === "all" ? undefined : plannedAction,
         finalAction: finalAction === "all" ? undefined : finalAction,
+        finalStatus: finalStatus === "all" ? undefined : finalStatus,
         aiAgentId: aiAgentId === "all" ? undefined : aiAgentId,
         page,
         limit,
@@ -131,7 +143,7 @@ export default function DashboardAgentRunLogsPage() {
     } finally {
       setLoading(false)
     }
-  }, [aiAgentId, finalAction, keyword, limit, page, plannedAction])
+  }, [aiAgentId, finalAction, finalStatus, keyword, limit, page, plannedAction])
 
   useEffect(() => {
     void loadData()
@@ -153,6 +165,7 @@ export default function DashboardAgentRunLogsPage() {
     setKeyword(keywordInput)
     setPlannedAction(plannedActionInput)
     setFinalAction(finalActionInput)
+    setFinalStatus(finalStatusInput)
     setAiAgentId(aiAgentIdInput)
     setPage(1)
   }
@@ -211,6 +224,16 @@ export default function DashboardAgentRunLogsPage() {
               searchPlaceholder="搜索动作"
               emptyText="未找到动作"
               onChange={(value) => setFinalActionInput(value || "all")}
+            />
+          </div>
+          <div className="w-full xl:w-40">
+            <OptionCombobox
+              value={finalStatusInput}
+              options={finalStatusOptions}
+              placeholder="最终状态"
+              searchPlaceholder="搜索状态"
+              emptyText="未找到状态"
+              onChange={(value) => setFinalStatusInput(value || "all")}
             />
           </div>
           <div className="w-full xl:w-52">
@@ -278,11 +301,16 @@ export default function DashboardAgentRunLogsPage() {
                     {item.plannedSkillCode || item.plannedToolCode ? (
                       <div className="space-y-1">
                         <Badge variant="outline">
-                          {item.plannedSkillCode || item.plannedToolCode}
+                          {item.plannedSkillCode || item.graphToolCode || item.plannedToolCode}
                         </Badge>
                         {item.plannedSkillName ? (
                           <div className="line-clamp-1 text-xs text-muted-foreground">
                             {item.plannedSkillName}
+                          </div>
+                        ) : null}
+                        {item.handoffReason ? (
+                          <div className="line-clamp-1 text-xs text-muted-foreground">
+                            转人工原因：{item.handoffReason}
                           </div>
                         ) : null}
                       </div>
@@ -366,8 +394,10 @@ export default function DashboardAgentRunLogsPage() {
                     `plannedAction: ${activeLog.plannedAction || "-"}`,
                     `plannedSkillCode: ${activeLog.plannedSkillCode || "-"}`,
                     `plannedSkillName: ${activeLog.plannedSkillName || "-"}`,
+                    `graphToolCode: ${activeLog.graphToolCode || "-"}`,
                     `plannedToolCode: ${activeLog.plannedToolCode || "-"}`,
                     `planReason: ${activeLog.planReason || "-"}`,
+                    `handoffReason: ${activeLog.handoffReason || "-"}`,
                     `skillRouteTrace: ${activeLog.skillRouteTrace || "-"}`,
                   ]}
                 />

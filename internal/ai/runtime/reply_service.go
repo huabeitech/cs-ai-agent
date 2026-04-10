@@ -309,6 +309,8 @@ func (s *aiReplyService) writeRunLog(startedAt time.Time, message models.Message
 		SkillRouteTrace:  strings.TrimSpace(summarySkillRouteTrace(summary)),
 		ToolSearchTrace:  extractToolSearchTrace(summary),
 		GraphToolTrace:   extractGraphToolTrace(summary),
+		GraphToolCode:    firstGraphToolCode(summary),
+		HandoffReason:    extractHandoffReason(summary),
 		PlannedToolCode:  plannedToolCode,
 		PlanReason:       planReason,
 		InterruptType:    firstInterruptType(summary),
@@ -597,6 +599,21 @@ func firstGraphToolCode(summary *Summary) string {
 	return ""
 }
 
+func extractHandoffReason(summary *Summary) string {
+	trace := parseRuntimeTraceData(summary.TraceData)
+	for _, item := range trace.GraphTools.Items {
+		if strings.TrimSpace(item.ToolCode) != toolx.GraphHandoffConversationToolCode {
+			continue
+		}
+		if len(item.Arguments) == 0 {
+			return ""
+		}
+		reason, _ := item.Arguments["reason"].(string)
+		return strings.TrimSpace(reason)
+	}
+	return ""
+}
+
 type runtimeTraceProjection struct {
 	ToolSearch struct {
 		Raw   json.RawMessage `json:"-"`
@@ -608,7 +625,8 @@ type runtimeTraceProjection struct {
 	GraphTools struct {
 		Raw   json.RawMessage `json:"-"`
 		Items []struct {
-			ToolCode string `json:"toolCode"`
+			ToolCode  string         `json:"toolCode"`
+			Arguments map[string]any `json:"arguments"`
 		} `json:"items"`
 	} `json:"graphTools"`
 }
