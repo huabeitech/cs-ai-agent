@@ -32,21 +32,7 @@ type MCPToolCatalogItem struct {
 
 func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalogItem, error) {
 	cfg := config.Current()
-	if !cfg.MCP.Enabled {
-		return nil, errorsx.InvalidParam("MCP未启用")
-	}
-	if len(cfg.MCP.Servers) == 0 {
-		return nil, nil
-	}
-	serverCodes := make([]string, 0, len(cfg.MCP.Servers))
-	for serverCode, server := range cfg.MCP.Servers {
-		if !server.Enabled {
-			continue
-		}
-		serverCodes = append(serverCodes, serverCode)
-	}
-	slices.Sort(serverCodes)
-	ret := make([]MCPToolCatalogItem, 0)
+	ret := make([]MCPToolCatalogItem, 0, 2)
 	ret = append(ret, MCPToolCatalogItem{
 		ToolCode:    toolx.BuiltinCreateTicketConfirmToolCode,
 		ServerCode:  toolx.BuiltinToolCatalogServerCode,
@@ -55,6 +41,25 @@ func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalog
 		Title:       toolx.BuiltinCreateTicketConfirmToolTitle,
 		Description: toolx.BuiltinCreateTicketConfirmToolDescription,
 	})
+	if !cfg.MCP.Enabled {
+		return ret, nil
+	}
+	ret = append(ret, MCPToolCatalogItem{
+		ToolCode:    toolx.BuiltinToolSearchToolCode,
+		ServerCode:  toolx.BuiltinToolCatalogServerCode,
+		ToolName:    toolx.BuiltinToolSearchToolName,
+		SourceType:  toolx.BuiltinToolCatalogServerCode,
+		Title:       toolx.BuiltinToolSearchToolTitle,
+		Description: toolx.BuiltinToolSearchToolDescription,
+	})
+	serverCodes := make([]string, 0, len(cfg.MCP.Servers))
+	for serverCode, server := range cfg.MCP.Servers {
+		if !server.Enabled {
+			continue
+		}
+		serverCodes = append(serverCodes, serverCode)
+	}
+	slices.Sort(serverCodes)
 	for _, serverCode := range serverCodes {
 		tools, err := mcps.Runtime.ListTools(ctx, serverCode)
 		if err != nil {
@@ -86,7 +91,8 @@ func (s *toolCatalogService) ValidateToolCode(toolCode string) error {
 	if toolCode == "" {
 		return errorsx.InvalidParam("toolCode不能为空")
 	}
-	if toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
+	switch toolCode {
+	case toolx.BuiltinToolSearchToolCode, toolx.BuiltinCreateTicketConfirmToolCode:
 		return nil
 	}
 	serverCode, toolName := toolx.SplitMCPToolCode(toolCode)

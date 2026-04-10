@@ -176,7 +176,10 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 				}
 				serverCode := strings.TrimSpace(tool.ServerCode)
 				toolName := strings.TrimSpace(tool.ToolName)
-				if toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
+				if toolCode == toolx.BuiltinToolSearchToolCode {
+					serverCode = toolx.BuiltinToolCatalogServerCode
+					toolName = toolx.BuiltinToolSearchToolName
+				} else if toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
 					serverCode = toolx.BuiltinToolCatalogServerCode
 					toolName = toolx.BuiltinCreateTicketConfirmToolName
 				} else if parsedServerCode, parsedToolName := toolx.SplitMCPToolCode(toolCode); parsedServerCode != "" && parsedToolName != "" {
@@ -184,12 +187,22 @@ func buildAIAgentResponse(item *models.AIAgent) response.AIAgentResponse {
 					toolName = parsedToolName
 				}
 				title := strings.TrimSpace(tool.Title)
-				if title == "" && toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
-					title = toolx.BuiltinCreateTicketConfirmToolTitle
+				if title == "" {
+					switch toolCode {
+					case toolx.BuiltinToolSearchToolCode:
+						title = toolx.BuiltinToolSearchToolTitle
+					case toolx.BuiltinCreateTicketConfirmToolCode:
+						title = toolx.BuiltinCreateTicketConfirmToolTitle
+					}
 				}
 				description := strings.TrimSpace(tool.Description)
-				if description == "" && toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
-					description = toolx.BuiltinCreateTicketConfirmToolDescription
+				if description == "" {
+					switch toolCode {
+					case toolx.BuiltinToolSearchToolCode:
+						description = toolx.BuiltinToolSearchToolDescription
+					case toolx.BuiltinCreateTicketConfirmToolCode:
+						description = toolx.BuiltinCreateTicketConfirmToolDescription
+					}
 				}
 				ret.DirectTools = append(ret.DirectTools, response.AIAgentMCPToolResponse{
 					ToolCode:    toolCode,

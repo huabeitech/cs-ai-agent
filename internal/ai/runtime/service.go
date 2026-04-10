@@ -19,6 +19,7 @@ func newService() *service {
 	return &service{
 		runtime: engine.NewService(),
 		registry: registry.NewRegistry(
+			tools.NewToolSearchTool(),
 			tools.NewCreateTicketConfirmTool(),
 		),
 	}
@@ -94,7 +95,7 @@ func (s *service) prepareToolsForRun(req *Request) error {
 		AIAgent:          req.AIAgent,
 		AIConfig:         req.AIConfig,
 		UserMessage:      req.UserMessage,
-		AllowedToolCodes: resolveAllowedToolCodes(req.AIAgent, req.SelectedSkill),
+		AllowedToolCodes: expandRuntimeAllowedToolCodes(resolveAllowedToolCodes(req.AIAgent, req.SelectedSkill)),
 	})
 	if err != nil {
 		return err
@@ -109,9 +110,10 @@ func (s *service) prepareToolsForResume(req *ResumeRequest) error {
 		return nil
 	}
 	toolSet, err := s.registry.Resolve(registry.Context{
-		Conversation: req.Conversation,
-		AIAgent:      req.AIAgent,
-		AIConfig:     req.AIConfig,
+		Conversation:     req.Conversation,
+		AIAgent:          req.AIAgent,
+		AIConfig:         req.AIConfig,
+		AllowedToolCodes: expandRuntimeAllowedToolCodes(parseAgentAllowedToolCodes(req.AIAgent)),
 	})
 	if err != nil {
 		return err
@@ -274,4 +276,37 @@ func resolveAllowedToolCodes(aiAgent *models.AIAgent, skill *models.SkillDefinit
 		}
 		return ret
 	}
+}
+
+func expandRuntimeAllowedToolCodes(items []string) []string {
+	ret := make([]string, 0, len(items)+1)
+	hasMCPTool := false
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		ret = append(ret, item)
+		serverCode, toolName := toolx.SplitMCPToolCode(item)
+		if serverCode != "" && toolName != "" {
+			hasMCPTool = true
+		}
+	}
+	if hasMCPTool {
+		ret = appendIfMissingString(ret, toolx.BuiltinToolSearchToolCode)
+	}
+	return ret
+}
+
+func appendIfMissingString(items []string, value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return items
+	}
+	for _, item := range items {
+		if strings.TrimSpace(item) == value {
+			return items
+		}
+	}
+	return append(items, value)
 }

@@ -11,6 +11,7 @@ import (
 	einoagents "cs-agent/internal/ai/runtime/internal/impl/agents"
 	einocallbacks "cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/toolx"
 
 	"github.com/cloudwego/eino/adk"
 	einobasetool "github.com/cloudwego/eino/components/tool"
@@ -32,7 +33,8 @@ func NewAgentFactory() *AgentFactory {
 }
 
 func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *models.AIAgent, aiConfig *models.AIConfig,
-	selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraTools []einobasetool.BaseTool, extraToolCodes map[string]string,
+	selectedSkill *models.SkillDefinition, instructionToolDefinitions []einoadapter.MCPToolDefinition, mcpToolDefinitions []einoadapter.MCPToolDefinition,
+	extraTools []einobasetool.BaseTool, extraToolCodes map[string]string,
 	collector *einocallbacks.RuntimeTraceCollector) (*einoagents.CustomerServiceAgent, error) {
 	if aiAgent == nil || aiConfig == nil {
 		return nil, nil
@@ -41,7 +43,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	if err != nil {
 		return nil, err
 	}
-	baseTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, toolDefinitions)
+	baseTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, mcpToolDefinitions)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +52,32 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	allTools = append(allTools, baseTools...)
 	handlers := make([]adk.ChatModelAgentMiddleware, 0, 1)
 	if collector != nil {
-		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(toolDefinitions))
-		for _, item := range toolDefinitions {
+		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(mcpToolDefinitions)+len(extraToolCodes))
+		for _, item := range mcpToolDefinitions {
 			toolMetadataBy[item.ModelName] = einocallbacks.ToolMetadata{
 				ToolCode:   item.ToolCode,
 				ServerCode: item.ServerCode,
 				ToolName:   item.ToolName,
+			}
+		}
+		for modelName, toolCode := range extraToolCodes {
+			modelName = strings.TrimSpace(modelName)
+			toolCode = strings.TrimSpace(toolCode)
+			if modelName == "" || toolCode == "" {
+				continue
+			}
+			serverCode, toolName := "", ""
+			if toolCode == toolx.BuiltinToolSearchToolCode {
+				serverCode = toolx.BuiltinToolCatalogServerCode
+				toolName = toolx.BuiltinToolSearchToolName
+			} else if toolCode == toolx.BuiltinCreateTicketConfirmToolCode {
+				serverCode = toolx.BuiltinToolCatalogServerCode
+				toolName = toolx.BuiltinCreateTicketConfirmToolName
+			}
+			toolMetadataBy[modelName] = einocallbacks.ToolMetadata{
+				ToolCode:   toolCode,
+				ServerCode: serverCode,
+				ToolName:   toolName,
 			}
 		}
 		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(collector, toolMetadataBy))
@@ -63,7 +85,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        strings.TrimSpace(aiAgent.Name),
 		Description: strings.TrimSpace(aiAgent.Description),
-		Instruction: buildAgentInstruction(aiAgent, selectedSkill, toolDefinitions, extraToolCodes),
+		Instruction: buildAgentInstruction(aiAgent, selectedSkill, instructionToolDefinitions, extraToolCodes),
 		Model:       chatModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
@@ -87,7 +109,16 @@ func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillD
 	if skillInstruction := buildSelectedSkillInstruction(selectedSkill, toolDefinitions); skillInstruction != "" {
 		appendixParts = append(appendixParts, skillInstruction)
 	}
-	if hasToolCode(extraToolCodes, "builtin/create_ticket_with_confirmation") {
+	if hasToolCode(extraToolCodes, toolx.BuiltinToolSearchToolCode) {
+		appendixParts = append(appendixParts, strings.TrimSpace(`
+当你需要使用长尾 MCP 能力时，优先使用 tool_search 工具，并遵守以下规则：
+1. 先用 query 搜索候选工具，再根据返回的 toolCode 选择真正的目标工具。
+2. 只有在你已经明确要调用哪个动态工具时，才传入 toolCode 和 arguments 进行执行。
+3. 不要臆造 toolCode；必须以 tool_search 返回的候选结果为准。
+4. 如果当前已有固定内置工具可以完成任务，优先使用固定工具，不要滥用 tool_search。
+`))
+	}
+	if hasToolCode(extraToolCodes, toolx.BuiltinCreateTicketConfirmToolCode) {
 		appendixParts = append(appendixParts, strings.TrimSpace(`
 你可以在确认信息充分后调用 create_ticket_with_confirmation 工具来创建工单，但必须遵守以下规则：
 1. 只有在用户明确表达希望提交工单、投诉、报障、售后处理等诉求时，才考虑调用该工具。
