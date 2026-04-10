@@ -56,6 +56,9 @@ type AgentRunLogResponse struct {
 	PlanReason       string `json:"planReason"`
 	InterruptType    string `json:"interruptType"`
 	ResumeSource     string `json:"resumeSource"`
+	HitlStatus       string `json:"hitlStatus"`
+	HitlStatusName   string `json:"hitlStatusName"`
+	HitlSummary      string `json:"hitlSummary"`
 	FinalAction      string `json:"finalAction"`
 	FinalStatus      string `json:"finalStatus"`
 	ReplyText        string `json:"replyText"`

@@ -79,6 +79,21 @@ function actionBadgeVariant(action: string) {
   }
 }
 
+function hitlBadgeVariant(status: string) {
+  switch (status) {
+    case "pending":
+      return "secondary" as const
+    case "confirmed":
+      return "default" as const
+    case "cancelled":
+      return "outline" as const
+    case "expired":
+      return "destructive" as const
+    default:
+      return "secondary" as const
+  }
+}
+
 export default function DashboardAgentRunLogsPage() {
   const [keywordInput, setKeywordInput] = useState("")
   const [plannedActionInput, setPlannedActionInput] = useState("all")
@@ -323,6 +338,13 @@ export default function DashboardAgentRunLogsPage() {
                       <Badge variant={actionBadgeVariant(item.finalAction)}>
                         {item.finalAction || "-"}
                       </Badge>
+                      {item.hitlStatusName ? (
+                        <div>
+                          <Badge variant={hitlBadgeVariant(item.hitlStatus)}>
+                            {item.hitlStatusName}
+                          </Badge>
+                        </div>
+                      ) : null}
                       <div className="text-xs text-muted-foreground">
                         {item.finalStatus || "-"}
                       </div>
@@ -399,6 +421,14 @@ export default function DashboardAgentRunLogsPage() {
                     `planReason: ${activeLog.planReason || "-"}`,
                     `handoffReason: ${activeLog.handoffReason || "-"}`,
                     `skillRouteTrace: ${activeLog.skillRouteTrace || "-"}`,
+                  ]}
+                />
+                <InfoBlock
+                  title="HITL 状态"
+                  lines={[
+                    `hitlStatus: ${activeLog.hitlStatus || "-"}`,
+                    `hitlStatusName: ${activeLog.hitlStatusName || "-"}`,
+                    `hitlSummary: ${activeLog.hitlSummary || "-"}`,
                   ]}
                 />
                 <InfoBlock

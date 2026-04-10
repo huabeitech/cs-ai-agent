@@ -369,6 +369,9 @@ export type AgentRunLog = {
   planReason: string
   interruptType: string
   resumeSource: string
+  hitlStatus: string
+  hitlStatusName: string
+  hitlSummary: string
   finalAction: string
   finalStatus: string
   replyText: string
