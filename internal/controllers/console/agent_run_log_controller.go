@@ -34,6 +34,9 @@ func (c *AgentRunLogController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "finalAction"},
 		params.QueryFilter{ParamName: "userMessage", Op: params.Like},
 	).Desc("id")
+	if hitlStatus, _ := params.Get(c.Ctx, "hitlStatus"); hitlStatus != "" && hitlStatus != "all" {
+		cnd = services.AgentRunLogService.ApplyHITLStatusFilter(cnd, hitlStatus)
+	}
 	queryParams := params.NewQueryParams(c.Ctx)
 	queryParams.Cnd = *cnd
 	list, paging := services.AgentRunLogService.FindPageByParams(queryParams)

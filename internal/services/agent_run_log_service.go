@@ -3,6 +3,7 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/repositories"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
@@ -62,4 +63,23 @@ func (s *agentRunLogService) UpdateColumn(id int64, name string, value interface
 
 func (s *agentRunLogService) Delete(id int64) {
 	repositories.AgentRunLogRepository.Delete(sqls.DB(), id)
+}
+
+func (s *agentRunLogService) ApplyHITLStatusFilter(cnd *sqls.Cnd, hitlStatus string) *sqls.Cnd {
+	if cnd == nil {
+		cnd = sqls.NewCnd()
+	}
+	switch strings.TrimSpace(hitlStatus) {
+	case "pending":
+		cnd.Eq("final_status", "interrupted")
+	case "expired":
+		cnd.Eq("final_status", "expired")
+	case "cancelled":
+		cnd.Where("(reply_text LIKE ? OR reply_text LIKE ?)", "%已取消本次工单创建%", "%已取消本次转人工%")
+	case "confirmed":
+		cnd.Where("resume_source <> ''")
+	case "triggered":
+		cnd.Where("interrupt_type <> ''")
+	}
+	return cnd
 }

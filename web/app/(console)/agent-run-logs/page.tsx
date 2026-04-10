@@ -60,6 +60,15 @@ const finalStatusOptions = [
   { value: "fallback", label: "fallback" },
 ]
 
+const hitlStatusOptions = [
+  { value: "all", label: "全部 HITL" },
+  { value: "pending", label: "等待确认" },
+  { value: "confirmed", label: "已确认" },
+  { value: "cancelled", label: "已取消" },
+  { value: "expired", label: "已过期" },
+  { value: "triggered", label: "已触发" },
+]
+
 function actionBadgeVariant(action: string) {
   switch (action) {
     case "handoff":
@@ -99,11 +108,13 @@ export default function DashboardAgentRunLogsPage() {
   const [plannedActionInput, setPlannedActionInput] = useState("all")
   const [finalActionInput, setFinalActionInput] = useState("all")
   const [finalStatusInput, setFinalStatusInput] = useState("all")
+  const [hitlStatusInput, setHitlStatusInput] = useState("all")
   const [aiAgentIdInput, setAiAgentIdInput] = useState("all")
   const [keyword, setKeyword] = useState("")
   const [plannedAction, setPlannedAction] = useState("all")
   const [finalAction, setFinalAction] = useState("all")
   const [finalStatus, setFinalStatus] = useState("all")
+  const [hitlStatus, setHitlStatus] = useState("all")
   const [aiAgentId, setAiAgentId] = useState("all")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
@@ -148,6 +159,7 @@ export default function DashboardAgentRunLogsPage() {
         plannedAction: plannedAction === "all" ? undefined : plannedAction,
         finalAction: finalAction === "all" ? undefined : finalAction,
         finalStatus: finalStatus === "all" ? undefined : finalStatus,
+        hitlStatus: hitlStatus === "all" ? undefined : hitlStatus,
         aiAgentId: aiAgentId === "all" ? undefined : aiAgentId,
         page,
         limit,
@@ -158,7 +170,7 @@ export default function DashboardAgentRunLogsPage() {
     } finally {
       setLoading(false)
     }
-  }, [aiAgentId, finalAction, finalStatus, keyword, limit, page, plannedAction])
+  }, [aiAgentId, finalAction, finalStatus, hitlStatus, keyword, limit, page, plannedAction])
 
   useEffect(() => {
     void loadData()
@@ -181,6 +193,7 @@ export default function DashboardAgentRunLogsPage() {
     setPlannedAction(plannedActionInput)
     setFinalAction(finalActionInput)
     setFinalStatus(finalStatusInput)
+    setHitlStatus(hitlStatusInput)
     setAiAgentId(aiAgentIdInput)
     setPage(1)
   }
@@ -249,6 +262,16 @@ export default function DashboardAgentRunLogsPage() {
               searchPlaceholder="搜索状态"
               emptyText="未找到状态"
               onChange={(value) => setFinalStatusInput(value || "all")}
+            />
+          </div>
+          <div className="w-full xl:w-40">
+            <OptionCombobox
+              value={hitlStatusInput}
+              options={hitlStatusOptions}
+              placeholder="HITL 状态"
+              searchPlaceholder="搜索 HITL 状态"
+              emptyText="未找到状态"
+              onChange={(value) => setHitlStatusInput(value || "all")}
             />
           </div>
           <div className="w-full xl:w-52">
