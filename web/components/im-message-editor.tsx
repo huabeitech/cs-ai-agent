@@ -107,7 +107,7 @@ export function ImMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "h-full min-h-12 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain [&_p.is-editor-empty:first-child]:before:text-muted-foreground",
+          "h-full min-h-12 max-h-[20vh] overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none sm:max-h-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain [&_p.is-editor-empty:first-child]:before:text-muted-foreground",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -257,8 +257,8 @@ export function ImMessageEditor({
         className="hidden"
         onChange={handleSelectAttachment}
       />
-      <div className="flex h-full min-h-0 flex-col rounded-sm border border-border bg-card">
-        <div className="min-h-0 flex-1 px-2 py-1">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-border bg-card">
+        <div className="min-h-0 flex-1 overflow-hidden px-2 py-1">
           <EditorContent editor={editor} className="h-full" />
         </div>
         <div className="flex items-center justify-between rounded-b-sm border-t border-border bg-card px-2 pt-1 pb-2">
