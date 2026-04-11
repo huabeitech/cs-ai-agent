@@ -113,7 +113,16 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 	collector.Data.Skill.RouteReason = summary.SkillRouteReason
 	collector.Data.Skill.RouteTrace = summary.SkillRouteTrace
 
-	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, req.SelectedSkill, filteredToolDefs, nil, req.ExtraTools, req.ExtraToolCodes, collector)
+	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, factory.BuildCustomerServiceAgentInput{
+		AIAgent:                    req.AIAgent,
+		AIConfig:                   req.AIConfig,
+		SelectedSkill:              req.SelectedSkill,
+		InstructionToolDefinitions: filteredToolDefs,
+		DynamicMCPToolDefinitions:  filteredToolDefs,
+		StaticTools:                req.ExtraTools,
+		StaticToolCodes:            req.ExtraToolCodes,
+		Collector:                  collector,
+	})
 	if err != nil {
 		summary.Status = "error"
 		summary.ErrorMessage = err.Error()
@@ -241,7 +250,15 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 	collector.Data.Input.ToolCodes = append(collector.Data.Input.ToolCodes, summary.ToolCodes...)
 	collector.Data.Model.Provider = string(req.AIConfig.Provider)
 	collector.Data.Model.Name = req.AIConfig.ModelName
-	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, req.AIAgent, req.AIConfig, nil, nil, nil, req.ExtraTools, req.ExtraToolCodes, collector)
+	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, factory.BuildCustomerServiceAgentInput{
+		AIAgent:                    req.AIAgent,
+		AIConfig:                   req.AIConfig,
+		InstructionToolDefinitions: toolDefs,
+		DynamicMCPToolDefinitions:  toolDefs,
+		StaticTools:                req.ExtraTools,
+		StaticToolCodes:            req.ExtraToolCodes,
+		Collector:                  collector,
+	})
 	if err != nil {
 		summary.Status = "error"
 		summary.ErrorMessage = err.Error()

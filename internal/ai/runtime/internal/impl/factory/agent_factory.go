@@ -25,6 +25,33 @@ type AgentFactory struct {
 	instructionAssembler *InstructionAssembler
 }
 
+// BuildCustomerServiceAgentInput 定义客服 Agent 的装配输入。
+//
+// 之所以收敛成单一输入对象，而不是继续堆叠函数参数，是为了避免：
+// 1. 调用点无法看懂每个位置参数的语义；
+// 2. instruction 用工具、动态工具、中间件工具之间职责混淆；
+// 3. 后续扩展装配项时继续拉长函数签名。
+type BuildCustomerServiceAgentInput struct {
+	// AIAgent 为当前运行的业务 Agent 配置，提供名称、描述、系统提示词等基础信息。
+	AIAgent *models.AIAgent
+	// AIConfig 为模型配置，决定底层使用哪个 ChatModel。
+	AIConfig *models.AIConfig
+	// SelectedSkill 为当前命中的技能；为空表示本次运行未命中专项技能。
+	SelectedSkill *models.SkillDefinition
+	// InstructionToolDefinitions 用于生成 instruction 中的工具说明。
+	// 它描述“当前允许模型理解和使用的 MCP 工具范围”。
+	InstructionToolDefinitions []einoadapter.MCPToolDefinition
+	// DynamicMCPToolDefinitions 用于接入 Eino tool_search middleware 的动态工具集合。
+	// 这些工具默认不直接挂在 ToolsNode 上，而是经 tool_search 选择后再暴露给模型。
+	DynamicMCPToolDefinitions []einoadapter.MCPToolDefinition
+	// StaticTools 为当前运行时直接挂载到 ToolsNode 的固定工具，例如 Graph Tool。
+	StaticTools []einobasetool.BaseTool
+	// StaticToolCodes 为固定工具的 modelName -> toolCode 映射，用于 trace 和运行日志归因。
+	StaticToolCodes map[string]string
+	// Collector 用于收集运行链路中的 tool trace、graph trace 等调试信息。
+	Collector *einocallbacks.RuntimeTraceCollector
+}
+
 func NewAgentFactory() *AgentFactory {
 	return &AgentFactory{
 		chatModelFactory:     NewChatModelFactory(),
@@ -33,23 +60,21 @@ func NewAgentFactory() *AgentFactory {
 	}
 }
 
-func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *models.AIAgent, aiConfig *models.AIConfig,
-	selectedSkill *models.SkillDefinition, instructionToolDefinitions []einoadapter.MCPToolDefinition, mcpToolDefinitions []einoadapter.MCPToolDefinition,
-	extraTools []einobasetool.BaseTool, extraToolCodes map[string]string,
-	collector *einocallbacks.RuntimeTraceCollector) (*einoagents.CustomerServiceAgent, error) {
-	if aiAgent == nil || aiConfig == nil {
+// BuildCustomerServiceAgent 根据装配输入构建客服 ChatModelAgent。
+func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input BuildCustomerServiceAgentInput) (*einoagents.CustomerServiceAgent, error) {
+	if input.AIAgent == nil || input.AIConfig == nil {
 		return nil, nil
 	}
-	chatModel, err := f.chatModelFactory.Build(ctx, aiConfig)
+	chatModel, err := f.chatModelFactory.Build(ctx, input.AIConfig)
 	if err != nil {
 		return nil, err
 	}
-	dynamicTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, mcpToolDefinitions)
+	dynamicTools, err := f.toolFactory.BuildBaseToolsByDefinitions(ctx, input.DynamicMCPToolDefinitions)
 	if err != nil {
 		return nil, err
 	}
-	allTools := make([]einobasetool.BaseTool, 0, len(extraTools))
-	allTools = append(allTools, extraTools...)
+	allTools := make([]einobasetool.BaseTool, 0, len(input.StaticTools))
+	allTools = append(allTools, input.StaticTools...)
 	handlers := make([]adk.ChatModelAgentMiddleware, 0, 1)
 	if len(dynamicTools) > 0 {
 		toolSearchHandler, toolSearchErr := einotoolsearch.New(ctx, &einotoolsearch.Config{
@@ -60,9 +85,9 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 		}
 		handlers = append(handlers, toolSearchHandler)
 	}
-	if collector != nil {
-		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(mcpToolDefinitions)+len(extraToolCodes))
-		for _, item := range mcpToolDefinitions {
+	if input.Collector != nil {
+		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(input.DynamicMCPToolDefinitions)+len(input.StaticToolCodes))
+		for _, item := range input.DynamicMCPToolDefinitions {
 			toolMetadataBy[item.ModelName] = einocallbacks.ToolMetadata{
 				ToolCode:   item.ToolCode,
 				ServerCode: item.ServerCode,
@@ -70,7 +95,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 				SourceType: "mcp",
 			}
 		}
-		for modelName, toolCode := range extraToolCodes {
+		for modelName, toolCode := range input.StaticToolCodes {
 			modelName = strings.TrimSpace(modelName)
 			toolCode = strings.TrimSpace(toolCode)
 			if modelName == "" || toolCode == "" {
@@ -94,12 +119,12 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, aiAgent *m
 				SourceType: resolveToolSourceType(toolCode),
 			}
 		}
-		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(collector, toolMetadataBy))
+		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
 	}
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
-		Name:        strings.TrimSpace(aiAgent.Name),
-		Description: strings.TrimSpace(aiAgent.Description),
-		Instruction: buildAgentInstruction(aiAgent, selectedSkill, instructionToolDefinitions, extraToolCodes),
+		Name:        strings.TrimSpace(input.AIAgent.Name),
+		Description: strings.TrimSpace(input.AIAgent.Description),
+		Instruction: buildAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes),
 		Model:       chatModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
