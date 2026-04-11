@@ -41,6 +41,15 @@ type RetrieverTraceItem struct {
 	LatencyMs       int64   `json:"latencyMs,omitempty"`
 }
 
+type InstructionTraceSummary struct {
+	SectionTitles     []string
+	HasProjectRule    bool
+	HasGovernanceRule bool
+	HasAgentRule      bool
+	HasSkillRule      bool
+	HasToolRule       bool
+}
+
 type RuntimeTraceData struct {
 	Version   string         `json:"version"`
 	Status    string         `json:"status"`
@@ -54,6 +63,14 @@ type RuntimeTraceData struct {
 		Provider string `json:"provider,omitempty"`
 		Name     string `json:"name,omitempty"`
 	} `json:"model"`
+	Instruction struct {
+		SectionTitles     []string `json:"sectionTitles,omitempty"`
+		HasProjectRule    bool     `json:"hasProjectRule,omitempty"`
+		HasGovernanceRule bool     `json:"hasGovernanceRule,omitempty"`
+		HasAgentRule      bool     `json:"hasAgentRule,omitempty"`
+		HasSkillRule      bool     `json:"hasSkillRule,omitempty"`
+		HasToolRule       bool     `json:"hasToolRule,omitempty"`
+	} `json:"instruction"`
 	Input struct {
 		HistoryMessageCount       int      `json:"historyMessageCount,omitempty"`
 		KnowledgeBaseIDs          []int64  `json:"knowledgeBaseIds,omitempty"`

@@ -41,6 +41,20 @@ func (c *RuntimeTraceCollector) SetTooling(staticToolCodes []string, dynamicTool
 	c.Data.Input.ToolSearchEnabled = toolSearchEnabled
 }
 
+func (c *RuntimeTraceCollector) SetInstructionSummary(summary InstructionTraceSummary) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Data.Instruction.SectionTitles = append([]string(nil), summary.SectionTitles...)
+	c.Data.Instruction.HasProjectRule = summary.HasProjectRule
+	c.Data.Instruction.HasGovernanceRule = summary.HasGovernanceRule
+	c.Data.Instruction.HasAgentRule = summary.HasAgentRule
+	c.Data.Instruction.HasSkillRule = summary.HasSkillRule
+	c.Data.Instruction.HasToolRule = summary.HasToolRule
+}
+
 func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
 	if c == nil {
 		return

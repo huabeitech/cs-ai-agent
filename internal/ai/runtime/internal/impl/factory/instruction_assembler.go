@@ -19,6 +19,22 @@ type InstructionAssemblerInput struct {
 	ProjectInstruction string
 }
 
+// InstructionAssemblySummary 描述 instruction 各组成部分的来源摘要。
+type InstructionAssemblySummary struct {
+	SectionTitles     []string
+	HasProjectRule    bool
+	HasGovernanceRule bool
+	HasAgentRule      bool
+	HasSkillRule      bool
+	HasToolRule       bool
+}
+
+// InstructionAssemblyResult 为 instruction 装配结果。
+type InstructionAssemblyResult struct {
+	Text    string
+	Summary InstructionAssemblySummary
+}
+
 var (
 	projectInstructionOnce sync.Once
 	projectInstructionText string
@@ -35,27 +51,46 @@ func NewInstructionAssembler() *InstructionAssembler {
 }
 
 func (a *InstructionAssembler) Build(input InstructionAssemblerInput) string {
+	return a.Assemble(input).Text
+}
+
+// Assemble 构建最终 instruction 文本及其来源摘要。
+func (a *InstructionAssembler) Assemble(input InstructionAssemblerInput) InstructionAssemblyResult {
 	parts := make([]string, 0, 5)
+	summary := InstructionAssemblySummary{SectionTitles: make([]string, 0, 5)}
 	projectInstruction := strings.TrimSpace(input.ProjectInstruction)
 	if projectInstruction == "" {
 		projectInstruction = loadProjectInstruction(input.ProjectRoot)
 	}
 	if projectInstruction != "" {
 		parts = append(parts, buildInstructionSection("项目级规则", projectInstruction))
+		summary.HasProjectRule = true
+		summary.SectionTitles = append(summary.SectionTitles, "项目级规则")
 	}
 	if a != nil && strings.TrimSpace(a.governanceInstruction) != "" {
 		parts = append(parts, buildInstructionSection("系统治理规则", a.governanceInstruction))
+		summary.HasGovernanceRule = true
+		summary.SectionTitles = append(summary.SectionTitles, "系统治理规则")
 	}
 	if agentInstruction := strings.TrimSpace(input.AgentInstruction); agentInstruction != "" {
 		parts = append(parts, buildInstructionSection("Agent 规则", agentInstruction))
+		summary.HasAgentRule = true
+		summary.SectionTitles = append(summary.SectionTitles, "Agent 规则")
 	}
 	if skillInstruction := strings.TrimSpace(input.SkillInstruction); skillInstruction != "" {
 		parts = append(parts, buildInstructionSection("当前技能上下文", skillInstruction))
+		summary.HasSkillRule = true
+		summary.SectionTitles = append(summary.SectionTitles, "当前技能上下文")
 	}
 	if appendix := buildToolAppendix(input.ToolAppendices); appendix != "" {
 		parts = append(parts, buildInstructionSection("工具补充规则", appendix))
+		summary.HasToolRule = true
+		summary.SectionTitles = append(summary.SectionTitles, "工具补充规则")
 	}
-	return strings.TrimSpace(strings.Join(parts, "\n\n"))
+	return InstructionAssemblyResult{
+		Text:    strings.TrimSpace(strings.Join(parts, "\n\n")),
+		Summary: summary,
+	}
 }
 
 func buildInstructionSection(title, body string) string {

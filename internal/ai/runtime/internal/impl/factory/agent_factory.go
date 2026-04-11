@@ -121,10 +121,21 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 		}
 		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
 	}
+	instructionResult := assembleAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
+	if input.Collector != nil {
+		input.Collector.SetInstructionSummary(einocallbacks.InstructionTraceSummary{
+			SectionTitles:     append([]string(nil), instructionResult.Summary.SectionTitles...),
+			HasProjectRule:    instructionResult.Summary.HasProjectRule,
+			HasGovernanceRule: instructionResult.Summary.HasGovernanceRule,
+			HasAgentRule:      instructionResult.Summary.HasAgentRule,
+			HasSkillRule:      instructionResult.Summary.HasSkillRule,
+			HasToolRule:       instructionResult.Summary.HasToolRule,
+		})
+	}
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        strings.TrimSpace(input.AIAgent.Name),
 		Description: strings.TrimSpace(input.AIAgent.Description),
-		Instruction: buildAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes),
+		Instruction: instructionResult.Text,
 		Model:       chatModel,
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
@@ -153,7 +164,7 @@ func resolveToolSourceType(toolCode string) string {
 	}
 }
 
-func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraToolCodes map[string]string) string {
+func assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraToolCodes map[string]string) InstructionAssemblyResult {
 	baseInstruction := ""
 	if aiAgent != nil {
 		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
@@ -191,7 +202,7 @@ func buildAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillD
 `))
 	}
 	projectRoot, _ := os.Getwd()
-	return NewInstructionAssembler().Build(InstructionAssemblerInput{
+	return NewInstructionAssembler().Assemble(InstructionAssemblerInput{
 		ProjectRoot:      projectRoot,
 		AgentInstruction: baseInstruction,
 		SkillInstruction: firstAppendixPart(appendixParts),
