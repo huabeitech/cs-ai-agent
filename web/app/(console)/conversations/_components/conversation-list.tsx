@@ -14,6 +14,8 @@ import { getEnumLabel } from "@/lib/enums"
 
 function getStatusVariant(status: number) {
   switch (status) {
+    case IMConversationStatus.AIServing:
+      return "bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
     case IMConversationStatus.Pending:
       return "bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
     case IMConversationStatus.Active:

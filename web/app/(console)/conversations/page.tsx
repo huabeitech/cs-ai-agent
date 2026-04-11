@@ -244,14 +244,14 @@ export default function ConversationsPage() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setTransferOpen(true)}
-                disabled={!conversation || conversation.status !== 2}
+                disabled={!conversation || conversation.status !== 3}
               >
                 <ArrowRightLeftIcon />
                 转接会话
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setCloseOpen(true)}
-                disabled={!conversation || conversation.status === 3}
+                disabled={!conversation || conversation.status === 4}
               >
                 <CircleXIcon />
                 关闭会话

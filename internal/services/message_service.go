@@ -514,6 +514,9 @@ func (s *messageService) ValidateConversationSender(conversationID int64, sender
 		if operator == nil {
 			return nil, errorsx.Unauthorized("未登录或登录已过期")
 		}
+		if conversation.Status != enums.IMConversationStatusAIServing {
+			return nil, errorsx.Forbidden("当前会话不处于 AI 接待状态")
+		}
 		if conversation.CurrentAssigneeID != 0 {
 			return nil, errorsx.Forbidden("当前会话已由人工客服接管")
 		}

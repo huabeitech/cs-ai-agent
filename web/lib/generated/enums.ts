@@ -112,11 +112,13 @@ export const IMConversationServiceModeLabels: Record<IMConversationServiceMode, 
 }
 
 export enum IMConversationStatus {
-  Pending = 1,
-  Active = 2,
-  Closed = 3,
+  AIServing = 1,
+  Pending = 2,
+  Active = 3,
+  Closed = 4,
 }
 export const IMConversationStatusLabels: Record<IMConversationStatus, string> = {
+  [IMConversationStatus.AIServing]: "AI接待中",
   [IMConversationStatus.Pending]: "待接入",
   [IMConversationStatus.Active]: "处理中",
   [IMConversationStatus.Closed]: "已关闭",

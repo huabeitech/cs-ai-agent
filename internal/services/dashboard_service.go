@@ -34,7 +34,10 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 		return tx.Where("created_at >= ?", todayStart)
 	})
 	processingConversationCount := repositories.DashboardRepository.CountConversations(db, func(tx *gorm.DB) *gorm.DB {
-		return tx.Where("status = ?", enums.IMConversationStatusActive)
+		return tx.Where("status IN ?", []enums.IMConversationStatus{
+			enums.IMConversationStatusAIServing,
+			enums.IMConversationStatusActive,
+		})
 	})
 	pendingConversationCount := repositories.DashboardRepository.CountConversations(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("status = ?", enums.IMConversationStatusPending)
@@ -45,6 +48,7 @@ func (s *dashboardService) GetOverview(rangeValue string) response.DashboardOver
 	activeSchedules := repositories.DashboardRepository.ListActiveTeamSchedules(db, now, now)
 	activeConversations := repositories.DashboardRepository.ListConversations(db, func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("status IN ?", []enums.IMConversationStatus{
+			enums.IMConversationStatusAIServing,
 			enums.IMConversationStatusPending,
 			enums.IMConversationStatusActive,
 		})
@@ -168,6 +172,8 @@ func (s *dashboardService) buildAgentStats(now time.Time, teams []models.AgentTe
 			teamCounters[item.CurrentTeamID] = counter
 		}
 		switch item.Status {
+		case enums.IMConversationStatusAIServing:
+			counter.processingConversations++
 		case enums.IMConversationStatusPending:
 			counter.waitingConversations++
 		case enums.IMConversationStatusActive:
@@ -229,7 +235,10 @@ func (s *dashboardService) buildAlerts(now time.Time, db *gorm.DB, activeConvers
 	}
 
 	staleProcessingCount := repositories.DashboardRepository.CountConversations(db, func(tx *gorm.DB) *gorm.DB {
-		return tx.Where("status = ? AND (last_message_at IS NULL OR last_message_at < ?)", enums.IMConversationStatusActive, activeTimeout)
+		return tx.Where("status IN ? AND (last_message_at IS NULL OR last_message_at < ?)", []enums.IMConversationStatus{
+			enums.IMConversationStatusAIServing,
+			enums.IMConversationStatusActive,
+		}, activeTimeout)
 	})
 	if staleProcessingCount > 0 {
 		alerts = append(alerts, response.DashboardAlertResponse{

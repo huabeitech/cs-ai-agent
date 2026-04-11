@@ -3,18 +3,21 @@ package enums
 type IMConversationStatus int
 
 const (
-	IMConversationStatusPending IMConversationStatus = 1
-	IMConversationStatusActive  IMConversationStatus = 2
-	IMConversationStatusClosed  IMConversationStatus = 3
+	IMConversationStatusAIServing IMConversationStatus = 1
+	IMConversationStatusPending   IMConversationStatus = 2
+	IMConversationStatusActive    IMConversationStatus = 3
+	IMConversationStatusClosed    IMConversationStatus = 4
 )
 
 var imConversationStatusLabelMap = map[IMConversationStatus]string{
-	IMConversationStatusPending: "待接入",
-	IMConversationStatusActive:  "处理中",
-	IMConversationStatusClosed:  "已关闭",
+	IMConversationStatusAIServing: "AI接待中",
+	IMConversationStatusPending:   "待接入",
+	IMConversationStatusActive:    "处理中",
+	IMConversationStatusClosed:    "已关闭",
 }
 
 var IMConversationStatusValues = []IMConversationStatus{
+	IMConversationStatusAIServing,
 	IMConversationStatusPending,
 	IMConversationStatusActive,
 	IMConversationStatusClosed,

@@ -68,22 +68,22 @@ const RECONNECT_MAX_DELAY = 30000
 
 const statusOptions = [
   { value: "all", label: "全部状态" },
-  { value: "1", label: "待接入" },
-  { value: "2", label: "处理中" },
-  { value: "3", label: "已关闭" },
-  { value: "4", label: "已归档" },
+  { value: "1", label: "AI接待中" },
+  { value: "2", label: "待接入" },
+  { value: "3", label: "处理中" },
+  { value: "4", label: "已关闭" },
 ] as const
 
 function getStatusMeta(status: number) {
   switch (status) {
     case 1:
-      return { label: "待接入", variant: "outline" as const }
+      return { label: "AI接待中", variant: "secondary" as const }
     case 2:
-      return { label: "处理中", variant: "secondary" as const }
+      return { label: "待接入", variant: "outline" as const }
     case 3:
-      return { label: "已关闭", variant: "outline" as const }
+      return { label: "处理中", variant: "secondary" as const }
     case 4:
-      return { label: "已归档", variant: "outline" as const }
+      return { label: "已关闭", variant: "outline" as const }
     default:
       return { label: "未知", variant: "outline" as const }
   }
@@ -761,14 +761,14 @@ export default function DashboardConversationsPage() {
                             <DropdownMenuContent align="end" className="w-44 min-w-44">
                               <DropdownMenuItem
                                 onClick={() => openAssign(item)}
-                                disabled={actionLoadingId === item.id || item.status !== 1}
+                                disabled={actionLoadingId === item.id || item.status !== 2}
                               >
                                 <MessageCircleMoreIcon />
                                 {actionLoadingId === item.id ? "处理中..." : "分配会话"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => void handleDispatch(item)}
-                                disabled={actionLoadingId === item.id || item.status !== 1}
+                                disabled={actionLoadingId === item.id || item.status !== 2}
                               >
                                 <RefreshCwIcon />
                                 {actionLoadingId === item.id ? "处理中..." : "重试分配"}
@@ -782,12 +782,12 @@ export default function DashboardConversationsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => openTransfer(item)}
-                                disabled={actionLoadingId === item.id || item.status !== 2}
+                                disabled={actionLoadingId === item.id || item.status !== 3}
                               >
                                 <MessageCircleMoreIcon />
                                 {actionLoadingId === item.id ? "处理中..." : "转接会话"}
                               </DropdownMenuItem>
-                              {item.status !== 3 ? (
+                              {item.status !== 4 ? (
                                 <DropdownMenuItem
                                   onClick={() => openClose(item)}
                                   disabled={actionLoadingId === item.id}

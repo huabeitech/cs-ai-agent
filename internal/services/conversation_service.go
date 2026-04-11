@@ -61,6 +61,8 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 	}
 
 	switch filter {
+	case request.AgentConversationFilterAIServing:
+		cnd.Eq("current_assignee_id", 0).Eq("status", enums.IMConversationStatusAIServing).Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterMine:
 		cnd.Eq("current_assignee_id", userID).Desc("last_active_at").Desc("id")
 	case request.AgentConversationFilterActive:
@@ -86,6 +88,7 @@ func (s *conversationService) getLatestNotFinished(externalInfo openidentity.Ext
 	cnd.Eq("external_id", externalInfo.ExternalID)
 	cnd.Eq("external_source", externalInfo.ExternalSource)
 	cnd.In("status", []enums.IMConversationStatus{
+		enums.IMConversationStatusAIServing,
 		enums.IMConversationStatusPending,
 		enums.IMConversationStatusActive,
 	})
@@ -110,7 +113,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiA
 		AIAgentID:         aiAgentID,
 		ExternalSource:    externalInfo.ExternalSource,
 		Subject:           subject,
-		Status:            enums.IMConversationStatusPending,
+		Status:            s.resolveInitialStatus(aiAgent.ServiceMode),
 		ServiceMode:       aiAgent.ServiceMode,
 		Priority:          0,
 		ExternalID:        externalInfo.ExternalID,
@@ -350,7 +353,9 @@ func (s *conversationService) closeConversation(conversationID int64, senderType
 		if conversation.Status == enums.IMConversationStatusClosed {
 			return nil
 		}
-		if conversation.Status != enums.IMConversationStatusPending && conversation.Status != enums.IMConversationStatusActive {
+		if conversation.Status != enums.IMConversationStatusAIServing &&
+			conversation.Status != enums.IMConversationStatusPending &&
+			conversation.Status != enums.IMConversationStatusActive {
 			return errorsx.InvalidParam("当前状态不允许关闭会话")
 		}
 		var (
@@ -747,6 +752,8 @@ func (s *conversationService) canLinkConversationCustomer(conv *models.Conversat
 		return true
 	}
 	switch conv.Status {
+	case enums.IMConversationStatusAIServing:
+		return true
 	case enums.IMConversationStatusPending:
 		return true
 	case enums.IMConversationStatusActive:
@@ -770,4 +777,15 @@ func hashUUID(uuid string) string {
 
 	h := md5.Sum([]byte(uuid))
 	return hex.EncodeToString(h[:])[:8]
+}
+
+func (s *conversationService) resolveInitialStatus(serviceMode enums.IMConversationServiceMode) enums.IMConversationStatus {
+	switch serviceMode {
+	case enums.IMConversationServiceModeHumanOnly:
+		return enums.IMConversationStatusPending
+	case enums.IMConversationServiceModeAIOnly, enums.IMConversationServiceModeAIFirst:
+		return enums.IMConversationStatusAIServing
+	default:
+		return enums.IMConversationStatusAIServing
+	}
 }

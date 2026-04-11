@@ -86,8 +86,8 @@ export function ChatPanel() {
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const isLgUp = useIsLgUp();
-  const isClosedConversation = conversation?.status === 3;
-  const isPendingConversation = conversation?.status === 1;
+  const isClosedConversation = conversation?.status === 4;
+  const isPendingConversation = conversation?.status === 2;
   const showMessageEditor = !isClosedConversation && !isPendingConversation;
   const currentUserId = readSession()?.user?.id ?? 0;
 
@@ -396,6 +396,10 @@ export function ChatPanel() {
       {isClosedConversation ? (
         <div className="bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:bg-amber-500/15 dark:text-amber-100">
           当前会话已关闭
+        </div>
+      ) : conversation?.status === 1 ? (
+        <div className="bg-violet-500/10 px-4 py-3 text-sm text-violet-950 dark:bg-violet-500/15 dark:text-violet-100">
+          当前会话由 AI 接待中，转人工后才能由客服发送消息
         </div>
       ) : isPendingConversation ? (
         <div className="bg-blue-500/10 px-4 py-3 dark:bg-blue-500/15">

@@ -382,6 +382,7 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 		Eq("external_source", external.ExternalSource).
 		Eq("external_id", external.ExternalID).
 		In("status", []enums.IMConversationStatus{
+			enums.IMConversationStatusAIServing,
 			enums.IMConversationStatusPending,
 			enums.IMConversationStatusActive,
 		}).

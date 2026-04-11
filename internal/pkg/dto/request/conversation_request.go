@@ -3,10 +3,11 @@ package request
 type AgentConversationFilter string
 
 const (
-	AgentConversationFilterMine    AgentConversationFilter = "mine"
-	AgentConversationFilterActive  AgentConversationFilter = "active"
-	AgentConversationFilterPending AgentConversationFilter = "pending"
-	AgentConversationFilterClosed  AgentConversationFilter = "closed"
+	AgentConversationFilterAIServing AgentConversationFilter = "ai_serving"
+	AgentConversationFilterMine      AgentConversationFilter = "mine"
+	AgentConversationFilterActive    AgentConversationFilter = "active"
+	AgentConversationFilterPending   AgentConversationFilter = "pending"
+	AgentConversationFilterClosed    AgentConversationFilter = "closed"
 )
 
 type ConversationListRequest struct {

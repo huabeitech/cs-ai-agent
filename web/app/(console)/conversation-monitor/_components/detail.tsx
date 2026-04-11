@@ -49,13 +49,13 @@ type ConversationDetailDialogProps = {
 function getStatusMeta(status: number) {
   switch (status) {
     case 1:
-      return { label: "待接入", variant: "outline" as const };
+      return { label: "AI接待中", variant: "secondary" as const };
     case 2:
-      return { label: "处理中", variant: "secondary" as const };
+      return { label: "待接入", variant: "outline" as const };
     case 3:
-      return { label: "已关闭", variant: "outline" as const };
+      return { label: "处理中", variant: "secondary" as const };
     case 4:
-      return { label: "已归档", variant: "outline" as const };
+      return { label: "已关闭", variant: "outline" as const };
     default:
       return { label: "未知", variant: "outline" as const };
   }
@@ -151,8 +151,8 @@ export function ConversationDetailDialog({
   onOpenClose,
 }: ConversationDetailDialogProps) {
   const currentConversation = detail ?? item;
-  const isClosedConversation = currentConversation?.status === 3;
-  const isPendingConversation = currentConversation?.status === 1;
+  const isClosedConversation = currentConversation?.status === 4;
+  const isPendingConversation = currentConversation?.status === 2;
   const statusMeta = currentConversation
     ? getStatusMeta(currentConversation.status)
     : null;
@@ -274,7 +274,7 @@ export function ConversationDetailDialog({
             <Button
               variant="outline"
               onClick={onOpenAssign}
-              disabled={saving || !currentConversation || isClosedConversation}
+              disabled={saving || !currentConversation || currentConversation.status !== 2}
             >
               <MessageCircleMoreIcon />
               {saving ? "处理中..." : "分配会话"}
@@ -301,7 +301,7 @@ export function ConversationDetailDialog({
               type="button"
               variant="outline"
               onClick={onOpenTransfer}
-              disabled={saving || !currentConversation || isClosedConversation}
+              disabled={saving || !currentConversation || currentConversation.status !== 3}
             >
               <MessageCircleMoreIcon />
               {saving ? "处理中..." : "转接会话"}
