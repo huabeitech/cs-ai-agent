@@ -30,6 +30,17 @@ func (c *RuntimeTraceCollector) Marshal() string {
 	return string(buf)
 }
 
+func (c *RuntimeTraceCollector) SetTooling(staticToolCodes []string, dynamicToolCodes []string, toolSearchEnabled bool) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Data.Input.StaticToolCodes = append([]string(nil), staticToolCodes...)
+	c.Data.Input.DynamicToolCodes = append([]string(nil), dynamicToolCodes...)
+	c.Data.Input.ToolSearchEnabled = toolSearchEnabled
+}
+
 func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
 	if c == nil {
 		return

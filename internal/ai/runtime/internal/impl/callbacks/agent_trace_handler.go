@@ -122,12 +122,19 @@ func previewToolText(text string, limit int) string {
 }
 
 func (h *RuntimeTraceHandler) buildToolSearchTraceItem(argumentsInJSON string, result string, runErr error) ToolSearchTraceItem {
-	item := ToolSearchTraceItem{
-		Action: "search",
-		Status: "ok",
-	}
+	item := ToolSearchTraceItem{Status: "ok"}
 	args := parseToolArguments(argumentsInJSON)
-	item.Query = strings.TrimSpace(readToolSearchString(args, "regex_pattern"))
+	item.Query = strings.TrimSpace(firstNonBlank(
+		readToolSearchString(args, "query"),
+		readToolSearchString(args, "regex_pattern"),
+	))
+	item.TargetToolCode = strings.TrimSpace(readToolSearchString(args, "toolCode"))
+	item.TargetServerCode, item.TargetToolName = toolx.SplitMCPToolCode(item.TargetToolCode)
+	if item.TargetToolCode != "" {
+		item.Action = "invoke"
+	} else {
+		item.Action = "search"
+	}
 	if runErr != nil {
 		item.Status = "error"
 		item.ErrorMessage = runErr.Error()
@@ -137,8 +144,7 @@ func (h *RuntimeTraceHandler) buildToolSearchTraceItem(argumentsInJSON string, r
 	if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
 		return item
 	}
-	selectedTools, _ := payload["selectedTools"].([]any)
-	item.CandidateToolCodes = h.extractSelectedToolCodes(selectedTools)
+	item.CandidateToolCodes = h.extractCandidateToolCodes(payload)
 	return item
 }
 
@@ -152,6 +158,29 @@ func readToolSearchString(data map[string]any, key string) string {
 	}
 	text, _ := value.(string)
 	return text
+}
+
+func firstNonBlank(values ...string) string {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func (h *RuntimeTraceHandler) extractCandidateToolCodes(payload map[string]any) []string {
+	if len(payload) == 0 {
+		return nil
+	}
+	if items, ok := payload["selectedTools"].([]any); ok {
+		return h.extractSelectedToolCodes(items)
+	}
+	if items, ok := payload["candidates"].([]any); ok {
+		return h.extractCandidateObjects(items)
+	}
+	return nil
 }
 
 func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []any) []string {
@@ -172,6 +201,25 @@ func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []any) []string {
 		if metadata, ok := h.resolveToolMetadata(toolName); ok && strings.TrimSpace(metadata.ToolCode) != "" {
 			toolCode = strings.TrimSpace(metadata.ToolCode)
 		}
+		if toolCode == "" {
+			continue
+		}
+		ret = append(ret, toolCode)
+	}
+	return ret
+}
+
+func (h *RuntimeTraceHandler) extractCandidateObjects(items []any) []string {
+	if len(items) == 0 {
+		return nil
+	}
+	ret := make([]string, 0, len(items))
+	for _, item := range items {
+		obj, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		toolCode := strings.TrimSpace(readToolSearchString(obj, "toolCode"))
 		if toolCode == "" {
 			continue
 		}

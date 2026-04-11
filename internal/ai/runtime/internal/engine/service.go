@@ -97,6 +97,7 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 		toolDefsByModelName[modelName] = toolCode
 	}
 	collector.Data.Input.ToolCodes = append(collector.Data.Input.ToolCodes, summary.ToolCodes...)
+	collector.SetTooling(staticToolCodeList(req.ToolSet), definitionToolCodes(filteredToolDefs), len(filteredToolDefs) > 0)
 
 	collector.Data.Model.Provider = string(req.AIConfig.Provider)
 	collector.Data.Model.Name = req.AIConfig.ModelName
@@ -250,6 +251,7 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 		toolDefsByModelName[modelName] = toolCode
 	}
 	collector.Data.Input.ToolCodes = append(collector.Data.Input.ToolCodes, summary.ToolCodes...)
+	collector.SetTooling(staticToolCodeList(req.ToolSet), definitionToolCodes(toolDefs), len(toolDefs) > 0)
 	collector.Data.Model.Provider = string(req.AIConfig.Provider)
 	collector.Data.Model.Name = req.AIConfig.ModelName
 	agent, err := s.agentFactory.BuildCustomerServiceAgent(ctx, factory.BuildCustomerServiceAgentInput{
@@ -558,4 +560,35 @@ func toolSetStaticToolCodes(toolSet *registry.ToolSet) map[string]string {
 		return nil
 	}
 	return toolSet.StaticToolCodes
+}
+
+func definitionToolCodes(definitions []adapter.MCPToolDefinition) []string {
+	if len(definitions) == 0 {
+		return nil
+	}
+	ret := make([]string, 0, len(definitions))
+	for _, item := range definitions {
+		toolCode := strings.TrimSpace(item.ToolCode)
+		if toolCode == "" {
+			continue
+		}
+		ret = append(ret, toolCode)
+	}
+	return ret
+}
+
+func staticToolCodeList(toolSet *registry.ToolSet) []string {
+	toolCodes := toolSetStaticToolCodes(toolSet)
+	if len(toolCodes) == 0 {
+		return nil
+	}
+	ret := make([]string, 0, len(toolCodes))
+	for _, toolCode := range toolCodes {
+		toolCode = strings.TrimSpace(toolCode)
+		if toolCode == "" {
+			continue
+		}
+		ret = append(ret, toolCode)
+	}
+	return ret
 }

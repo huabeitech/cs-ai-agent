@@ -58,6 +58,9 @@ type RuntimeTraceData struct {
 		HistoryMessageCount       int      `json:"historyMessageCount,omitempty"`
 		KnowledgeBaseIDs          []int64  `json:"knowledgeBaseIds,omitempty"`
 		ToolCodes                 []string `json:"toolCodes,omitempty"`
+		StaticToolCodes           []string `json:"staticToolCodes,omitempty"`
+		DynamicToolCodes          []string `json:"dynamicToolCodes,omitempty"`
+		ToolSearchEnabled         bool     `json:"toolSearchEnabled,omitempty"`
 		CurrentUserMessagePreview string   `json:"currentUserMessagePreview,omitempty"`
 	} `json:"input"`
 	Retriever struct {
