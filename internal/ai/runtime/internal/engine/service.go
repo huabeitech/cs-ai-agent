@@ -159,9 +159,9 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 	messages = append(messages, history.Messages...)
 
 	retriever := retrievers.NewKnowledgeRetriever(req.AIAgent)
-	if retrieveResult, retrieveErr := retriever.RetrieveContextByOptions(ctx, retrievers.KnowledgeRetrieveOptions{
-		QueryPreview: preview(req.UserMessage.Content, 120),
-	}, strings.TrimSpace(req.UserMessage.Content)); retrieveErr == nil && retrieveResult != nil {
+	retrieveOptions := retrievers.DefaultKnowledgeRetrieveOptions()
+	retrieveOptions.QueryPreview = preview(req.UserMessage.Content, 120)
+	if retrieveResult, retrieveErr := retriever.RetrieveContextByOptions(ctx, retrieveOptions, strings.TrimSpace(req.UserMessage.Content)); retrieveErr == nil && retrieveResult != nil {
 		summary.RetrieverCount = len(retrieveResult.Hits)
 		collector.SetRetrieverSummary(retrieveResult.TraceSummary)
 		collector.Data.Retriever.Items = append(collector.Data.Retriever.Items, retrieveResult.TraceItems...)

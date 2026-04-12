@@ -45,6 +45,7 @@ type RetrieverTraceSummary struct {
 	TopK             int
 	ScoreThreshold   float64
 	ContextMaxTokens int
+	MaxContextItems  int
 	HitCount         int
 	ContextCount     int
 	EmbeddingMs      int64
@@ -103,6 +104,7 @@ type RuntimeTraceData struct {
 		TopK             int                        `json:"topK,omitempty"`
 		ScoreThreshold   float64                    `json:"scoreThreshold,omitempty"`
 		ContextMaxTokens int                        `json:"contextMaxTokens,omitempty"`
+		MaxContextItems  int                        `json:"maxContextItems,omitempty"`
 		ContextCount     int                        `json:"contextCount,omitempty"`
 		EmbeddingMs      int64                      `json:"embeddingMs,omitempty"`
 		VectorSearchMs   int64                      `json:"vectorSearchMs,omitempty"`

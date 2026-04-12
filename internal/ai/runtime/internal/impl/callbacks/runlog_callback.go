@@ -74,6 +74,7 @@ func (c *RuntimeTraceCollector) SetRetrieverSummary(summary RetrieverTraceSummar
 	c.Data.Retriever.TopK = summary.TopK
 	c.Data.Retriever.ScoreThreshold = summary.ScoreThreshold
 	c.Data.Retriever.ContextMaxTokens = summary.ContextMaxTokens
+	c.Data.Retriever.MaxContextItems = summary.MaxContextItems
 	c.Data.Retriever.Count = summary.HitCount
 	c.Data.Retriever.ContextCount = summary.ContextCount
 	c.Data.Retriever.EmbeddingMs = summary.EmbeddingMs
