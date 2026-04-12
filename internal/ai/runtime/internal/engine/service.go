@@ -34,6 +34,10 @@ func NewService() *Service {
 }
 
 func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
+	return s.ExecuteRun(ctx, req)
+}
+
+func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, error) {
 	summary := &Summary{
 		RunID:            uuid.NewString(),
 		Status:           "started",
@@ -182,6 +186,10 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 }
 
 func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, error) {
+	return s.ExecuteResume(ctx, req)
+}
+
+func (s *Service) ExecuteResume(ctx context.Context, req ResumeInput) (*RunResult, error) {
 	summary := &Summary{
 		RunID:            uuid.NewString(),
 		Status:           "started",

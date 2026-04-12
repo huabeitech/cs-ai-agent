@@ -16,7 +16,6 @@ import (
 	"cs-agent/internal/repositories"
 	svc "cs-agent/internal/services"
 
-	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 )
 
@@ -27,10 +26,16 @@ func init() {
 }
 
 func newAIReplyService() *aiReplyService {
-	return &aiReplyService{}
+	return &aiReplyService{
+		eligibility: newReplyEligibility(),
+		executor:    newRuntimeReplyExecutor(),
+	}
 }
 
-type aiReplyService struct{}
+type aiReplyService struct {
+	eligibility *replyEligibility
+	executor    *runtimeReplyExecutor
+}
 
 type aiReplyTraceData struct {
 	Status           string          `json:"status"`
@@ -86,16 +91,7 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, conversation models.C
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if message.SenderType != enums.IMSenderTypeCustomer {
-		return nil
-	}
-	if conversation.HandoffAt != nil || conversation.CurrentAssigneeID > 0 {
-		return nil
-	}
-	if aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly {
-		return nil
-	}
-	if strs.IsBlank(message.Content) {
+	if s.eligibility != nil && !s.eligibility.CanReply(conversation, message, aiAgent) {
 		return nil
 	}
 	defer func() {
@@ -104,32 +100,10 @@ func (s *aiReplyService) TriggerReply(ctx context.Context, conversation models.C
 	if pendingInterrupt := svc.ConversationInterruptService.FindLatestPendingByConversationID(conversation.ID); pendingInterrupt != nil {
 		return s.resumePendingInterrupt(ctx, conversation, message, aiAgent, pendingInterrupt, trace, &summary)
 	}
-	aiConfig := svc.AIConfigService.Get(aiAgent.AIConfigID)
-	if aiConfig == nil {
-		return fmt.Errorf("ai config is nil")
-	}
-
-	runtimeStartedAt := time.Now()
 	var err error
-	summary, err = Service.Run(ctx, Request{
-		Conversation: &conversation,
-		UserMessage:  &message,
-		AIAgent:      &aiAgent,
-		AIConfig:     aiConfig,
-	})
-	trace.RuntimeLatencyMs = time.Since(runtimeStartedAt).Milliseconds()
+	summary, err = s.executor.Run(ctx, conversation, message, aiAgent, trace)
 	if err != nil {
-		trace.Status = "runtime_error"
-		trace.FinalAction = "error"
-		if summary != nil {
-			trace.Runtime = json.RawMessage(summary.TraceData)
-		}
 		return err
-	}
-	trace.Status = "runtime_prepared"
-	trace.FinalAction = toRunLogFinalAction(summary)
-	if summary != nil && strings.TrimSpace(summary.TraceData) != "" {
-		trace.Runtime = json.RawMessage(summary.TraceData)
 	}
 	if summary != nil && summary.Interrupted {
 		return s.handleInterruptedSummary(conversation, message, aiAgent, summary, trace)
@@ -152,29 +126,11 @@ func (s *aiReplyService) resumePendingInterrupt(ctx context.Context, conversatio
 	if pendingInterrupt == nil {
 		return nil
 	}
-	aiConfig := svc.AIConfigService.Get(aiAgent.AIConfigID)
-	if aiConfig == nil {
-		return fmt.Errorf("ai config is nil")
-	}
-	runtimeStartedAt := time.Now()
-	trace.ResumeSource = "pending_interrupt"
-	summary, err := Service.Resume(ctx, ResumeRequest{
-		Conversation: &conversation,
-		AIAgent:      &aiAgent,
-		AIConfig:     aiConfig,
-		CheckPointID: strings.TrimSpace(pendingInterrupt.CheckPointID),
-		ResumeData: map[string]any{
-			strings.TrimSpace(pendingInterrupt.InterruptID): strings.TrimSpace(message.Content),
-		},
-	})
-	trace.RuntimeLatencyMs = time.Since(runtimeStartedAt).Milliseconds()
+	summary, err := s.executor.ResumePendingInterrupt(ctx, conversation, message, aiAgent, pendingInterrupt, trace)
 	*summaryRef = summary
 	if err != nil {
 		if isCheckpointMissingError(err) {
-			summary = &Summary{
-				Status:    "expired",
-				ReplyText: graphs.ConfirmationExpiredReply,
-			}
+			summary = expiredInterruptSummary()
 			*summaryRef = summary
 			trace.Status = "interrupt_expired"
 			trace.FinalAction = "expired"
@@ -194,17 +150,7 @@ func (s *aiReplyService) resumePendingInterrupt(ctx context.Context, conversatio
 			}
 			return nil
 		}
-		trace.Status = "runtime_error"
-		trace.FinalAction = "error"
-		if summary != nil {
-			trace.Runtime = json.RawMessage(summary.TraceData)
-		}
 		return err
-	}
-	trace.Status = "runtime_prepared"
-	trace.FinalAction = toRunLogFinalAction(summary)
-	if summary != nil && strings.TrimSpace(summary.TraceData) != "" {
-		trace.Runtime = json.RawMessage(summary.TraceData)
 	}
 	if summary != nil && summary.Interrupted {
 		return s.handleInterruptedResume(conversation, message, aiAgent, pendingInterrupt, summary, trace)

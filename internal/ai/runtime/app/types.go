@@ -1,15 +1,16 @@
-package engine
+package app
 
 import (
 	"cs-agent/internal/ai/runtime/registry"
 	"cs-agent/internal/models"
 )
 
-type RunInput struct {
+type Request struct {
 	Conversation     *models.Conversation
 	UserMessage      *models.Message
 	AIAgent          *models.AIAgent
 	AIConfig         *models.AIConfig
+	ManualSkillCode  string
 	SelectedSkill    *models.SkillDefinition
 	SkillRouteReason string
 	SkillRouteTrace  string
@@ -17,7 +18,7 @@ type RunInput struct {
 	ToolSet          *registry.ToolSet
 }
 
-type ResumeInput struct {
+type ResumeRequest struct {
 	Conversation *models.Conversation
 	AIAgent      *models.AIAgent
 	AIConfig     *models.AIConfig
@@ -32,13 +33,13 @@ type InterruptContextSummary struct {
 	InfoPreview string `json:"infoPreview,omitempty"`
 }
 
-type RunResult struct {
+type Summary struct {
 	RunID                 string
 	Status                string
 	ReplyText             string
-	SelectedSkillCode     string
-	SelectedSkillName     string
-	SkillRouteReason      string
+	PlannedSkillCode      string
+	PlannedSkillName      string
+	PlanReason            string
 	SkillRouteTrace       string
 	SkillAllowedToolCodes []string
 	ModelName             string
@@ -55,7 +56,3 @@ type RunResult struct {
 	TraceData             string
 	ErrorMessage          string
 }
-
-type Request = RunInput
-type ResumeRequest = ResumeInput
-type Summary = RunResult
