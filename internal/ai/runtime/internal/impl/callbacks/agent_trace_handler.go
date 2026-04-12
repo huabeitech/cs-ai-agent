@@ -93,6 +93,14 @@ func (h *RuntimeTraceHandler) resolveToolMetadata(modelToolName string) (ToolMet
 			SourceType: toolx.BuiltinToolCatalogServerCode,
 		}, true
 	}
+	if modelToolName == toolx.BuiltinSkillToolName {
+		return ToolMetadata{
+			ToolCode:   toolx.BuiltinSkillToolCode,
+			ServerCode: toolx.BuiltinToolCatalogServerCode,
+			ToolName:   toolx.BuiltinSkillToolName,
+			SourceType: toolx.BuiltinToolCatalogServerCode,
+		}, true
+	}
 	metadata, ok := h.toolMetadataBy[modelToolName]
 	return metadata, ok
 }

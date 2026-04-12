@@ -6,6 +6,10 @@ const (
 	BuiltinToolSearchToolName                 = "tool_search"
 	BuiltinToolSearchToolTitle                = "搜索并调用动态工具"
 	BuiltinToolSearchToolDescription          = "用于搜索当前允许使用的 MCP 工具，并在确认目标 toolCode 后动态调用该工具。适合处理长尾工具，不应替代固定内置流程工具。"
+	BuiltinSkillToolCode                      = "builtin/skill"
+	BuiltinSkillToolName                      = "skill"
+	BuiltinSkillToolTitle                     = "加载专项技能说明"
+	BuiltinSkillToolDescription               = "用于加载当前命中的专项技能说明文档。仅在本轮已命中 Skill 时可用，适合将专项处理规则按需注入上下文。"
 	GraphToolCatalogServerCode                = "graph"
 	GraphCreateTicketConfirmToolCode          = "graph/create_ticket_with_confirmation"
 	GraphCreateTicketConfirmToolName          = "create_ticket_with_confirmation"
@@ -22,7 +26,7 @@ const (
 )
 
 func IsAutoInjectedToolCode(toolCode string) bool {
-	return toolCode == BuiltinToolSearchToolCode
+	return toolCode == BuiltinToolSearchToolCode || toolCode == BuiltinSkillToolCode
 }
 
 func NormalizeToolCodeAlias(toolCode string) string {

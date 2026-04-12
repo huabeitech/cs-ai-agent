@@ -107,11 +107,13 @@ type RuntimeTraceData struct {
 }
 
 type SkillTraceData struct {
-	Code             string   `json:"code,omitempty"`
-	Name             string   `json:"name,omitempty"`
-	RouteReason      string   `json:"routeReason,omitempty"`
-	RouteTrace       string   `json:"routeTrace,omitempty"`
-	AllowedToolCodes []string `json:"allowedToolCodes,omitempty"`
+	Code               string   `json:"code,omitempty"`
+	Name               string   `json:"name,omitempty"`
+	RouteReason        string   `json:"routeReason,omitempty"`
+	RouteTrace         string   `json:"routeTrace,omitempty"`
+	AllowedToolCodes   []string `json:"allowedToolCodes,omitempty"`
+	MiddlewareEnabled  bool     `json:"middlewareEnabled,omitempty"`
+	MiddlewareToolName string   `json:"middlewareToolName,omitempty"`
 }
 
 type InterruptTraceContext struct {

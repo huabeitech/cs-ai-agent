@@ -55,6 +55,16 @@ func (c *RuntimeTraceCollector) SetInstructionSummary(summary InstructionTraceSu
 	c.Data.Instruction.HasToolRule = summary.HasToolRule
 }
 
+func (c *RuntimeTraceCollector) SetSkillMiddleware(enabled bool, toolName string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Data.Skill.MiddlewareEnabled = enabled
+	c.Data.Skill.MiddlewareToolName = toolName
+}
+
 func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
 	if c == nil {
 		return

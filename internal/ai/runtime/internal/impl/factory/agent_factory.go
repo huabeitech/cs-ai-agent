@@ -14,6 +14,7 @@ import (
 
 	"github.com/cloudwego/eino/adk"
 	einotoolsearch "github.com/cloudwego/eino/adk/middlewares/dynamictool/toolsearch"
+	einoskill "github.com/cloudwego/eino/adk/middlewares/skill"
 	einobasetool "github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 )
@@ -74,7 +75,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	}
 	allTools := make([]einobasetool.BaseTool, 0, len(input.StaticTools))
 	allTools = append(allTools, input.StaticTools...)
-	handlers := make([]adk.ChatModelAgentMiddleware, 0, 1)
+	handlers := make([]adk.ChatModelAgentMiddleware, 0, 2)
 	if len(dynamicTools) > 0 {
 		toolSearchHandler, toolSearchErr := einotoolsearch.New(ctx, &einotoolsearch.Config{
 			DynamicTools: dynamicTools,
@@ -83,6 +84,13 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 			return nil, toolSearchErr
 		}
 		handlers = append(handlers, toolSearchHandler)
+	}
+	if input.SelectedSkill != nil {
+		skillHandler, skillErr := f.buildSelectedSkillMiddleware(ctx, input.SelectedSkill, input.InstructionToolDefinitions)
+		if skillErr != nil {
+			return nil, skillErr
+		}
+		handlers = append(handlers, skillHandler)
 	}
 	if input.Collector != nil {
 		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(input.DynamicMCPToolDefinitions)+len(input.StaticToolCodes))
@@ -118,6 +126,15 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 				SourceType: resolveToolSourceType(toolCode),
 			}
 		}
+		if input.SelectedSkill != nil {
+			toolMetadataBy[toolx.BuiltinSkillToolName] = einocallbacks.ToolMetadata{
+				ToolCode:   toolx.BuiltinSkillToolCode,
+				ServerCode: toolx.BuiltinToolCatalogServerCode,
+				ToolName:   toolx.BuiltinSkillToolName,
+				SourceType: toolx.BuiltinToolCatalogServerCode,
+			}
+			input.Collector.SetSkillMiddleware(true, toolx.BuiltinSkillToolName)
+		}
 		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
 	}
 	instructionResult := assembleAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
@@ -149,10 +166,25 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	return &einoagents.CustomerServiceAgent{Inner: inner}, nil
 }
 
+func (f *AgentFactory) buildSelectedSkillMiddleware(ctx context.Context, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition) (adk.ChatModelAgentMiddleware, error) {
+	backend, err := newSelectedSkillBackend(selectedSkill, toolDefinitions)
+	if err != nil {
+		return nil, err
+	}
+	toolName := toolx.BuiltinSkillToolName
+	return einoskill.NewMiddleware(ctx, &einoskill.Config{
+		Backend:       backend,
+		SkillToolName: &toolName,
+		UseChinese:    true,
+	})
+}
+
 func resolveToolSourceType(toolCode string) string {
 	toolCode = strings.TrimSpace(toolCode)
 	switch {
 	case toolCode == toolx.BuiltinToolSearchToolCode:
+		return toolx.BuiltinToolCatalogServerCode
+	case toolCode == toolx.BuiltinSkillToolCode:
 		return toolx.BuiltinToolCatalogServerCode
 	case strings.HasPrefix(toolCode, toolx.GraphToolCatalogServerCode+"/"):
 		return toolx.GraphToolCatalogServerCode
@@ -169,7 +201,7 @@ func assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.Ski
 		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
 	}
 	appendixParts := make([]string, 0, 2)
-	if skillInstruction := buildSelectedSkillInstruction(selectedSkill, toolDefinitions); skillInstruction != "" {
+	if skillInstruction := buildSelectedSkillActivationInstruction(selectedSkill); skillInstruction != "" {
 		appendixParts = append(appendixParts, skillInstruction)
 	}
 	if len(toolDefinitions) > 0 {
@@ -229,7 +261,23 @@ func remainingAppendixParts(parts []string) []string {
 	return ret
 }
 
-func buildSelectedSkillInstruction(skill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition) string {
+func buildSelectedSkillActivationInstruction(skill *models.SkillDefinition) string {
+	if skill == nil {
+		return ""
+	}
+	lines := []string{
+		"当前命中的专项技能：",
+		fmt.Sprintf("- code: %s", strings.TrimSpace(skill.Code)),
+		fmt.Sprintf("- name: %s", strings.TrimSpace(skill.Name)),
+	}
+	if desc := strings.TrimSpace(skill.Description); desc != "" {
+		lines = append(lines, fmt.Sprintf("- description: %s", desc))
+	}
+	lines = append(lines, "", "执行要求：", "- 本轮优先处理该技能范围内的问题。", fmt.Sprintf("- 需要专项处理细节时，优先调用 %s 工具加载该技能说明后再继续。", toolx.BuiltinSkillToolName), "- 如果关键信息不足，先向用户追问。", "- 不得调用当前技能未授权的工具。")
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func buildSelectedSkillDocument(skill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition) string {
 	if skill == nil {
 		return ""
 	}

@@ -13,6 +13,7 @@ import (
 	"cs-agent/internal/ai/runtime/internal/impl/retrievers"
 	"cs-agent/internal/ai/runtime/registry"
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/toolx"
 	"cs-agent/internal/pkg/utils"
 
 	"github.com/cloudwego/eino/adk"
@@ -84,8 +85,12 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 		toolDefsByModelName[item.ModelName] = item.ToolCode
 	}
 	if len(filteredToolDefs) > 0 {
-		summary.ToolCodes = appendIfMissing(summary.ToolCodes, "builtin/tool_search")
-		toolDefsByModelName["tool_search"] = "builtin/tool_search"
+		summary.ToolCodes = appendIfMissing(summary.ToolCodes, toolx.BuiltinToolSearchToolCode)
+		toolDefsByModelName[toolx.BuiltinToolSearchToolName] = toolx.BuiltinToolSearchToolCode
+	}
+	if req.SelectedSkill != nil {
+		summary.ToolCodes = appendIfMissing(summary.ToolCodes, toolx.BuiltinSkillToolCode)
+		toolDefsByModelName[toolx.BuiltinSkillToolName] = toolx.BuiltinSkillToolCode
 	}
 	for modelName, toolCode := range toolSetStaticToolCodes(req.ToolSet) {
 		toolCode = strings.TrimSpace(toolCode)
@@ -238,8 +243,8 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 		toolDefsByModelName[item.ModelName] = item.ToolCode
 	}
 	if len(toolDefs) > 0 {
-		summary.ToolCodes = appendIfMissing(summary.ToolCodes, "builtin/tool_search")
-		toolDefsByModelName["tool_search"] = "builtin/tool_search"
+		summary.ToolCodes = appendIfMissing(summary.ToolCodes, toolx.BuiltinToolSearchToolCode)
+		toolDefsByModelName[toolx.BuiltinToolSearchToolName] = toolx.BuiltinToolSearchToolCode
 	}
 	for modelName, toolCode := range toolSetStaticToolCodes(req.ToolSet) {
 		toolCode = strings.TrimSpace(toolCode)
