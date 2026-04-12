@@ -6,6 +6,9 @@ type ToolTraceItem struct {
 	ToolName      string         `json:"toolName"`
 	Arguments     map[string]any `json:"arguments,omitempty"`
 	ResultPreview string         `json:"resultPreview,omitempty"`
+	ResultReduced bool           `json:"resultReduced,omitempty"`
+	OriginalChars int            `json:"originalChars,omitempty"`
+	KeptChars     int            `json:"keptChars,omitempty"`
 	LatencyMs     int64          `json:"latencyMs,omitempty"`
 	Status        string         `json:"status,omitempty"`
 	ErrorMessage  string         `json:"errorMessage,omitempty"`
@@ -27,6 +30,9 @@ type GraphToolTraceItem struct {
 	ToolName      string         `json:"toolName"`
 	Arguments     map[string]any `json:"arguments,omitempty"`
 	ResultPreview string         `json:"resultPreview,omitempty"`
+	ResultReduced bool           `json:"resultReduced,omitempty"`
+	OriginalChars int            `json:"originalChars,omitempty"`
+	KeptChars     int            `json:"keptChars,omitempty"`
 	LatencyMs     int64          `json:"latencyMs,omitempty"`
 	Status        string         `json:"status,omitempty"`
 	ErrorMessage  string         `json:"errorMessage,omitempty"`

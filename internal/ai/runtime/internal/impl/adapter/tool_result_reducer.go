@@ -3,6 +3,8 @@ package adapter
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"cs-agent/internal/ai/mcps"
@@ -12,6 +14,14 @@ const (
 	maxToolResultSummaryChars = 4000
 	maxToolResultSegments     = 12
 )
+
+var reductionInfoPattern = regexp.MustCompile(`\[tool result reduced: original_length=(\d+), kept_length=(\d+)\]`)
+
+type ReductionInfo struct {
+	Reduced       bool
+	OriginalChars int
+	KeptChars     int
+}
 
 // BuildReducedToolResultSummary returns a bounded text summary for MCP tool results.
 // It keeps the main payload visible to the model while preventing a single large tool
@@ -34,6 +44,23 @@ func BuildReducedToolResultSummary(result *mcps.ToolCallResult) string {
 	}
 	truncated := strings.TrimSpace(string(runes[:maxToolResultSummaryChars]))
 	return fmt.Sprintf("%s\n\n[tool result reduced: original_length=%d, kept_length=%d]", truncated, len(runes), maxToolResultSummaryChars)
+}
+
+func ParseReductionInfo(summary string) ReductionInfo {
+	matches := reductionInfoPattern.FindStringSubmatch(strings.TrimSpace(summary))
+	if len(matches) != 3 {
+		return ReductionInfo{}
+	}
+	originalChars, err1 := strconv.Atoi(matches[1])
+	keptChars, err2 := strconv.Atoi(matches[2])
+	if err1 != nil || err2 != nil {
+		return ReductionInfo{}
+	}
+	return ReductionInfo{
+		Reduced:       true,
+		OriginalChars: originalChars,
+		KeptChars:     keptChars,
+	}
 }
 
 func collectToolResultSegments(result *mcps.ToolCallResult) []string {

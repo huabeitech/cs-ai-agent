@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	impladapter "cs-agent/internal/ai/runtime/internal/impl/adapter"
 	"cs-agent/internal/pkg/toolx"
 
 	einotool "github.com/cloudwego/eino/components/tool"
@@ -43,6 +44,10 @@ func (h *RuntimeTraceHandler) WrapInvokableToolCall(_ context.Context, endpoint 
 			LatencyMs:     time.Since(startedAt).Milliseconds(),
 			Status:        "ok",
 		}
+		reductionInfo := impladapter.ParseReductionInfo(result)
+		item.ResultReduced = reductionInfo.Reduced
+		item.OriginalChars = reductionInfo.OriginalChars
+		item.KeptChars = reductionInfo.KeptChars
 		if tCtx != nil {
 			item.ToolName = strings.TrimSpace(tCtx.Name)
 			if metadata, ok := h.toolMetadataBy[item.ToolName]; ok {
@@ -65,6 +70,9 @@ func (h *RuntimeTraceHandler) WrapInvokableToolCall(_ context.Context, endpoint 
 				ToolName:      item.ToolName,
 				Arguments:     item.Arguments,
 				ResultPreview: item.ResultPreview,
+				ResultReduced: item.ResultReduced,
+				OriginalChars: item.OriginalChars,
+				KeptChars:     item.KeptChars,
 				LatencyMs:     item.LatencyMs,
 				Status:        item.Status,
 				ErrorMessage:  item.ErrorMessage,
