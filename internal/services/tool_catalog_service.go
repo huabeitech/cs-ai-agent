@@ -34,12 +34,8 @@ type MCPToolCatalogItem struct {
 func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalogItem, error) {
 	cfg := config.Current()
 	ret := make([]MCPToolCatalogItem, 0, 3)
-	for _, toolCode := range []string{
-		toolx.GraphCreateTicketConfirm.Code,
-		toolx.GraphHandoffConversation.Code,
-	} {
-		spec, ok := toolx.GetRegisteredToolSpec(toolCode)
-		if !ok {
+	for _, spec := range toolx.ListAgentDirectToolSpecs() {
+		if spec.Code == toolx.BuiltinToolSearch.Code && !cfg.MCP.Enabled {
 			continue
 		}
 		ret = append(ret, MCPToolCatalogItem{
@@ -54,17 +50,6 @@ func (s *toolCatalogService) ListMCPTools(ctx context.Context) ([]MCPToolCatalog
 	}
 	if !cfg.MCP.Enabled {
 		return ret, nil
-	}
-	if spec, ok := toolx.GetRegisteredToolSpec(toolx.BuiltinToolSearch.Code); ok {
-		ret = append(ret, MCPToolCatalogItem{
-			ToolCode:     spec.Code,
-			ServerCode:   spec.ServerCode,
-			ToolName:     spec.Name,
-			SourceType:   spec.SourceType,
-			AutoInjected: spec.AutoInjected,
-			Title:        spec.Title,
-			Description:  spec.Description,
-		})
 	}
 	serverCodes := make([]string, 0, len(cfg.MCP.Servers))
 	for serverCode, server := range cfg.MCP.Servers {
@@ -106,8 +91,7 @@ func (s *toolCatalogService) ValidateToolCode(toolCode string) error {
 	if toolCode == "" {
 		return errorsx.InvalidParam("toolCode不能为空")
 	}
-	switch toolCode {
-	case toolx.BuiltinToolSearch.Code, "builtin/create_ticket_with_confirmation", toolx.GraphCreateTicketConfirm.Code, toolx.GraphHandoffConversation.Code:
+	if toolx.IsAgentDirectToolCode(toolCode) {
 		return nil
 	}
 	serverCode, toolName := toolx.SplitMCPToolCode(toolCode)

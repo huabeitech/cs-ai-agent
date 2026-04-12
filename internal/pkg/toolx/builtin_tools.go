@@ -82,10 +82,16 @@ var (
 		GraphCreateTicketConfirm,
 		GraphHandoffConversation,
 	}
+	AgentDirectToolSpecs = []ToolSpec{
+		GraphCreateTicketConfirm,
+		GraphHandoffConversation,
+		BuiltinToolSearch,
+	}
 )
 
 var (
 	toolSpecByCode       = buildToolSpecByCode()
+	toolSpecByName       = buildToolSpecByName()
 	toolAliasToCanonical = buildToolAliasToCanonical()
 )
 
@@ -114,6 +120,18 @@ func buildToolAliasToCanonical() map[string]string {
 	return ret
 }
 
+func buildToolSpecByName() map[string]ToolSpec {
+	ret := make(map[string]ToolSpec, len(RegisteredToolSpecs))
+	for _, spec := range RegisteredToolSpecs {
+		name := strings.TrimSpace(spec.Name)
+		if name == "" {
+			continue
+		}
+		ret[name] = spec
+	}
+	return ret
+}
+
 func ListRegisteredToolSpecs() []ToolSpec {
 	return append([]ToolSpec(nil), RegisteredToolSpecs...)
 }
@@ -121,6 +139,12 @@ func ListRegisteredToolSpecs() []ToolSpec {
 func GetRegisteredToolSpec(toolCode string) (ToolSpec, bool) {
 	toolCode = NormalizeToolCodeAlias(strings.TrimSpace(toolCode))
 	spec, ok := toolSpecByCode[toolCode]
+	return spec, ok
+}
+
+func GetRegisteredToolSpecByName(name string) (ToolSpec, bool) {
+	name = strings.TrimSpace(name)
+	spec, ok := toolSpecByName[name]
 	return spec, ok
 }
 
@@ -166,6 +190,20 @@ func ResolveToolSourceType(toolCode string) string {
 func IsAutoInjectedToolCode(toolCode string) bool {
 	spec, ok := GetRegisteredToolSpec(toolCode)
 	return ok && spec.AutoInjected
+}
+
+func ListAgentDirectToolSpecs() []ToolSpec {
+	return append([]ToolSpec(nil), AgentDirectToolSpecs...)
+}
+
+func IsAgentDirectToolCode(toolCode string) bool {
+	toolCode = NormalizeToolCodeAlias(strings.TrimSpace(toolCode))
+	for _, spec := range AgentDirectToolSpecs {
+		if spec.Code == toolCode {
+			return true
+		}
+	}
+	return false
 }
 
 func NormalizeToolCodeAlias(toolCode string) string {
