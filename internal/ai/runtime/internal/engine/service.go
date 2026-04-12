@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"cs-agent/internal/ai/rag"
 	"cs-agent/internal/ai/runtime/internal/impl/adapter"
 	"cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/ai/runtime/internal/impl/factory"
@@ -160,10 +159,10 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 	messages = append(messages, history.Messages...)
 
 	retriever := retrievers.NewKnowledgeRetriever(req.AIAgent)
-	if results, _, retrieveErr := retriever.Retrieve(ctx, strings.TrimSpace(req.UserMessage.Content)); retrieveErr == nil {
-		summary.RetrieverCount = len(results)
-		collector.Data.Retriever.Count = len(results)
-		for _, item := range results {
+	if retrieveResult, retrieveErr := retriever.RetrieveContext(ctx, strings.TrimSpace(req.UserMessage.Content)); retrieveErr == nil && retrieveResult != nil {
+		summary.RetrieverCount = len(retrieveResult.Hits)
+		collector.Data.Retriever.Count = len(retrieveResult.Hits)
+		for _, item := range retrieveResult.Hits {
 			collector.Data.Retriever.Items = append(collector.Data.Retriever.Items, callbacks.RetrieverTraceItem{
 				Query:           preview(req.UserMessage.Content, 120),
 				KnowledgeBaseID: item.KnowledgeBaseID,
@@ -172,8 +171,8 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 				Score:           float64(item.Score),
 			})
 		}
-		if knowledgeContext := buildKnowledgeContext(results); knowledgeContext != "" {
-			messages = append(messages, schema.SystemMessage(knowledgeContext))
+		if strings.TrimSpace(retrieveResult.ContextText) != "" {
+			messages = append(messages, schema.SystemMessage(retrieveResult.ContextText))
 		}
 	}
 
@@ -523,34 +522,6 @@ func preview(value string, limit int) string {
 		return value
 	}
 	return string(runes[:limit]) + "..."
-}
-
-func buildKnowledgeContext(items []rag.RetrieveResult) string {
-	if len(items) == 0 {
-		return ""
-	}
-	var builder strings.Builder
-	builder.WriteString("以下是可供参考的知识库内容，请优先基于这些内容回答；如果仍不确定，请明确说明并向用户澄清。\n\n")
-	for i, item := range items {
-		if i >= 5 {
-			break
-		}
-		builder.WriteString("[知识片段")
-		builder.WriteString(fmt.Sprintf("%d", i+1))
-		builder.WriteString("]\n")
-		if strings.TrimSpace(item.DocumentTitle) != "" {
-			builder.WriteString("标题: ")
-			builder.WriteString(strings.TrimSpace(item.DocumentTitle))
-			builder.WriteString("\n")
-		}
-		if strings.TrimSpace(item.Content) != "" {
-			builder.WriteString("内容: ")
-			builder.WriteString(strings.TrimSpace(item.Content))
-			builder.WriteString("\n")
-		}
-		builder.WriteString("\n")
-	}
-	return strings.TrimSpace(builder.String())
 }
 
 func toolSetStaticTools(toolSet *registry.ToolSet) []einotool.BaseTool {
