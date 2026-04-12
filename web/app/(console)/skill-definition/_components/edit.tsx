@@ -37,7 +37,7 @@ const emptyForm: EditForm = {
   code: "",
   name: "",
   description: "",
-  content: "",
+  instruction: "",
   examplesText: "",
   remark: "",
 };
@@ -50,7 +50,7 @@ const skillFormSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/, "Skill 编码仅支持字母、数字、下划线和中划线"),
   name: z.string().trim().min(1, "Skill 名称不能为空"),
   description: z.string().trim(),
-  content: z.string().trim().min(1, "Content 不能为空"),
+  instruction: z.string().trim().min(1, "技能说明不能为空"),
   examplesText: z.string().trim(),
   remark: z.string().trim(),
 });
@@ -71,7 +71,7 @@ function buildForm(item: SkillDefinition | null): EditForm {
     code: item.code,
     name: item.name,
     description: item.description ?? "",
-    content: item.content ?? "",
+    instruction: item.instruction ?? "",
     examplesText: (item.examples ?? []).join("\n"),
     remark: item.remark ?? "",
   };
@@ -85,7 +85,7 @@ function buildPayload(
     code: form.code.trim(),
     name: form.name.trim(),
     description: form.description.trim(),
-    content: form.content.trim(),
+    instruction: form.instruction.trim(),
     examples: form.examplesText
       .split("\n")
       .map((item) => item.trim())
@@ -307,22 +307,22 @@ function SkillEditDialogBody({
             </FieldContent>
           </Field>
 
-          <Field data-invalid={!!errors.content}>
-            <FieldLabel htmlFor="skill-content">Content</FieldLabel>
+          <Field data-invalid={!!errors.instruction}>
+            <FieldLabel htmlFor="skill-instruction">技能说明</FieldLabel>
             <FieldContent>
               <Textarea
-                id="skill-content"
+                id="skill-instruction"
                 rows={12}
                 placeholder="请输入 Skill 文档内容，描述目标、步骤、工具使用规则和边界。"
-                aria-invalid={!!errors.content}
-                {...register("content")}
+                aria-invalid={!!errors.instruction}
+                {...register("instruction")}
               />
-              <FieldError errors={[errors.content]} />
+              <FieldError errors={[errors.instruction]} />
             </FieldContent>
           </Field>
 
           <Field data-invalid={!!errors.examplesText}>
-            <FieldLabel htmlFor="skill-examples">Examples</FieldLabel>
+            <FieldLabel htmlFor="skill-examples">示例问法</FieldLabel>
             <FieldContent>
               <Textarea
                 id="skill-examples"

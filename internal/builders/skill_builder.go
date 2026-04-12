@@ -22,7 +22,7 @@ func BuildSkillDefinitionResponse(item *models.SkillDefinition) response.SkillDe
 		Code:             item.Code,
 		Name:             item.Name,
 		Description:      item.Description,
-		Content:          item.Content,
+		Instruction:      item.Instruction,
 		Examples:         examples,
 		AllowedToolCodes: allowedToolCodes,
 		Priority:         item.Priority,

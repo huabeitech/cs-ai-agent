@@ -908,7 +908,7 @@ type SkillDefinition struct {
 	Code             string       `gorm:"type:varchar(100);not null;default:'';uniqueIndex"` // Code 为 Skill 的稳定唯一编码，供程序内部引用和路由判断使用，例如 refund_skill。
 	Name             string       `gorm:"type:varchar(100);not null;default:'';index"`       // Name 为 Skill 的展示名称，用于后台列表、配置页和人工选择场景。
 	Description      string       `gorm:"type:varchar(255);not null;default:''"`             // Description 为 Skill 的简要说明，用于描述该 Skill 的适用场景和职责边界。
-	Content          string       `gorm:"type:longtext"`                                     // Content 为 Skill 的主体文档，使用 Markdown 编写，供 Agent 理解任务目标、步骤和工具使用要求。
+	Instruction      string       `gorm:"type:longtext"`                                     // Instruction 为 Skill 的主体说明文档存储字段，使用 Markdown 编写，供 Agent 理解任务目标、步骤和工具使用要求。
 	Examples         string       `gorm:"type:text"`                                         // Examples 为示例问法 JSON 数组字符串。
 	AllowedToolCodes string       `gorm:"type:text"`                                         // AllowedToolCodes 为允许使用的工具编码 JSON 数组字符串。
 	Priority         int          `gorm:"type:int;not null;default:0;index"`                 // Priority 为 Skill 命中冲突时的优先级，数值越大优先级越高。

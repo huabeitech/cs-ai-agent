@@ -10,7 +10,7 @@ type CreateSkillDefinitionRequest struct {
 	Code             string   `json:"code"`
 	Name             string   `json:"name"`
 	Description      string   `json:"description"`
-	Content          string   `json:"content"`
+	Instruction      string   `json:"instruction"`
 	Examples         []string `json:"examples"`
 	AllowedToolCodes []string `json:"allowedToolCodes"`
 	Priority         int      `json:"priority"`

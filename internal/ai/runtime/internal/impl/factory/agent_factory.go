@@ -241,7 +241,7 @@ func buildSelectedSkillInstruction(skill *models.SkillDefinition, toolDefinition
 	if desc := strings.TrimSpace(skill.Description); desc != "" {
 		lines = append(lines, fmt.Sprintf("- description: %s", desc))
 	}
-	if content := strings.TrimSpace(skill.Content); content != "" {
+	if content := strings.TrimSpace(skill.Instruction); content != "" {
 		lines = append(lines, "", "技能说明：", content)
 	}
 	if examples := parseJSONStringArray(skill.Examples); len(examples) > 0 {

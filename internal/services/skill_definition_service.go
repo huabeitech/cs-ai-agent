@@ -112,7 +112,7 @@ func (s *skillDefinitionService) CreateSkillDefinition(req request.CreateSkillDe
 		Code:             normalized.Code,
 		Name:             normalized.Name,
 		Description:      normalized.Description,
-		Content:          normalized.Content,
+		Instruction:      normalized.Instruction,
 		Examples:         mustMarshalSkillStringArray(normalized.Examples),
 		AllowedToolCodes: mustMarshalSkillStringArray(normalized.AllowedToolCodes),
 		Priority:         normalized.Priority,
@@ -151,7 +151,7 @@ func (s *skillDefinitionService) UpdateSkillDefinition(req request.UpdateSkillDe
 		"code":               normalized.Code,
 		"name":               normalized.Name,
 		"description":        normalized.Description,
-		"content":            normalized.Content,
+		"content":            normalized.Instruction,
 		"examples":           mustMarshalSkillStringArray(normalized.Examples),
 		"allowed_tool_codes": mustMarshalSkillStringArray(normalized.AllowedToolCodes),
 		"priority":           resolveSkillPriorityForService(normalized.Priority, current.Priority),
@@ -167,7 +167,7 @@ func (s *skillDefinitionService) normalizeSkillDefinitionRequest(req request.Cre
 		Code:        strings.TrimSpace(req.Code),
 		Name:        strings.TrimSpace(req.Name),
 		Description: strings.TrimSpace(req.Description),
-		Content:     strings.TrimSpace(req.Content),
+		Instruction: strings.TrimSpace(req.Instruction),
 		Priority:    normalizeSkillPriorityForService(req.Priority),
 		Remark:      strings.TrimSpace(req.Remark),
 	}
@@ -177,8 +177,8 @@ func (s *skillDefinitionService) normalizeSkillDefinitionRequest(req request.Cre
 	if normalized.Name == "" {
 		return nil, errorsx.InvalidParam("Skill 名称不能为空")
 	}
-	if normalized.Content == "" {
-		return nil, errorsx.InvalidParam("Content 不能为空")
+	if normalized.Instruction == "" {
+		return nil, errorsx.InvalidParam("技能说明不能为空")
 	}
 	examples, err := normalizeSkillStringArray(req.Examples)
 	if err != nil {
