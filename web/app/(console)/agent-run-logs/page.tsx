@@ -440,6 +440,13 @@ export default function DashboardAgentRunLogsPage() {
                             转人工原因：{item.handoffReason}
                           </div>
                         ) : null}
+                        {item.recommendedAction ? (
+                          <div className="line-clamp-1 text-xs text-muted-foreground">
+                            分流建议：{item.recommendedAction}
+                            {item.riskLevel ? ` / ${item.riskLevel} risk` : ""}
+                            {item.ticketDraftReady ? " / 草稿已就绪" : ""}
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                       "-"
@@ -529,6 +536,9 @@ export default function DashboardAgentRunLogsPage() {
                     `plannedSkillCode: ${activeLog.plannedSkillCode || "-"}`,
                     `plannedSkillName: ${activeLog.plannedSkillName || "-"}`,
                     `graphToolCode: ${activeLog.graphToolCode || "-"}`,
+                    `recommendedAction: ${activeLog.recommendedAction || "-"}`,
+                    `riskLevel: ${activeLog.riskLevel || "-"}`,
+                    `ticketDraftReady: ${activeLog.ticketDraftReady ? "true" : "false"}`,
                     `plannedToolCode: ${activeLog.plannedToolCode || "-"}`,
                     `planReason: ${activeLog.planReason || "-"}`,
                     `handoffReason: ${activeLog.handoffReason || "-"}`,

@@ -399,6 +399,9 @@ export type AgentRunLog = {
   toolSearchTrace: string
   graphToolTrace: string
   graphToolCode: string
+  recommendedAction: string
+  riskLevel: string
+  ticketDraftReady: boolean
   handoffReason: string
   plannedToolCode: string
   planReason: string

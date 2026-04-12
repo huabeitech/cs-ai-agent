@@ -3,6 +3,7 @@ package builders
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto/response"
+	"encoding/json"
 	"strings"
 )
 
@@ -11,36 +12,63 @@ func BuildAgentRunLog(item *models.AgentRunLog) response.AgentRunLogResponse {
 		return response.AgentRunLogResponse{}
 	}
 	hitlStatus, hitlStatusName, hitlSummary := resolveAgentRunLogHITL(item)
+	recommendedAction, riskLevel, ticketDraftReady := resolveGraphOutcome(item.GraphToolTrace)
 	return response.AgentRunLogResponse{
-		ID:               item.ID,
-		ConversationID:   item.ConversationID,
-		MessageID:        item.MessageID,
-		AIAgentID:        item.AIAgentID,
-		AIConfigID:       item.AIConfigID,
-		UserMessage:      item.UserMessage,
-		PlannedAction:    item.PlannedAction,
-		PlannedSkillCode: item.PlannedSkillCode,
-		PlannedSkillName: item.PlannedSkillName,
-		SkillRouteTrace:  item.SkillRouteTrace,
-		ToolSearchTrace:  item.ToolSearchTrace,
-		GraphToolTrace:   item.GraphToolTrace,
-		GraphToolCode:    item.GraphToolCode,
-		HandoffReason:    item.HandoffReason,
-		PlannedToolCode:  item.PlannedToolCode,
-		PlanReason:       item.PlanReason,
-		InterruptType:    item.InterruptType,
-		ResumeSource:     item.ResumeSource,
-		HitlStatus:       hitlStatus,
-		HitlStatusName:   hitlStatusName,
-		HitlSummary:      hitlSummary,
-		FinalAction:      item.FinalAction,
-		FinalStatus:      item.FinalStatus,
-		ReplyText:        item.ReplyText,
-		ErrorMessage:     item.ErrorMessage,
-		LatencyMs:        item.LatencyMs,
-		TraceData:        item.TraceData,
-		CreatedAt:        item.CreatedAt.Format("2006-01-02 15:04:05"),
+		ID:                item.ID,
+		ConversationID:    item.ConversationID,
+		MessageID:         item.MessageID,
+		AIAgentID:         item.AIAgentID,
+		AIConfigID:        item.AIConfigID,
+		UserMessage:       item.UserMessage,
+		PlannedAction:     item.PlannedAction,
+		PlannedSkillCode:  item.PlannedSkillCode,
+		PlannedSkillName:  item.PlannedSkillName,
+		SkillRouteTrace:   item.SkillRouteTrace,
+		ToolSearchTrace:   item.ToolSearchTrace,
+		GraphToolTrace:    item.GraphToolTrace,
+		GraphToolCode:     item.GraphToolCode,
+		RecommendedAction: recommendedAction,
+		RiskLevel:         riskLevel,
+		TicketDraftReady:  ticketDraftReady,
+		HandoffReason:     item.HandoffReason,
+		PlannedToolCode:   item.PlannedToolCode,
+		PlanReason:        item.PlanReason,
+		InterruptType:     item.InterruptType,
+		ResumeSource:      item.ResumeSource,
+		HitlStatus:        hitlStatus,
+		HitlStatusName:    hitlStatusName,
+		HitlSummary:       hitlSummary,
+		FinalAction:       item.FinalAction,
+		FinalStatus:       item.FinalStatus,
+		ReplyText:         item.ReplyText,
+		ErrorMessage:      item.ErrorMessage,
+		LatencyMs:         item.LatencyMs,
+		TraceData:         item.TraceData,
+		CreatedAt:         item.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
+}
+
+func resolveGraphOutcome(raw string) (recommendedAction, riskLevel string, ticketDraftReady bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", "", false
+	}
+	var payload struct {
+		Items []struct {
+			RecommendedAction string `json:"recommendedAction"`
+			RiskLevel         string `json:"riskLevel"`
+			TicketDraftReady  bool   `json:"ticketDraftReady"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return "", "", false
+	}
+	for _, item := range payload.Items {
+		if strings.TrimSpace(item.RecommendedAction) != "" || strings.TrimSpace(item.RiskLevel) != "" || item.TicketDraftReady {
+			return strings.TrimSpace(item.RecommendedAction), strings.TrimSpace(item.RiskLevel), item.TicketDraftReady
+		}
+	}
+	return "", "", false
 }
 
 func resolveAgentRunLogHITL(item *models.AgentRunLog) (status, statusName, summary string) {
