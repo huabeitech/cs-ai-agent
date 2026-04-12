@@ -50,6 +50,13 @@ type RetrieverTraceSummary struct {
 	EmbeddingMs      int64
 	VectorSearchMs   int64
 	HydrateMs        int64
+	Policies         []RetrieverPolicyTraceItem
+}
+
+type RetrieverPolicyTraceItem struct {
+	KnowledgeBaseID int64   `json:"knowledgeBaseId,omitempty"`
+	TopK            int     `json:"topK,omitempty"`
+	ScoreThreshold  float64 `json:"scoreThreshold,omitempty"`
 }
 
 type InstructionTraceSummary struct {
@@ -92,15 +99,16 @@ type RuntimeTraceData struct {
 		CurrentUserMessagePreview string   `json:"currentUserMessagePreview,omitempty"`
 	} `json:"input"`
 	Retriever struct {
-		Count            int                  `json:"count,omitempty"`
-		TopK             int                  `json:"topK,omitempty"`
-		ScoreThreshold   float64              `json:"scoreThreshold,omitempty"`
-		ContextMaxTokens int                  `json:"contextMaxTokens,omitempty"`
-		ContextCount     int                  `json:"contextCount,omitempty"`
-		EmbeddingMs      int64                `json:"embeddingMs,omitempty"`
-		VectorSearchMs   int64                `json:"vectorSearchMs,omitempty"`
-		HydrateMs        int64                `json:"hydrateMs,omitempty"`
-		Items            []RetrieverTraceItem `json:"items,omitempty"`
+		Count            int                        `json:"count,omitempty"`
+		TopK             int                        `json:"topK,omitempty"`
+		ScoreThreshold   float64                    `json:"scoreThreshold,omitempty"`
+		ContextMaxTokens int                        `json:"contextMaxTokens,omitempty"`
+		ContextCount     int                        `json:"contextCount,omitempty"`
+		EmbeddingMs      int64                      `json:"embeddingMs,omitempty"`
+		VectorSearchMs   int64                      `json:"vectorSearchMs,omitempty"`
+		HydrateMs        int64                      `json:"hydrateMs,omitempty"`
+		Policies         []RetrieverPolicyTraceItem `json:"policies,omitempty"`
+		Items            []RetrieverTraceItem       `json:"items,omitempty"`
 	} `json:"retriever"`
 	Tools struct {
 		Count int             `json:"count,omitempty"`

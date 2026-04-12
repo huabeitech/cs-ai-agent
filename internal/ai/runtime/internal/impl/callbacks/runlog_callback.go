@@ -79,6 +79,7 @@ func (c *RuntimeTraceCollector) SetRetrieverSummary(summary RetrieverTraceSummar
 	c.Data.Retriever.EmbeddingMs = summary.EmbeddingMs
 	c.Data.Retriever.VectorSearchMs = summary.VectorSearchMs
 	c.Data.Retriever.HydrateMs = summary.HydrateMs
+	c.Data.Retriever.Policies = append([]RetrieverPolicyTraceItem(nil), summary.Policies...)
 }
 
 func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
