@@ -140,8 +140,8 @@ func buildSkillDebugRunResponse(req request.SkillDebugRunRequest, summary *Summa
 	resp.ReplyText = summary.ReplyText
 	resp.PlanReason = summary.PlanReason
 	resp.SkillRouteTrace = summary.SkillRouteTrace
-	resp.SkillAllowedToolCodes = append([]string(nil), summary.SkillAllowedToolCodes...)
-	resp.ToolCodes = append([]string(nil), summary.ToolCodes...)
+	resp.ToolWhitelist = append([]string(nil), summary.SkillAllowedToolCodes...)
+	resp.ExposedToolCodes = append([]string(nil), summary.ToolCodes...)
 	resp.InvokedToolCodes = append([]string(nil), summary.InvokedToolCodes...)
 	resp.ToolSearchTrace = extractToolSearchTrace(summary)
 	resp.GraphToolTrace = extractGraphToolTrace(summary)
@@ -167,8 +167,8 @@ func buildSkillDebugResumeResponse(req request.SkillDebugResumeRequest, summary 
 	resp.ReplyText = summary.ReplyText
 	resp.PlanReason = summary.PlanReason
 	resp.SkillRouteTrace = summary.SkillRouteTrace
-	resp.SkillAllowedToolCodes = append([]string(nil), summary.SkillAllowedToolCodes...)
-	resp.ToolCodes = append([]string(nil), summary.ToolCodes...)
+	resp.ToolWhitelist = append([]string(nil), summary.SkillAllowedToolCodes...)
+	resp.ExposedToolCodes = append([]string(nil), summary.ToolCodes...)
 	resp.InvokedToolCodes = append([]string(nil), summary.InvokedToolCodes...)
 	resp.ToolSearchTrace = extractToolSearchTrace(summary)
 	resp.GraphToolTrace = extractGraphToolTrace(summary)

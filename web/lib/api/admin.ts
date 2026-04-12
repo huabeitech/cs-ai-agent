@@ -321,8 +321,8 @@ export type SkillDebugRunResult = {
   replyText: string
   planReason: string
   skillRouteTrace: string
-  skillAllowedToolCodes: string[]
-  toolCodes: string[]
+  toolWhitelist: string[]
+  exposedToolCodes: string[]
   invokedToolCodes: string[]
   toolSearchTrace: string
   graphToolTrace: string

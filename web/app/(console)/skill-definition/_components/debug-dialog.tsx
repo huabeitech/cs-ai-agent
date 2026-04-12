@@ -403,10 +403,10 @@ function DebugDialogBody({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="rounded-lg bg-muted/50 p-3">
-                <div className="text-xs text-muted-foreground">Skill Allowed Tools</div>
+                <div className="text-xs text-muted-foreground">技能工具白名单</div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(result?.skillAllowedToolCodes ?? []).length > 0 ? (
-                    result?.skillAllowedToolCodes.map((toolCode) => (
+                  {(result?.toolWhitelist ?? []).length > 0 ? (
+                    result?.toolWhitelist.map((toolCode) => (
                       <Badge key={toolCode} variant="outline">
                         {toolCode}
                       </Badge>
@@ -417,10 +417,10 @@ function DebugDialogBody({
                 </div>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <div className="text-xs text-muted-foreground">Candidate Tools</div>
+                <div className="text-xs text-muted-foreground">本轮实际暴露工具</div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(result?.toolCodes ?? []).length > 0 ? (
-                    result?.toolCodes.map((toolCode) => (
+                  {(result?.exposedToolCodes ?? []).length > 0 ? (
+                    result?.exposedToolCodes.map((toolCode) => (
                       <Badge key={toolCode} variant="outline">
                         {toolCode}
                       </Badge>
@@ -431,7 +431,7 @@ function DebugDialogBody({
                 </div>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <div className="text-xs text-muted-foreground">Invoked Tools</div>
+                <div className="text-xs text-muted-foreground">本轮实际调用工具</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {(result?.invokedToolCodes ?? []).length > 0 ? (
                     result?.invokedToolCodes.map((toolCode) => (
