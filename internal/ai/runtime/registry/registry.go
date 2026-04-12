@@ -59,6 +59,14 @@ func isAllowedToolCode(toolCode string, allowedToolCodes map[string]struct{}) bo
 	if isAlwaysAllowedToolCode(toolCode) {
 		return true
 	}
+	if strings.TrimSpace(toolCode) == toolx.GraphAnalyzeConversationToolCode {
+		if _, ok := allowedToolCodes[toolx.GraphCreateTicketConfirmToolCode]; ok {
+			return true
+		}
+		if _, ok := allowedToolCodes[toolx.GraphHandoffConversationToolCode]; ok {
+			return true
+		}
+	}
 	if strings.TrimSpace(toolCode) == toolx.GraphPrepareTicketDraftToolCode {
 		_, ok := allowedToolCodes[toolx.GraphCreateTicketConfirmToolCode]
 		return ok

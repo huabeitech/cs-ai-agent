@@ -19,6 +19,7 @@ func newService() *service {
 	return &service{
 		runtime: engine.NewService(),
 		registry: registry.NewRegistry(
+			tools.NewAnalyzeConversationTool(),
 			tools.NewPrepareTicketDraftTool(),
 			tools.NewCreateTicketGraphTool(),
 			tools.NewHandoffGraphTool(),

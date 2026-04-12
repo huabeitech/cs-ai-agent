@@ -109,16 +109,20 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 				continue
 			}
 			serverCode, toolName := "", ""
-			if toolCode == toolx.BuiltinToolSearchToolCode {
+			switch toolCode {
+			case toolx.BuiltinToolSearchToolCode:
 				serverCode = toolx.BuiltinToolCatalogServerCode
 				toolName = toolx.BuiltinToolSearchToolName
-			} else if toolCode == toolx.GraphPrepareTicketDraftToolCode {
+			case toolx.GraphAnalyzeConversationToolCode:
+				serverCode = toolx.GraphToolCatalogServerCode
+				toolName = toolx.GraphAnalyzeConversationToolName
+			case toolx.GraphPrepareTicketDraftToolCode:
 				serverCode = toolx.GraphToolCatalogServerCode
 				toolName = toolx.GraphPrepareTicketDraftToolName
-			} else if toolCode == toolx.GraphCreateTicketConfirmToolCode {
+			case toolx.GraphCreateTicketConfirmToolCode:
 				serverCode = toolx.GraphToolCatalogServerCode
 				toolName = toolx.GraphCreateTicketConfirmToolName
-			} else if toolCode == toolx.GraphHandoffConversationToolCode {
+			case toolx.GraphHandoffConversationToolCode:
 				serverCode = toolx.GraphToolCatalogServerCode
 				toolName = toolx.GraphHandoffConversationToolName
 			}
@@ -222,6 +226,15 @@ func assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.Ski
 2. 如果工具返回 ready=false，优先根据 missingFields 和 followUpQuestions 继续追问，不要直接创建工单。
 3. 如果工具返回 ready=true，再结合结果考虑调用 create_ticket_with_confirmation。
 4. 该工具用于“整理草稿”，不代表已经创建工单。
+`))
+	}
+	if hasToolCode(extraToolCodes, toolx.GraphAnalyzeConversationToolCode) {
+		appendixParts = append(appendixParts, strings.TrimSpace(`
+当对话可能涉及投诉升级、退款赔偿、明显负面情绪、是否要建单、是否要转人工等复杂判断时，优先调用 analyze_conversation 这个 Graph Tool，并遵守以下规则：
+1. 该工具用于输出结构化摘要、风险信号和下一步建议，不代表实际已经建单或转人工。
+2. 如果工具建议为 handoff_to_human，应先确认是否满足转人工条件，再考虑调用 handoff_to_human。
+3. 如果工具建议为 prepare_ticket，应优先调用 prepare_ticket_draft 或继续补充信息，而不是直接建单。
+4. 如果工具建议为 continue_answering，优先继续澄清和解答，不要过早升级动作。
 `))
 	}
 	if hasToolCode(extraToolCodes, toolx.GraphCreateTicketConfirmToolCode) {
