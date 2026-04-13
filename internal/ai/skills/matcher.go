@@ -7,11 +7,8 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
-	"cs-agent/internal/pkg/utils"
-	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/common/strs"
-	"github.com/mlogclub/simple/sqls"
 )
 
 type intentTriggerConfig struct {
@@ -21,7 +18,7 @@ type intentTriggerConfig struct {
 // MatchSkill 对单个 SkillDefinition 执行命中判断。
 func MatchSkill(execCtx context.Context, ctx RuntimeContext, aiAgent *models.AIAgent, aiConfig *models.AIConfig) (*models.SkillDefinition, string, *RouteTrace, error) {
 	if strs.IsNotBlank(ctx.ManualSkillCode) {
-		skill := repositories.SkillDefinitionRepository.GetByCode(sqls.DB(), ctx.ManualSkillCode)
+		skill := findManualSkillDefinition(ctx.ManualSkillCode)
 		if skill == nil || skill.Status != enums.StatusOk {
 			return nil, "", nil, errorsx.InvalidParam("Skill 不存在或未启用")
 		}
@@ -82,23 +79,4 @@ func MatchSkill(execCtx context.Context, ctx RuntimeContext, aiAgent *models.AIA
 		return nil, "route_none", trace, nil
 	}
 	return selected, "llm_route", trace, nil
-}
-
-func loadCandidateSkills(aiAgent *models.AIAgent) []models.SkillDefinition {
-	if aiAgent == nil {
-		return nil
-	}
-	skillIDs := utils.SplitInt64s(aiAgent.SkillIDs)
-	if len(skillIDs) == 0 {
-		return nil
-	}
-	ret := make([]models.SkillDefinition, 0, len(skillIDs))
-	for _, id := range skillIDs {
-		skill := repositories.SkillDefinitionRepository.Get(sqls.DB(), id)
-		if skill == nil || skill.Status != enums.StatusOk {
-			continue
-		}
-		ret = append(ret, *skill)
-	}
-	return ret
 }
