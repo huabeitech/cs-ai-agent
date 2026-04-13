@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"cs-agent/internal/ai/runtime/internal/engine"
+	"cs-agent/internal/ai/runtime/internal/executor"
 	"cs-agent/internal/ai/runtime/registry"
 	"cs-agent/internal/ai/runtime/tools"
 	"cs-agent/internal/ai/skills"
@@ -14,13 +14,13 @@ import (
 )
 
 type Service struct {
-	runtime  *engine.Service
+	runtime  *executor.Service
 	registry *registry.Registry
 }
 
 func NewService() *Service {
 	return &Service{
-		runtime: engine.NewService(),
+		runtime: executor.NewService(),
 		registry: registry.NewRegistry(
 			tools.NewTriageServiceRequestTool(),
 			tools.NewAnalyzeConversationTool(),
@@ -42,7 +42,7 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 	if err := s.prepareToolsForRun(&req); err != nil {
 		return nil, err
 	}
-	summary, err := s.runtime.ExecuteRun(ctx, engine.RunInput{
+	summary, err := s.runtime.ExecuteRun(ctx, executor.RunInput{
 		Conversation:     req.Conversation,
 		UserMessage:      req.UserMessage,
 		AIAgent:          req.AIAgent,
@@ -71,7 +71,7 @@ func (s *Service) Resume(ctx context.Context, req ResumeRequest) (*Summary, erro
 	if err := s.prepareToolsForResume(&req); err != nil {
 		return nil, err
 	}
-	summary, err := s.runtime.ExecuteResume(ctx, engine.ResumeInput{
+	summary, err := s.runtime.ExecuteResume(ctx, executor.ResumeInput{
 		Conversation: req.Conversation,
 		AIAgent:      req.AIAgent,
 		AIConfig:     req.AIConfig,
@@ -120,7 +120,7 @@ func (s *Service) prepareToolsForResume(req *ResumeRequest) error {
 	return nil
 }
 
-func toSummary(summary *engine.Summary) *Summary {
+func toSummary(summary *executor.RunResult) *Summary {
 	if summary == nil {
 		return nil
 	}
