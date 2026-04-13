@@ -14,10 +14,14 @@ import (
 var RuntimeService = newService()
 
 func newService() *Service {
-	return &Service{}
+	return &Service{
+		runlog: newRunLogService(),
+	}
 }
 
-type Service struct{}
+type Service struct {
+	runlog *RunLogService
+}
 
 // BuildExecutionPlan 构建当前请求的 Skill 执行计划。
 func (s *Service) BuildExecutionPlan(execCtx context.Context, ctx RuntimeContext) (*ExecutionPlan, error) {
@@ -50,10 +54,7 @@ func (s *Service) BuildExecutionPlan(execCtx context.Context, ctx RuntimeContext
 
 // WriteRunLog 写入 Skill 路由日志。
 func (s *Service) WriteRunLog(log *models.SkillRunLog) error {
-	if log == nil {
-		return nil
-	}
-	return repositories.SkillRunLogRepository.Create(sqls.DB(), log)
+	return s.runlog.Write(log)
 }
 
 // Select 执行一次 Skill 路由并记录路由日志。
@@ -61,7 +62,7 @@ func (s *Service) Select(ctx context.Context, runtimeCtx RuntimeContext) (*Execu
 	plan, err := s.BuildExecutionPlan(ctx, runtimeCtx)
 	if err != nil {
 		trace := &ExecutionTrace{Status: "route_error"}
-		log := BuildRunLog(runtimeCtx, nil, trace, err)
+		log := s.runlog.Build(runtimeCtx, nil, trace, err)
 		_ = s.WriteRunLog(log)
 		return nil, err
 	}
@@ -72,7 +73,7 @@ func (s *Service) Select(ctx context.Context, runtimeCtx RuntimeContext) (*Execu
 			trace.MatchReason = strings.TrimSpace(plan.MatchReason)
 			trace.Route = plan.RouteTrace
 		}
-		log := BuildRunLog(runtimeCtx, plan, trace, nil)
+		log := s.runlog.Build(runtimeCtx, plan, trace, nil)
 		_ = s.WriteRunLog(log)
 		return &ExecutionResult{
 			Plan:   plan,
@@ -82,7 +83,7 @@ func (s *Service) Select(ctx context.Context, runtimeCtx RuntimeContext) (*Execu
 	}
 	trace.MatchReason = strings.TrimSpace(plan.MatchReason)
 	trace.Route = plan.RouteTrace
-	log := BuildRunLog(runtimeCtx, plan, trace, err)
+	log := s.runlog.Build(runtimeCtx, plan, trace, err)
 	if writeErr := s.WriteRunLog(log); writeErr != nil && err == nil {
 		err = writeErr
 	}
