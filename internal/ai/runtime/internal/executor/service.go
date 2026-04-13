@@ -128,6 +128,7 @@ func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, err
 		DynamicMCPToolDefinitions:  filteredToolDefs,
 		StaticTools:                toolSetStaticTools(req.ToolSet),
 		StaticToolCodes:            toolSetStaticToolCodes(req.ToolSet),
+		StaticToolMetadata:         toolSetStaticToolMetadata(req.ToolSet),
 		Collector:                  collector,
 	})
 	if err != nil {
@@ -260,6 +261,7 @@ func (s *Service) ExecuteResume(ctx context.Context, req ResumeInput) (*RunResul
 		DynamicMCPToolDefinitions:  toolDefs,
 		StaticTools:                toolSetStaticTools(req.ToolSet),
 		StaticToolCodes:            toolSetStaticToolCodes(req.ToolSet),
+		StaticToolMetadata:         toolSetStaticToolMetadata(req.ToolSet),
 		Collector:                  collector,
 	})
 	if err != nil {
@@ -436,16 +438,27 @@ func appendIfMissing(items []string, item string) []string {
 }
 
 func staticToolCodeList(toolSet *registry.ToolSet) []string {
-	if toolSet == nil || len(toolSet.StaticToolCodes) == 0 {
+	if toolSet == nil {
 		return nil
 	}
-	ret := make([]string, 0, len(toolSet.StaticToolCodes))
-	for _, code := range toolSet.StaticToolCodes {
+	metadata := toolSetStaticToolMetadata(toolSet)
+	ret := make([]string, 0, len(metadata))
+	for _, item := range metadata {
+		code := strings.TrimSpace(item.ToolCode)
+		if code == "" {
+			continue
+		}
+		ret = appendIfMissing(ret, code)
+	}
+	if len(ret) > 0 {
+		return ret
+	}
+	for _, code := range toolSetStaticToolCodes(toolSet) {
 		code = strings.TrimSpace(code)
 		if code == "" {
 			continue
 		}
-		ret = append(ret, code)
+		ret = appendIfMissing(ret, code)
 	}
 	return ret
 }
@@ -464,6 +477,25 @@ func toolSetStaticToolCodes(toolSet *registry.ToolSet) map[string]string {
 	ret := make(map[string]string, len(toolSet.StaticToolCodes))
 	for name, code := range toolSet.StaticToolCodes {
 		ret[strings.TrimSpace(name)] = strings.TrimSpace(code)
+	}
+	return ret
+}
+
+func toolSetStaticToolMetadata(toolSet *registry.ToolSet) map[string]registry.ToolMetadata {
+	if toolSet == nil || len(toolSet.StaticToolMetadata) == 0 {
+		return nil
+	}
+	ret := make(map[string]registry.ToolMetadata, len(toolSet.StaticToolMetadata))
+	for name, item := range toolSet.StaticToolMetadata {
+		trimmedName := strings.TrimSpace(name)
+		if trimmedName == "" {
+			continue
+		}
+		item.ToolCode = strings.TrimSpace(item.ToolCode)
+		item.ServerCode = strings.TrimSpace(item.ServerCode)
+		item.ToolName = strings.TrimSpace(item.ToolName)
+		item.SourceType = strings.TrimSpace(item.SourceType)
+		ret[trimmedName] = item
 	}
 	return ret
 }

@@ -9,6 +9,7 @@ import (
 	einoadapter "cs-agent/internal/ai/runtime/internal/impl/adapter"
 	einoagents "cs-agent/internal/ai/runtime/internal/impl/agents"
 	einocallbacks "cs-agent/internal/ai/runtime/internal/impl/callbacks"
+	"cs-agent/internal/ai/runtime/registry"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/toolx"
 
@@ -48,6 +49,8 @@ type BuildCustomerServiceAgentInput struct {
 	StaticTools []einobasetool.BaseTool
 	// StaticToolCodes 为固定工具的 modelName -> toolCode 映射，用于 trace 和运行日志归因。
 	StaticToolCodes map[string]string
+	// StaticToolMetadata 为固定工具的 modelName -> metadata 映射，用于 trace 和运行日志归因。
+	StaticToolMetadata map[string]registry.ToolMetadata
 	// Collector 用于收集运行链路中的 tool trace、graph trace 等调试信息。
 	Collector *einocallbacks.RuntimeTraceCollector
 }
@@ -93,7 +96,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 		handlers = append(handlers, skillHandler)
 	}
 	if input.Collector != nil {
-		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(input.DynamicMCPToolDefinitions)+len(input.StaticToolCodes))
+		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(input.DynamicMCPToolDefinitions)+len(input.StaticToolMetadata))
 		for _, item := range input.DynamicMCPToolDefinitions {
 			toolMetadataBy[item.ModelName] = einocallbacks.ToolMetadata{
 				ToolCode:   item.ToolCode,
@@ -102,18 +105,20 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 				SourceType: "mcp",
 			}
 		}
-		for modelName, toolCode := range input.StaticToolCodes {
+		for modelName, metadata := range input.StaticToolMetadata {
 			modelName = strings.TrimSpace(modelName)
-			toolCode = strings.TrimSpace(toolCode)
-			if modelName == "" || toolCode == "" {
+			metadata.ToolCode = strings.TrimSpace(metadata.ToolCode)
+			metadata.ServerCode = strings.TrimSpace(metadata.ServerCode)
+			metadata.ToolName = strings.TrimSpace(metadata.ToolName)
+			metadata.SourceType = strings.TrimSpace(metadata.SourceType)
+			if modelName == "" || metadata.ToolCode == "" {
 				continue
 			}
-			serverCode, toolName, sourceType, _ := toolx.BuildToolMetadata(toolCode)
 			toolMetadataBy[modelName] = einocallbacks.ToolMetadata{
-				ToolCode:   toolCode,
-				ServerCode: serverCode,
-				ToolName:   toolName,
-				SourceType: sourceType,
+				ToolCode:   metadata.ToolCode,
+				ServerCode: metadata.ServerCode,
+				ToolName:   metadata.ToolName,
+				SourceType: metadata.SourceType,
 			}
 		}
 		if input.SelectedSkill != nil {
