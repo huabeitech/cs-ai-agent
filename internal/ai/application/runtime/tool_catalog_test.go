@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/toolx"
 )
 
 func TestNormalizeAllowedToolCodes(t *testing.T) {
-	ret := normalizeAllowedToolCodes([]string{
+	ret := toolx.NormalizeToolCodes([]string{
 		" ",
 		"graph/create_ticket_with_confirmation",
 		"builtin/create_ticket_with_confirmation",
@@ -50,5 +51,12 @@ func TestToolCatalogResolveAllowedToolCodesFallsBackWhenSkillEmpty(t *testing.T)
 	ret := catalog.resolveAllowedToolCodes(agent, nil)
 	if len(ret) != 2 {
 		t.Fatalf("expected 2 tool codes, got %d: %#v", len(ret), ret)
+	}
+}
+
+func TestBuildRuntimeStaticTools(t *testing.T) {
+	ret := buildRuntimeStaticTools()
+	if len(ret) != len(toolx.ListRuntimeStaticToolSpecs()) {
+		t.Fatalf("expected %d runtime static tools, got %d", len(toolx.ListRuntimeStaticToolSpecs()), len(ret))
 	}
 }

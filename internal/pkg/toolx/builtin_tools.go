@@ -3,15 +3,17 @@ package toolx
 import "strings"
 
 type ToolSpec struct {
-	Code         string
-	ServerCode   string
-	Name         string
-	Title        string
-	Description  string
-	SourceType   string
-	AutoInjected bool
-	Aliases      []string
-	Appendix     string
+	Code          string
+	ServerCode    string
+	Name          string
+	Title         string
+	Description   string
+	SourceType    string
+	AutoInjected  bool
+	DirectAccess  bool
+	RuntimeStatic bool
+	Aliases       []string
+	Appendix      string
 }
 
 var (
@@ -23,6 +25,7 @@ var (
 		Description:  "用于搜索当前允许使用的 MCP 工具，并在确认目标 toolCode 后动态调用该工具。适合处理长尾工具，不应替代固定内置流程工具。",
 		SourceType:   "builtin",
 		AutoInjected: true,
+		DirectAccess: true,
 		Appendix: strings.TrimSpace(`
 当你需要使用长尾 MCP 能力时，优先使用 tool_search 工具，并遵守以下规则：
 1. 先调用 tool_search 搜索需要的动态工具，再继续使用已选中的真实工具。
@@ -40,12 +43,13 @@ var (
 		AutoInjected: true,
 	}
 	GraphTriageServiceRequest = ToolSpec{
-		Code:        "graph/triage_service_request",
-		ServerCode:  "graph",
-		Name:        "triage_service_request",
-		Title:       "升级分流判断",
-		Description: "Graph Tool。用于综合分析当前对话，判断应继续解答、整理工单草稿还是转人工，并在需要建单时一并整理工单草稿。",
-		SourceType:  "graph",
+		Code:          "graph/triage_service_request",
+		ServerCode:    "graph",
+		Name:          "triage_service_request",
+		Title:         "升级分流判断",
+		Description:   "Graph Tool。用于综合分析当前对话，判断应继续解答、整理工单草稿还是转人工，并在需要建单时一并整理工单草稿。",
+		SourceType:    "graph",
+		RuntimeStatic: true,
 		Appendix: strings.TrimSpace(`
 当你需要判断“继续解答 / 建单 / 转人工”这类复杂升级路径时，优先先调用 triage_service_request 这个 Graph Tool，并遵守以下规则：
 1. 该工具会综合当前对话输出 recommendedAction，并在需要建单时附带 ticketDraft。
@@ -56,12 +60,13 @@ var (
 `),
 	}
 	GraphAnalyzeConversation = ToolSpec{
-		Code:        "graph/analyze_conversation",
-		ServerCode:  "graph",
-		Name:        "analyze_conversation",
-		Title:       "分析对话风险与摘要",
-		Description: "Graph Tool。用于整理当前对话摘要、识别风险信号，并给出继续解答、建单或转人工的建议。",
-		SourceType:  "graph",
+		Code:          "graph/analyze_conversation",
+		ServerCode:    "graph",
+		Name:          "analyze_conversation",
+		Title:         "分析对话风险与摘要",
+		Description:   "Graph Tool。用于整理当前对话摘要、识别风险信号，并给出继续解答、建单或转人工的建议。",
+		SourceType:    "graph",
+		RuntimeStatic: true,
 		Appendix: strings.TrimSpace(`
 当对话可能涉及投诉升级、退款赔偿、明显负面情绪、是否要建单、是否要转人工等复杂判断时，优先调用 analyze_conversation 这个 Graph Tool，并遵守以下规则：
 1. 该工具用于输出结构化摘要、风险信号和下一步建议，不代表实际已经建单或转人工。
@@ -71,12 +76,13 @@ var (
 `),
 	}
 	GraphPrepareTicketDraft = ToolSpec{
-		Code:        "graph/prepare_ticket_draft",
-		ServerCode:  "graph",
-		Name:        "prepare_ticket_draft",
-		Title:       "整理工单草稿",
-		Description: "Graph Tool。用于根据当前会话和已收集信息整理工单草稿，输出建议标题、描述、缺失字段和追问建议。",
-		SourceType:  "graph",
+		Code:          "graph/prepare_ticket_draft",
+		ServerCode:    "graph",
+		Name:          "prepare_ticket_draft",
+		Title:         "整理工单草稿",
+		Description:   "Graph Tool。用于根据当前会话和已收集信息整理工单草稿，输出建议标题、描述、缺失字段和追问建议。",
+		SourceType:    "graph",
+		RuntimeStatic: true,
 		Appendix: strings.TrimSpace(`
 当用户已经表达了建单、投诉、报障、售后处理等诉求，但工单标题、描述或问题整理还比较散乱时，优先调用 prepare_ticket_draft 这个 Graph Tool，并遵守以下规则：
 1. 该工具用于整理工单草稿，会返回建议标题、建议描述、缺失字段和追问建议。
@@ -86,13 +92,15 @@ var (
 `),
 	}
 	GraphCreateTicketConfirm = ToolSpec{
-		Code:        "graph/create_ticket_with_confirmation",
-		ServerCode:  "graph",
-		Name:        "create_ticket_with_confirmation",
-		Title:       "创建工单确认流程",
-		Description: "Graph Tool。用于封装建单参数整理、用户确认、真正建单和结果返回的确定性流程。",
-		SourceType:  "graph",
-		Aliases:     []string{"builtin/create_ticket_with_confirmation"},
+		Code:          "graph/create_ticket_with_confirmation",
+		ServerCode:    "graph",
+		Name:          "create_ticket_with_confirmation",
+		Title:         "创建工单确认流程",
+		Description:   "Graph Tool。用于封装建单参数整理、用户确认、真正建单和结果返回的确定性流程。",
+		SourceType:    "graph",
+		DirectAccess:  true,
+		RuntimeStatic: true,
+		Aliases:       []string{"builtin/create_ticket_with_confirmation"},
 		Appendix: strings.TrimSpace(`
 你可以在确认信息充分后调用 create_ticket_with_confirmation 这个 Graph Tool 来创建工单，但必须遵守以下规则：
 1. 只有在用户明确表达希望提交工单、投诉、报障、售后处理等诉求时，才考虑调用该工具。
@@ -103,12 +111,14 @@ var (
 `),
 	}
 	GraphHandoffConversation = ToolSpec{
-		Code:        "graph/handoff_to_human",
-		ServerCode:  "graph",
-		Name:        "handoff_to_human",
-		Title:       "转人工确认流程",
-		Description: "Graph Tool。用于封装转人工原因整理、用户确认、真正转人工和结果返回的确定性流程。",
-		SourceType:  "graph",
+		Code:          "graph/handoff_to_human",
+		ServerCode:    "graph",
+		Name:          "handoff_to_human",
+		Title:         "转人工确认流程",
+		Description:   "Graph Tool。用于封装转人工原因整理、用户确认、真正转人工和结果返回的确定性流程。",
+		SourceType:    "graph",
+		DirectAccess:  true,
+		RuntimeStatic: true,
 		Appendix: strings.TrimSpace(`
 你可以在确认需要人工介入后调用 handoff_to_human 这个 Graph Tool 来转人工，但必须遵守以下规则：
 1. 只有在用户明确要求人工客服，或你已经判断该问题必须由人工继续处理时，才调用该工具。
@@ -126,11 +136,6 @@ var (
 		GraphPrepareTicketDraft,
 		GraphCreateTicketConfirm,
 		GraphHandoffConversation,
-	}
-	AgentDirectToolSpecs = []ToolSpec{
-		GraphCreateTicketConfirm,
-		GraphHandoffConversation,
-		BuiltinToolSearch,
 	}
 )
 
@@ -238,17 +243,31 @@ func IsAutoInjectedToolCode(toolCode string) bool {
 }
 
 func ListAgentDirectToolSpecs() []ToolSpec {
-	return append([]ToolSpec(nil), AgentDirectToolSpecs...)
+	ret := make([]ToolSpec, 0, len(RegisteredToolSpecs))
+	for _, spec := range RegisteredToolSpecs {
+		if !spec.DirectAccess {
+			continue
+		}
+		ret = append(ret, spec)
+	}
+	return ret
+}
+
+func ListRuntimeStaticToolSpecs() []ToolSpec {
+	ret := make([]ToolSpec, 0, len(RegisteredToolSpecs))
+	for _, spec := range RegisteredToolSpecs {
+		if !spec.RuntimeStatic {
+			continue
+		}
+		ret = append(ret, spec)
+	}
+	return ret
 }
 
 func IsAgentDirectToolCode(toolCode string) bool {
 	toolCode = NormalizeToolCodeAlias(strings.TrimSpace(toolCode))
-	for _, spec := range AgentDirectToolSpecs {
-		if spec.Code == toolCode {
-			return true
-		}
-	}
-	return false
+	spec, ok := GetRegisteredToolSpec(toolCode)
+	return ok && spec.DirectAccess
 }
 
 func NormalizeToolCodeAlias(toolCode string) string {
@@ -321,4 +340,46 @@ func hasToolCode(toolCodes map[string]string, target string) bool {
 		}
 	}
 	return false
+}
+
+func NormalizeToolCodes(items []string) []string {
+	if len(items) == 0 {
+		return nil
+	}
+	ret := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		item = NormalizeToolCodeAlias(strings.TrimSpace(item))
+		if item == "" {
+			continue
+		}
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		ret = append(ret, item)
+	}
+	return ret
+}
+
+func IntersectToolCodes(left []string, right []string) []string {
+	left = NormalizeToolCodes(left)
+	right = NormalizeToolCodes(right)
+	switch {
+	case len(left) == 0:
+		return right
+	case len(right) == 0:
+		return left
+	}
+	rightSet := make(map[string]struct{}, len(right))
+	for _, item := range right {
+		rightSet[item] = struct{}{}
+	}
+	ret := make([]string, 0, len(left))
+	for _, item := range left {
+		if _, ok := rightSet[item]; ok {
+			ret = append(ret, item)
+		}
+	}
+	return ret
 }

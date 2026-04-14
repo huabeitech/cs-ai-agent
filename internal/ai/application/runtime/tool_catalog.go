@@ -16,14 +16,27 @@ type toolCatalog struct {
 
 func newToolCatalog() *toolCatalog {
 	return &toolCatalog{
-		registry: registry.NewRegistry(
-			tools.NewTriageServiceRequestTool(),
-			tools.NewAnalyzeConversationTool(),
-			tools.NewPrepareTicketDraftTool(),
-			tools.NewCreateTicketGraphTool(),
-			tools.NewHandoffGraphTool(),
-		),
+		registry: registry.NewRegistry(buildRuntimeStaticTools()...),
 	}
+}
+
+func buildRuntimeStaticTools() []registry.Tool {
+	builders := map[string]func() registry.Tool{
+		toolx.GraphTriageServiceRequest.Code: func() registry.Tool { return tools.NewTriageServiceRequestTool() },
+		toolx.GraphAnalyzeConversation.Code:  func() registry.Tool { return tools.NewAnalyzeConversationTool() },
+		toolx.GraphPrepareTicketDraft.Code:   func() registry.Tool { return tools.NewPrepareTicketDraftTool() },
+		toolx.GraphCreateTicketConfirm.Code:  func() registry.Tool { return tools.NewCreateTicketGraphTool() },
+		toolx.GraphHandoffConversation.Code:  func() registry.Tool { return tools.NewHandoffGraphTool() },
+	}
+	ret := make([]registry.Tool, 0, len(builders))
+	for _, spec := range toolx.ListRuntimeStaticToolSpecs() {
+		build := builders[strings.TrimSpace(spec.Code)]
+		if build == nil {
+			continue
+		}
+		ret = append(ret, build())
+	}
+	return ret
 }
 
 func (c *toolCatalog) resolveForRun(req *Request) (*registry.ToolSet, error) {
@@ -63,7 +76,7 @@ func (c *toolCatalog) parseSkillAllowedToolCodes(skill *models.SkillDefinition) 
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return nil
 	}
-	return normalizeAllowedToolCodes(items)
+	return toolx.NormalizeToolCodes(items)
 }
 
 func (c *toolCatalog) parseAgentAllowedToolCodes(aiAgent *models.AIAgent) []string {
@@ -78,48 +91,9 @@ func (c *toolCatalog) parseAgentAllowedToolCodes(aiAgent *models.AIAgent) []stri
 	for _, item := range items {
 		ret = append(ret, item.ToolCode)
 	}
-	return normalizeAllowedToolCodes(ret)
+	return toolx.NormalizeToolCodes(ret)
 }
 
 func (c *toolCatalog) resolveAllowedToolCodes(aiAgent *models.AIAgent, skill *models.SkillDefinition) []string {
-	agentAllowed := c.parseAgentAllowedToolCodes(aiAgent)
-	skillAllowed := c.parseSkillAllowedToolCodes(skill)
-	switch {
-	case len(agentAllowed) == 0:
-		return skillAllowed
-	case len(skillAllowed) == 0:
-		return agentAllowed
-	default:
-		skillSet := make(map[string]struct{}, len(skillAllowed))
-		for _, item := range skillAllowed {
-			skillSet[item] = struct{}{}
-		}
-		ret := make([]string, 0, len(agentAllowed))
-		for _, item := range agentAllowed {
-			if _, ok := skillSet[item]; ok {
-				ret = append(ret, item)
-			}
-		}
-		return ret
-	}
-}
-
-func normalizeAllowedToolCodes(items []string) []string {
-	if len(items) == 0 {
-		return nil
-	}
-	ret := make([]string, 0, len(items))
-	seen := make(map[string]struct{}, len(items))
-	for _, item := range items {
-		item = toolx.NormalizeToolCodeAlias(strings.TrimSpace(item))
-		if item == "" {
-			continue
-		}
-		if _, ok := seen[item]; ok {
-			continue
-		}
-		seen[item] = struct{}{}
-		ret = append(ret, item)
-	}
-	return ret
+	return toolx.IntersectToolCodes(c.parseAgentAllowedToolCodes(aiAgent), c.parseSkillAllowedToolCodes(skill))
 }
