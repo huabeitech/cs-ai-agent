@@ -317,7 +317,7 @@ const MessageItem = memo(
               className={cn(
                 "rounded-lg px-3 py-2 text-sm leading-normal shadow-[0_14px_28px_rgba(15,23,42,0.08)]",
                 isCustomer
-                  ? "bg-[linear-gradient(135deg,var(--primary),color-mix(in_srgb,var(--primary)_78%,white_22%))] text-white"
+                  ? "bg-[#A9EA7A] text-[#161616]"
                   : "border border-white/80 bg-white/94 text-slate-900",
               )}
             >
@@ -325,7 +325,7 @@ const MessageItem = memo(
                 html={htmlContent}
                 className={cn(
                   isCustomer
-                    ? "[&_p]:text-white [&_a]:text-white [&_a]:underline [&_img]:cursor-zoom-in"
+                    ? "[&_p]:text-[#161616] [&_a]:text-[#161616] [&_a]:underline [&_img]:cursor-zoom-in"
                     : "[&_a]:text-slate-900 [&_a]:underline [&_img]:cursor-zoom-in",
                 )}
                 onImageSettled={onImageSettled}
