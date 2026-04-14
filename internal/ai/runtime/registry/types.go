@@ -2,6 +2,7 @@ package registry
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/toolx"
 
 	einotool "github.com/cloudwego/eino/components/tool"
 )
@@ -34,6 +35,7 @@ type ToolSet struct {
 }
 
 type Tool interface {
+	Spec() toolx.ToolSpec
 	Name() string
 	Code() string
 	Enabled(ctx Context) bool

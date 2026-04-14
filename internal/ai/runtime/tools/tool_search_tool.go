@@ -26,6 +26,10 @@ func NewToolSearchTool() *ToolSearchTool {
 	return &ToolSearchTool{}
 }
 
+func (t *ToolSearchTool) Spec() toolx.ToolSpec {
+	return toolx.BuiltinToolSearch
+}
+
 func (t *ToolSearchTool) Name() string {
 	return toolx.BuiltinToolSearch.Name
 }

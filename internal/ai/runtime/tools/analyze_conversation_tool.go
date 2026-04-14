@@ -23,6 +23,10 @@ func NewAnalyzeConversationTool() *AnalyzeConversationTool {
 	return &AnalyzeConversationTool{}
 }
 
+func (t *AnalyzeConversationTool) Spec() toolx.ToolSpec {
+	return toolx.GraphAnalyzeConversation
+}
+
 func (t *AnalyzeConversationTool) Name() string {
 	return toolx.GraphAnalyzeConversation.Name
 }

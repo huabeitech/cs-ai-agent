@@ -29,7 +29,11 @@ func (r *Registry) Resolve(ctx Context) (*ToolSet, error) {
 		if toolDef == nil || !toolDef.Enabled(ctx) {
 			continue
 		}
-		toolCode := strings.TrimSpace(toolDef.Code())
+		spec := toolDef.Spec()
+		toolCode := strings.TrimSpace(spec.Code)
+		if toolCode == "" {
+			toolCode = strings.TrimSpace(toolDef.Code())
+		}
 		if len(allowedToolCodes) > 0 && !isAllowedToolCode(toolCode, allowedToolCodes) {
 			continue
 		}
@@ -40,13 +44,25 @@ func (r *Registry) Resolve(ctx Context) (*ToolSet, error) {
 		if tool == nil {
 			continue
 		}
-		toolName := strings.TrimSpace(toolDef.Name())
+		toolName := strings.TrimSpace(spec.Name)
+		if toolName == "" {
+			toolName = strings.TrimSpace(toolDef.Name())
+		}
 		if toolName == "" || toolCode == "" {
 			continue
 		}
 		ret.StaticTools = append(ret.StaticTools, tool)
 		ret.StaticToolCodes[toolName] = toolCode
 		resolvedMetadata := toolx.ResolveToolMetadata(toolCode, toolName)
+		if strings.TrimSpace(resolvedMetadata.ServerCode) == "" {
+			resolvedMetadata.ServerCode = strings.TrimSpace(spec.ServerCode)
+		}
+		if strings.TrimSpace(resolvedMetadata.ToolName) == "" {
+			resolvedMetadata.ToolName = toolName
+		}
+		if strings.TrimSpace(resolvedMetadata.SourceType) == "" {
+			resolvedMetadata.SourceType = strings.TrimSpace(spec.SourceType)
+		}
 		ret.StaticToolMetadata[toolName] = ToolMetadata{
 			ToolCode:   resolvedMetadata.ToolCode,
 			ServerCode: resolvedMetadata.ServerCode,

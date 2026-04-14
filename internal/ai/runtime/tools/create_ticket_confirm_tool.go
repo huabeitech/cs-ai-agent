@@ -24,6 +24,10 @@ func NewCreateTicketGraphTool() *CreateTicketGraphTool {
 	return &CreateTicketGraphTool{}
 }
 
+func (t *CreateTicketGraphTool) Spec() toolx.ToolSpec {
+	return toolx.GraphCreateTicketConfirm
+}
+
 func (t *CreateTicketGraphTool) Name() string {
 	return toolx.GraphCreateTicketConfirm.Name
 }

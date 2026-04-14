@@ -23,6 +23,10 @@ func NewPrepareTicketDraftTool() *PrepareTicketDraftTool {
 	return &PrepareTicketDraftTool{}
 }
 
+func (t *PrepareTicketDraftTool) Spec() toolx.ToolSpec {
+	return toolx.GraphPrepareTicketDraft
+}
+
 func (t *PrepareTicketDraftTool) Name() string {
 	return toolx.GraphPrepareTicketDraft.Name
 }

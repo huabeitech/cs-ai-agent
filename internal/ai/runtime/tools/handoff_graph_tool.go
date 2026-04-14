@@ -24,6 +24,10 @@ func NewHandoffGraphTool() *HandoffGraphTool {
 	return &HandoffGraphTool{}
 }
 
+func (t *HandoffGraphTool) Spec() toolx.ToolSpec {
+	return toolx.GraphHandoffConversation
+}
+
 func (t *HandoffGraphTool) Name() string {
 	return toolx.GraphHandoffConversation.Name
 }

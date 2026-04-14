@@ -17,6 +17,15 @@ type stubTool struct {
 	code string
 }
 
+func (t stubTool) Spec() toolx.ToolSpec {
+	return toolx.ToolSpec{
+		Code:       t.code,
+		Name:       t.name,
+		ServerCode: toolx.GraphCreateTicketConfirm.ServerCode,
+		SourceType: toolx.GraphCreateTicketConfirm.SourceType,
+	}
+}
+
 func (t stubTool) Name() string { return t.name }
 func (t stubTool) Code() string { return t.code }
 func (t stubTool) Enabled(registry.Context) bool {

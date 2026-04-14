@@ -23,6 +23,10 @@ func NewTriageServiceRequestTool() *TriageServiceRequestTool {
 	return &TriageServiceRequestTool{}
 }
 
+func (t *TriageServiceRequestTool) Spec() toolx.ToolSpec {
+	return toolx.GraphTriageServiceRequest
+}
+
 func (t *TriageServiceRequestTool) Name() string {
 	return toolx.GraphTriageServiceRequest.Name
 }
