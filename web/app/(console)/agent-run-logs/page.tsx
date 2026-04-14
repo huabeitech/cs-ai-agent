@@ -1,15 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
-import {
-  BotMessageSquareIcon,
-  RefreshCwIcon,
-  SearchIcon,
-  WorkflowIcon,
-} from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { RefreshCwIcon, SearchIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { ImMessageHTML } from "@/components/im-message-html"
 import { ListPagination } from "@/components/list-pagination"
 import { OptionCombobox } from "@/components/option-combobox"
 import { Badge } from "@/components/ui/badge"
@@ -21,14 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -38,14 +24,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { AgentRunLogDetailDialog } from "./_components/detail"
 import {
-  fetchAgentRunLog,
   fetchAgentRunGraphSummary,
   fetchAgentRunLogs,
   fetchAIAgentsAll,
   type AgentRunGraphSummary,
-  type AgentRunLog,
   type AIAgent,
+  type AgentRunLog,
   type PageResult,
 } from "@/lib/api/admin"
 import { formatDateTime } from "@/lib/utils"
@@ -130,9 +116,8 @@ export default function DashboardAgentRunLogsPage() {
   const [limit, setLimit] = useState(20)
   const [loading, setLoading] = useState(true)
   const [summaryLoading, setSummaryLoading] = useState(true)
-  const [detailLoading, setDetailLoading] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
-  const [activeLog, setActiveLog] = useState<AgentRunLog | null>(null)
+  const [activeLogId, setActiveLogId] = useState<number | null>(null)
   const [result, setResult] = useState<PageResult<AgentRunLog>>({
     results: [],
     page: { page: 1, limit: 20, total: 0 },
@@ -149,18 +134,6 @@ export default function DashboardAgentRunLogsPage() {
     handoffCount: 0,
   })
   const [aiAgents, setAiAgents] = useState<AIAgent[]>([])
-  const activeTraceData = useMemo(
-    () => safeParseJSON(activeLog?.traceData ?? ""),
-    [activeLog?.traceData]
-  )
-  const activeToolSearchTrace = useMemo(
-    () => safeParseJSON(activeLog?.toolSearchTrace ?? ""),
-    [activeLog?.toolSearchTrace]
-  )
-  const activeGraphToolTrace = useMemo(
-    () => safeParseJSON(activeLog?.graphToolTrace ?? ""),
-    [activeLog?.graphToolTrace]
-  )
 
   const aiAgentOptions = useMemo(
     () => [
@@ -243,20 +216,6 @@ export default function DashboardAgentRunLogsPage() {
     }
     event.preventDefault()
     applyFilters()
-  }
-
-  async function openDetail(id: number) {
-    setDetailLoading(true)
-    setDetailOpen(true)
-    try {
-      const data = await fetchAgentRunLog(id)
-      setActiveLog(data)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "加载日志详情失败")
-      setDetailOpen(false)
-    } finally {
-      setDetailLoading(false)
-    }
   }
 
   return (
@@ -472,7 +431,14 @@ export default function DashboardAgentRunLogsPage() {
                     {item.latencyMs} ms
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => void openDetail(item.id)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveLogId(item.id)
+                        setDetailOpen(true)
+                      }}
+                    >
                       详情
                     </Button>
                   </TableCell>
@@ -495,127 +461,16 @@ export default function DashboardAgentRunLogsPage() {
           </div>
         </div>
       </div>
-
-      <Drawer
+      <AgentRunLogDetailDialog
         open={detailOpen}
-        direction="right"
+        logId={activeLogId}
         onOpenChange={(open) => {
           setDetailOpen(open)
           if (!open) {
-            setActiveLog(null)
+            setActiveLogId(null)
           }
         }}
-      >
-        <DrawerContent className="min-w-180">
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              <WorkflowIcon className="size-4" />
-              Agent 运行详情
-            </DrawerTitle>
-            <DrawerDescription>
-              查看 planner 选择、最终动作、回复内容与错误信息。
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="space-y-6 px-6 pb-6 overflow-auto">
-            {detailLoading ? (
-              <div className="py-10 text-sm text-muted-foreground">加载中...</div>
-            ) : activeLog ? (
-              <>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <MetricCard label="日志ID" value={String(activeLog.id)} />
-                  <MetricCard label="会话ID" value={String(activeLog.conversationId || "-")} />
-                  <MetricCard label="消息ID" value={String(activeLog.messageId || "-")} />
-                  <MetricCard label="AI Agent" value={String(activeLog.aiAgentId || "-")} />
-                </div>
-
-                <InfoBlock
-                  title="规划阶段"
-                  lines={[
-                    `plannedAction: ${activeLog.plannedAction || "-"}`,
-                    `plannedSkillCode: ${activeLog.plannedSkillCode || "-"}`,
-                    `plannedSkillName: ${activeLog.plannedSkillName || "-"}`,
-                    `graphToolCode: ${activeLog.graphToolCode || "-"}`,
-                    `recommendedAction: ${activeLog.recommendedAction || "-"}`,
-                    `riskLevel: ${activeLog.riskLevel || "-"}`,
-                    `ticketDraftReady: ${activeLog.ticketDraftReady ? "true" : "false"}`,
-                    `plannedToolCode: ${activeLog.plannedToolCode || "-"}`,
-                    `planReason: ${activeLog.planReason || "-"}`,
-                    `handoffReason: ${activeLog.handoffReason || "-"}`,
-                    `skillRouteTrace: ${activeLog.skillRouteTrace || "-"}`,
-                  ]}
-                />
-                <InfoBlock
-                  title="HITL 状态"
-                  lines={[
-                    `hitlStatus: ${activeLog.hitlStatus || "-"}`,
-                    `hitlStatusName: ${activeLog.hitlStatusName || "-"}`,
-                    `hitlSummary: ${activeLog.hitlSummary || "-"}`,
-                  ]}
-                />
-                <InfoBlock
-                  title="执行结果"
-                  lines={[
-                    `finalAction: ${activeLog.finalAction || "-"}`,
-                    `finalStatus: ${activeLog.finalStatus || "-"}`,
-                    `interruptType: ${activeLog.interruptType || "-"}`,
-                    `resumeSource: ${activeLog.resumeSource || "-"}`,
-                    `latencyMs: ${activeLog.latencyMs} ms`,
-                    `createdAt: ${formatDateTime(activeLog.createdAt)}`,
-                  ]}
-                />
-
-                <TextBlock
-                  title="动态工具选择"
-                  value={
-                    activeToolSearchTrace
-                      ? JSON.stringify(activeToolSearchTrace, null, 2)
-                      : activeLog.toolSearchTrace
-                  }
-                />
-                <TextBlock
-                  title="Graph Tool 调用"
-                  value={
-                    activeGraphToolTrace
-                      ? JSON.stringify(activeGraphToolTrace, null, 2)
-                      : activeLog.graphToolTrace
-                  }
-                />
-                <TextBlock
-                  icon={<BotMessageSquareIcon className="size-4" />}
-                  title="用户问题"
-                  value={activeLog.userMessage}
-                  renderAsHtml
-                />
-                <TextBlock
-                  icon={<WorkflowIcon className="size-4" />}
-                  title="机器人回复"
-                  value={activeLog.replyText}
-                />
-                <TextBlock
-                  title="错误信息"
-                  value={activeLog.errorMessage}
-                  tone="danger"
-                />
-                <TextBlock
-                  title="链路 Trace"
-                  value={
-                    activeTraceData
-                      ? JSON.stringify(activeTraceData, null, 2)
-                      : activeLog.traceData
-                  }
-                />
-              </>
-            ) : (
-              <div className="py-10 text-sm text-muted-foreground">未找到详情数据</div>
-            )}
-          </div>
-          <DrawerFooter>
-            <Button variant="outline" onClick={() => setDetailOpen(false)}>
-              关闭
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      />
     </>
   )
 }
@@ -643,86 +498,6 @@ function SummaryCard({
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-function safeParseJSON(value: string) {
-  if (!value.trim()) {
-    return null
-  }
-  try {
-    return JSON.parse(value)
-  } catch {
-    return null
-  }
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border bg-muted/20 p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-2 text-lg font-semibold">{value}</div>
-    </div>
-  )
-}
-
-function InfoBlock({ title, lines }: { title: string; lines: string[] }) {
-  return (
-    <div className="rounded-lg border p-4">
-      <div className="text-sm font-medium">{title}</div>
-      <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-        {lines.map((line) => (
-          <div key={line}>{line}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function TextBlock({
-  title,
-  value,
-  icon,
-  tone = "default",
-  renderAsHtml = false,
-}: {
-  title: string
-  value?: string
-  icon?: ReactNode
-  tone?: "default" | "danger"
-  renderAsHtml?: boolean
-}) {
-  const normalizedValue = value?.trim() || ""
-  const html = useMemo(() => {
-    if (!renderAsHtml || !normalizedValue) {
-      return ""
-    }
-    return sanitizeRichHTML(normalizedValue)
-  }, [normalizedValue, renderAsHtml])
-
-  return (
-    <div className="rounded-lg border p-4">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        {icon}
-        {title}
-      </div>
-      {renderAsHtml && normalizedValue ? (
-        <ImMessageHTML
-          html={html}
-          className="mt-3 select-text text-muted-foreground"
-        />
-      ) : (
-        <div
-          className={
-            tone === "danger"
-              ? "mt-3 select-text whitespace-pre-wrap wrap-break-word text-sm text-destructive"
-              : "mt-3 select-text whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground"
-          }
-        >
-          {normalizedValue || "-"}
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -764,96 +539,4 @@ function extractTextFromHTML(value: string) {
   }
   const doc = new DOMParser().parseFromString(value, "text/html")
   return doc.body.textContent || ""
-}
-
-function sanitizeRichHTML(value: string) {
-  if (typeof window === "undefined") {
-    return value
-  }
-
-  const doc = new DOMParser().parseFromString(value, "text/html")
-  const allowedTags = new Set([
-    "a",
-    "b",
-    "blockquote",
-    "br",
-    "code",
-    "div",
-    "em",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "hr",
-    "img",
-    "li",
-    "ol",
-    "p",
-    "pre",
-    "span",
-    "strong",
-    "table",
-    "tbody",
-    "td",
-    "th",
-    "thead",
-    "tr",
-    "u",
-    "ul",
-  ])
-  const allowedAttrs = new Set(["alt", "class", "colspan", "href", "rel", "rowspan", "src", "target", "title"])
-  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT)
-  const elements: Element[] = []
-
-  while (walker.nextNode()) {
-    elements.push(walker.currentNode as Element)
-  }
-
-  for (const element of elements) {
-    const tag = element.tagName.toLowerCase()
-    if (!allowedTags.has(tag)) {
-      element.replaceWith(...Array.from(element.childNodes))
-      continue
-    }
-
-    for (const attr of Array.from(element.attributes)) {
-      const name = attr.name.toLowerCase()
-      const value = attr.value.trim()
-      if (name.startsWith("on") || !allowedAttrs.has(name)) {
-        element.removeAttribute(attr.name)
-        continue
-      }
-      if ((name === "href" || name === "src") && !isSafeURL(value)) {
-        element.removeAttribute(attr.name)
-        continue
-      }
-    }
-
-    if (tag === "a") {
-      element.setAttribute("target", "_blank")
-      element.setAttribute("rel", "noreferrer noopener")
-    }
-  }
-
-  return doc.body.innerHTML
-}
-
-function isSafeURL(value: string) {
-  if (!value) {
-    return false
-  }
-  if (value.startsWith("/")) {
-    return true
-  }
-  if (value.startsWith("data:image/")) {
-    return true
-  }
-  try {
-    const url = new URL(value, window.location.origin)
-    return ["http:", "https:"].includes(url.protocol)
-  } catch {
-    return false
-  }
 }
