@@ -9,6 +9,10 @@ import (
 	svc "cs-agent/internal/services"
 )
 
+type interruptMessagePreview struct {
+	Message string `json:"message"`
+}
+
 func buildConversationInterrupt(conversation models.Conversation, message models.Message, aiAgent models.AIAgent, summary *Summary) *models.ConversationInterrupt {
 	if summary == nil {
 		return nil
@@ -50,14 +54,11 @@ func extractInterruptMessage(infoPreview string) string {
 	if infoPreview == "" {
 		return ""
 	}
-	payload := make(map[string]any)
+	var payload interruptMessagePreview
 	if err := json.Unmarshal([]byte(infoPreview), &payload); err != nil {
 		return ""
 	}
-	if message, ok := payload["message"].(string); ok {
-		return strings.TrimSpace(message)
-	}
-	return ""
+	return strings.TrimSpace(payload.Message)
 }
 
 func firstInterruptID(summary *Summary) string {

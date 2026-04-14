@@ -27,6 +27,43 @@ type RuntimeTraceHandler struct {
 	toolMetadataBy map[string]ToolMetadata
 }
 
+type graphAnalyzeConversationResult struct {
+	RecommendedNextAction string `json:"recommendedNextAction"`
+	RiskLevel             string `json:"riskLevel"`
+}
+
+type graphTriageAnalysisResult struct {
+	RiskLevel string `json:"riskLevel"`
+}
+
+type graphTriageTicketDraftResult struct {
+	Ready bool `json:"ready"`
+}
+
+type graphTriageServiceRequestResult struct {
+	RecommendedAction string                        `json:"recommendedAction"`
+	Analysis          graphTriageAnalysisResult     `json:"analysis"`
+	TicketDraft       *graphTriageTicketDraftResult `json:"ticketDraft"`
+}
+
+type toolSearchArguments struct {
+	Query        string `json:"query"`
+	RegexPattern string `json:"regex_pattern"`
+	ToolCode     string `json:"toolCode"`
+}
+
+type toolSearchCandidateResult struct {
+	ToolCode string `json:"toolCode"`
+}
+
+type toolSearchInvokeResult struct {
+	SelectedTools []string `json:"selectedTools"`
+}
+
+type toolSearchSearchResult struct {
+	Candidates []toolSearchCandidateResult `json:"candidates"`
+}
+
 func NewRuntimeTraceHandler(collector *RuntimeTraceCollector, toolMetadataBy map[string]ToolMetadata) *RuntimeTraceHandler {
 	return &RuntimeTraceHandler{
 		BaseChatModelAgentMiddleware: &adk.BaseChatModelAgentMiddleware{},
@@ -94,21 +131,22 @@ func parseGraphToolOutcome(toolCode string, result string) (recommendedAction, r
 	if toolCode == "" || strings.TrimSpace(result) == "" {
 		return "", "", false
 	}
-	payload := make(map[string]any)
-	if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
-		return "", "", false
-	}
 	switch toolCode {
 	case toolx.GraphAnalyzeConversation.Code:
-		return strings.TrimSpace(readToolSearchString(payload, "recommendedNextAction")), strings.TrimSpace(readToolSearchString(payload, "riskLevel")), false
-	case toolx.GraphTriageServiceRequest.Code:
-		recommendedAction = strings.TrimSpace(readToolSearchString(payload, "recommendedAction"))
-		if analysis, ok := payload["analysis"].(map[string]any); ok {
-			riskLevel = strings.TrimSpace(readToolSearchString(analysis, "riskLevel"))
+		var payload graphAnalyzeConversationResult
+		if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
+			return "", "", false
 		}
-		if ticketDraft, ok := payload["ticketDraft"].(map[string]any); ok {
-			ready, _ := ticketDraft["ready"].(bool)
-			ticketDraftReady = ready
+		return strings.TrimSpace(payload.RecommendedNextAction), strings.TrimSpace(payload.RiskLevel), false
+	case toolx.GraphTriageServiceRequest.Code:
+		var payload graphTriageServiceRequestResult
+		if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
+			return "", "", false
+		}
+		recommendedAction = strings.TrimSpace(payload.RecommendedAction)
+		riskLevel = strings.TrimSpace(payload.Analysis.RiskLevel)
+		if payload.TicketDraft != nil {
+			ticketDraftReady = payload.TicketDraft.Ready
 		}
 		return recommendedAction, riskLevel, ticketDraftReady
 	default:
@@ -163,12 +201,12 @@ func previewToolText(text string, limit int) string {
 
 func (h *RuntimeTraceHandler) buildToolSearchTraceItem(argumentsInJSON string, result string, runErr error) ToolSearchTraceItem {
 	item := ToolSearchTraceItem{Status: "ok"}
-	args := parseToolArguments(argumentsInJSON)
-	item.Query = strings.TrimSpace(firstNonBlank(
-		readToolSearchString(args, "query"),
-		readToolSearchString(args, "regex_pattern"),
-	))
-	item.TargetToolCode = strings.TrimSpace(readToolSearchString(args, "toolCode"))
+	var args toolSearchArguments
+	if strings.TrimSpace(argumentsInJSON) != "" {
+		_ = json.Unmarshal([]byte(argumentsInJSON), &args)
+	}
+	item.Query = strings.TrimSpace(firstNonBlank(args.Query, args.RegexPattern))
+	item.TargetToolCode = strings.TrimSpace(args.ToolCode)
 	item.TargetServerCode, item.TargetToolName = toolx.SplitMCPToolCode(item.TargetToolCode)
 	if item.TargetToolCode != "" {
 		item.Action = "invoke"
@@ -180,24 +218,8 @@ func (h *RuntimeTraceHandler) buildToolSearchTraceItem(argumentsInJSON string, r
 		item.ErrorMessage = runErr.Error()
 		return item
 	}
-	payload := make(map[string]any)
-	if err := json.Unmarshal([]byte(strings.TrimSpace(result)), &payload); err != nil {
-		return item
-	}
-	item.CandidateToolCodes = h.extractCandidateToolCodes(payload)
+	item.CandidateToolCodes = h.extractCandidateToolCodes(result)
 	return item
-}
-
-func readToolSearchString(data map[string]any, key string) string {
-	if len(data) == 0 {
-		return ""
-	}
-	value, ok := data[key]
-	if !ok {
-		return ""
-	}
-	text, _ := value.(string)
-	return text
 }
 
 func firstNonBlank(values ...string) string {
@@ -210,30 +232,29 @@ func firstNonBlank(values ...string) string {
 	return ""
 }
 
-func (h *RuntimeTraceHandler) extractCandidateToolCodes(payload map[string]any) []string {
-	if len(payload) == 0 {
+func (h *RuntimeTraceHandler) extractCandidateToolCodes(result string) []string {
+	result = strings.TrimSpace(result)
+	if result == "" {
 		return nil
 	}
-	if items, ok := payload["selectedTools"].([]any); ok {
-		return h.extractSelectedToolCodes(items)
+	var invokePayload toolSearchInvokeResult
+	if err := json.Unmarshal([]byte(result), &invokePayload); err == nil && len(invokePayload.SelectedTools) > 0 {
+		return h.extractSelectedToolCodes(invokePayload.SelectedTools)
 	}
-	if items, ok := payload["candidates"].([]any); ok {
-		return h.extractCandidateObjects(items)
+	var searchPayload toolSearchSearchResult
+	if err := json.Unmarshal([]byte(result), &searchPayload); err == nil && len(searchPayload.Candidates) > 0 {
+		return extractCandidateObjectCodes(searchPayload.Candidates)
 	}
 	return nil
 }
 
-func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []any) []string {
+func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []string) []string {
 	if len(items) == 0 {
 		return nil
 	}
 	ret := make([]string, 0, len(items))
 	for _, item := range items {
-		toolName, ok := item.(string)
-		if !ok {
-			continue
-		}
-		toolName = strings.TrimSpace(toolName)
+		toolName := strings.TrimSpace(item)
 		if toolName == "" {
 			continue
 		}
@@ -249,17 +270,13 @@ func (h *RuntimeTraceHandler) extractSelectedToolCodes(items []any) []string {
 	return ret
 }
 
-func (h *RuntimeTraceHandler) extractCandidateObjects(items []any) []string {
+func extractCandidateObjectCodes(items []toolSearchCandidateResult) []string {
 	if len(items) == 0 {
 		return nil
 	}
 	ret := make([]string, 0, len(items))
 	for _, item := range items {
-		obj, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		toolCode := strings.TrimSpace(readToolSearchString(obj, "toolCode"))
+		toolCode := strings.TrimSpace(item.ToolCode)
 		if toolCode == "" {
 			continue
 		}
