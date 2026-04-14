@@ -58,6 +58,7 @@ export type AgentConversation = {
   agentLastReadMessageId: number
   agentLastReadSeqNo: number
   agentLastReadAt?: string
+  customerOnline: boolean
   closedAt?: string
   tags?: AgentConversationTag[]
   participants?: AgentConversationParticipant[]

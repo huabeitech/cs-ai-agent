@@ -104,6 +104,14 @@ func (m *WsConnectionManager) FindByTopics(topics []string) []*ClientSession {
 	return ret
 }
 
+func (m *WsConnectionManager) HasTopic(topic string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	sessions := m.topics[topic]
+	return len(sessions) > 0
+}
+
 func (m *WsConnectionManager) subscribeLocked(session *ClientSession, topic string) {
 	if _, exists := session.Topics[topic]; exists {
 		return

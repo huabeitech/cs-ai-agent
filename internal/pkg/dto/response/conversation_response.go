@@ -41,6 +41,7 @@ type ConversationResponse struct {
 	AgentLastReadMessageID    int64                           `json:"agentLastReadMessageId"`
 	AgentLastReadSeqNo        int64                           `json:"agentLastReadSeqNo"`
 	AgentLastReadAt           string                          `json:"agentLastReadAt,omitempty"`
+	CustomerOnline            bool                            `json:"customerOnline"`
 	ClosedAt                  string                          `json:"closedAt,omitempty"`
 	ClosedBy                  int64                           `json:"closedBy"`
 	ClosedByName              string                          `json:"closedByName,omitempty"`

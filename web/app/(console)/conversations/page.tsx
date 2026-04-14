@@ -270,9 +270,27 @@ export default function ConversationsPage() {
               <AvatarFallback>客</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="min-w-0 truncate font-medium leading-tight">
-                  {conversation.subject}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 truncate font-medium leading-tight">
+                    {conversation.subject}
+                  </p>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 text-[11px] ${
+                      conversation.customerOnline
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`size-1.5 rounded-full ${
+                        conversation.customerOnline
+                          ? "bg-emerald-500"
+                          : "bg-slate-400"
+                      }`}
+                    />
+                    {conversation.customerOnline ? "用户在线" : "用户离线"}
+                  </span>
+                </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
                   <span>{conversation.externalSource}</span>
                   <span className="text-muted-foreground/60"> / </span>
