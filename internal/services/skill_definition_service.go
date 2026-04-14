@@ -75,24 +75,6 @@ func (s *skillDefinitionService) Delete(id int64) {
 	repositories.SkillDefinitionRepository.Delete(sqls.DB(), id)
 }
 
-func (s *skillDefinitionService) NextPriority() int {
-	if max := repositories.SkillDefinitionRepository.FindOne(sqls.DB(), sqls.NewCnd().Desc("priority").Desc("id")); max != nil {
-		return max.Priority + 1
-	}
-	return 1
-}
-
-func (s *skillDefinitionService) UpdatePriority(ids []int64) error {
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		for i, id := range ids {
-			if err := repositories.SkillDefinitionRepository.UpdateColumn(ctx.Tx, id, "priority", i+1); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func (s *skillDefinitionService) GetByCode(code string) *models.SkillDefinition {
 	return repositories.SkillDefinitionRepository.GetByCode(sqls.DB(), code)
 }
@@ -115,13 +97,9 @@ func (s *skillDefinitionService) CreateSkillDefinition(req request.CreateSkillDe
 		Instruction:   normalized.Instruction,
 		Examples:      mustMarshalSkillStringArray(normalized.Examples),
 		ToolWhitelist: mustMarshalSkillStringArray(normalized.ToolWhitelist),
-		Priority:      normalized.Priority,
 		Status:        enums.StatusOk,
 		Remark:        normalized.Remark,
 		AuditFields:   utils.BuildAuditFields(operator),
-	}
-	if item.Priority <= 0 {
-		item.Priority = s.NextPriority()
 	}
 	if err := repositories.SkillDefinitionRepository.Create(sqls.DB(), item); err != nil {
 		return nil, err
@@ -154,7 +132,6 @@ func (s *skillDefinitionService) UpdateSkillDefinition(req request.UpdateSkillDe
 		"instruction":      normalized.Instruction,
 		"examples":         mustMarshalSkillStringArray(normalized.Examples),
 		"tool_whitelist":   mustMarshalSkillStringArray(normalized.ToolWhitelist),
-		"priority":         resolveSkillPriorityForService(normalized.Priority, current.Priority),
 		"remark":           normalized.Remark,
 		"update_user_id":   operator.UserID,
 		"update_user_name": operator.Username,
@@ -168,7 +145,6 @@ func (s *skillDefinitionService) normalizeSkillDefinitionRequest(req request.Cre
 		Name:        strings.TrimSpace(req.Name),
 		Description: strings.TrimSpace(req.Description),
 		Instruction: strings.TrimSpace(req.Instruction),
-		Priority:    normalizeSkillPriorityForService(req.Priority),
 		Remark:      strings.TrimSpace(req.Remark),
 	}
 	if normalized.Code == "" {
@@ -234,19 +210,4 @@ func mustMarshalSkillStringArray(input []string) string {
 		return "[]"
 	}
 	return string(buf)
-}
-
-func normalizeSkillPriorityForService(priority int) int {
-	if priority < 0 {
-		return 0
-	}
-	return priority
-}
-
-func resolveSkillPriorityForService(input, current int) int {
-	input = normalizeSkillPriorityForService(input)
-	if input <= 0 {
-		return current
-	}
-	return input
 }

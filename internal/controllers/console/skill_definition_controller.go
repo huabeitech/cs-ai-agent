@@ -29,7 +29,7 @@ func (c *SkillDefinitionController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "code", Op: params.Like},
-	).Asc("priority").Desc("id")
+	).Desc("id")
 	list, paging := services.SkillDefinitionService.FindPageByCnd(cnd)
 	results := make([]response.SkillDefinitionResponse, 0, len(list))
 	for _, item := range list {
@@ -45,7 +45,7 @@ func (c *SkillDefinitionController) GetList_all() *web.JsonResult {
 
 	list := services.SkillDefinitionService.Find(params.NewSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
-	).Asc("priority").Desc("id"))
+	).Desc("id"))
 	results := make([]response.SkillDefinitionResponse, 0, len(list))
 	for _, item := range list {
 		results = append(results, builders.BuildSkillDefinitionResponse(&item))
@@ -151,21 +151,6 @@ func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
 		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),
 	}); err != nil {
-		return web.JsonError(err)
-	}
-	return web.JsonSuccess()
-}
-
-func (c *SkillDefinitionController) PostUpdate_priority() *web.JsonResult {
-	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionUpdate); err != nil {
-		return web.JsonError(err)
-	}
-
-	var ids []int64
-	if err := c.Ctx.ReadJSON(&ids); err != nil {
-		return web.JsonError(err)
-	}
-	if err := services.SkillDefinitionService.UpdatePriority(ids); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()

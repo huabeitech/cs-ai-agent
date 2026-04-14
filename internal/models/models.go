@@ -912,7 +912,6 @@ type SkillDefinition struct {
 	Instruction   string       `gorm:"type:longtext"`                                     // Instruction 为 Skill 的主体说明文档存储字段，使用 Markdown 编写，供 Agent 理解任务目标、步骤和工具使用要求。
 	Examples      string       `gorm:"type:text"`                                         // Examples 为示例问法 JSON 数组字符串。
 	ToolWhitelist string       `gorm:"type:text"`                                         // ToolWhitelist 为允许使用的工具编码 JSON 数组字符串。
-	Priority      int          `gorm:"type:int;not null;default:0;index"`                 // Priority 为 Skill 命中冲突时的优先级，数值越大优先级越高。
 	Status        enums.Status `gorm:"type:int;not null;default:0;index"`                 // Status 为 Skill 当前状态，使用全局通用状态：0启用 1禁用 2删除。
 	Remark        string       `gorm:"type:text"`                                         // Remark 为后台备注，用于记录配置说明、维护信息或内部协作信息。
 	AuditFields

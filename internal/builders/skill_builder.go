@@ -25,7 +25,6 @@ func BuildSkillDefinitionResponse(item *models.SkillDefinition) response.SkillDe
 		Instruction:    item.Instruction,
 		Examples:       examples,
 		ToolWhitelist:  toolWhitelist,
-		Priority:       item.Priority,
 		Status:         int(item.Status),
 		StatusName:     getSkillStatusName(item.Status),
 		Remark:         item.Remark,

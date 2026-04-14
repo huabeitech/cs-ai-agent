@@ -83,9 +83,8 @@ func buildSeedItems() []models.SkillDefinition {
   "graph/create_ticket_with_confirmation",
   "graph/handoff_to_human"
 ]`,
-			Priority: 100,
-			Status:   enums.StatusOk,
-			Remark:   "after-sales escalation skill",
+			Status: enums.StatusOk,
+			Remark: "after-sales escalation skill",
 			AuditFields: models.AuditFields{
 				CreatedAt:      now,
 				CreateUserID:   0,

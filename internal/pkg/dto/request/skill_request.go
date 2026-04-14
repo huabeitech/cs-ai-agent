@@ -13,7 +13,6 @@ type CreateSkillDefinitionRequest struct {
 	Instruction   string   `json:"instruction"`
 	Examples      []string `json:"examples"`
 	ToolWhitelist []string `json:"toolWhitelist"`
-	Priority      int      `json:"priority"`
 	Remark        string   `json:"remark"`
 }
 
