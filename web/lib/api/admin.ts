@@ -1,5 +1,6 @@
 import { readSession } from "@/lib/auth"
 import { request } from "@/lib/api/client"
+import { createWebSocketBaseUrl } from "@/lib/api/websocket"
 
 export type Paging = {
   page: number
@@ -542,9 +543,7 @@ export function createAdminWebSocketUrl() {
     throw new Error("未登录或登录已过期")
   }
 
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
-  ).replace(/^http/, "ws")
+  const baseUrl = createWebSocketBaseUrl()
   const params = new URLSearchParams({
     accessToken: session.accessToken,
   })

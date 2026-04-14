@@ -77,6 +77,9 @@ export function useAgentConversationRealtime() {
       websocketRef.current = socket
 
       socket.onopen = () => {
+        console.info("[agent-realtime] websocket connected", {
+          url: socket.url,
+        })
         reconnectAttemptRef.current = 0
         if (pingTimerRef.current) {
           window.clearInterval(pingTimerRef.current)
@@ -180,7 +183,14 @@ export function useAgentConversationRealtime() {
         }
       }
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
+        console.log("[agent-realtime] websocket closed", {
+          url: socket.url,
+          readyState: socket.readyState,
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        })
         if (pingTimerRef.current) {
           window.clearInterval(pingTimerRef.current)
           pingTimerRef.current = null
@@ -193,6 +203,10 @@ export function useAgentConversationRealtime() {
       }
 
       socket.onerror = () => {
+        console.log("[agent-realtime] websocket error", {
+          url: socket.url,
+          readyState: socket.readyState,
+        })
         scheduleReconnect()
       }
     }
