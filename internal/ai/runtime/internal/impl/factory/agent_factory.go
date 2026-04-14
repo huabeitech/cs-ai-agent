@@ -21,9 +21,11 @@ import (
 )
 
 type AgentFactory struct {
-	chatModelFactory     *ChatModelFactory
-	toolFactory          *ToolFactory
-	instructionAssembler *InstructionAssembler
+	chatModelFactory           *ChatModelFactory
+	toolFactory                *ToolFactory
+	instructionAssembler       *InstructionAssembler
+	projectInstructionProvider *ProjectInstructionProvider
+	toolAppendixProvider       *ToolAppendixProvider
 }
 
 // BuildCustomerServiceAgentInput 定义客服 Agent 的装配输入。
@@ -57,9 +59,11 @@ type BuildCustomerServiceAgentInput struct {
 
 func NewAgentFactory() *AgentFactory {
 	return &AgentFactory{
-		chatModelFactory:     NewChatModelFactory(),
-		toolFactory:          NewToolFactory(),
-		instructionAssembler: NewInstructionAssembler(),
+		chatModelFactory:           NewChatModelFactory(),
+		toolFactory:                NewToolFactory(),
+		instructionAssembler:       NewInstructionAssembler(),
+		projectInstructionProvider: NewProjectInstructionProvider(),
+		toolAppendixProvider:       NewToolAppendixProvider(),
 	}
 }
 
@@ -102,7 +106,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 		}
 		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
 	}
-	instructionResult := assembleAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
+	instructionResult := f.assembleAgentInstruction(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
 	if input.Collector != nil {
 		input.Collector.SetInstructionSummary(einocallbacks.InstructionTraceSummary{
 			SectionTitles:     append([]string(nil), instructionResult.Summary.SectionTitles...),
@@ -144,16 +148,25 @@ func (f *AgentFactory) buildSelectedSkillMiddleware(ctx context.Context, selecte
 	})
 }
 
-func assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraToolCodes map[string]string) InstructionAssemblyResult {
+func (f *AgentFactory) assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.SkillDefinition, toolDefinitions []einoadapter.MCPToolDefinition, extraToolCodes map[string]string) InstructionAssemblyResult {
 	baseInstruction := ""
 	if aiAgent != nil {
 		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
 	}
 	appendixParts := buildInstructionAppendices(selectedSkill, toolDefinitions, extraToolCodes)
-	return NewInstructionAssembler().Assemble(InstructionAssemblerInput{
-		AgentInstruction: baseInstruction,
-		SkillInstruction: firstAppendixPart(appendixParts),
-		ToolAppendices:   remainingAppendixParts(appendixParts),
+	projectInstruction := ""
+	if f != nil && f.projectInstructionProvider != nil {
+		projectInstruction = f.projectInstructionProvider.Resolve()
+	}
+	assembler := NewInstructionAssembler()
+	if f != nil && f.instructionAssembler != nil {
+		assembler = f.instructionAssembler
+	}
+	return assembler.Assemble(InstructionAssemblerInput{
+		AgentInstruction:   baseInstruction,
+		SkillInstruction:   firstAppendixPart(appendixParts),
+		ToolAppendices:     remainingAppendixParts(appendixParts),
+		ProjectInstruction: projectInstruction,
 	})
 }
 
