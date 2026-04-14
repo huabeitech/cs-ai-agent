@@ -208,10 +208,14 @@ func extractToolSearchTrace(summary *Summary) string {
 		return ""
 	}
 	trace := parseRuntimeTraceData(summary.TraceData)
-	if len(trace.ToolSearch.Items) == 0 || len(trace.ToolSearch.Raw) == 0 {
+	if len(trace.ToolSearch.Items) == 0 {
 		return ""
 	}
-	return string(trace.ToolSearch.Raw)
+	buf, err := json.Marshal(trace.ToolSearch)
+	if err != nil {
+		return ""
+	}
+	return string(buf)
 }
 
 func extractGraphToolTrace(summary *Summary) string {
@@ -219,10 +223,14 @@ func extractGraphToolTrace(summary *Summary) string {
 		return ""
 	}
 	trace := parseRuntimeTraceData(summary.TraceData)
-	if len(trace.GraphTools.Items) == 0 || len(trace.GraphTools.Raw) == 0 {
+	if len(trace.GraphTools.Items) == 0 {
 		return ""
 	}
-	return string(trace.GraphTools.Raw)
+	buf, err := json.Marshal(trace.GraphTools)
+	if err != nil {
+		return ""
+	}
+	return string(buf)
 }
 
 func firstToolSearchTargetToolCode(summary *Summary) string {
@@ -262,8 +270,11 @@ func extractHandoffReason(summary *Summary) string {
 		if len(item.Arguments) == 0 {
 			return ""
 		}
-		reason, _ := item.Arguments["reason"].(string)
-		return strings.TrimSpace(reason)
+		var args runtimeTraceHandoffArguments
+		if err := json.Unmarshal(item.Arguments, &args); err != nil {
+			return ""
+		}
+		return strings.TrimSpace(args.Reason)
 	}
 	return ""
 }
@@ -302,22 +313,24 @@ func graphPlanReason(summary *Summary) string {
 
 type runtimeTraceProjection struct {
 	ToolSearch struct {
-		Raw   json.RawMessage `json:"-"`
 		Items []struct {
 			TargetToolCode     string   `json:"targetToolCode"`
 			CandidateToolCodes []string `json:"candidateToolCodes"`
 		} `json:"items"`
 	} `json:"toolSearch"`
 	GraphTools struct {
-		Raw   json.RawMessage `json:"-"`
 		Items []struct {
-			ToolCode          string         `json:"toolCode"`
-			Arguments         map[string]any `json:"arguments"`
-			RecommendedAction string         `json:"recommendedAction"`
-			RiskLevel         string         `json:"riskLevel"`
-			TicketDraftReady  bool           `json:"ticketDraftReady"`
+			ToolCode          string          `json:"toolCode"`
+			Arguments         json.RawMessage `json:"arguments"`
+			RecommendedAction string          `json:"recommendedAction"`
+			RiskLevel         string          `json:"riskLevel"`
+			TicketDraftReady  bool            `json:"ticketDraftReady"`
 		} `json:"items"`
 	} `json:"graphTools"`
+}
+
+type runtimeTraceHandoffArguments struct {
+	Reason string `json:"reason"`
 }
 
 func parseRuntimeTraceData(raw string) runtimeTraceProjection {
@@ -325,18 +338,9 @@ func parseRuntimeTraceData(raw string) runtimeTraceProjection {
 	if raw == "" {
 		return runtimeTraceProjection{}
 	}
-	var payload map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-		return runtimeTraceProjection{}
-	}
 	var trace runtimeTraceProjection
-	if toolSearchRaw, ok := payload["toolSearch"]; ok && len(toolSearchRaw) > 0 {
-		trace.ToolSearch.Raw = append(json.RawMessage(nil), toolSearchRaw...)
-		_ = json.Unmarshal(toolSearchRaw, &trace.ToolSearch)
-	}
-	if graphToolsRaw, ok := payload["graphTools"]; ok && len(graphToolsRaw) > 0 {
-		trace.GraphTools.Raw = append(json.RawMessage(nil), graphToolsRaw...)
-		_ = json.Unmarshal(graphToolsRaw, &trace.GraphTools)
+	if err := json.Unmarshal([]byte(raw), &trace); err != nil {
+		return runtimeTraceProjection{}
 	}
 	return trace
 }

@@ -85,6 +85,24 @@ func TestGraphPlanReason(t *testing.T) {
 	}
 }
 
+func TestExtractHandoffReason(t *testing.T) {
+	summary := &Summary{
+		TraceData: `{
+			"graphTools": {
+				"items": [
+					{
+						"toolCode":"` + toolx.GraphHandoffConversation.Code + `",
+						"arguments":{"reason":"  用户明确要求人工处理  "}
+					}
+				]
+			}
+		}`,
+	}
+	if got := extractHandoffReason(summary); got != "用户明确要求人工处理" {
+		t.Fatalf("unexpected handoff reason: %q", got)
+	}
+}
+
 type fakeErr string
 
 func (e fakeErr) Error() string {
