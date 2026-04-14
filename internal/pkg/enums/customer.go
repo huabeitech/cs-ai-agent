@@ -1,11 +1,8 @@
 package enums
 
-// CustomerSourceType 已合并为 ExternalIdentitySource，保留类型别名以兼容旧代码。
-type CustomerSourceType = ExternalSource
-
 const CustomerSourceTypeWebChat = ExternalSourceWebChat
 
-func GetCustomerSourceTypeLabel(sourceType CustomerSourceType) string {
+func GetCustomerSourceTypeLabel(sourceType ExternalSource) string {
 	return GetExternalSourceLabel(ExternalSource(sourceType))
 }
 
