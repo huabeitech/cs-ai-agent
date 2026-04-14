@@ -50,7 +50,7 @@ func buildSeedItems() []models.SkillDefinition {
 			Code:        TestGreetingSkillCode,
 			Name:        "测试问候Skill",
 			Description: "用于测试客服 Agent 的 skill 路由。适合处理问候、机器人自我介绍、询问你能做什么、明确提到测试 skill 的问题。",
-			Prompt:      "你是一个用于本地测试的客服 Skill。当用户在打招呼、询问你是谁、问你能做什么，或者明确提到测试 skill 时，请直接用中文回复：这是测试 Skill 的固定回复，说明 Agent 已经成功路由到 Skill 能力。",
+			Instruction: "你是一个用于本地测试的客服 Skill。当用户在打招呼、询问你是谁、问你能做什么，或者明确提到测试 skill 时，请直接用中文回复：这是测试 Skill 的固定回复，说明 Agent 已经成功路由到 Skill 能力。",
 			Priority:    100,
 			Status:      enums.StatusOk,
 			Remark:      "Local testdata seed",
