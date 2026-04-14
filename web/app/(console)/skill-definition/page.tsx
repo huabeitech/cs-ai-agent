@@ -74,6 +74,7 @@ function SkillRow({
   handleToggleStatus,
   handleDelete,
 }: SkillRowProps) {
+
   return (
     <TableRow>
       <TableCell>
@@ -88,11 +89,10 @@ function SkillRow({
               <Badge variant="secondary">白名单 {item.toolWhitelist.length}</Badge>
               <Badge variant="secondary">示例 {item.examples.length}</Badge>
             </div>
-            <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {item.description || "暂无描述"}
-            </div>
-            <div className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-              {item.instruction || "暂无技能说明"}
+            <div className="mt-2 space-y-2">
+              <div className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+                {item.description || "暂无描述"}
+              </div>
             </div>
             {item.toolWhitelist.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
