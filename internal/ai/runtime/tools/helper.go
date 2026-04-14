@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"fmt"
 	"strings"
 
 	"cs-agent/internal/ai/runtime/registry"
@@ -33,36 +32,6 @@ func ParseConfirmationDecision(value string) Decision {
 		}
 	}
 	return ""
-}
-
-func getStringValue(data map[string]any, key string) string {
-	value, ok := data[key]
-	if !ok || value == nil {
-		return ""
-	}
-	switch v := value.(type) {
-	case string:
-		return v
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-
-func getInt64Value(data map[string]any, key string) int64 {
-	value, ok := data[key]
-	if !ok || value == nil {
-		return 0
-	}
-	switch v := value.(type) {
-	case float64:
-		return int64(v)
-	case int64:
-		return v
-	case int:
-		return int64(v)
-	default:
-		return 0
-	}
 }
 
 func NewRuntimeStaticTool(toolCode string) registry.Tool {
