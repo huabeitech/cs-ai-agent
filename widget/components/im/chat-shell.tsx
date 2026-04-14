@@ -1,30 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Maximize2Icon,
   Minimize2Icon,
   MinusIcon,
   RotateCwIcon,
-  ShieldCheckIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { useChatStore } from "@/lib/store/chat-store";
-import { closeConversation } from "@/lib/services/conversation";
-import {
-  bindHostBridge,
-  requestHostClose,
-  requestHostMinimize,
-  requestHostToggleMaximize,
-} from "@/lib/widget/host-bridge";
 import { ConnectionStatus } from "@/components/im/connection-status";
 import { MessageEditor } from "@/components/im/message-editor";
 import {
   MessageList,
   type MessageListHandle,
 } from "@/components/im/message-list";
+import { closeConversation } from "@/lib/services/conversation";
+import { useChatStore } from "@/lib/store/chat-store";
+import {
+  bindHostBridge,
+  requestHostClose,
+  requestHostMinimize,
+  requestHostToggleMaximize,
+} from "@/lib/widget/host-bridge";
 
 export function ChatShell() {
   const messageListRef = useRef<MessageListHandle | null>(null);
@@ -204,11 +203,13 @@ export function ChatShell() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/65 px-2.5 py-1 text-[11px] text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+              {/* <div className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/65 px-2.5 py-1 text-[11px] text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
                 <ShieldCheckIcon className="size-3.5 text-emerald-600" />
                 会话加密传输
-              </div>
-              <ConnectionStatus status={status} />
+              </div> */}
+              {status !== "connected" ? (
+                <ConnectionStatus status={status} />
+              ) : null}
               <div className="inline-flex items-center gap-1 rounded-[18px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(241,245,249,0.82))] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl">
                 <button
                   type="button"

@@ -91,7 +91,7 @@ textarea.cs-agent-scrollbar::-webkit-scrollbar-thumb:hover {
 }
 
 .cs-agent-shell {
-  padding: 10px;
+  /* padding: 10px; */
 }
 
 .cs-agent-panel {

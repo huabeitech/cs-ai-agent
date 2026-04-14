@@ -207,7 +207,7 @@ export function MessageEditor({
 
   return (
     <div className="px-3 pb-3 pt-2">
-      <div className="rounded-3xl border border-white/60 bg-white/78 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur">
+      <div className="rounded-xl border border-white/60 bg-white/78 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur">
         <input
           ref={imageInputRef}
           type="file"
