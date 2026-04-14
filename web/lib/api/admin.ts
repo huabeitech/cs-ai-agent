@@ -278,7 +278,6 @@ export type SkillDefinition = {
   instruction: string
   examples: string[]
   toolWhitelist: string[]
-  priority: number
   status: number
   statusName: string
   remark: string
@@ -295,7 +294,6 @@ export type CreateSkillDefinitionPayload = {
   instruction: string
   examples: string[]
   toolWhitelist: string[]
-  priority?: number
   remark: string
 }
 
@@ -931,13 +929,6 @@ export function deleteSkillDefinition(id: number) {
   return request<void>("/api/console/skill-definition/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
-  })
-}
-
-export function updateSkillDefinitionPriority(ids: number[]) {
-  return request<void>("/api/console/skill-definition/update_priority", {
-    method: "POST",
-    body: JSON.stringify(ids),
   })
 }
 

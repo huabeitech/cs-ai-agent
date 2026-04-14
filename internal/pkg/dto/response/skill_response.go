@@ -10,7 +10,6 @@ type SkillDefinitionResponse struct {
 	Instruction    string    `json:"instruction"`
 	Examples       []string  `json:"examples"`
 	ToolWhitelist  []string  `json:"toolWhitelist"`
-	Priority       int       `json:"priority"`
 	Status         int       `json:"status"`
 	StatusName     string    `json:"statusName"`
 	Remark         string    `json:"remark"`

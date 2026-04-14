@@ -1,28 +1,9 @@
 "use client"
 
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { useCallback, useEffect, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   BrainCircuitIcon,
   BugIcon,
-  GripVerticalIcon,
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCwIcon,
@@ -57,18 +38,14 @@ import {
   deleteSkillDefinition,
   fetchSkillDefinitions,
   updateSkillDefinition,
-  updateSkillDefinitionPriority,
   updateSkillDefinitionStatus,
   type CreateSkillDefinitionPayload,
   type PageResult,
   type SkillDefinition,
 } from "@/lib/api/admin"
-import {
-  Status,
-  StatusLabels,
-} from "@/lib/generated/enums"
+import { Status, StatusLabels } from "@/lib/generated/enums"
 import { getEnumLabel, getEnumOptions } from "@/lib/enums"
-import { cn, formatDateTime } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
 import { EditDialog } from "./_components/edit"
 import { DebugDialog } from "./_components/debug-dialog"
 
@@ -80,9 +57,8 @@ const statusFilterOptions = [
   })),
 ]
 
-type SortableSkillRowProps = {
+type SkillRowProps = {
   item: SkillDefinition
-  disabled: boolean
   actionLoadingId: number | null
   openEditDialog: (item: SkillDefinition) => void
   openDebugDialog: (item: SkillDefinition) => void
@@ -90,55 +66,16 @@ type SortableSkillRowProps = {
   handleDelete: (item: SkillDefinition) => void
 }
 
-function SortableSkillRow({
+function SkillRow({
   item,
-  disabled,
   actionLoadingId,
   openEditDialog,
   openDebugDialog,
   handleToggleStatus,
   handleDelete,
-}: SortableSkillRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: item.id,
-    disabled,
-  })
-
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
+}: SkillRowProps) {
   return (
-    <TableRow
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        isDragging && "relative z-10 bg-muted/60 shadow-sm",
-        !disabled && "cursor-move",
-      )}
-    >
-      <TableCell className="w-14">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 cursor-grab active:cursor-grabbing"
-          disabled={disabled}
-          aria-label={`拖拽排序 ${item.name}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVerticalIcon className="size-4 text-muted-foreground" />
-        </Button>
-      </TableCell>
+    <TableRow>
       <TableCell>
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-10 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
@@ -148,12 +85,8 @@ function SortableSkillRow({
             <div className="flex flex-wrap items-center gap-2">
               <div className="font-medium">{item.name}</div>
               <Badge variant="outline">{item.code}</Badge>
-              <Badge variant="secondary">
-                白名单 {item.toolWhitelist.length}
-              </Badge>
-              <Badge variant="secondary">
-                示例 {item.examples.length}
-              </Badge>
+              <Badge variant="secondary">白名单 {item.toolWhitelist.length}</Badge>
+              <Badge variant="secondary">示例 {item.examples.length}</Badge>
             </div>
             <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
               {item.description || "暂无描述"}
@@ -169,9 +102,7 @@ function SortableSkillRow({
                   </Badge>
                 ))}
                 {item.toolWhitelist.length > 3 ? (
-                  <Badge variant="outline">
-                    +{item.toolWhitelist.length - 3}
-                  </Badge>
+                  <Badge variant="outline">+{item.toolWhitelist.length - 3}</Badge>
                 ) : null}
               </div>
             ) : null}
@@ -186,21 +117,11 @@ function SortableSkillRow({
             onCheckedChange={() => void handleToggleStatus(item)}
             aria-label={`${item.name} 状态切换`}
           />
-          <Badge
-            variant={
-              item.status === Status.Ok
-                ? "default"
-                : "outline"
-            }
-          >
-            {getEnumLabel(
-              StatusLabels,
-              item.status as keyof typeof StatusLabels
-            )}
+          <Badge variant={item.status === Status.Ok ? "default" : "outline"}>
+            {getEnumLabel(StatusLabels, item.status as keyof typeof StatusLabels)}
           </Badge>
         </div>
       </TableCell>
-      <TableCell>{item.priority}</TableCell>
       <TableCell>
         <div className="space-y-1 text-sm">
           <div>{formatDateTime(item.updatedAt)}</div>
@@ -211,19 +132,11 @@ function SortableSkillRow({
       </TableCell>
       <TableCell className="text-right">
         <ButtonGroup className="ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openDebugDialog(item)}
-          >
+          <Button variant="outline" size="sm" onClick={() => openDebugDialog(item)}>
             <BugIcon />
             调试
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openEditDialog(item)}
-          >
+          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)}>
             编辑
           </Button>
           <DropdownMenu>
@@ -262,7 +175,6 @@ export default function DashboardSkillsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
-  const [sorting, setSorting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [debugDialogOpen, setDebugDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<SkillDefinition | null>(null)
@@ -271,18 +183,6 @@ export default function DashboardSkillsPage() {
     results: [],
     page: { page: 1, limit: 20, total: 0 },
   })
-
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -388,10 +288,7 @@ export default function DashboardSkillsPage() {
   }
 
   async function handleToggleStatus(item: SkillDefinition) {
-    const nextStatus =
-      item.status === Status.Ok
-        ? Status.Disabled
-        : Status.Ok
+    const nextStatus = item.status === Status.Ok ? Status.Disabled : Status.Ok
 
     setActionLoadingId(item.id)
     try {
@@ -415,41 +312,6 @@ export default function DashboardSkillsPage() {
       toast.error(error instanceof Error ? error.message : "删除 Skill 失败")
     } finally {
       setActionLoadingId(null)
-    }
-  }
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id || sorting) {
-      return
-    }
-
-    const previousResults = result.results
-    const oldIndex = previousResults.findIndex((item) => item.id === active.id)
-    const newIndex = previousResults.findIndex((item) => item.id === over.id)
-    if (oldIndex < 0 || newIndex < 0) {
-      return
-    }
-
-    const nextResults = arrayMove(previousResults, oldIndex, newIndex)
-    setResult((current) => ({
-      ...current,
-      results: nextResults,
-    }))
-    setSorting(true)
-
-    try {
-      await updateSkillDefinitionPriority(nextResults.map((item) => item.id))
-      toast.success("Skill 优先级已更新")
-      await loadData()
-    } catch (error) {
-      setResult((current) => ({
-        ...current,
-        results: previousResults,
-      }))
-      toast.error(error instanceof Error ? error.message : "更新优先级失败")
-    } finally {
-      setSorting(false)
     }
   }
 
@@ -500,50 +362,36 @@ export default function DashboardSkillsPage() {
 
         <div className="space-y-4">
           <div className="overflow-hidden rounded-2xl border bg-background">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <Table>
-                <TableHeader className="bg-muted/40">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead>Skill</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead>最近更新</TableHead>
+                  <TableHead className="w-[168px] text-right">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!loading && result.results.length === 0 ? (
                   <TableRow>
-                    <TableHead className="w-14"></TableHead>
-                    <TableHead>Skill</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>优先级</TableHead>
-                    <TableHead>最近更新</TableHead>
-                    <TableHead className="w-[168px] text-right">操作</TableHead>
+                    <TableCell colSpan={4} className="py-12 text-center text-muted-foreground">
+                      没有匹配的 Skill
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {!loading && result.results.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                        没有匹配的 Skill
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                  <SortableContext
-                    items={result.results.map((item) => item.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {result.results.map((item) => (
-                      <SortableSkillRow
-                        key={item.id}
-                        item={item}
-                        disabled={sorting}
-                        actionLoadingId={actionLoadingId}
-                        openEditDialog={openEditDialog}
-                        openDebugDialog={openDebugDialog}
-                        handleToggleStatus={handleToggleStatus}
-                        handleDelete={handleDelete}
-                      />
-                    ))}
-                  </SortableContext>
-                </TableBody>
-              </Table>
-            </DndContext>
+                ) : null}
+                {result.results.map((item) => (
+                  <SkillRow
+                    key={item.id}
+                    item={item}
+                    actionLoadingId={actionLoadingId}
+                    openEditDialog={openEditDialog}
+                    openDebugDialog={openDebugDialog}
+                    handleToggleStatus={handleToggleStatus}
+                    handleDelete={handleDelete}
+                  />
+                ))}
+              </TableBody>
+            </Table>
             <div className="border-t px-4 py-3">
               <ListPagination
                 page={result.page.page}
