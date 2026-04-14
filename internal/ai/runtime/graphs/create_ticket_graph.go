@@ -24,6 +24,13 @@ type CreateTicketGraphInterruptInfo struct {
 	Message string `json:"message"`
 }
 
+type createTicketGraphArgs struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Priority    int64  `json:"priority"`
+	Severity    int    `json:"severity"`
+}
+
 func init() {
 	schema.RegisterName[CreateTicketGraphState]("cs_agent_create_ticket_graph_state")
 	schema.RegisterName[CreateTicketGraphInterruptInfo]("cs_agent_create_ticket_graph_interrupt_info")
@@ -99,16 +106,16 @@ func (g *CreateTicketGraph) buildCreateRequest(argumentsInJSON string) (request.
 		ConversationID:     g.conversation.ID,
 		SyncToConversation: true,
 	}
-	raw := make(map[string]any)
+	var args createTicketGraphArgs
 	if strings.TrimSpace(argumentsInJSON) != "" {
-		if err := json.Unmarshal([]byte(argumentsInJSON), &raw); err != nil {
+		if err := json.Unmarshal([]byte(argumentsInJSON), &args); err != nil {
 			return req, fmt.Errorf("invalid create ticket arguments: %w", err)
 		}
 	}
-	req.Title = strings.TrimSpace(getStringValue(raw, "title"))
-	req.Description = strings.TrimSpace(getStringValue(raw, "description"))
-	req.Priority = getInt64Value(raw, "priority")
-	req.Severity = int(getInt64Value(raw, "severity"))
+	req.Title = strings.TrimSpace(args.Title)
+	req.Description = strings.TrimSpace(args.Description)
+	req.Priority = args.Priority
+	req.Severity = args.Severity
 	if req.Title == "" {
 		req.Title = strings.TrimSpace(g.conversation.Subject)
 	}
@@ -135,37 +142,5 @@ func (g *CreateTicketGraph) buildAIPrincipal() *dto.AuthPrincipal {
 		UserID:   0,
 		Username: username,
 		Nickname: username,
-	}
-}
-
-func getStringValue(data map[string]any, key string) string {
-	if len(data) == 0 {
-		return ""
-	}
-	value, ok := data[key]
-	if !ok {
-		return ""
-	}
-	text, _ := value.(string)
-	return text
-}
-
-func getInt64Value(data map[string]any, key string) int64 {
-	if len(data) == 0 {
-		return 0
-	}
-	value, ok := data[key]
-	if !ok {
-		return 0
-	}
-	switch v := value.(type) {
-	case float64:
-		return int64(v)
-	case int64:
-		return v
-	case int:
-		return int64(v)
-	default:
-		return 0
 	}
 }

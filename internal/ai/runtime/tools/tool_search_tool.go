@@ -104,9 +104,9 @@ func (t *ToolSearchTool) InvokableRun(ctx context.Context, argumentsInJSON strin
 }
 
 type toolSearchRequest struct {
-	Query     string
-	ToolCode  string
-	Arguments map[string]any
+	Query     string         `json:"query"`
+	ToolCode  string         `json:"toolCode"`
+	Arguments map[string]any `json:"arguments"`
 }
 
 type toolSearchCandidate struct {
@@ -122,22 +122,16 @@ func parseToolSearchRequest(argumentsInJSON string) (*toolSearchRequest, error) 
 	if argumentsInJSON == "" {
 		return &toolSearchRequest{}, nil
 	}
-	raw := make(map[string]any)
-	if err := json.Unmarshal([]byte(argumentsInJSON), &raw); err != nil {
+	var req toolSearchRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
 		return nil, fmt.Errorf("invalid tool_search arguments: %w", err)
 	}
-	req := &toolSearchRequest{
-		Query:    strings.TrimSpace(getStringValue(raw, "query")),
-		ToolCode: strings.TrimSpace(getStringValue(raw, "toolCode")),
+	req.Query = strings.TrimSpace(req.Query)
+	req.ToolCode = strings.TrimSpace(req.ToolCode)
+	if req.Arguments == nil {
+		req.Arguments = map[string]any{}
 	}
-	if value, ok := raw["arguments"]; ok {
-		args, ok := value.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("tool_search arguments must be an object")
-		}
-		req.Arguments = args
-	}
-	return req, nil
+	return &req, nil
 }
 
 func (t *ToolSearchTool) searchCandidates(ctx context.Context, query string) (string, error) {
