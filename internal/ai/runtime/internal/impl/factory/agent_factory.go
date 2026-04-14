@@ -96,38 +96,8 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 		handlers = append(handlers, skillHandler)
 	}
 	if input.Collector != nil {
-		toolMetadataBy := make(map[string]einocallbacks.ToolMetadata, len(input.DynamicMCPToolDefinitions)+len(input.StaticToolMetadata))
-		for _, item := range input.DynamicMCPToolDefinitions {
-			toolMetadataBy[item.ModelName] = einocallbacks.ToolMetadata{
-				ToolCode:   item.ToolCode,
-				ServerCode: item.ServerCode,
-				ToolName:   item.ToolName,
-				SourceType: "mcp",
-			}
-		}
-		for modelName, metadata := range input.StaticToolMetadata {
-			modelName = strings.TrimSpace(modelName)
-			metadata.ToolCode = strings.TrimSpace(metadata.ToolCode)
-			metadata.ServerCode = strings.TrimSpace(metadata.ServerCode)
-			metadata.ToolName = strings.TrimSpace(metadata.ToolName)
-			metadata.SourceType = strings.TrimSpace(metadata.SourceType)
-			if modelName == "" || metadata.ToolCode == "" {
-				continue
-			}
-			toolMetadataBy[modelName] = einocallbacks.ToolMetadata{
-				ToolCode:   metadata.ToolCode,
-				ServerCode: metadata.ServerCode,
-				ToolName:   metadata.ToolName,
-				SourceType: metadata.SourceType,
-			}
-		}
+		toolMetadataBy := buildRuntimeTraceToolMetadata(input.DynamicMCPToolDefinitions, input.StaticToolMetadata, input.SelectedSkill)
 		if input.SelectedSkill != nil {
-			toolMetadataBy[toolx.BuiltinSkill.Name] = einocallbacks.ToolMetadata{
-				ToolCode:   toolx.BuiltinSkill.Code,
-				ServerCode: toolx.BuiltinSkill.ServerCode,
-				ToolName:   toolx.BuiltinSkill.Name,
-				SourceType: toolx.BuiltinSkill.SourceType,
-			}
 			input.Collector.SetSkillMiddleware(true, toolx.BuiltinSkill.Name)
 		}
 		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
@@ -179,11 +149,7 @@ func assembleAgentInstruction(aiAgent *models.AIAgent, selectedSkill *models.Ski
 	if aiAgent != nil {
 		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
 	}
-	appendixParts := make([]string, 0, 2)
-	if skillInstruction := buildSelectedSkillActivationInstruction(selectedSkill); skillInstruction != "" {
-		appendixParts = append(appendixParts, skillInstruction)
-	}
-	appendixParts = append(appendixParts, toolx.BuildToolAppendices(len(toolDefinitions) > 0, extraToolCodes)...)
+	appendixParts := buildInstructionAppendices(selectedSkill, toolDefinitions, extraToolCodes)
 	return NewInstructionAssembler().Assemble(InstructionAssemblerInput{
 		AgentInstruction: baseInstruction,
 		SkillInstruction: firstAppendixPart(appendixParts),

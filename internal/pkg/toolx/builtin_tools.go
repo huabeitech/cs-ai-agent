@@ -279,7 +279,12 @@ func NormalizeToolCodeAlias(toolCode string) string {
 }
 
 func BuildToolAppendices(hasDynamicMCPTools bool, toolCodes map[string]string) []string {
+	return BuildToolAppendicesForCodes(hasDynamicMCPTools, toolCodesFromMap(toolCodes))
+}
+
+func BuildToolAppendicesForCodes(hasDynamicMCPTools bool, toolCodes []string) []string {
 	ret := make([]string, 0, len(toolCodes)+1)
+	normalizedToolCodes := NormalizeToolCodes(toolCodes)
 	if hasDynamicMCPTools && strings.TrimSpace(BuiltinToolSearch.Appendix) != "" {
 		ret = append(ret, BuiltinToolSearch.Appendix)
 	}
@@ -290,7 +295,7 @@ func BuildToolAppendices(hasDynamicMCPTools bool, toolCodes map[string]string) [
 		if spec.Code == BuiltinToolSearch.Code {
 			continue
 		}
-		if hasToolCode(toolCodes, spec.Code) {
+		if containsNormalizedToolCode(normalizedToolCodes, spec.Code) {
 			ret = append(ret, spec.Appendix)
 		}
 	}
@@ -330,16 +335,31 @@ func IsImpliedAllowedToolCode(toolCode string, allowedToolCodes map[string]struc
 }
 
 func hasToolCode(toolCodes map[string]string, target string) bool {
+	return containsNormalizedToolCode(toolCodesFromMap(toolCodes), target)
+}
+
+func containsNormalizedToolCode(toolCodes []string, target string) bool {
 	target = strings.TrimSpace(target)
 	if target == "" || len(toolCodes) == 0 {
 		return false
 	}
-	for _, item := range toolCodes {
-		if NormalizeToolCodeAlias(strings.TrimSpace(item)) == target {
+	for _, item := range NormalizeToolCodes(toolCodes) {
+		if item == target {
 			return true
 		}
 	}
 	return false
+}
+
+func toolCodesFromMap(toolCodes map[string]string) []string {
+	if len(toolCodes) == 0 {
+		return nil
+	}
+	ret := make([]string, 0, len(toolCodes))
+	for _, item := range toolCodes {
+		ret = append(ret, item)
+	}
+	return ret
 }
 
 func NormalizeToolCodes(items []string) []string {
