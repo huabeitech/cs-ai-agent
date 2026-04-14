@@ -396,7 +396,7 @@ export function ChatPanel() {
           当前会话由 AI 接待中，转人工后才能由客服发送消息
         </div>
       ) : isPendingConversation ? (
-        <div className="h-full">
+        <div className="h-full flex justify-center items-center">
           <div className="flex items-center gap-2 h-full">
             <Button
               onClick={() => setClaimDialogOpen(true)}
