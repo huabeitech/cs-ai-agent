@@ -100,7 +100,7 @@ func (t *AnalyzeConversationTool) Info(ctx context.Context) (*schema.ToolInfo, e
 		}),
 		Extra: map[string]any{
 			"toolCode":   toolx.GraphAnalyzeConversation.Code,
-			"sourceType": "graph",
+			"sourceType": toolx.GraphAnalyzeConversation.SourceType,
 		},
 	}, nil
 }

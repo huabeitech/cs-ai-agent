@@ -69,7 +69,7 @@ func (t *HandoffGraphTool) Info(ctx context.Context) (*schema.ToolInfo, error) {
 		}),
 		Extra: map[string]any{
 			"toolCode":   toolx.GraphHandoffConversation.Code,
-			"sourceType": "graph",
+			"sourceType": toolx.GraphHandoffConversation.SourceType,
 		},
 	}, nil
 }

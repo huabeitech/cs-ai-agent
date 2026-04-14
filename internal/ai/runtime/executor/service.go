@@ -8,6 +8,7 @@ import (
 	"cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/ai/runtime/internal/impl/factory"
 
+	"github.com/cloudwego/eino/adk"
 	"github.com/google/uuid"
 )
 
@@ -213,7 +214,17 @@ func (s *Service) ExecuteResume(ctx context.Context, req ResumeInput) (*RunResul
 		return summary, fmt.Errorf("%s", summary.ErrorMessage)
 	}
 	resumeData := buildResumeDataMessage(req.ResumeData)
-	iter, err := runner.Resume(ctx, summary.CheckPointID, buildResumeOptions(summary.CheckPointID, resumeData)...)
+	resumeTargets := buildResumeTargets(req.ResumeData)
+	var (
+		iter *adk.AsyncIterator[*adk.AgentEvent]
+	)
+	if len(resumeTargets) > 0 {
+		iter, err = runner.ResumeWithParams(ctx, summary.CheckPointID, &adk.ResumeParams{
+			Targets: resumeTargets,
+		}, buildResumeOptions(summary.CheckPointID, resumeData)...)
+	} else {
+		iter, err = runner.Resume(ctx, summary.CheckPointID, buildResumeOptions(summary.CheckPointID, resumeData)...)
+	}
 	if err != nil {
 		summary.Status = "error"
 		summary.ErrorMessage = err.Error()

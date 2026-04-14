@@ -28,6 +28,24 @@ func buildResumeDataMessage(resumeData map[string]string) *schema.Message {
 	return schema.UserMessage(string(data))
 }
 
+func buildResumeTargets(resumeData map[string]string) map[string]any {
+	if len(resumeData) == 0 {
+		return nil
+	}
+	targets := make(map[string]any, len(resumeData))
+	for key, value := range resumeData {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		targets[key] = value
+	}
+	if len(targets) == 0 {
+		return nil
+	}
+	return targets
+}
+
 func buildRunOptions(checkPointID string) []adk.AgentRunOption {
 	options := make([]adk.AgentRunOption, 0, 1)
 	if strings.TrimSpace(checkPointID) != "" {

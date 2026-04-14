@@ -69,17 +69,12 @@ func buildSeedItems() []models.SkillDefinition {
 2. 优先围绕问题定位和升级处理推进，不要输出与当前诉求无关的自我介绍。
 3. 如果进入确认流程，明确告知用户你将协助提交或转接，并等待确认结果。`,
 			Examples: `[
-  "设备今天开始一直离线，重启也没用，帮我提个工单",
   "这个问题三天了还没解决，我要投诉一下",
   "麻烦转人工，你这边解决不了",
   "售后什么时候联系我？这个故障还没有人跟进",
-  "帮我登记一下报障，产品型号是AX300，无法联网",
   "我要申请售后处理，这个问题反复出现",
-  "你好，你是谁",
-  "这个产品怎么安装"
 ]`,
 			ToolWhitelist: `[
-  "graph/prepare_ticket_draft",
   "graph/create_ticket_with_confirmation",
   "graph/handoff_to_human"
 ]`,
