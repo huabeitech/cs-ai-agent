@@ -9,10 +9,8 @@ import (
 	einocallbacks "cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/ai/runtime/registry"
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/toolx"
 
 	"github.com/cloudwego/eino/adk"
-	einotoolsearch "github.com/cloudwego/eino/adk/middlewares/dynamictool/toolsearch"
 	einobasetool "github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 )
@@ -21,7 +19,7 @@ type AgentFactory struct {
 	chatModelFactory   *ChatModelFactory
 	toolFactory        *ToolFactory
 	instructionService *InstructionService
-	skillMiddleware    *SkillMiddlewareService
+	handlerService     *AgentHandlerService
 }
 
 // BuildCustomerServiceAgentInput 定义客服 Agent 的装配输入。
@@ -58,7 +56,7 @@ func NewAgentFactory() *AgentFactory {
 		chatModelFactory:   NewChatModelFactory(),
 		toolFactory:        NewToolFactory(),
 		instructionService: NewInstructionService(nil, nil, nil, nil, nil),
-		skillMiddleware:    NewSkillMiddlewareService(),
+		handlerService:     NewAgentHandlerService(nil),
 	}
 }
 
@@ -77,40 +75,22 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	}
 	allTools := make([]einobasetool.BaseTool, 0, len(input.StaticTools))
 	allTools = append(allTools, input.StaticTools...)
-	handlers := make([]adk.ChatModelAgentMiddleware, 0, 2)
-	if len(dynamicTools) > 0 {
-		toolSearchHandler, toolSearchErr := einotoolsearch.New(ctx, &einotoolsearch.Config{
-			DynamicTools: dynamicTools,
-		})
-		if toolSearchErr != nil {
-			return nil, toolSearchErr
-		}
-		handlers = append(handlers, toolSearchHandler)
-	}
-	if input.SelectedSkill != nil {
-		skillHandler, skillErr := f.skillMiddleware.Build(ctx, input.SelectedSkill, input.InstructionToolDefinitions)
-		if skillErr != nil {
-			return nil, skillErr
-		}
-		handlers = append(handlers, skillHandler)
-	}
-	if input.Collector != nil {
-		toolMetadataBy := buildRuntimeTraceToolMetadata(input.DynamicMCPToolDefinitions, input.StaticToolMetadata, input.SelectedSkill)
-		if input.SelectedSkill != nil {
-			input.Collector.SetSkillMiddleware(true, toolx.BuiltinSkill.Name)
-		}
-		handlers = append(handlers, einocallbacks.NewRuntimeTraceHandler(input.Collector, toolMetadataBy))
-	}
 	instructionResult := f.instructionService.Build(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
-	if input.Collector != nil {
-		input.Collector.SetInstructionSummary(einocallbacks.InstructionTraceSummary{
-			SectionTitles:     append([]string(nil), instructionResult.Summary.SectionTitles...),
-			HasProjectRule:    instructionResult.Summary.HasProjectRule,
-			HasGovernanceRule: instructionResult.Summary.HasGovernanceRule,
-			HasAgentRule:      instructionResult.Summary.HasAgentRule,
-			HasSkillRule:      instructionResult.Summary.HasSkillRule,
-			HasToolRule:       instructionResult.Summary.HasToolRule,
+	handlers := make([]adk.ChatModelAgentMiddleware, 0, 3)
+	if f.handlerService != nil {
+		builtHandlers, err := f.handlerService.Build(ctx, BuildAgentHandlersInput{
+			SelectedSkill:              input.SelectedSkill,
+			InstructionToolDefinitions: input.InstructionToolDefinitions,
+			DynamicToolDefinitions:     input.DynamicMCPToolDefinitions,
+			DynamicTools:               dynamicTools,
+			StaticToolMetadata:         input.StaticToolMetadata,
+			Collector:                  input.Collector,
+			InstructionSummary:         buildInstructionTraceSummary(instructionResult.Summary),
 		})
+		if err != nil {
+			return nil, err
+		}
+		handlers = append(handlers, builtHandlers...)
 	}
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        strings.TrimSpace(input.AIAgent.Name),

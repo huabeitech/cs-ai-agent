@@ -10,6 +10,17 @@ import (
 	"cs-agent/internal/pkg/toolx"
 )
 
+func buildInstructionTraceSummary(summary InstructionAssemblySummary) einocallbacks.InstructionTraceSummary {
+	return einocallbacks.InstructionTraceSummary{
+		SectionTitles:     append([]string(nil), summary.SectionTitles...),
+		HasProjectRule:    summary.HasProjectRule,
+		HasGovernanceRule: summary.HasGovernanceRule,
+		HasAgentRule:      summary.HasAgentRule,
+		HasSkillRule:      summary.HasSkillRule,
+		HasToolRule:       summary.HasToolRule,
+	}
+}
+
 func buildRuntimeTraceToolMetadata(
 	dynamicToolDefinitions []einoadapter.MCPToolDefinition,
 	staticToolMetadata map[string]registry.ToolMetadata,
