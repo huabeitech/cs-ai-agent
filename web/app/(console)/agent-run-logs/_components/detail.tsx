@@ -5,6 +5,7 @@ import { BotMessageSquareIcon, WorkflowIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { ImMessageHTML } from "@/components/im-message-html"
+import { JsonTreeViewer } from "@/components/json-tree-viewer"
 import { ProjectDialog } from "@/components/project-dialog"
 import { Button } from "@/components/ui/button"
 import { fetchAgentRunLog, type AgentRunLog } from "@/lib/api/admin"
@@ -149,21 +150,15 @@ export function AgentRunLogDetailDialog({
             ]}
           />
 
-          <TextBlock
+          <JsonBlock
             title="动态工具选择"
-            value={
-              activeToolSearchTrace
-                ? JSON.stringify(activeToolSearchTrace, null, 2)
-                : activeLog.toolSearchTrace
-            }
+            jsonValue={activeToolSearchTrace}
+            fallbackValue={activeLog.toolSearchTrace}
           />
-          <TextBlock
+          <JsonBlock
             title="Graph Tool 调用"
-            value={
-              activeGraphToolTrace
-                ? JSON.stringify(activeGraphToolTrace, null, 2)
-                : activeLog.graphToolTrace
-            }
+            jsonValue={activeGraphToolTrace}
+            fallbackValue={activeLog.graphToolTrace}
           />
           <TextBlock
             icon={<BotMessageSquareIcon className="size-4" />}
@@ -177,13 +172,10 @@ export function AgentRunLogDetailDialog({
             value={activeLog.replyText}
           />
           <TextBlock title="错误信息" value={activeLog.errorMessage} tone="danger" />
-          <TextBlock
+          <JsonBlock
             title="链路 Trace"
-            value={
-              activeTraceData
-                ? JSON.stringify(activeTraceData, null, 2)
-                : activeLog.traceData
-            }
+            jsonValue={activeTraceData}
+            fallbackValue={activeLog.traceData}
           />
         </>
       ) : (
@@ -277,6 +269,31 @@ function TextBlock({
           }
         >
           {normalizedValue || "-"}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function JsonBlock({
+  title,
+  jsonValue,
+  fallbackValue,
+}: {
+  title: string
+  jsonValue: unknown
+  fallbackValue?: string
+}) {
+  const normalizedFallback = fallbackValue?.trim() || ""
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="text-sm font-medium">{title}</div>
+      {jsonValue ? (
+        <JsonTreeViewer value={jsonValue} className="mt-3" />
+      ) : (
+        <div className="mt-3 select-text whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground">
+          {normalizedFallback || "-"}
         </div>
       )}
     </div>
