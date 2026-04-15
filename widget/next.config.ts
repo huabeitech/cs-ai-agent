@@ -3,6 +3,7 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants"
 
 const backendBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8083"
+const productionBasePath = "/widget"
 
 export default function nextConfig(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER) {
@@ -32,8 +33,8 @@ export default function nextConfig(phase: string): NextConfig {
   return {
     reactStrictMode: true,
     output: "export",
-    basePath: "/widget",
-    assetPrefix: "/widget/",
+    basePath: productionBasePath,
+    assetPrefix: `${productionBasePath}/`,
     trailingSlash: true,
     images: {
       unoptimized: true,
