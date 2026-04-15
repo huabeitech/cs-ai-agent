@@ -118,6 +118,15 @@ func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, err
 		return summary, fmt.Errorf("%s", summary.ErrorMessage)
 	}
 	messages := buildRunMessages(ctx, req, summary, collector)
+	if strings.TrimSpace(summary.ReplyText) != "" {
+		summary.Status = "completed"
+		summary.ModelName = req.AIConfig.ModelName
+		collector.Data.Status = summary.Status
+		collector.Data.Output.ReplyText = summary.ReplyText
+		collector.Data.Output.FinishReason = summary.Status
+		summary.TraceData = collector.Marshal()
+		return summary, nil
+	}
 	collector.Data.Interrupt.CheckPointID = checkPointID
 	consumeAgentEvents(runner.Run(ctx, messages, buildRunOptions(checkPointID)...), summary, collector, tooling.toolDefsByModelName)
 	summary.ModelName = req.AIConfig.ModelName
