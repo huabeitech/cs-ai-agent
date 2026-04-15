@@ -1,4 +1,4 @@
-.PHONY: run run-server run-web build build-all build-assets build-web build-widget \
+.PHONY: run run-server run-dashboard build build-all build-assets build-dashboard build-widget \
 	package-current package-platform build-server-linux-amd64 clean-dist clean-temp test tidy generator enums migration testdata
 
 DIST_DIR ?= dist
@@ -15,26 +15,26 @@ PLATFORM ?= $(CURRENT_PLATFORM)
 
 run:
 	@server_pid=0; \
-	web_pid=0; \
-	trap 'kill $$server_pid $$web_pid 2>/dev/null || true' INT TERM EXIT; \
+	dashboard_pid=0; \
+	trap 'kill $$server_pid $$dashboard_pid 2>/dev/null || true' INT TERM EXIT; \
 	$(MAKE) run-server & \
 	server_pid=$$!; \
-	$(MAKE) run-web & \
-	web_pid=$$!; \
-	while kill -0 $$server_pid 2>/dev/null && kill -0 $$web_pid 2>/dev/null; do \
+	$(MAKE) run-dashboard & \
+	dashboard_pid=$$!; \
+	while kill -0 $$server_pid 2>/dev/null && kill -0 $$dashboard_pid 2>/dev/null; do \
 		sleep 1; \
 	done; \
 	status=0; \
 	wait $$server_pid || status=$$?; \
-	wait $$web_pid || status=$$?; \
-	kill $$server_pid $$web_pid 2>/dev/null || true; \
+	wait $$dashboard_pid || status=$$?; \
+	kill $$server_pid $$dashboard_pid 2>/dev/null || true; \
 	exit $$status
 
 run-server:
 	go run ./cmd/server
 
-run-web:
-	cd web && pnpm dev
+run-dashboard:
+	cd dashboard && pnpm dev
 
 build: clean-dist build-assets package-current clean-temp
 	@echo "[build] done"
@@ -48,13 +48,13 @@ build-all: clean-dist build-assets
 	@$(MAKE) clean-temp
 	@echo "[build-all] done"
 
-build-assets: build-web build-widget
+build-assets: build-dashboard build-widget
 	@echo "[build-assets] done"
 
-build-web:
-	@echo "[build-web] building web app"
-	cd web && pnpm build
-	@echo "[build-web] done"
+build-dashboard:
+	@echo "[build-dashboard] building dashboard app"
+	cd dashboard && pnpm build
+	@echo "[build-dashboard] done"
 
 build-widget:
 	@echo "[build-widget] building widget sdk"
@@ -85,11 +85,11 @@ package-platform:
 	if [ "$$goos" = "windows" ]; then binary_name="$(APP_NAME).exe"; fi; \
 	echo "[package] start $$platform"; \
 	rm -rf "$$stage_dir"; \
-	mkdir -p "$$package_dir/web" "$$package_dir/widget" "$$package_dir/config" "$$dist_dir"; \
+	mkdir -p "$$package_dir/dashboard" "$$package_dir/widget" "$$package_dir/config" "$$dist_dir"; \
 	echo "[package] go build $$platform"; \
 	GOOS=$$goos GOARCH=$$goarch go build -o "$$package_dir/$$binary_name" $(APP_ENTRY); \
 	echo "[package] copy assets $$platform"; \
-	cp -R web/out "$$package_dir/web/out"; \
+	cp -R dashboard/out "$$package_dir/dashboard/out"; \
 	cp -R widget/out "$$package_dir/widget/out"; \
 	echo "[package] include example config only"; \
 	cp config/config.example.yaml "$$package_dir/config/config.example.yaml"; \
