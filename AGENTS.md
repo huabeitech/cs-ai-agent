@@ -286,30 +286,30 @@ func BuildXxx(item *models.Xxx) *response.Xxx {
 
 ### 8.2 路径分层
 
-- `/api/console/*`：业务后台接口，默认归属
+- `/api/dashboard/*`：业务后台接口，默认归属
 - `/api/admin/*`：平台总后台接口
 - `/api/open/*`：开放接口；IM 优先使用 `/api/open/im/*`
 - `/api/auth/*`：认证接口，可未登录访问
 
 禁止新增 `/api/v1` 这类版本前缀。
 
-### 8.3 console 接口风格
+### 8.3 dashboard 接口风格
 
-- 资源路径优先平铺：如 `/api/console/project`
+- 资源路径优先平铺：如 `/api/dashboard/project`
 - 列表、创建、更新、删除优先使用 `/list`、`/create`、`/update`、`/delete`
 - 查询条件优先通过 `query` 或 `body` 传递
 - 除详情接口外，尽量不使用 path param
-- 详情接口允许 `GET /api/console/project/{id}`
+- 详情接口允许 `GET /api/dashboard/project/{id}`
 - 从属资源优先通过 `projectId`、`episodeId` 等普通参数过滤，不鼓励深层嵌套路由
 
 ### 8.4 路由注册
 
-- 业务后台统一在 `internal/bootstrap/server.go` 中通过 `mvc.Configure(app.Party("/api/console"), ...)` 注册
+- 业务后台统一在 `internal/bootstrap/server.go` 中通过 `mvc.Configure(app.Party("/api/dashboard"), ...)` 注册
 - 平台接口统一通过 `mvc.Configure(app.Party("/api/admin"), ...)` 注册
 - 开放接口按领域归档，如 `mvc.Configure(app.Party("/api/open/im"), ...)`
 - 在分组内部通过 `m.Party("/xxx").Handle(...)` 挂载资源
-- 不要为每个资源单独再写一层顶级 `mvc.Configure(app.Party("/api/console/xxx"), ...)`
-- 认证与鉴权中间件优先挂在 `/api/console` 或 `/api/admin` 这一层
+- 不要为每个资源单独再写一层顶级 `mvc.Configure(app.Party("/api/dashboard/xxx"), ...)`
+- 认证与鉴权中间件优先挂在 `/api/dashboard` 或 `/api/admin` 这一层
 
 ### 8.5 Iris MVC 自动路由规则
 
@@ -318,10 +318,10 @@ func BuildXxx(item *models.Xxx) *response.Xxx {
 - controller 挂载方式示例：
 
 ```go
-m.Party("/quick-reply").Handle(new(console.QuickReplyController))
+m.Party("/quick-reply").Handle(new(dashboard.QuickReplyController))
 ```
 
-在上面的注册下，controller 的基础路径就是 `/quick-reply`，最终完整路径再拼上外层分组，如 `/api/console/quick-reply`。
+在上面的注册下，controller 的基础路径就是 `/quick-reply`，最终完整路径再拼上外层分组，如 `/api/dashboard/quick-reply`。
 
 - controller 名称 `QuickReplyController` 不会自动变成路径，路径以 `m.Party("/quick-reply")` 为准
 - 方法名前缀决定 HTTP Method：
@@ -352,18 +352,18 @@ m.Party("/quick-reply").Handle(new(console.QuickReplyController))
 
 当前项目常见正确映射示例：
 
-- `m.Party("/user").Handle(new(console.UserController))`
-  - `AnyList()` -> `ANY /api/console/user/list`
-  - `GetBy(id int64)` -> `GET /api/console/user/{id}`
-  - `PostCreate()` -> `POST /api/console/user/create`
-  - `PostUpdate()` -> `POST /api/console/user/update`
-  - `PostDelete()` -> `POST /api/console/user/delete`
-- `m.Party("/conversation").Handle(new(console.ConversationController))`
-  - `AnyList()` -> `ANY /api/console/conversation/list`
-  - `GetBy(id int64)` -> `GET /api/console/conversation/{id}`
-  - `AnyMessageList()` -> `ANY /api/console/conversation/message/list`
-  - `PostSendMessage()` -> `POST /api/console/conversation/send/message`
-  - 如果业务明确要求下划线路径，则方法名写成 `PostSend_message()`，对应 `POST /api/console/conversation/send_message`
+- `m.Party("/user").Handle(new(dashboard.UserController))`
+  - `AnyList()` -> `ANY /api/dashboard/user/list`
+  - `GetBy(id int64)` -> `GET /api/dashboard/user/{id}`
+  - `PostCreate()` -> `POST /api/dashboard/user/create`
+  - `PostUpdate()` -> `POST /api/dashboard/user/update`
+  - `PostDelete()` -> `POST /api/dashboard/user/delete`
+- `m.Party("/conversation").Handle(new(dashboard.ConversationController))`
+  - `AnyList()` -> `ANY /api/dashboard/conversation/list`
+  - `GetBy(id int64)` -> `GET /api/dashboard/conversation/{id}`
+  - `AnyMessageList()` -> `ANY /api/dashboard/conversation/message/list`
+  - `PostSendMessage()` -> `POST /api/dashboard/conversation/send/message`
+  - 如果业务明确要求下划线路径，则方法名写成 `PostSend_message()`，对应 `POST /api/dashboard/conversation/send_message`
 
 容易写错的点：
 

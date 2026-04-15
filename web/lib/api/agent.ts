@@ -129,19 +129,19 @@ export function fetchAgentConversations(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AgentConversation>>(
-    `/api/console/conversation/conversations${toQueryString(query)}`
+    `/api/dashboard/conversation/conversations${toQueryString(query)}`
   )
 }
 
 export function fetchAgentConversationDetail(id: number) {
-  return request<AgentConversationDetail>(`/api/console/conversation/${id}`)
+  return request<AgentConversationDetail>(`/api/dashboard/conversation/${id}`)
 }
 
 export function fetchAgentMessages(
   query?: Record<string, string | number | undefined>
 ) {
   return request<CursorResult<AgentMessage>>(
-    `/api/console/conversation/message_list${toQueryString(query)}`
+    `/api/dashboard/conversation/message_list${toQueryString(query)}`
   )
 }
 
@@ -152,21 +152,21 @@ export function sendAgentMessage(payload: {
   payload?: string
   clientMsgId?: string
 }) {
-  return request<AgentMessage>("/api/console/conversation/send_message", {
+  return request<AgentMessage>("/api/dashboard/conversation/send_message", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function recallAgentMessage(messageId: number) {
-  return request<AgentMessage>("/api/console/conversation/recall_message", {
+  return request<AgentMessage>("/api/dashboard/conversation/recall_message", {
     method: "POST",
     body: JSON.stringify({ messageId }),
   })
 }
 
 export function markAgentMessageRead(conversationId: number, messageId = 0) {
-  return request<void>("/api/console/conversation/read", {
+  return request<void>("/api/dashboard/conversation/read", {
     method: "POST",
     body: JSON.stringify({ conversationId, messageId }),
   })
@@ -176,7 +176,7 @@ export function uploadAgentConversationImage(conversationId: number, file: File)
   const formData = new FormData()
   formData.set("conversationId", String(conversationId))
   formData.set("file", file)
-  return request<AgentAsset>("/api/console/conversation/upload_image", {
+  return request<AgentAsset>("/api/dashboard/conversation/upload_image", {
     method: "POST",
     body: formData,
   })
@@ -186,7 +186,7 @@ export function uploadAgentConversationAttachment(conversationId: number, file: 
   const formData = new FormData()
   formData.set("conversationId", String(conversationId))
   formData.set("file", file)
-  return request<AgentAsset>("/api/console/conversation/upload_attachment", {
+  return request<AgentAsset>("/api/dashboard/conversation/upload_attachment", {
     method: "POST",
     body: formData,
   })
@@ -196,7 +196,7 @@ export function closeAgentConversation(
   conversationId: number,
   closeReason: string
 ) {
-  return request<void>("/api/console/conversation/close", {
+  return request<void>("/api/dashboard/conversation/close", {
     method: "POST",
     body: JSON.stringify({ conversationId, closeReason }),
   })
@@ -207,7 +207,7 @@ export function assignAgentConversation(
   assigneeId: number,
   reason: string
 ) {
-  return request<void>("/api/console/conversation/assign", {
+  return request<void>("/api/dashboard/conversation/assign", {
     method: "POST",
     body: JSON.stringify({ conversationId, assigneeId, reason }),
   })
@@ -218,7 +218,7 @@ export function transferAgentConversation(
   toUserId: number,
   reason: string
 ) {
-  return request<void>("/api/console/conversation/transfer", {
+  return request<void>("/api/dashboard/conversation/transfer", {
     method: "POST",
     body: JSON.stringify({ conversationId, toUserId, reason }),
   })
@@ -228,7 +228,7 @@ export function linkConversationToCustomer(payload: {
   conversationId: number
   customerId: number
 }) {
-  return request<void>("/api/console/conversation/link_customer", {
+  return request<void>("/api/dashboard/conversation/link_customer", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -238,7 +238,7 @@ export function addConversationTag(payload: {
   conversationId: number
   tagId: number
 }) {
-  return request<void>("/api/console/conversation/add_tag", {
+  return request<void>("/api/dashboard/conversation/add_tag", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -248,7 +248,7 @@ export function removeConversationTag(payload: {
   conversationId: number
   tagId: number
 }) {
-  return request<void>("/api/console/conversation/remove_tag", {
+  return request<void>("/api/dashboard/conversation/remove_tag", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -264,5 +264,5 @@ export function createAgentWebSocketUrl() {
   const params = new URLSearchParams({
     accessToken: session.accessToken,
   })
-  return `${baseUrl}/api/console/ws?${params.toString()}`
+  return `${baseUrl}/api/dashboard/ws?${params.toString()}`
 }

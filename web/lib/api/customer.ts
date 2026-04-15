@@ -61,18 +61,18 @@ export type CustomerListRequest = {
 }
 
 export function fetchCustomers(body: CustomerListRequest) {
-  return request<PageResult<AdminCustomer>>("/api/console/customer/list", {
+  return request<PageResult<AdminCustomer>>("/api/dashboard/customer/list", {
     method: "POST",
     body: JSON.stringify(body),
   })
 }
 
 export function fetchCustomer(id: number) {
-  return request<AdminCustomer | null>(`/api/console/customer/${id}`)
+  return request<AdminCustomer | null>(`/api/dashboard/customer/${id}`)
 }
 
 export function createCustomer(payload: CreateAdminCustomerPayload) {
-  return request<AdminCustomer>("/api/console/customer/create", {
+  return request<AdminCustomer>("/api/dashboard/customer/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -80,28 +80,28 @@ export function createCustomer(payload: CreateAdminCustomerPayload) {
 
 /** 单请求 + 单事务保存客户主信息与联系方式全量 */
 export function saveCustomerProfile(payload: SaveCustomerProfilePayload) {
-  return request<AdminCustomer>("/api/console/customer/save_profile", {
+  return request<AdminCustomer>("/api/dashboard/customer/save_profile", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateCustomer(payload: UpdateAdminCustomerPayload) {
-  return request<void>("/api/console/customer/update", {
+  return request<void>("/api/dashboard/customer/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateCustomerStatus(id: number, status: number) {
-  return request<void>("/api/console/customer/update_status", {
+  return request<void>("/api/dashboard/customer/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function deleteCustomer(id: number) {
-  return request<void>("/api/console/customer/delete", {
+  return request<void>("/api/dashboard/customer/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

@@ -39,37 +39,37 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
 
 export function fetchCompanies(query?: Record<string, string | number | undefined>) {
   return request<PageResult<AdminCompany>>(
-    `/api/console/company/list${toQueryString(query)}`
+    `/api/dashboard/company/list${toQueryString(query)}`
   )
 }
 
 export function fetchCompany(id: number) {
-  return request<AdminCompany>(`/api/console/company/${id}`)
+  return request<AdminCompany>(`/api/dashboard/company/${id}`)
 }
 
 export function createCompany(payload: CreateAdminCompanyPayload) {
-  return request<AdminCompany>("/api/console/company/create", {
+  return request<AdminCompany>("/api/dashboard/company/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateCompany(payload: UpdateAdminCompanyPayload) {
-  return request<void>("/api/console/company/update", {
+  return request<void>("/api/dashboard/company/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateCompanyStatus(id: number, status: number) {
-  return request<void>("/api/console/company/update_status", {
+  return request<void>("/api/dashboard/company/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function deleteCompany(id: number) {
-  return request<void>("/api/console/company/delete", {
+  return request<void>("/api/dashboard/company/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

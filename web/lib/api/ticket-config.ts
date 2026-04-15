@@ -71,30 +71,30 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
 
 export function fetchTicketResolutionCodes(query?: Record<string, string | number | undefined>) {
   return request<PageResult<TicketResolutionCode>>(
-    `/api/console/ticket-resolution-code/list${toQueryString(query)}`
+    `/api/dashboard/ticket-resolution-code/list${toQueryString(query)}`
   )
 }
 
 export function fetchTicketResolutionCodesAll() {
-  return request<TicketResolutionCode[]>("/api/console/ticket-resolution-code/list_all")
+  return request<TicketResolutionCode[]>("/api/dashboard/ticket-resolution-code/list_all")
 }
 
 export function createTicketResolutionCode(payload: CreateTicketResolutionCodePayload) {
-  return request<TicketResolutionCode>("/api/console/ticket-resolution-code/create", {
+  return request<TicketResolutionCode>("/api/dashboard/ticket-resolution-code/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateTicketResolutionCode(payload: UpdateTicketResolutionCodePayload) {
-  return request<void>("/api/console/ticket-resolution-code/update", {
+  return request<void>("/api/dashboard/ticket-resolution-code/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteTicketResolutionCode(id: number) {
-  return request<void>("/api/console/ticket-resolution-code/delete", {
+  return request<void>("/api/dashboard/ticket-resolution-code/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -102,37 +102,37 @@ export function deleteTicketResolutionCode(id: number) {
 
 export function fetchTicketPriorityConfigs(query?: Record<string, string | number | undefined>) {
   return request<TicketPriorityConfig[]>(
-    `/api/console/ticket-priority-config/list${toQueryString(query)}`
+    `/api/dashboard/ticket-priority-config/list${toQueryString(query)}`
   )
 }
 
 export function fetchTicketPriorityConfigsAll() {
-  return request<TicketPriorityConfig[]>("/api/console/ticket-priority-config/list_all")
+  return request<TicketPriorityConfig[]>("/api/dashboard/ticket-priority-config/list_all")
 }
 
 export function createTicketPriorityConfig(payload: CreateTicketPriorityConfigPayload) {
-  return request<TicketPriorityConfig>("/api/console/ticket-priority-config/create", {
+  return request<TicketPriorityConfig>("/api/dashboard/ticket-priority-config/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateTicketPriorityConfig(payload: UpdateTicketPriorityConfigPayload) {
-  return request<void>("/api/console/ticket-priority-config/update", {
+  return request<void>("/api/dashboard/ticket-priority-config/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateTicketPriorityConfigSort(ids: number[]) {
-  return request<void>("/api/console/ticket-priority-config/update_sort", {
+  return request<void>("/api/dashboard/ticket-priority-config/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
 }
 
 export function deleteTicketPriorityConfig(id: number) {
-  return request<void>("/api/console/ticket-priority-config/delete", {
+  return request<void>("/api/dashboard/ticket-priority-config/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

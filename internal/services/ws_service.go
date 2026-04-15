@@ -492,7 +492,7 @@ func (s *wsService) resolveTerminalType(ctx iris.Context, role string) string {
 		return terminalType
 	}
 	if role == realtimeRoleAdmin {
-		return "console_web"
+		return "dashboard_web"
 	}
 	return "web"
 }

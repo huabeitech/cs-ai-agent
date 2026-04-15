@@ -77,5 +77,5 @@ export type DashboardOverview = {
 }
 
 export function fetchDashboardOverview(range: DashboardRange) {
-  return request<DashboardOverview>(`/api/console/dashboard/overview?range=${range}`)
+  return request<DashboardOverview>(`/api/dashboard/dashboard/overview?range=${range}`)
 }

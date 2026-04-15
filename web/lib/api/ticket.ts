@@ -265,19 +265,19 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
 }
 
 export function fetchTickets(query?: TicketListQuery) {
-  return request<PageResult<TicketItem>>(`/api/console/ticket/list${toQueryString(query)}`)
+  return request<PageResult<TicketItem>>(`/api/dashboard/ticket/list${toQueryString(query)}`)
 }
 
 export function fetchTicketDetail(id: number) {
-  return request<TicketDetail>(`/api/console/ticket/${id}`)
+  return request<TicketDetail>(`/api/dashboard/ticket/${id}`)
 }
 
 export function fetchTicketSummary() {
-  return request<TicketSummary>("/api/console/ticket/summary")
+  return request<TicketSummary>("/api/dashboard/ticket/summary")
 }
 
 export function fetchTicketViews() {
-  return request<TicketSavedView[]>("/api/console/ticket/view_list")
+  return request<TicketSavedView[]>("/api/dashboard/ticket/view_list")
 }
 
 export function saveTicketView(payload: {
@@ -285,14 +285,14 @@ export function saveTicketView(payload: {
   name: string
   filters?: Record<string, unknown>
 }) {
-  return request<TicketSavedView>("/api/console/ticket/save_view", {
+  return request<TicketSavedView>("/api/dashboard/ticket/save_view", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteTicketView(id: number) {
-  return request<void>("/api/console/ticket/delete_view", {
+  return request<void>("/api/dashboard/ticket/delete_view", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -302,29 +302,29 @@ export function fetchTicketRiskOverview(query?: {
   currentTeamId?: number
   riskWindowMins?: number
 }) {
-  return request<TicketRiskOverview>(`/api/console/ticket/risk_overview${toQueryString(query)}`)
+  return request<TicketRiskOverview>(`/api/dashboard/ticket/risk_overview${toQueryString(query)}`)
 }
 
 export function fetchTicketRiskList(query: TicketRiskListQuery) {
-  return request<PageResult<TicketItem>>(`/api/console/ticket/risk_list${toQueryString(query)}`)
+  return request<PageResult<TicketItem>>(`/api/dashboard/ticket/risk_list${toQueryString(query)}`)
 }
 
 export function createTicket(payload: CreateTicketPayload) {
-  return request<TicketItem>("/api/console/ticket/create", {
+  return request<TicketItem>("/api/dashboard/ticket/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function createTicketFromConversation(payload: CreateTicketFromConversationPayload) {
-  return request<TicketItem>("/api/console/ticket/create_from_conversation", {
+  return request<TicketItem>("/api/dashboard/ticket/create_from_conversation", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateTicket(payload: UpdateTicketPayload) {
-  return request<void>("/api/console/ticket/update", {
+  return request<void>("/api/dashboard/ticket/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -334,7 +334,7 @@ export function linkTicketToCustomer(payload: {
   ticketId: number
   customerId: number
 }) {
-  return request<void>("/api/console/ticket/link_customer", {
+  return request<void>("/api/dashboard/ticket/link_customer", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -346,7 +346,7 @@ export function assignTicket(payload: {
   toTeamId?: number
   reason?: string
 }) {
-  return request<void>("/api/console/ticket/assign", {
+  return request<void>("/api/dashboard/ticket/assign", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -358,7 +358,7 @@ export function batchAssignTickets(payload: {
   toTeamId?: number
   reason?: string
 }) {
-  return request<void>("/api/console/ticket/batch_assign", {
+  return request<void>("/api/dashboard/ticket/batch_assign", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -373,7 +373,7 @@ export function changeTicketStatus(payload: {
   resolutionSummary?: string
   reason?: string
 }) {
-  return request<void>("/api/console/ticket/change_status", {
+  return request<void>("/api/dashboard/ticket/change_status", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -388,7 +388,7 @@ export function batchChangeTicketStatus(payload: {
   resolutionSummary?: string
   reason?: string
 }) {
-  return request<void>("/api/console/ticket/batch_change_status", {
+  return request<void>("/api/dashboard/ticket/batch_change_status", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -400,7 +400,7 @@ export function replyTicket(payload: {
   content: string
   payload?: string
 }) {
-  return request<TicketComment>("/api/console/ticket/reply", {
+  return request<TicketComment>("/api/dashboard/ticket/reply", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -412,42 +412,42 @@ export function addTicketInternalNote(payload: {
   content: string
   payload?: string
 }) {
-  return request<TicketComment>("/api/console/ticket/internal_note", {
+  return request<TicketComment>("/api/dashboard/ticket/internal_note", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function closeTicket(payload: { ticketId: number; closeReason: string }) {
-  return request<void>("/api/console/ticket/close", {
+  return request<void>("/api/dashboard/ticket/close", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function reopenTicket(payload: { ticketId: number; reason: string }) {
-  return request<void>("/api/console/ticket/reopen", {
+  return request<void>("/api/dashboard/ticket/reopen", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function watchTicket(ticketId: number) {
-  return request<void>("/api/console/ticket/watch", {
+  return request<void>("/api/dashboard/ticket/watch", {
     method: "POST",
     body: JSON.stringify({ ticketId }),
   })
 }
 
 export function unwatchTicket(ticketId: number) {
-  return request<void>("/api/console/ticket/unwatch", {
+  return request<void>("/api/dashboard/ticket/unwatch", {
     method: "POST",
     body: JSON.stringify({ ticketId }),
   })
 }
 
 export function batchWatchTickets(payload: { ticketIds: number[]; watched: boolean }) {
-  return request<void>("/api/console/ticket/batch_watch", {
+  return request<void>("/api/dashboard/ticket/batch_watch", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -459,28 +459,28 @@ export function addTicketRelation(payload: {
   relatedTicketNo?: string
   relationType: string
 }) {
-  return request<void>("/api/console/ticket/add_relation", {
+  return request<void>("/api/dashboard/ticket/add_relation", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteTicketRelation(payload: { ticketId: number; relationId: number }) {
-  return request<void>("/api/console/ticket/delete_relation", {
+  return request<void>("/api/dashboard/ticket/delete_relation", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function addTicketCollaborator(payload: { ticketId: number; userId: number }) {
-  return request<void>("/api/console/ticket/add_collaborator", {
+  return request<void>("/api/dashboard/ticket/add_collaborator", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteTicketCollaborator(payload: { ticketId: number; collaboratorId: number }) {
-  return request<void>("/api/console/ticket/delete_collaborator", {
+  return request<void>("/api/dashboard/ticket/delete_collaborator", {
     method: "POST",
     body: JSON.stringify(payload),
   })

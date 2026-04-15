@@ -12,7 +12,7 @@ import (
 	"github.com/mlogclub/simple/web"
 )
 
-func ConsoleWsMiddleware(ctx iris.Context) {
+func DashboardWsMiddleware(ctx iris.Context) {
 	principal := services.AuthService.GetAuthPrincipal(ctx)
 	if principal == nil {
 		if _, err := services.AuthService.Authenticate(ctx); err != nil {

@@ -535,44 +535,44 @@ export function createAdminWebSocketUrl() {
   const params = new URLSearchParams({
     accessToken: session.accessToken,
   })
-  return `${baseUrl}/api/console/ws?${params.toString()}`
+  return `${baseUrl}/api/dashboard/ws?${params.toString()}`
 }
 
 export function fetchChannels(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminChannel>>(
-    `/api/console/channel/list${toQueryString(query)}`
+    `/api/dashboard/channel/list${toQueryString(query)}`
   )
 }
 
 export function fetchChannel(id: number) {
-  return request<AdminChannel>(`/api/console/channel/${id}`)
+  return request<AdminChannel>(`/api/dashboard/channel/${id}`)
 }
 
 export function createChannel(payload: CreateAdminChannelPayload) {
-  return request<AdminChannel>("/api/console/channel/create", {
+  return request<AdminChannel>("/api/dashboard/channel/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateChannel(payload: UpdateAdminChannelPayload) {
-  return request<void>("/api/console/channel/update", {
+  return request<void>("/api/dashboard/channel/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateChannelStatus(id: number, status: number) {
-  return request<void>("/api/console/channel/update_status", {
+  return request<void>("/api/dashboard/channel/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function deleteChannel(id: number) {
-  return request<void>("/api/console/channel/delete", {
+  return request<void>("/api/dashboard/channel/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -582,50 +582,50 @@ export function fetchAIAgents(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AIAgent>>(
-    `/api/console/ai-agent/list${toQueryString(query)}`
+    `/api/dashboard/ai-agent/list${toQueryString(query)}`
   )
 }
 
 export function fetchAIAgentsAll(query?: Record<string, string | number | undefined>) {
   return request<AIAgent[]>(
-    `/api/console/ai-agent/list_all${toQueryString(query)}`
+    `/api/dashboard/ai-agent/list_all${toQueryString(query)}`
   )
 }
 
 export function fetchAIAgent(id: number) {
-  return request<AIAgent>(`/api/console/ai-agent/${id}`)
+  return request<AIAgent>(`/api/dashboard/ai-agent/${id}`)
 }
 
 export function createAIAgent(payload: CreateAIAgentPayload) {
-  return request<AIAgent>("/api/console/ai-agent/create", {
+  return request<AIAgent>("/api/dashboard/ai-agent/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateAIAgent(payload: UpdateAIAgentPayload) {
-  return request<void>("/api/console/ai-agent/update", {
+  return request<void>("/api/dashboard/ai-agent/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAIAgent(id: number) {
-  return request<void>("/api/console/ai-agent/delete", {
+  return request<void>("/api/dashboard/ai-agent/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function updateAIAgentSort(ids: number[]) {
-  return request<void>("/api/console/ai-agent/update_sort", {
+  return request<void>("/api/dashboard/ai-agent/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
 }
 
 export function updateAIAgentStatus(id: number, status: number) {
-  return request<void>("/api/console/ai-agent/update_status", {
+  return request<void>("/api/dashboard/ai-agent/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
@@ -633,18 +633,18 @@ export function updateAIAgentStatus(id: number, status: number) {
 
 export function fetchUsers(query?: Record<string, string | number | undefined>) {
   return request<PageResult<AdminUser>>(
-    `/api/console/user/list${toQueryString(query)}`
+    `/api/dashboard/user/list${toQueryString(query)}`
   )
 }
 
 export function fetchUsersAll(query?: Record<string, string | number | undefined>) {
   return request<AdminUser[]>(
-    `/api/console/user/list_all${toQueryString(query)}`
+    `/api/dashboard/user/list_all${toQueryString(query)}`
   )
 }
 
 export function createUser(payload: CreateAdminUserPayload) {
-  return request<CreateUserResult>("/api/console/user/create", {
+  return request<CreateUserResult>("/api/dashboard/user/create", {
     method: "POST",
     body: JSON.stringify({
       username: payload.username,
@@ -659,39 +659,39 @@ export function createUser(payload: CreateAdminUserPayload) {
 }
 
 export function updateUser(payload: UpdateAdminUserPayload) {
-  return request<void>("/api/console/user/update", {
+  return request<void>("/api/dashboard/user/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function fetchUserDetail(id: number) {
-  return request<AdminUser>(`/api/console/user/${id}`)
+  return request<AdminUser>(`/api/dashboard/user/${id}`)
 }
 
 export function updateUserStatus(id: number, status: number) {
-  return request<void>("/api/console/user/update_status", {
+  return request<void>("/api/dashboard/user/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function resetUserPassword(userId: number) {
-  return request<ResetPasswordResult>("/api/console/user/reset_password", {
+  return request<ResetPasswordResult>("/api/dashboard/user/reset_password", {
     method: "POST",
     body: JSON.stringify({ userId }),
   })
 }
 
 export function changeSelfPassword(password: string) {
-  return request<void>("/api/console/user/change_password", {
+  return request<void>("/api/dashboard/user/change_password", {
     method: "POST",
     body: JSON.stringify({ password }),
   })
 }
 
 export function assignUserRoles(userId: number, roleIds: number[]) {
-  return request<void>("/api/console/user/assign_role", {
+  return request<void>("/api/dashboard/user/assign_role", {
     method: "POST",
     body: JSON.stringify({ userId, roleIds }),
   })
@@ -699,27 +699,27 @@ export function assignUserRoles(userId: number, roleIds: number[]) {
 
 export function fetchRoles(query?: Record<string, string | number | undefined>) {
   return request<PageResult<AdminRole>>(
-    `/api/console/role/list${toQueryString(query)}`
+    `/api/dashboard/role/list${toQueryString(query)}`
   )
 }
 
 export function fetchRoleListAll() {
-  return request<AdminRole[]>("/api/console/role/list_all")
+  return request<AdminRole[]>("/api/dashboard/role/list_all")
 }
 
 export function fetchRoleDetail(id: number) {
-  return request<AdminRole>(`/api/console/role/${id}`)
+  return request<AdminRole>(`/api/dashboard/role/${id}`)
 }
 
 export function assignRolePermissions(roleId: number, permissionIds: number[]) {
-  return request<void>("/api/console/role/assign_permission", {
+  return request<void>("/api/dashboard/role/assign_permission", {
     method: "POST",
     body: JSON.stringify({ roleId, permissionIds }),
   })
 }
 
 export function updateRoleSort(ids: number[]) {
-  return request<void>("/api/console/role/update_sort", {
+  return request<void>("/api/dashboard/role/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
@@ -729,7 +729,7 @@ export function fetchPermissions(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminPermission>>(
-    `/api/console/permission/list${toQueryString(query)}`
+    `/api/dashboard/permission/list${toQueryString(query)}`
   )
 }
 
@@ -737,19 +737,19 @@ export function fetchConversations(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminConversation>>(
-    `/api/console/conversation/list${toQueryString(query)}`
+    `/api/dashboard/conversation/list${toQueryString(query)}`
   )
 }
 
 export function fetchConversationDetail(id: number) {
-  return request<AdminConversationDetail>(`/api/console/conversation/${id}`)
+  return request<AdminConversationDetail>(`/api/dashboard/conversation/${id}`)
 }
 
 export function fetchConversationMessages(
   query?: Record<string, string | number | undefined>
 ) {
   return request<CursorResult<AdminMessage>>(
-    `/api/console/conversation/message_list${toQueryString(query)}`
+    `/api/dashboard/conversation/message_list${toQueryString(query)}`
   )
 }
 
@@ -758,14 +758,14 @@ export function assignConversation(
   assigneeId: number,
   reason: string
 ) {
-  return request<void>("/api/console/conversation/assign", {
+  return request<void>("/api/dashboard/conversation/assign", {
     method: "POST",
     body: JSON.stringify({ conversationId, assigneeId, reason }),
   })
 }
 
 export function dispatchConversation(conversationId: number) {
-  return request<void>("/api/console/conversation/dispatch", {
+  return request<void>("/api/dashboard/conversation/dispatch", {
     method: "POST",
     body: JSON.stringify({ conversationId }),
   })
@@ -776,21 +776,21 @@ export function transferConversation(
   toUserId: number,
   reason: string
 ) {
-  return request<void>("/api/console/conversation/transfer", {
+  return request<void>("/api/dashboard/conversation/transfer", {
     method: "POST",
     body: JSON.stringify({ conversationId, toUserId, reason }),
   })
 }
 
 export function closeConversation(conversationId: number, closeReason: string) {
-  return request<void>("/api/console/conversation/close", {
+  return request<void>("/api/dashboard/conversation/close", {
     method: "POST",
     body: JSON.stringify({ conversationId, closeReason }),
   })
 }
 
 export function markConversationRead(conversationId: number, messageId = 0) {
-  return request<void>("/api/console/conversation/read", {
+  return request<void>("/api/dashboard/conversation/read", {
     method: "POST",
     body: JSON.stringify({ conversationId, messageId }),
   })
@@ -803,14 +803,14 @@ export function sendConversationMessage(payload: {
   payload?: string
   clientMsgId?: string
 }) {
-  return request<AdminMessage>("/api/console/conversation/send_message", {
+  return request<AdminMessage>("/api/dashboard/conversation/send_message", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function recallConversationMessage(messageId: number) {
-  return request<AdminMessage>("/api/console/conversation/recall_message", {
+  return request<AdminMessage>("/api/dashboard/conversation/recall_message", {
     method: "POST",
     body: JSON.stringify({ messageId }),
   })
@@ -820,34 +820,34 @@ export function fetchQuickReplies(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminQuickReply>>(
-    `/api/console/quick-reply/list${toQueryString(query)}`
+    `/api/dashboard/quick-reply/list${toQueryString(query)}`
   )
 }
 
 export function fetchQuickReplyListAll() {
-  return request<AdminQuickReply[]>("/api/console/quick-reply/list_all")
+  return request<AdminQuickReply[]>("/api/dashboard/quick-reply/list_all")
 }
 
 export function fetchQuickReply(id: number) {
-  return request<AdminQuickReply>(`/api/console/quick-reply/${id}`)
+  return request<AdminQuickReply>(`/api/dashboard/quick-reply/${id}`)
 }
 
 export function createQuickReply(payload: CreateAdminQuickReplyPayload) {
-  return request<AdminQuickReply>("/api/console/quick-reply/create", {
+  return request<AdminQuickReply>("/api/dashboard/quick-reply/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateQuickReply(payload: UpdateAdminQuickReplyPayload) {
-  return request<void>("/api/console/quick-reply/update", {
+  return request<void>("/api/dashboard/quick-reply/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteQuickReply(id: number) {
-  return request<void>("/api/console/quick-reply/delete", {
+  return request<void>("/api/dashboard/quick-reply/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -857,7 +857,7 @@ export function fetchSkillDefinitions(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<SkillDefinition>>(
-    `/api/console/skill-definition/list${toQueryString(query)}`
+    `/api/dashboard/skill-definition/list${toQueryString(query)}`
   )
 }
 
@@ -865,23 +865,23 @@ export function fetchSkillDefinitionsAll(
   query?: Record<string, string | number | undefined>
 ) {
   return request<SkillDefinition[]>(
-    `/api/console/skill-definition/list_all${toQueryString(query)}`
+    `/api/dashboard/skill-definition/list_all${toQueryString(query)}`
   )
 }
 
 export function fetchSkillDefinition(id: number) {
-  return request<SkillDefinition>(`/api/console/skill-definition/${id}`)
+  return request<SkillDefinition>(`/api/dashboard/skill-definition/${id}`)
 }
 
 export function createSkillDefinition(payload: CreateSkillDefinitionPayload) {
-  return request<SkillDefinition>("/api/console/skill-definition/create", {
+  return request<SkillDefinition>("/api/dashboard/skill-definition/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateSkillDefinition(payload: UpdateSkillDefinitionPayload) {
-  return request<void>("/api/console/skill-definition/update", {
+  return request<void>("/api/dashboard/skill-definition/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -891,62 +891,62 @@ export function fetchAgentRunLogs(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AgentRunLog>>(
-    `/api/console/agent-run-log/list${toQueryString(query)}`
+    `/api/dashboard/agent-run-log/list${toQueryString(query)}`
   )
 }
 
 export function fetchAgentRunLog(id: number) {
-  return request<AgentRunLog>(`/api/console/agent-run-log/${id}`)
+  return request<AgentRunLog>(`/api/dashboard/agent-run-log/${id}`)
 }
 
 export function updateSkillDefinitionStatus(id: number, status: number) {
-  return request<void>("/api/console/skill-definition/update_status", {
+  return request<void>("/api/dashboard/skill-definition/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function deleteSkillDefinition(id: number) {
-  return request<void>("/api/console/skill-definition/delete", {
+  return request<void>("/api/dashboard/skill-definition/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function debugRunSkillDefinition(payload: SkillDebugRunPayload) {
-  return request<SkillDebugRunResult>("/api/console/skill-definition/debug_run", {
+  return request<SkillDebugRunResult>("/api/dashboard/skill-definition/debug_run", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function debugResumeSkillDefinition(payload: SkillDebugResumePayload) {
-  return request<SkillDebugRunResult>("/api/console/skill-definition/debug_resume", {
+  return request<SkillDebugRunResult>("/api/dashboard/skill-definition/debug_resume", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function testMCPConnection(serverCode: string) {
-  return request<MCPConnectionResult>("/api/console/mcp/test_connection", {
+  return request<MCPConnectionResult>("/api/dashboard/mcp/test_connection", {
     method: "POST",
     body: JSON.stringify({ serverCode }),
   })
 }
 
 export function listMCPServers() {
-  return request<MCPServerInfo[]>("/api/console/mcp/list_servers")
+  return request<MCPServerInfo[]>("/api/dashboard/mcp/list_servers")
 }
 
 export function listMCPTools(serverCode: string) {
-  return request<MCPToolInfo[]>("/api/console/mcp/list_tools", {
+  return request<MCPToolInfo[]>("/api/dashboard/mcp/list_tools", {
     method: "POST",
     body: JSON.stringify({ serverCode }),
   })
 }
 
 export function fetchMCPCatalog() {
-  return request<MCPToolCatalogItem[]>("/api/console/mcp/catalog")
+  return request<MCPToolCatalogItem[]>("/api/dashboard/mcp/catalog")
 }
 
 export function callMCPTool(payload: {
@@ -954,7 +954,7 @@ export function callMCPTool(payload: {
   toolName: string
   arguments: Record<string, unknown>
 }) {
-  return request<MCPToolCallResult>("/api/console/mcp/call_tool", {
+  return request<MCPToolCallResult>("/api/dashboard/mcp/call_tool", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -964,38 +964,38 @@ export function fetchAgentProfiles(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminAgentProfile>>(
-    `/api/console/agent/list${toQueryString(query)}`
+    `/api/dashboard/agent/list${toQueryString(query)}`
   )
 }
 
 export function fetchAgentProfile(id: number) {
-  return request<AdminAgentProfile>(`/api/console/agent/${id}`)
+  return request<AdminAgentProfile>(`/api/dashboard/agent/${id}`)
 }
 
 export function fetchAgentProfilesAll(
   query?: Record<string, string | number | undefined>
 ) {
   return request<AdminAgentProfile[]>(
-    `/api/console/agent/list_all${toQueryString(query)}`
+    `/api/dashboard/agent/list_all${toQueryString(query)}`
   )
 }
 
 export function createAgentProfile(payload: CreateAdminAgentProfilePayload) {
-  return request<AdminAgentProfile>("/api/console/agent/create", {
+  return request<AdminAgentProfile>("/api/dashboard/agent/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateAgentProfile(payload: UpdateAdminAgentProfilePayload) {
-  return request<void>("/api/console/agent/update", {
+  return request<void>("/api/dashboard/agent/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAgentProfile(id: number) {
-  return request<void>("/api/console/agent/delete", {
+  return request<void>("/api/dashboard/agent/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -1003,36 +1003,36 @@ export function deleteAgentProfile(id: number) {
 
 export function fetchAgentTeams(query?: Record<string, string | number | undefined>) {
   return request<AdminAgentTeam[]>(
-    `/api/console/agent-team/list${toQueryString(query)}`
+    `/api/dashboard/agent-team/list${toQueryString(query)}`
   )
 }
 
 export function fetchAgentTeamsAll() {
   return request<AdminAgentTeam[]>(
-    `/api/console/agent-team/list_all`
+    `/api/dashboard/agent-team/list_all`
   )
 }
 
 export function fetchAgentTeam(id: number) {
-  return request<AdminAgentTeam>(`/api/console/agent-team/${id}`)
+  return request<AdminAgentTeam>(`/api/dashboard/agent-team/${id}`)
 }
 
 export function createAgentTeam(payload: CreateAdminAgentTeamPayload) {
-  return request<AdminAgentTeam>("/api/console/agent-team/create", {
+  return request<AdminAgentTeam>("/api/dashboard/agent-team/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateAgentTeam(payload: UpdateAdminAgentTeamPayload) {
-  return request<void>("/api/console/agent-team/update", {
+  return request<void>("/api/dashboard/agent-team/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAgentTeam(id: number) {
-  return request<void>("/api/console/agent-team/delete", {
+  return request<void>("/api/dashboard/agent-team/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -1042,30 +1042,30 @@ export function fetchAgentTeamSchedules(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AdminAgentTeamSchedule>>(
-    `/api/console/agent-team-schedule/list${toQueryString(query)}`
+    `/api/dashboard/agent-team-schedule/list${toQueryString(query)}`
   )
 }
 
 export function fetchAgentTeamSchedule(id: number) {
-  return request<AdminAgentTeamSchedule>(`/api/console/agent-team-schedule/${id}`)
+  return request<AdminAgentTeamSchedule>(`/api/dashboard/agent-team-schedule/${id}`)
 }
 
 export function createAgentTeamSchedule(payload: CreateAdminAgentTeamSchedulePayload) {
-  return request<AdminAgentTeamSchedule>("/api/console/agent-team-schedule/create", {
+  return request<AdminAgentTeamSchedule>("/api/dashboard/agent-team-schedule/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateAgentTeamSchedule(payload: UpdateAdminAgentTeamSchedulePayload) {
-  return request<void>("/api/console/agent-team-schedule/update", {
+  return request<void>("/api/dashboard/agent-team-schedule/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAgentTeamSchedule(id: number) {
-  return request<void>("/api/console/agent-team-schedule/delete", {
+  return request<void>("/api/dashboard/agent-team-schedule/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -1116,52 +1116,52 @@ export function fetchAIConfigs(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<AIConfig>>(
-    `/api/console/ai-config/list${toQueryString(query)}`
+    `/api/dashboard/ai-config/list${toQueryString(query)}`
   )
 }
 
 export function fetchAIConfig(id: number) {
-  return request<AIConfig>(`/api/console/ai-config/${id}`)
+  return request<AIConfig>(`/api/dashboard/ai-config/${id}`)
 }
 
 export function fetchAIConfigsAll(
   query?: Record<string, string | number | undefined>
 ) {
   return request<AIConfig[]>(
-    `/api/console/ai-config/list_all${toQueryString(query)}`
+    `/api/dashboard/ai-config/list_all${toQueryString(query)}`
   )
 }
 
 export function createAIConfig(payload: CreateAIConfigPayload) {
-  return request<AIConfig>("/api/console/ai-config/create", {
+  return request<AIConfig>("/api/dashboard/ai-config/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateAIConfig(payload: UpdateAIConfigPayload) {
-  return request<void>("/api/console/ai-config/update", {
+  return request<void>("/api/dashboard/ai-config/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAIConfig(id: number) {
-  return request<void>("/api/console/ai-config/delete", {
+  return request<void>("/api/dashboard/ai-config/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function updateAIConfigStatus(id: number, status: number) {
-  return request<void>("/api/console/ai-config/update_status", {
+  return request<void>("/api/dashboard/ai-config/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
 }
 
 export function updateAIConfigSort(ids: number[]) {
-  return request<void>("/api/console/ai-config/update_sort", {
+  return request<void>("/api/dashboard/ai-config/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
@@ -1425,7 +1425,7 @@ export function fetchKnowledgeBases(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<KnowledgeBase>>(
-    `/api/console/knowledge-base/list${toQueryString(query)}`
+    `/api/dashboard/knowledge-base/list${toQueryString(query)}`
   )
 }
 
@@ -1433,44 +1433,44 @@ export function fetchKnowledgeBasesAll(
   query?: Record<string, string | number | undefined>
 ) {
   return request<KnowledgeBase[]>(
-    `/api/console/knowledge-base/list_all${toQueryString(query)}`
+    `/api/dashboard/knowledge-base/list_all${toQueryString(query)}`
   )
 }
 
 export function fetchKnowledgeBase(id: number) {
-  return request<KnowledgeBase>(`/api/console/knowledge-base/${id}`)
+  return request<KnowledgeBase>(`/api/dashboard/knowledge-base/${id}`)
 }
 
 export function createKnowledgeBase(payload: CreateKnowledgeBasePayload) {
-  return request<KnowledgeBase>("/api/console/knowledge-base/create", {
+  return request<KnowledgeBase>("/api/dashboard/knowledge-base/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateKnowledgeBase(payload: UpdateKnowledgeBasePayload) {
-  return request<void>("/api/console/knowledge-base/update", {
+  return request<void>("/api/dashboard/knowledge-base/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteKnowledgeBase(id: number) {
-  return request<void>("/api/console/knowledge-base/delete", {
+  return request<void>("/api/dashboard/knowledge-base/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function updateKnowledgeBaseSort(ids: number[]) {
-  return request<void>("/api/console/knowledge-base/update_sort", {
+  return request<void>("/api/dashboard/knowledge-base/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
 }
 
 export function rebuildKnowledgeBaseIndex(id: number) {
-  return request<void>("/api/console/knowledge-base/rebuild_index", {
+  return request<void>("/api/dashboard/knowledge-base/rebuild_index", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
@@ -1480,37 +1480,37 @@ export function fetchKnowledgeDocuments(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<KnowledgeDocument>>(
-    `/api/console/knowledge-document/list${toQueryString(query)}`
+    `/api/dashboard/knowledge-document/list${toQueryString(query)}`
   )
 }
 
 export function fetchKnowledgeDocument(id: number) {
-  return request<KnowledgeDocument>(`/api/console/knowledge-document/${id}`)
+  return request<KnowledgeDocument>(`/api/dashboard/knowledge-document/${id}`)
 }
 
 export function createKnowledgeDocument(payload: CreateKnowledgeDocumentPayload) {
-  return request<KnowledgeDocument>("/api/console/knowledge-document/create", {
+  return request<KnowledgeDocument>("/api/dashboard/knowledge-document/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateKnowledgeDocument(payload: UpdateKnowledgeDocumentPayload) {
-  return request<void>("/api/console/knowledge-document/update", {
+  return request<void>("/api/dashboard/knowledge-document/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteKnowledgeDocument(id: number) {
-  return request<void>("/api/console/knowledge-document/delete", {
+  return request<void>("/api/dashboard/knowledge-document/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function buildKnowledgeDocumentIndex(documentId: number) {
-  return request<void>("/api/console/knowledge-retrieve/build", {
+  return request<void>("/api/dashboard/knowledge-retrieve/build", {
     method: "POST",
     body: JSON.stringify({ documentId }),
   })
@@ -1520,51 +1520,51 @@ export function fetchKnowledgeFAQs(
   query?: Record<string, string | number | undefined>
 ) {
   return request<PageResult<KnowledgeFAQ>>(
-    `/api/console/knowledge-faq/list${toQueryString(query)}`
+    `/api/dashboard/knowledge-faq/list${toQueryString(query)}`
   )
 }
 
 export function fetchKnowledgeFAQ(id: number) {
-  return request<KnowledgeFAQ>(`/api/console/knowledge-faq/${id}`)
+  return request<KnowledgeFAQ>(`/api/dashboard/knowledge-faq/${id}`)
 }
 
 export function createKnowledgeFAQ(payload: CreateKnowledgeFAQPayload) {
-  return request<KnowledgeFAQ>("/api/console/knowledge-faq/create", {
+  return request<KnowledgeFAQ>("/api/dashboard/knowledge-faq/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateKnowledgeFAQ(payload: UpdateKnowledgeFAQPayload) {
-  return request<void>("/api/console/knowledge-faq/update", {
+  return request<void>("/api/dashboard/knowledge-faq/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteKnowledgeFAQ(id: number) {
-  return request<void>("/api/console/knowledge-faq/delete", {
+  return request<void>("/api/dashboard/knowledge-faq/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function buildKnowledgeFAQIndex(faqId: number) {
-  return request<void>("/api/console/knowledge-retrieve/build", {
+  return request<void>("/api/dashboard/knowledge-retrieve/build", {
     method: "POST",
     body: JSON.stringify({ faqId }),
   })
 }
 
 export function debugKnowledgeSearch(payload: KnowledgeSearchPayload) {
-  return request<KnowledgeSearchResponse>("/api/console/knowledge-retrieve/debug/search", {
+  return request<KnowledgeSearchResponse>("/api/dashboard/knowledge-retrieve/debug/search", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function debugKnowledgeAnswer(payload: KnowledgeAnswerPayload) {
-  return request<KnowledgeAnswerResponse>("/api/console/knowledge-retrieve/debug/answer", {
+  return request<KnowledgeAnswerResponse>("/api/dashboard/knowledge-retrieve/debug/answer", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -1572,12 +1572,12 @@ export function debugKnowledgeAnswer(payload: KnowledgeAnswerPayload) {
 
 export function fetchKnowledgeRetrieveLogs(query: KnowledgeRetrieveLogListQuery) {
   return request<PageResult<KnowledgeRetrieveLog>>(
-    `/api/console/knowledge-retrieve-log/list${toQueryString(query)}`
+    `/api/dashboard/knowledge-retrieve-log/list${toQueryString(query)}`
   )
 }
 
 export function fetchKnowledgeRetrieveLog(id: number) {
-  return request<KnowledgeRetrieveLogDetail>(`/api/console/knowledge-retrieve-log/${id}`)
+  return request<KnowledgeRetrieveLogDetail>(`/api/dashboard/knowledge-retrieve-log/${id}`)
 }
 
 export type AdminAsset = {
@@ -1603,7 +1603,7 @@ export function uploadAsset(file: File, prefix?: string) {
   if (prefix) {
     formData.set("prefix", prefix)
   }
-  return request<AdminAsset>("/api/console/asset/create", {
+  return request<AdminAsset>("/api/dashboard/asset/create", {
     method: "POST",
     body: formData,
   })
@@ -1645,48 +1645,48 @@ export type UpdateTagPayload = CreateTagPayload & {
 
 export function fetchTags(query?: Record<string, string | number | undefined>) {
   return request<PageResult<Tag>>(
-    `/api/console/tag/list${toQueryString(query)}`
+    `/api/dashboard/tag/list${toQueryString(query)}`
   )
 }
 
 export function fetchTagsAll() {
-  return request<TagTree[]>("/api/console/tag/list_all")
+  return request<TagTree[]>("/api/dashboard/tag/list_all")
 }
 
 export function fetchTag(id: number) {
-  return request<Tag>(`/api/console/tag/${id}`)
+  return request<Tag>(`/api/dashboard/tag/${id}`)
 }
 
 export function createTag(payload: CreateTagPayload) {
-  return request<Tag>("/api/console/tag/create", {
+  return request<Tag>("/api/dashboard/tag/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateTag(payload: UpdateTagPayload) {
-  return request<void>("/api/console/tag/update", {
+  return request<void>("/api/dashboard/tag/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteTag(id: number) {
-  return request<void>("/api/console/tag/delete", {
+  return request<void>("/api/dashboard/tag/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })
 }
 
 export function updateTagSort(ids: number[]) {
-  return request<void>("/api/console/tag/update_sort", {
+  return request<void>("/api/dashboard/tag/update_sort", {
     method: "POST",
     body: JSON.stringify(ids),
   })
 }
 
 export function updateTagStatus(id: number, status: number) {
-  return request<void>("/api/console/tag/update_status", {
+  return request<void>("/api/dashboard/tag/update_status", {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })

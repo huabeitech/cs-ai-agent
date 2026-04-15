@@ -1,4 +1,4 @@
-package console
+package dashboard
 
 import (
 	"cs-agent/internal/pkg/constants"

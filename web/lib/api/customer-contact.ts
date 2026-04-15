@@ -51,26 +51,26 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
 
 export function fetchCustomerContacts(customerId: number) {
   return request<AdminCustomerContact[]>(
-    `/api/console/customer-contact/list${toQueryString({ customerId })}`
+    `/api/dashboard/customer-contact/list${toQueryString({ customerId })}`
   )
 }
 
 export function createCustomerContact(payload: CreateCustomerContactPayload) {
-  return request<AdminCustomerContact>("/api/console/customer-contact/create", {
+  return request<AdminCustomerContact>("/api/dashboard/customer-contact/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function updateCustomerContact(payload: UpdateCustomerContactPayload) {
-  return request<void>("/api/console/customer-contact/update", {
+  return request<void>("/api/dashboard/customer-contact/update", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteCustomerContact(id: number) {
-  return request<void>("/api/console/customer-contact/delete", {
+  return request<void>("/api/dashboard/customer-contact/delete", {
     method: "POST",
     body: JSON.stringify({ id }),
   })

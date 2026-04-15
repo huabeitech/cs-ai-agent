@@ -9,7 +9,7 @@ import (
 	"cs-agent/internal/ai/mcps"
 	_ "cs-agent/internal/ai/runtime"
 	"cs-agent/internal/controllers/api"
-	"cs-agent/internal/controllers/console"
+	"cs-agent/internal/controllers/dashboard"
 	"cs-agent/internal/controllers/open"
 	"cs-agent/internal/controllers/third"
 	"cs-agent/internal/middleware"
@@ -99,43 +99,43 @@ func addRouter(app *iris.Application) {
 		mcpHandler.ServeHTTP(w, r)
 	})))
 
-	app.Get("/api/console/ws", middleware.AuthMiddleware, middleware.ConsoleWsMiddleware)
+	app.Get("/api/dashboard/ws", middleware.AuthMiddleware, middleware.DashboardWsMiddleware)
 	app.Get("/api/open/im/ws", middleware.OpenImWsMiddleware)
 
 	mvc.Configure(app.Party("/api/auth"), func(m *mvc.Application) {
 		m.Handle(new(api.AuthController))
 	})
 
-	mvc.Configure(app.Party("/api/console", middleware.AuthMiddleware), func(m *mvc.Application) {
-		m.Party("/dashboard").Handle(new(console.DashboardController))
-		m.Party("/user").Handle(new(console.UserController))
-		m.Party("/company").Handle(new(console.CompanyController))
-		m.Party("/customer").Handle(new(console.CustomerController))
-		m.Party("/customer-contact").Handle(new(console.CustomerContactController))
-		m.Party("/role").Handle(new(console.RoleController))
-		m.Party("/permission").Handle(new(console.PermissionController))
-		m.Party("/session").Handle(new(console.SessionController))
-		m.Party("/tag").Handle(new(console.TagController))
-		m.Party("/conversation").Handle(new(console.ConversationController))
-		m.Party("/ticket").Handle(new(console.TicketController))
-		m.Party("/ticket-resolution-code").Handle(new(console.TicketResolutionCodeController))
-		m.Party("/ticket-priority-config").Handle(new(console.TicketPriorityConfigController))
-		m.Party("/quick-reply").Handle(new(console.QuickReplyController))
-		m.Party("/channel").Handle(new(console.ChannelController))
-		m.Party("/agent").Handle(new(console.AgentController))
-		m.Party("/agent-team").Handle(new(console.AgentTeamController))
-		m.Party("/agent-team-schedule").Handle(new(console.AgentTeamScheduleController))
-		m.Party("/ai-agent").Handle(new(console.AIAgentController))
-		m.Party("/ai-config").Handle(new(console.AIConfigController))
-		m.Party("/asset").Handle(new(console.AssetController))
-		m.Party("/knowledge-base").Handle(new(console.KnowledgeBaseController))
-		m.Party("/knowledge-document").Handle(new(console.KnowledgeDocumentController))
-		m.Party("/knowledge-faq").Handle(new(console.KnowledgeFAQController))
-		m.Party("/knowledge-retrieve").Handle(new(console.KnowledgeRetrieveController))
-		m.Party("/knowledge-retrieve-log").Handle(new(console.KnowledgeRetrieveLogController))
-		m.Party("/agent-run-log").Handle(new(console.AgentRunLogController))
-		m.Party("/skill-definition").Handle(new(console.SkillDefinitionController))
-		m.Party("/mcp").Handle(new(console.MCPController))
+	mvc.Configure(app.Party("/api/dashboard", middleware.AuthMiddleware), func(m *mvc.Application) {
+		m.Party("/dashboard").Handle(new(dashboard.DashboardController))
+		m.Party("/user").Handle(new(dashboard.UserController))
+		m.Party("/company").Handle(new(dashboard.CompanyController))
+		m.Party("/customer").Handle(new(dashboard.CustomerController))
+		m.Party("/customer-contact").Handle(new(dashboard.CustomerContactController))
+		m.Party("/role").Handle(new(dashboard.RoleController))
+		m.Party("/permission").Handle(new(dashboard.PermissionController))
+		m.Party("/session").Handle(new(dashboard.SessionController))
+		m.Party("/tag").Handle(new(dashboard.TagController))
+		m.Party("/conversation").Handle(new(dashboard.ConversationController))
+		m.Party("/ticket").Handle(new(dashboard.TicketController))
+		m.Party("/ticket-resolution-code").Handle(new(dashboard.TicketResolutionCodeController))
+		m.Party("/ticket-priority-config").Handle(new(dashboard.TicketPriorityConfigController))
+		m.Party("/quick-reply").Handle(new(dashboard.QuickReplyController))
+		m.Party("/channel").Handle(new(dashboard.ChannelController))
+		m.Party("/agent").Handle(new(dashboard.AgentController))
+		m.Party("/agent-team").Handle(new(dashboard.AgentTeamController))
+		m.Party("/agent-team-schedule").Handle(new(dashboard.AgentTeamScheduleController))
+		m.Party("/ai-agent").Handle(new(dashboard.AIAgentController))
+		m.Party("/ai-config").Handle(new(dashboard.AIConfigController))
+		m.Party("/asset").Handle(new(dashboard.AssetController))
+		m.Party("/knowledge-base").Handle(new(dashboard.KnowledgeBaseController))
+		m.Party("/knowledge-document").Handle(new(dashboard.KnowledgeDocumentController))
+		m.Party("/knowledge-faq").Handle(new(dashboard.KnowledgeFAQController))
+		m.Party("/knowledge-retrieve").Handle(new(dashboard.KnowledgeRetrieveController))
+		m.Party("/knowledge-retrieve-log").Handle(new(dashboard.KnowledgeRetrieveLogController))
+		m.Party("/agent-run-log").Handle(new(dashboard.AgentRunLogController))
+		m.Party("/skill-definition").Handle(new(dashboard.SkillDefinitionController))
+		m.Party("/mcp").Handle(new(dashboard.MCPController))
 	})
 
 	mvc.Configure(app.Party("/api/open/im", middleware.OpenImContextMiddleware), func(m *mvc.Application) {

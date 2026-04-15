@@ -181,7 +181,7 @@ flowchart TD
 │   ├── models/             # GORM models
 │   ├── migration/          # data migrations
 │   └── ai/                 # LLM / RAG / MCP related logic
-├── web/                    # admin console (Next.js)
+├── dashboard/              # dashboard (Next.js)
 ├── widget/                 # embeddable customer chat widget
 ├── config/                 # config files
 └── docs/                   # project docs
