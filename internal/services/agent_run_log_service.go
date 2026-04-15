@@ -3,6 +3,7 @@ package services
 import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/repositories"
+	"strings"
 
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"

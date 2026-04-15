@@ -3,6 +3,7 @@ package console
 import (
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
+	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
