@@ -58,6 +58,101 @@ flowchart TD
     M -- 否 --> J
 ```
 
+## 核心业务流程
+
+### 1. 会话处理流程
+
+```mermaid
+flowchart TD
+    A[用户进入 Web Widget / Open IM] --> B[创建或匹配会话]
+    B --> C[客户发送消息]
+    C --> D[写入 message / 更新 conversation]
+    D --> E{当前是否允许 AI 回复?}
+    E -- 是 --> F[异步触发 AI Reply]
+    E -- 否 --> G[等待人工处理]
+    F --> H[AI 回复消息写回会话]
+    H --> I{用户是否继续追问?}
+    I -- 是 --> C
+    I -- 否 --> J[会话关闭或保持待处理]
+    G --> K[客服接管 / 回复 / 转接 / 关闭]
+    K --> J
+```
+
+### 2. 人工接管与分配流程
+
+```mermaid
+flowchart TD
+    A[AI 判断需人工介入] --> B[发起转人工确认]
+    B --> C{用户是否确认?}
+    C -- 否 --> D[继续 AI 对话]
+    C -- 是 --> E[会话状态置为 pending]
+    E --> F[记录 handoffAt / handoffReason]
+    F --> G[按 AI Agent 绑定客服组尝试自动分配]
+    G --> H{是否分配成功?}
+    H -- 是 --> I[进入客服工作台 Active 会话]
+    H -- 否 --> J[留在待接入池]
+    J --> K[主管或客服手动分配]
+    K --> I
+    I --> L[客服处理、转接或关闭]
+```
+
+### 3. 会话转工单流程
+
+```mermaid
+flowchart TD
+    A[会话中出现投诉 / 售后 / 报障诉求] --> B{由 AI 还是人工发起?}
+    B -- AI --> C[Graph Tool 整理工单草稿]
+    C --> D[发起建单确认]
+    D --> E{用户是否确认?}
+    E -- 否 --> F[继续对话或补充信息]
+    E -- 是 --> G[从当前会话创建工单]
+    B -- 人工 --> H[客服工作台发起从会话建单]
+    H --> G
+    G --> I[写入 ticket / event log]
+    I --> J[回写会话事件]
+    J --> K[进入工单指派与状态流转]
+    K --> L[工单处理完成并关闭]
+```
+
+### 4. 知识库处理流程
+
+```mermaid
+flowchart TD
+    A[后台创建知识库] --> B[新增文档 / FAQ]
+    B --> C[文档清洗与切片]
+    C --> D[写入向量索引]
+    D --> E[AI Agent 绑定知识库]
+    E --> F[用户提问触发 AI Runtime]
+    F --> G[按知识库配置执行检索]
+    G --> H{是否命中有效片段?}
+    H -- 是 --> I[将知识片段注入运行时上下文]
+    I --> J[Agent 基于知识生成回复]
+    H -- 否 --> K[走知识库 fallback 文案或升级策略]
+    J --> L[记录检索日志 / 运行日志]
+    K --> L
+```
+
+### 5. AI Reply Runtime 流程
+
+```mermaid
+flowchart TD
+    A[客户消息进入运行时] --> B[装载会话历史]
+    B --> C[加载 AI Config / 可用工具]
+    C --> D[尝试命中 Skill]
+    D --> E[按需注入知识库检索结果]
+    E --> F[构造 Agent 输入消息]
+    F --> G[Agent 执行]
+    G --> H{输出类型}
+    H -- 直接回复 --> I[写回 AI 消息]
+    H -- Tool 调用 --> J[执行 Graph / MCP Tool]
+    J --> K{是否触发确认中断?}
+    K -- 否 --> G
+    K -- 是 --> L[保存 checkpoint / pending interrupt]
+    L --> M[等待用户回复确认或取消]
+    M --> N[恢复执行 Resume]
+    N --> G
+```
+
 ## 适用场景
 
 - 官网在线客服
