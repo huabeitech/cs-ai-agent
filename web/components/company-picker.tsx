@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ChevronsUpDownIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { EditDialog as CompanyEditDialog } from "@/app/(console)/companies/_components/edit"
+import { EditDialog as CompanyEditDialog } from "@/app/(dashboard)/companies/_components/edit"
 import { Button } from "@/components/ui/button"
 import {
   Command,
