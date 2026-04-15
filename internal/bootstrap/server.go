@@ -68,8 +68,8 @@ func NewServer() (*iris.Application, error) {
 		ShowList: false,
 	})
 
-	// 注册web静态资源服务
-	app.HandleDir("/", iris.Dir("web/out"), iris.DirOptions{
+	// 注册dashboard静态资源服务
+	app.HandleDir("/dashboard", iris.Dir("dashboard/out"), iris.DirOptions{
 		IndexName: "index.html",
 		Compress:  true,
 		ShowList:  false,
