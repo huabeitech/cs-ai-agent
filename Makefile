@@ -1,5 +1,5 @@
 .PHONY: install run run-server run-dashboard run-widget build build-all build-assets build-dashboard build-widget \
-	package-current package-platform build-server-linux-amd64 clean-dist clean-temp test tidy generator enums migration testdata
+	package-current package-platform build-server-linux-amd64 clean-dist clean-temp generator enums migration testdata
 
 DIST_DIR ?= dist
 TMP_DIR := $(DIST_DIR)/.tmp
@@ -117,12 +117,6 @@ clean-dist:
 
 clean-temp:
 	rm -rf $(TMP_DIR)
-
-test:
-	go test ./...
-
-tidy:
-	go mod tidy
 
 generator:
 	go run ./cmd/generator/generator.go
