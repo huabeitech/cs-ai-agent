@@ -1,21 +1,21 @@
 ---
 name: git-commit
-description: Review local git changes, write an appropriate commit message, create commits, and push the current branch to every remote. Use when Codex needs to handle repository submission work such as checking `git status`, summarizing diffs, committing staged or unstaged changes, handling git submodules before the parent repository, and pushing the active branch to all remotes.
+description: Review local git changes, write an appropriate commit message, create commits, and push the current branch to every remote. Use when Codex needs to handle repository submission work such as checking `git status`, summarizing diffs, committing staged or unstaged changes, committing and pushing git submodules before the parent repository, then committing the parent repository with the updated submodule pointer and pushing the active branch to all remotes.
 ---
 
 # Git Commit
 
 ## Overview
 
-Use this skill for repository submission work. Inspect changes first, derive a commit message from the actual diff, ensure submodule commits are already pushed to the submodule remotes, commit submodules before the parent repository when needed, then push the current branch to every remote.
+Use this skill for repository submission work. Inspect changes first, derive a commit message from the actual diff, commit and push submodules first when they are involved, then commit the parent repository with the updated submodule pointer and push the current branch to every remote.
 
 ## Workflow
 
 1. Read repository state before changing anything.
-2. Detect submodules and handle dirty submodules first.
-3. If the parent repository contains a changed submodule pointer, verify that the referenced submodule commit is already pushed to the submodule remotes before committing the parent repository.
-4. Commit the parent repository only after submodule commits are finished and the parent pointer is updated.
-5. Push the current branch to every remote after local commits succeed.
+2. Detect submodules and handle them before touching the parent repository commit.
+3. For each affected submodule, commit and push the submodule repository first.
+4. Return to the parent repository and commit the parent repository with the updated submodule pointer plus any related parent-repository changes.
+5. Push the current parent-repository branch to every remote after the parent commit succeeds.
 
 ## Inspect Repository State
 
@@ -39,7 +39,7 @@ If the worktree is clean, report that there is nothing to commit. Do not create 
 
 ## Handle Submodules First
 
-Treat submodules as independent repositories.
+Treat submodules as independent repositories, but always finish them before the parent repository.
 
 - If `git status --short` in the parent repo shows a changed submodule entry, inspect whether the submodule itself has uncommitted work.
 - If the parent repository shows a changed submodule pointer, enter the submodule even when its worktree is clean.
@@ -47,7 +47,7 @@ Treat submodules as independent repositories.
 - Write a commit message for the submodule based on its own diff, not the parent repository diff.
 - Commit and push the submodule before committing the parent repository.
 - If the submodule worktree is clean but the parent pointer changed, verify that the submodule `HEAD` commit exists on the submodule remotes and push it if needed before committing the parent repository.
-- Return to the parent repository and verify that only the submodule pointer changed as expected.
+- Return to the parent repository and verify that the parent diff now contains the updated submodule pointer, and include that pointer update in the parent commit.
 
 Use commands like:
 
@@ -73,6 +73,12 @@ Before the parent repository commit, explicitly validate the submodule remote st
 - If the branch has outgoing commits, push that submodule branch to every remote before touching the parent repository commit.
 - If the submodule is in detached `HEAD`, stop and report it unless the user explicitly asks to push a detached commit reference.
 
+After all affected submodules are pushed, re-check the parent repository diff and make sure the parent commit includes:
+
+- The submodule pointer update for each affected submodule.
+- Any related parent-repository files that should travel with that submodule change.
+- No unrelated user changes unless the user explicitly asks for a broader commit.
+
 ## Write Commit Messages
 
 Base the message on the diff, not on filenames alone.
@@ -96,6 +102,7 @@ Before committing, confirm the change set is understood.
 - Do not revert unrelated user changes.
 - Do not amend an existing commit unless the user explicitly asks.
 - If there are unrelated dirty files and the target commit should stay focused, stage only the intended files instead of using a broad `git add -A`.
+- When submodules are involved, the parent repository commit must include the updated submodule pointer after the submodule push succeeds.
 
 Typical commands:
 
@@ -128,6 +135,7 @@ If one remote succeeds and another fails, report the partial result clearly and 
 - If a submodule push fails, or if the referenced submodule commit is not confirmed on the submodule remotes, do not commit the parent repository submodule pointer unless the user explicitly asks to proceed with that inconsistent state.
 - If the parent repository has no changes after submodule processing, report that explicitly.
 - If a command hangs during remote access, retry with a non-interactive or bounded-timeout variant to surface a concrete error.
+- Do not push the parent repository before the parent commit that contains the updated submodule pointer is created.
 
 ## Completion Checklist
 
@@ -135,6 +143,7 @@ If one remote succeeds and another fails, report the partial result clearly and 
 - Dirty submodules committed and pushed first
 - Changed submodule pointers validated against submodule remotes
 - Parent repository diff re-checked after submodule updates
+- Parent repository commit includes the updated submodule pointer
 - Parent repository committed with a diff-based message
 - Current branch pushed to every remote
 - Final status and any failed remotes reported back to the user
