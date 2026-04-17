@@ -454,8 +454,8 @@ func (s *wxWorkKFOutboundService) buildHTMLChunks(content string) ([]wxWorkKFOut
 				Content:     text,
 			})
 		case utils.ContentChunkTypeImage:
-			assetID, resolveErr := s.resolveAssetIDFromImageSrc(chunk.Content)
-			if resolveErr != nil {
+			assetID := strings.TrimSpace(chunk.AssetID)
+			if assetID == "" {
 				chunks = append(chunks, wxWorkKFOutboundChunk{
 					MessageType: enums.IMMessageTypeText,
 					Content:     "[图片]",
@@ -472,12 +472,4 @@ func (s *wxWorkKFOutboundService) buildHTMLChunks(content string) ([]wxWorkKFOut
 		return nil, fmt.Errorf("HTML 消息内容为空")
 	}
 	return chunks, nil
-}
-
-func (s *wxWorkKFOutboundService) resolveAssetIDFromImageSrc(src string) (string, error) {
-	asset := utils.FindAssetByMessageImageURL(src)
-	if asset == nil {
-		return "", fmt.Errorf("未找到图片资源")
-	}
-	return strings.TrimSpace(asset.AssetID), nil
 }

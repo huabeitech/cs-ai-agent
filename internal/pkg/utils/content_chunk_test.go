@@ -52,6 +52,13 @@ func TestSplitHTMLContentChunks(t *testing.T) {
 			},
 		},
 		{
+			name:    "image with asset metadata only",
+			content: `<p><img data-asset-id="asset_1" data-provider="local" data-storage-key="images/a.png" alt="a"></p>`,
+			want: []ContentChunk{
+				{Type: ContentChunkTypeImage, AssetID: "asset_1"},
+			},
+		},
+		{
 			name:    "empty html returns empty chunks",
 			content: "<p><br></p>",
 			want:    nil,

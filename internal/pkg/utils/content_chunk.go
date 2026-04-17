@@ -16,6 +16,7 @@ const (
 type ContentChunk struct {
 	Type    ContentChunkType //
 	Content string           // text content or image url
+	AssetID string           // image asset id
 }
 
 func SplitHTMLContentChunks(content string) ([]ContentChunk, error) {
@@ -57,12 +58,14 @@ func SplitHTMLContentChunks(content string) ([]ContentChunk, error) {
 			case "img":
 				flushText()
 				src := strings.TrimSpace(findContentChunkHTMLAttr(node, "src"))
-				if src == "" {
+				assetID := strings.TrimSpace(findContentChunkHTMLAttr(node, "data-asset-id"))
+				if src == "" && assetID == "" {
 					return
 				}
 				chunks = append(chunks, ContentChunk{
 					Type:    ContentChunkTypeImage,
 					Content: src,
+					AssetID: assetID,
 				})
 				return
 			}

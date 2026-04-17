@@ -100,7 +100,7 @@ func TestBuildRenderableMessageTransformsPayloadAndHTML(t *testing.T) {
 	}
 }
 
-func TestNormalizeMessageHTMLAssetsEnrichesImageDataAttrs(t *testing.T) {
+func TestNormalizeMessageHTMLAssetsKeepsValidAttrsAndRemovesSrc(t *testing.T) {
 	setupMessageTestDB(t)
 	config.SetCurrent(&config.Config{
 		Storage: config.StorageConfig{
@@ -120,7 +120,7 @@ func TestNormalizeMessageHTMLAssetsEnrichesImageDataAttrs(t *testing.T) {
 		Status:     enums.AssetStatusSuccess,
 	})
 
-	got, err := NormalizeMessageHTMLAssets(`<p><img src="https://files.example.com/images/demo.png" alt="demo"></p>`)
+	got, err := NormalizeMessageHTMLAssets(`<p><img src="https://files.example.com/images/demo.png" data-asset-id="asset_local_1" data-provider="local" data-storage-key="images/demo.png" alt="demo"></p>`)
 	if err != nil {
 		t.Fatalf("expected normalization success, got error: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestNormalizeMessageHTMLAssetsEnrichesImageDataAttrs(t *testing.T) {
 	}
 }
 
-func TestNormalizeMessageHTMLAssetsKeepsUnknownImageSrc(t *testing.T) {
+func TestNormalizeMessageHTMLAssetsRejectsMissingAssetMetadata(t *testing.T) {
 	setupMessageTestDB(t)
 	config.SetCurrent(&config.Config{
 		Storage: config.StorageConfig{
@@ -152,7 +152,7 @@ func TestNormalizeMessageHTMLAssetsKeepsUnknownImageSrc(t *testing.T) {
 
 	_, err := NormalizeMessageHTMLAssets(`<p><img src="https://unknown.example.com/demo.png" alt="demo"></p>`)
 	if err == nil {
-		t.Fatalf("expected unknown image src rejected")
+		t.Fatalf("expected missing image asset metadata rejected")
 	}
 }
 
