@@ -107,7 +107,6 @@ func (s *assetService) Upload(reader io.Reader, info storage.UploadInfo) (*model
 		AssetID:     assetID,
 		Provider:    provider.ProviderType(),
 		StorageKey:  key,
-		URL:         provider.GetURL(key),
 		Filename:    info.Filename,
 		FileSize:    info.FileSize,
 		MimeType:    info.MimeType,

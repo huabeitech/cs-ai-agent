@@ -15,7 +15,6 @@ func BuildAsset(item *models.Asset) response.AssetResponse {
 		Filename:       item.Filename,
 		FileSize:       item.FileSize,
 		MimeType:       item.MimeType,
-		URL:            item.URL,
 		StorageKey:     item.StorageKey,
 		Status:         item.Status,
 		CreatedAt:      item.CreatedAt.Format("2006-01-02 15:04:05"),

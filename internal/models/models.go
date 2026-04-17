@@ -304,7 +304,6 @@ type Asset struct {
 	AssetID    string              `gorm:"type:varchar(64);not null;uniqueIndex"`
 	Provider   enums.AssetProvider `gorm:"type:varchar(50);not null;default:'';index"`
 	StorageKey string              `gorm:"type:varchar(255);not null;default:'';uniqueIndex:uk_storage_key"`
-	URL        string              `gorm:"type:varchar(255);not null;default:''"`
 	Filename   string              `gorm:"type:varchar(255);not null;default:''"`
 	FileSize   int64               `gorm:"type:bigint;not null;default:0"`
 	MimeType   string              `gorm:"type:varchar(100);not null;default:''"`
