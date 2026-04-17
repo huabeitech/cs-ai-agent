@@ -86,6 +86,7 @@ export type ImAsset = {
   id: number
   assetId: string
   provider: string
+  storageKey: string
   filename: string
   fileSize: number
   mimeType: string

@@ -10,9 +10,38 @@ import { ImageIcon, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
 import { generateUUID } from "@/lib/utils";
 
 type UploadedImage = {
+  assetId: string;
+  provider: string;
+  storageKey: string;
   url: string;
   filename?: string;
 };
+
+const MessageImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      dataAssetId: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-asset-id"),
+        renderHTML: (attributes) =>
+          attributes.dataAssetId ? { "data-asset-id": attributes.dataAssetId } : {},
+      },
+      dataProvider: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-provider"),
+        renderHTML: (attributes) =>
+          attributes.dataProvider ? { "data-provider": attributes.dataProvider } : {},
+      },
+      dataStorageKey: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-storage-key"),
+        renderHTML: (attributes) =>
+          attributes.dataStorageKey ? { "data-storage-key": attributes.dataStorageKey } : {},
+      },
+    };
+  },
+});
 
 type MessageEditorProps = {
   disabled?: boolean;
@@ -61,7 +90,7 @@ export function MessageEditor({
         orderedList: false,
         horizontalRule: false,
       }),
-      Image,
+      MessageImage,
       Placeholder.configure({
         placeholder: "输入消息，Enter 发送，Shift + Enter 换行",
       }),
@@ -161,12 +190,7 @@ export function MessageEditor({
         removeImageByTitle(editor, placeholderId);
         return;
       }
-      replaceImageSourceByTitle(
-        editor,
-        placeholderId,
-        uploaded.url,
-        uploaded.filename || "image",
-      );
+      replaceImageSourceByTitle(editor, placeholderId, uploaded);
     } finally {
       setLocalUploading(false);
       URL.revokeObjectURL(objectUrl);
@@ -314,8 +338,7 @@ function removeImageByTitle(editor: NonNullable<ReturnType<typeof useEditor>>, t
 function replaceImageSourceByTitle(
   editor: NonNullable<ReturnType<typeof useEditor>>,
   title: string,
-  src: string,
-  alt: string,
+  uploaded: UploadedImage,
 ) {
   const { state, view } = editor;
   let targetPos: number | null = null;
@@ -331,8 +354,11 @@ function replaceImageSourceByTitle(
   }
   const transaction = view.state.tr.setNodeMarkup(targetPos, undefined, {
     ...view.state.doc.nodeAt(targetPos)?.attrs,
-    src,
-    alt,
+    src: uploaded.url,
+    alt: uploaded.filename || "image",
+    dataAssetId: uploaded.assetId,
+    dataProvider: uploaded.provider,
+    dataStorageKey: uploaded.storageKey,
     title: "",
   });
   view.dispatch(transaction);

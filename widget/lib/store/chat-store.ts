@@ -21,6 +21,7 @@ import {
   type RealtimeEnvelope,
 } from "@/lib/services/realtime";
 import type {
+  WidgetAsset,
   WidgetConfigResponse,
   WidgetConversation,
   WidgetMessage,
@@ -111,9 +112,7 @@ export interface ChatStore {
   setIsVisible: (isVisible: boolean) => void;
   bootstrap: () => void;
   handleSendMessage: (html: string) => Promise<void>;
-  uploadMessageImage: (
-    file: File,
-  ) => Promise<{ url: string; filename?: string } | null>;
+  uploadMessageImage: (file: File) => Promise<WidgetAsset | null>;
   sendAttachment: (file: File) => Promise<void>;
   retry: () => void;
   disconnectSocket: () => void;
@@ -507,7 +506,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       set({ error: "" });
       try {
         const asset = await uploadImage(conversationId, file);
-        return { url: asset.url, filename: asset.filename };
+        return asset;
       } catch (e) {
         set({ error: e instanceof Error ? e.message : "发送图片失败" });
         return null;

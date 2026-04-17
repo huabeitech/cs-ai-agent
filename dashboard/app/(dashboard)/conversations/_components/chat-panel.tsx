@@ -417,9 +417,7 @@ export function ChatPanel() {
               onUploadImage={async (file) => {
                 shouldStickToBottomRef.current = true;
                 const uploaded = await uploadImage(file);
-                return uploaded
-                  ? { url: uploaded.url, filename: uploaded.filename }
-                  : null;
+                return uploaded;
               }}
               onSendAttachment={async (file) => {
                 shouldStickToBottomRef.current = true;
