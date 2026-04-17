@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"strings"
 	"time"
 
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
@@ -477,44 +475,9 @@ func (s *wxWorkKFOutboundService) buildHTMLChunks(content string) ([]wxWorkKFOut
 }
 
 func (s *wxWorkKFOutboundService) resolveAssetIDFromImageSrc(src string) (string, error) {
-	cfg := config.Current()
-	storageKey, err := resolveStorageKeyFromAssetURL(strings.TrimSpace(cfg.Storage.Local.BaseURL), src)
-	if err != nil {
-		return "", err
-	}
-	asset := AssetService.GetByStorageKey(storageKey)
+	asset := utils.FindAssetByMessageImageURL(src)
 	if asset == nil {
 		return "", fmt.Errorf("未找到图片资源")
 	}
 	return strings.TrimSpace(asset.AssetID), nil
-}
-
-func resolveStorageKeyFromAssetURL(baseURL, rawURL string) (string, error) {
-	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	rawURL = strings.TrimSpace(rawURL)
-	if baseURL == "" || rawURL == "" {
-		return "", fmt.Errorf("图片URL不合法")
-	}
-	if strings.HasPrefix(rawURL, baseURL+"/") {
-		return strings.TrimLeft(strings.TrimPrefix(rawURL, baseURL), "/"), nil
-	}
-
-	baseParsed, baseErr := url.Parse(baseURL)
-	rawParsed, rawErr := url.Parse(rawURL)
-	if baseErr != nil || rawErr != nil {
-		return "", fmt.Errorf("图片URL不合法")
-	}
-	if !strings.EqualFold(baseParsed.Host, rawParsed.Host) {
-		return "", fmt.Errorf("图片URL不属于当前存储域名")
-	}
-	basePath := strings.TrimRight(baseParsed.Path, "/")
-	rawPath := strings.TrimLeft(rawParsed.Path, "/")
-	if basePath == "" {
-		return rawPath, nil
-	}
-	basePath = strings.TrimLeft(basePath, "/")
-	if !strings.HasPrefix(rawPath, basePath+"/") {
-		return "", fmt.Errorf("图片URL不属于当前存储目录")
-	}
-	return strings.TrimLeft(strings.TrimPrefix(rawPath, basePath), "/"), nil
 }

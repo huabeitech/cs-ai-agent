@@ -457,11 +457,12 @@ func (s *messageService) normalizeMessageContent(conversationID int64, messageTy
 	switch messageType {
 	case enums.IMMessageTypeHTML:
 		sanitized := utils.SanitizeMessageHTML(content)
-		summary := utils.BuildHTMLSummary(sanitized)
+		normalized := utils.NormalizeMessageHTMLAssets(sanitized)
+		summary := utils.BuildHTMLSummary(normalized)
 		if summary == "" {
 			return "", "", "", errorsx.InvalidParam("消息内容不能为空")
 		}
-		return sanitized, "", summary, nil
+		return normalized, "", summary, nil
 	case enums.IMMessageTypeImage, enums.IMMessageTypeAttachment:
 		assetPayload, err := parseIMMessageAssetPayload(payload)
 		if err != nil {
