@@ -29,3 +29,20 @@ func TestAssemblerRespectsProvidedSources(t *testing.T) {
 		t.Fatalf("unexpected summary: %#v", result.Summary)
 	}
 }
+
+func TestAssemblerUsesDefaultGovernanceInstruction(t *testing.T) {
+	result := NewAssembler().Assemble(AssemblerInput{})
+	expectedSnippets := []string{
+		"禁止承诺未经系统确认的处理时效、完成时间、回访时间或联系时间。",
+		"禁止代表人工团队、技术团队、售后团队承诺后续动作",
+		"不能自行补充内部处理流程、SLA 或跟进安排。",
+	}
+	for _, snippet := range expectedSnippets {
+		if !strings.Contains(result.Text, snippet) {
+			t.Fatalf("missing governance snippet %q in assembled text: %s", snippet, result.Text)
+		}
+	}
+	if !result.Summary.HasGovernanceRule {
+		t.Fatalf("expected governance rule summary, got %#v", result.Summary)
+	}
+}
