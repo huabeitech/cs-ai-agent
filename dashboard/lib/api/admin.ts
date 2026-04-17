@@ -913,6 +913,13 @@ export function deleteSkillDefinition(id: number) {
   })
 }
 
+export function restoreSkillDefinition(id: number) {
+  return request<void>("/api/dashboard/skill-definition/restore", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  })
+}
+
 export function debugRunSkillDefinition(payload: SkillDebugRunPayload) {
   return request<SkillDebugRunResult>("/api/dashboard/skill-definition/debug_run", {
     method: "POST",

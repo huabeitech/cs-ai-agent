@@ -7,6 +7,7 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCwIcon,
+  RotateCcwIcon,
   SearchIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -37,6 +38,7 @@ import {
   createSkillDefinition,
   deleteSkillDefinition,
   fetchSkillDefinitions,
+  restoreSkillDefinition,
   updateSkillDefinition,
   updateSkillDefinitionStatus,
   type CreateSkillDefinitionPayload,
@@ -64,6 +66,7 @@ type SkillRowProps = {
   openDebugDialog: (item: SkillDefinition) => void
   handleToggleStatus: (item: SkillDefinition) => void
   handleDelete: (item: SkillDefinition) => void
+  handleRestore: (item: SkillDefinition) => void
 }
 
 function SkillRow({
@@ -73,10 +76,17 @@ function SkillRow({
   openDebugDialog,
   handleToggleStatus,
   handleDelete,
+  handleRestore,
 }: SkillRowProps) {
+  const isDeleted = item.status === Status.Deleted
+  const statusBadgeVariant = isDeleted
+    ? "destructive"
+    : item.status === Status.Ok
+      ? "default"
+      : "outline"
 
   return (
-    <TableRow>
+    <TableRow className={isDeleted ? "bg-destructive/5" : undefined}>
       <TableCell>
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-10 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
@@ -113,11 +123,11 @@ function SkillRow({
         <div className="flex items-center gap-3">
           <Switch
             checked={item.status === Status.Ok}
-            disabled={actionLoadingId === item.id}
+            disabled={actionLoadingId === item.id || isDeleted}
             onCheckedChange={() => void handleToggleStatus(item)}
             aria-label={`${item.name} 状态切换`}
           />
-          <Badge variant={item.status === Status.Ok ? "default" : "outline"}>
+          <Badge variant={statusBadgeVariant}>
             {getEnumLabel(StatusLabels, item.status as keyof typeof StatusLabels)}
           </Badge>
         </div>
@@ -147,14 +157,24 @@ function SkillRow({
               <MoreHorizontalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40 min-w-40">
-              <DropdownMenuItem
-                disabled={actionLoadingId === item.id}
-                onClick={() => void handleDelete(item)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2Icon />
-                {actionLoadingId === item.id ? "删除中..." : "删除"}
-              </DropdownMenuItem>
+              {isDeleted ? (
+                <DropdownMenuItem
+                  disabled={actionLoadingId === item.id}
+                  onClick={() => void handleRestore(item)}
+                >
+                  <RotateCcwIcon />
+                  {actionLoadingId === item.id ? "恢复中..." : "恢复"}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  disabled={actionLoadingId === item.id}
+                  onClick={() => void handleDelete(item)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2Icon />
+                  {actionLoadingId === item.id ? "删除中..." : "删除"}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </ButtonGroup>
@@ -288,6 +308,10 @@ export default function DashboardSkillsPage() {
   }
 
   async function handleToggleStatus(item: SkillDefinition) {
+    if (item.status === Status.Deleted) {
+      return
+    }
+
     const nextStatus = item.status === Status.Ok ? Status.Disabled : Status.Ok
 
     setActionLoadingId(item.id)
@@ -303,6 +327,10 @@ export default function DashboardSkillsPage() {
   }
 
   async function handleDelete(item: SkillDefinition) {
+    if (item.status === Status.Deleted) {
+      return
+    }
+
     setActionLoadingId(item.id)
     try {
       await deleteSkillDefinition(item.id)
@@ -310,6 +338,23 @@ export default function DashboardSkillsPage() {
       await loadData()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "删除 Skill 失败")
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  async function handleRestore(item: SkillDefinition) {
+    if (item.status !== Status.Deleted) {
+      return
+    }
+
+    setActionLoadingId(item.id)
+    try {
+      await restoreSkillDefinition(item.id)
+      toast.success(`已恢复 Skill：${item.name}`)
+      await loadData()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "恢复 Skill 失败")
     } finally {
       setActionLoadingId(null)
     }
@@ -388,6 +433,7 @@ export default function DashboardSkillsPage() {
                     openDebugDialog={openDebugDialog}
                     handleToggleStatus={handleToggleStatus}
                     handleDelete={handleDelete}
+                    handleRestore={handleRestore}
                   />
                 ))}
               </TableBody>

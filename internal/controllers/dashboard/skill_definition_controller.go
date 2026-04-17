@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"cs-agent/internal/builders"
@@ -30,6 +31,9 @@ func (c *SkillDefinitionController) AnyList() *web.JsonResult {
 		params.QueryFilter{ParamName: "name", Op: params.Like},
 		params.QueryFilter{ParamName: "code", Op: params.Like},
 	).Desc("id")
+	if _, ok := params.Get(c.Ctx, "status"); !ok {
+		cnd.Where("status <> ?", enums.StatusDeleted)
+	}
 	list, paging := services.SkillDefinitionService.FindPageByCnd(cnd)
 	results := make([]response.SkillDefinitionResponse, 0, len(list))
 	for _, item := range list {
@@ -43,9 +47,13 @@ func (c *SkillDefinitionController) GetList_all() *web.JsonResult {
 		return web.JsonError(err)
 	}
 
-	list := services.SkillDefinitionService.Find(params.NewSqlCnd(c.Ctx,
+	cnd := params.NewSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
-	).Desc("id"))
+	).Desc("id")
+	if status, ok := params.Get(c.Ctx, "status"); !ok || strings.TrimSpace(status) == "" {
+		cnd.Where("status <> ?", enums.StatusDeleted)
+	}
+	list := services.SkillDefinitionService.Find(cnd)
 	results := make([]response.SkillDefinitionResponse, 0, len(list))
 	for _, item := range list {
 		results = append(results, builders.BuildSkillDefinitionResponse(&item))
@@ -114,8 +122,15 @@ func (c *SkillDefinitionController) PostUpdate_status() *web.JsonResult {
 	if !enums.IsValidStatus(req.Status) {
 		return web.JsonErrorMsg("状态值不合法")
 	}
-	if services.SkillDefinitionService.Get(req.ID) == nil {
+	item := services.SkillDefinitionService.Get(req.ID)
+	if item == nil {
 		return web.JsonErrorMsg("Skill 不存在")
+	}
+	if item.Status == enums.StatusDeleted {
+		return web.JsonErrorMsg("已删除的 Skill 不能直接修改状态，请先恢复")
+	}
+	if req.Status == int(enums.StatusDeleted) {
+		return web.JsonErrorMsg("请使用删除接口处理删除状态")
 	}
 
 	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
@@ -147,6 +162,39 @@ func (c *SkillDefinitionController) PostDelete() *web.JsonResult {
 	}
 	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
 		"status":           enums.StatusDeleted,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	}); err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonSuccess()
+}
+
+func (c *SkillDefinitionController) PostRestore() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionSkillDefinitionDelete)
+	if err != nil {
+		return web.JsonError(err)
+	}
+
+	req := request.RestoreSkillDefinitionRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	if req.ID <= 0 {
+		return web.JsonErrorMsg("Skill ID 不合法")
+	}
+
+	item := services.SkillDefinitionService.Get(req.ID)
+	if item == nil {
+		return web.JsonErrorMsg("Skill 不存在")
+	}
+	if item.Status != enums.StatusDeleted {
+		return web.JsonErrorMsg("仅已删除的 Skill 支持恢复")
+	}
+
+	if err := services.SkillDefinitionService.Updates(req.ID, map[string]any{
+		"status":           enums.StatusDisabled,
 		"update_user_id":   operator.UserID,
 		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),

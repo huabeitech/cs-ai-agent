@@ -25,6 +25,10 @@ type DeleteSkillDefinitionRequest struct {
 	ID int64 `json:"id"`
 }
 
+type RestoreSkillDefinitionRequest struct {
+	ID int64 `json:"id"`
+}
+
 type UpdateSkillDefinitionStatusRequest struct {
 	ID     int64 `json:"id"`
 	Status int   `json:"status"`
