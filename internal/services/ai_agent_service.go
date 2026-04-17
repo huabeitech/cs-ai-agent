@@ -230,12 +230,12 @@ func (s *aIAgentService) normalizeTeamIDs(input []int64) ([]int64, error) {
 			continue
 		}
 		team := AgentTeamService.Get(id)
-		if team == nil {
-			return nil, errorsx.InvalidParam("客服组不存在")
+		if team == nil || team.Status == enums.StatusDeleted {
+			continue
 		}
-		if team.Status != enums.StatusOk {
-			return nil, errorsx.InvalidParam("客服组未启用")
-		}
+		// if team.Status != enums.StatusOk {
+		// 	return nil, errorsx.InvalidParam("客服组未启用")
+		// }
 		seen[id] = struct{}{}
 		ret = append(ret, id)
 	}
@@ -254,12 +254,12 @@ func (s *aIAgentService) normalizeKnowledgeIDs(input []int64) ([]int64, error) {
 			continue
 		}
 		kb := KnowledgeBaseService.Get(id)
-		if kb == nil {
-			return nil, errorsx.InvalidParam("知识库不存在")
+		if kb == nil || kb.Status == enums.StatusDeleted {
+			continue
 		}
-		if kb.Status != enums.StatusOk {
-			return nil, errorsx.InvalidParam("知识库未启用")
-		}
+		// if kb.Status != enums.StatusOk {
+		// 	return nil, errorsx.InvalidParam("知识库未启用")
+		// }
 		seen[id] = struct{}{}
 		ret = append(ret, id)
 	}
@@ -277,12 +277,12 @@ func (s *aIAgentService) normalizeSkillIDs(input []int64) ([]int64, error) {
 			continue
 		}
 		skill := SkillDefinitionService.Get(id)
-		if skill == nil {
-			return nil, errorsx.InvalidParam("Skill 不存在")
+		if skill == nil || skill.Status == enums.StatusDeleted {
+			continue
 		}
-		if skill.Status != enums.StatusOk {
-			return nil, errorsx.InvalidParam("Skill 未启用")
-		}
+		// if skill.Status != enums.StatusOk {
+		// 	return nil, errorsx.InvalidParam("Skill 未启用")
+		// }
 		seen[id] = struct{}{}
 		ret = append(ret, id)
 	}
