@@ -103,3 +103,18 @@ func (r *skillDefinitionRepository) Delete(db *gorm.DB, id int64) {
 func (r *skillDefinitionRepository) GetByCode(db *gorm.DB, code string) *models.SkillDefinition {
 	return r.FindOne(db, sqls.NewCnd().Where("code = ?", code))
 }
+
+func (r *skillDefinitionRepository) GetByIDs(db *gorm.DB, ids []int64) map[int64]models.SkillDefinition {
+	if len(ids) == 0 {
+		return nil
+	}
+	list := r.Find(db, sqls.NewCnd().Where("id IN (?)", ids))
+	if len(list) == 0 {
+		return nil
+	}
+	result := make(map[int64]models.SkillDefinition, len(list))
+	for _, item := range list {
+		result[item.ID] = item
+	}
+	return result
+}
