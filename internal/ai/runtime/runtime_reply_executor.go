@@ -28,8 +28,8 @@ func (e *runtimeReplyExecutor) Run(ctx context.Context, conversation models.Conv
 	summary, err := Service.Run(ctx, applicationruntime.Request{
 		Conversation: &conversation,
 		UserMessage:  &message,
-		AIAgent:      &aiAgent,
-		AIConfig:     aiConfig,
+		AIAgent:      aiAgent,
+		AIConfig:     *aiConfig,
 	})
 	if trace != nil {
 		trace.RuntimeLatencyMs = time.Since(runtimeStartedAt).Milliseconds()
@@ -52,8 +52,8 @@ func (e *runtimeReplyExecutor) ResumePendingInterrupt(ctx context.Context, conve
 	}
 	summary, err := Service.Resume(ctx, applicationruntime.ResumeRequest{
 		Conversation: &conversation,
-		AIAgent:      &aiAgent,
-		AIConfig:     aiConfig,
+		AIAgent:      aiAgent,
+		AIConfig:     *aiConfig,
 		CheckPointID: strings.TrimSpace(pendingInterrupt.CheckPointID),
 		ResumeData: map[string]string{
 			strings.TrimSpace(pendingInterrupt.InterruptID): strings.TrimSpace(message.Content),

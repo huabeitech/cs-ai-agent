@@ -7,7 +7,7 @@ import (
 )
 
 func TestBuildMCPToolsSkipsGraphAndBuiltinTools(t *testing.T) {
-	aiAgent := &models.AIAgent{
+	aiAgent := models.AIAgent{
 		AllowedMCPTools: `[
 			{"toolCode":"graph/create_ticket_with_confirmation","serverCode":"graph","toolName":"create_ticket_with_confirmation"},
 			{"toolCode":"builtin/tool_search","serverCode":"builtin","toolName":"tool_search"},

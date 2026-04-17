@@ -28,7 +28,7 @@ func TestNormalizeAllowedToolCodes(t *testing.T) {
 
 func TestToolCatalogResolveAllowedToolCodes(t *testing.T) {
 	catalog := newToolCatalog()
-	agent := &models.AIAgent{
+	agent := models.AIAgent{
 		AllowedMCPTools: `[{"toolCode":"graph/create_ticket_with_confirmation"},{"toolCode":"graph/handoff_to_human"}]`,
 	}
 	skill := &models.SkillDefinition{
@@ -45,7 +45,7 @@ func TestToolCatalogResolveAllowedToolCodes(t *testing.T) {
 
 func TestToolCatalogResolveAllowedToolCodesFallsBackWhenSkillEmpty(t *testing.T) {
 	catalog := newToolCatalog()
-	agent := &models.AIAgent{
+	agent := models.AIAgent{
 		AllowedMCPTools: `[{"toolCode":"graph/create_ticket_with_confirmation"},{"toolCode":"graph/handoff_to_human"}]`,
 	}
 	ret := catalog.resolveAllowedToolCodes(agent, nil)

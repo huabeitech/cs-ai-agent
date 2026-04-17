@@ -15,8 +15,8 @@ type knowledgeGuardDecision struct {
 	Instructions  []*schema.Message
 }
 
-func buildKnowledgeGuardDecision(aiAgent *models.AIAgent, retrieveResult *retrievers.KnowledgeRetrieveResult) knowledgeGuardDecision {
-	if aiAgent == nil || retrieveResult == nil || len(retrieveResult.KnowledgeBaseIDs) == 0 {
+func buildKnowledgeGuardDecision(aiAgent models.AIAgent, retrieveResult *retrievers.KnowledgeRetrieveResult) knowledgeGuardDecision {
+	if retrieveResult == nil || len(retrieveResult.KnowledgeBaseIDs) == 0 {
 		return knowledgeGuardDecision{}
 	}
 	fallbackReply := resolveKnowledgeFallbackReply(aiAgent, retrieveResult.FallbackMode)
@@ -32,11 +32,9 @@ func buildKnowledgeGuardDecision(aiAgent *models.AIAgent, retrieveResult *retrie
 	}
 }
 
-func resolveKnowledgeFallbackReply(aiAgent *models.AIAgent, fallbackMode enums.KnowledgeFallbackMode) string {
-	if aiAgent != nil {
-		if reply := strings.TrimSpace(aiAgent.FallbackMessage); reply != "" {
-			return reply
-		}
+func resolveKnowledgeFallbackReply(aiAgent models.AIAgent, fallbackMode enums.KnowledgeFallbackMode) string {
+	if reply := strings.TrimSpace(aiAgent.FallbackMessage); reply != "" {
+		return reply
 	}
 	switch fallbackMode {
 	case enums.KnowledgeFallbackModeSuggestRetry:

@@ -72,10 +72,7 @@ func (c *toolCatalog) parseSkillAllowedToolCodes(skill *models.SkillDefinition) 
 	return toolx.NormalizeToolCodes(items)
 }
 
-func (c *toolCatalog) parseAgentAllowedToolCodes(aiAgent *models.AIAgent) []string {
-	if aiAgent == nil {
-		return nil
-	}
+func (c *toolCatalog) parseAgentAllowedToolCodes(aiAgent models.AIAgent) []string {
 	ret := make([]string, 0)
 	if raw := strings.TrimSpace(aiAgent.AllowedMCPTools); raw != "" {
 		items, err := toolx.ParseAgentMCPToolsJSON(raw)
@@ -94,6 +91,6 @@ func (c *toolCatalog) parseAgentAllowedToolCodes(aiAgent *models.AIAgent) []stri
 	return toolx.NormalizeToolCodes(ret)
 }
 
-func (c *toolCatalog) resolveAllowedToolCodes(aiAgent *models.AIAgent, skill *models.SkillDefinition) []string {
+func (c *toolCatalog) resolveAllowedToolCodes(aiAgent models.AIAgent, skill *models.SkillDefinition) []string {
 	return toolx.IntersectToolCodes(c.parseAgentAllowedToolCodes(aiAgent), c.parseSkillAllowedToolCodes(skill))
 }

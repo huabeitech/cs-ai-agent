@@ -12,7 +12,7 @@ import (
 
 func TestBuildKnowledgeGuardDecisionFallsBackWhenKnowledgeMisses(t *testing.T) {
 	agent := newKnowledgeGuardAgentFixture()
-	decision := buildKnowledgeGuardDecision(&agent, &retrievers.KnowledgeRetrieveResult{
+	decision := buildKnowledgeGuardDecision(agent, &retrievers.KnowledgeRetrieveResult{
 		KnowledgeBaseIDs: []int64{1},
 		FallbackMode:     enums.KnowledgeFallbackModeSuggestRetry,
 	})
@@ -28,7 +28,7 @@ func TestBuildKnowledgeGuardDecisionFallsBackWhenKnowledgeMisses(t *testing.T) {
 func TestBuildKnowledgeGuardDecisionUsesAgentFallbackMessage(t *testing.T) {
 	agent := newKnowledgeGuardAgentFixture()
 	agent.FallbackMessage = "请联系人工客服"
-	decision := buildKnowledgeGuardDecision(&agent, &retrievers.KnowledgeRetrieveResult{
+	decision := buildKnowledgeGuardDecision(agent, &retrievers.KnowledgeRetrieveResult{
 		KnowledgeBaseIDs: []int64{1},
 		FallbackMode:     enums.KnowledgeFallbackModeNoAnswer,
 	})
@@ -40,7 +40,7 @@ func TestBuildKnowledgeGuardDecisionUsesAgentFallbackMessage(t *testing.T) {
 
 func TestBuildKnowledgeGuardDecisionInjectsStrictInstructionOnHit(t *testing.T) {
 	agent := newKnowledgeGuardAgentFixture()
-	decision := buildKnowledgeGuardDecision(&agent, &retrievers.KnowledgeRetrieveResult{
+	decision := buildKnowledgeGuardDecision(agent, &retrievers.KnowledgeRetrieveResult{
 		KnowledgeBaseIDs: []int64{1},
 		Hits: []rag.RetrieveResult{
 			{KnowledgeBaseID: 1, Score: 0.88},

@@ -20,7 +20,7 @@ const defaultRuntimeKnowledgeScoreThreshold = 0.3
 const defaultRuntimeKnowledgeMaxContextItems = 5
 
 type KnowledgeRetriever struct {
-	AIAgent *models.AIAgent
+	AIAgent models.AIAgent
 }
 
 type KnowledgeRetrieveOptions struct {
@@ -53,7 +53,7 @@ type KnowledgeRetrieveResult struct {
 	Policies         []KnowledgeBaseRetrievePolicy
 }
 
-func NewKnowledgeRetriever(aiAgent *models.AIAgent) *KnowledgeRetriever {
+func NewKnowledgeRetriever(aiAgent models.AIAgent) *KnowledgeRetriever {
 	return &KnowledgeRetriever{AIAgent: aiAgent}
 }
 
@@ -65,9 +65,6 @@ func DefaultKnowledgeRetrieveOptions() KnowledgeRetrieveOptions {
 }
 
 func (r *KnowledgeRetriever) KnowledgeBaseIDs() []int64 {
-	if r == nil || r.AIAgent == nil {
-		return nil
-	}
 	return utils.SplitInt64s(r.AIAgent.KnowledgeIDs)
 }
 

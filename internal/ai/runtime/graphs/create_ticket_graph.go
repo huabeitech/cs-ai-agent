@@ -38,10 +38,10 @@ func init() {
 
 type CreateTicketGraph struct {
 	conversation *models.Conversation
-	aiAgent      *models.AIAgent
+	aiAgent      models.AIAgent
 }
 
-func NewCreateTicketGraph(conversation *models.Conversation, aiAgent *models.AIAgent) *CreateTicketGraph {
+func NewCreateTicketGraph(conversation *models.Conversation, aiAgent models.AIAgent) *CreateTicketGraph {
 	return &CreateTicketGraph{
 		conversation: conversation,
 		aiAgent:      aiAgent,
@@ -49,7 +49,7 @@ func NewCreateTicketGraph(conversation *models.Conversation, aiAgent *models.AIA
 }
 
 func (g *CreateTicketGraph) Run(ctx context.Context, argumentsInJSON string) (string, error) {
-	if g == nil || g.conversation == nil || g.aiAgent == nil {
+	if g == nil || g.conversation == nil {
 		return "", fmt.Errorf("create ticket graph not initialized")
 	}
 	wasInterrupted, hasState, state := componenttool.GetInterruptState[CreateTicketGraphState](ctx)

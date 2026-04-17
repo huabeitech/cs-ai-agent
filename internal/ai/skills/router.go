@@ -9,16 +9,10 @@ import (
 
 	"cs-agent/internal/ai"
 	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/errorsx"
 )
 
-func routeSkillWithLLM(ctx context.Context, aiConfig *models.AIConfig, userMessage string, candidates []models.SkillDefinition) (*models.SkillDefinition, *RouteTrace, error) {
+func routeSkillWithLLM(ctx context.Context, aiConfig models.AIConfig, userMessage string, candidates []models.SkillDefinition) (*models.SkillDefinition, *RouteTrace, error) {
 	trace := &RouteTrace{Status: "started"}
-	if aiConfig == nil {
-		trace.Status = "config_error"
-		trace.Error = "ai config is nil"
-		return nil, trace, errorsx.InvalidParam("Skill 路由依赖的 AI 配置不可用")
-	}
 	if len(candidates) == 0 {
 		trace.Status = "no_candidate"
 		return nil, trace, nil

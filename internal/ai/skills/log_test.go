@@ -11,16 +11,16 @@ import (
 func TestBuildRunLogMatchedPlan(t *testing.T) {
 	log := BuildRunLog(
 		RuntimeContext{
-			AIAgent:         &models.AIAgent{ID: 22},
-			AIConfig:        &models.AIConfig{ID: 33},
+			AIAgent:         models.AIAgent{ID: 22},
+			AIConfig:        models.AIConfig{ID: 33},
 			ConversationID:  11,
 			ManualSkillCode: "manual_refund",
 			IntentCode:      "refund",
 			UserMessage:     "我要退款",
 		},
 		&ExecutionPlan{
-			AIAgent: &models.AIAgent{ID: 22},
-			AIConfig: &models.AIConfig{
+			AIAgent: models.AIAgent{ID: 22},
+			AIConfig: models.AIConfig{
 				ID:        33,
 				ModelName: "gpt-test",
 				Provider:  enums.AIProviderOpenAI,
@@ -55,7 +55,7 @@ func TestBuildRunLogMatchedPlan(t *testing.T) {
 func TestBuildRunLogNotMatchedAndError(t *testing.T) {
 	log := BuildRunLog(
 		RuntimeContext{
-			AIAgent:     &models.AIAgent{ID: 22},
+			AIAgent:     models.AIAgent{ID: 22},
 			UserMessage: "随便问问",
 		},
 		nil,
@@ -74,7 +74,7 @@ func TestBuildRunLogNotMatchedAndError(t *testing.T) {
 	}
 
 	noMatchLog := BuildRunLog(
-		RuntimeContext{AIAgent: &models.AIAgent{ID: 22}, UserMessage: "随便问问"},
+		RuntimeContext{AIAgent: models.AIAgent{ID: 22}, UserMessage: "随便问问"},
 		&ExecutionPlan{MatchReason: ""},
 		&ExecutionTrace{Status: "not_matched"},
 		nil,

@@ -13,7 +13,7 @@ import (
 	"cs-agent/internal/repositories"
 )
 
-func newOpenAIClient(config *models.AIConfig) openai.Client {
+func newOpenAIClient(config models.AIConfig) openai.Client {
 	opts := []option.RequestOption{
 		option.WithAPIKey(config.APIKey),
 		option.WithBaseURL(config.BaseURL),

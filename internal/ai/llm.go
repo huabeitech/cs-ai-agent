@@ -30,14 +30,10 @@ func (s *llm) Chat(ctx context.Context, systemPrompt string, userPrompt string) 
 	if err != nil {
 		return nil, err
 	}
-	return s.ChatWithConfig(ctx, config, systemPrompt, userPrompt)
+	return s.ChatWithConfig(ctx, *config, systemPrompt, userPrompt)
 }
 
-func (s *llm) ChatWithConfig(ctx context.Context, config *models.AIConfig, systemPrompt string, userPrompt string) (*ChatCompletionResult, error) {
-	if config == nil {
-		return nil, fmt.Errorf("ai config is nil")
-	}
-
+func (s *llm) ChatWithConfig(ctx context.Context, config models.AIConfig, systemPrompt string, userPrompt string) (*ChatCompletionResult, error) {
 	messages := make([]openai.ChatCompletionMessageParamUnion, 0, 2)
 	if strs.IsNotBlank(systemPrompt) {
 		messages = append(messages, openai.ChatCompletionMessageParamUnion{
@@ -63,7 +59,7 @@ func (s *llm) ChatWithConfig(ctx context.Context, config *models.AIConfig, syste
 	if config.MaxOutputTokens > 0 {
 		params.MaxCompletionTokens = openai.Int(int64(config.MaxOutputTokens))
 	}
-	applyProviderSpecificChatParams(&params, config)
+	applyProviderSpecificChatParams(params, config)
 
 	client := newOpenAIClient(config)
 	chatResp, err := client.Chat.Completions.New(ctx, params)
@@ -84,10 +80,7 @@ func (s *llm) ChatWithConfig(ctx context.Context, config *models.AIConfig, syste
 	}, nil
 }
 
-func applyProviderSpecificChatParams(params *openai.ChatCompletionNewParams, config *models.AIConfig) {
-	if params == nil || config == nil {
-		return
-	}
+func applyProviderSpecificChatParams(params openai.ChatCompletionNewParams, config models.AIConfig) {
 	if isDashScopeQwenThinkingModel(config) {
 		params.SetExtraFields(map[string]any{
 			"enable_thinking": false,
@@ -95,10 +88,7 @@ func applyProviderSpecificChatParams(params *openai.ChatCompletionNewParams, con
 	}
 }
 
-func isDashScopeQwenThinkingModel(config *models.AIConfig) bool {
-	if config == nil {
-		return false
-	}
+func isDashScopeQwenThinkingModel(config models.AIConfig) bool {
 	baseURL := strings.ToLower(strings.TrimSpace(config.BaseURL))
 	modelName := strings.ToLower(strings.TrimSpace(config.ModelName))
 	return strings.Contains(baseURL, "dashscope.aliyuncs.com") && strings.HasPrefix(modelName, "qwen3")

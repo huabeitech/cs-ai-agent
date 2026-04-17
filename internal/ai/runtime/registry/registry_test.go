@@ -50,7 +50,7 @@ func TestResolveBuildsStaticToolMetadata(t *testing.T) {
 	})
 	toolSet, err := r.Resolve(registry.Context{
 		Conversation: &models.Conversation{ID: 1},
-		AIAgent:      &models.AIAgent{ID: 1},
+		AIAgent:      models.AIAgent{ID: 1},
 	})
 	if err != nil {
 		t.Fatalf("resolve returned error: %v", err)

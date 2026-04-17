@@ -17,7 +17,7 @@ import (
 
 type HandoffGraphTool struct {
 	conversation *models.Conversation
-	aiAgent      *models.AIAgent
+	aiAgent      models.AIAgent
 }
 
 func NewHandoffGraphTool() *HandoffGraphTool {
@@ -37,7 +37,7 @@ func (t *HandoffGraphTool) Code() string {
 }
 
 func (t *HandoffGraphTool) Enabled(ctx registry.Context) bool {
-	return ctx.Conversation != nil && ctx.AIAgent != nil
+	return true
 }
 
 func (t *HandoffGraphTool) Build(ctx registry.Context) (einotool.BaseTool, error) {
@@ -75,7 +75,7 @@ func (t *HandoffGraphTool) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (t *HandoffGraphTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil || t.aiAgent == nil {
+	if t == nil || t.conversation == nil {
 		return "", fmt.Errorf("handoff graph tool not initialized")
 	}
 	return graphs.NewHandoffGraph(t.conversation, t.aiAgent).Run(ctx, argumentsInJSON)

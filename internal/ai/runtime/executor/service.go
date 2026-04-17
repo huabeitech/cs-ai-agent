@@ -33,18 +33,9 @@ func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, err
 	}
 	collector := callbacks.NewRuntimeTraceCollector()
 	collector.Data.RunID = summary.RunID
-	if req.AIAgent == nil || req.Conversation == nil || req.UserMessage == nil {
+	if req.Conversation == nil || req.UserMessage == nil {
 		summary.Status = "error"
 		summary.ErrorMessage = "invalid runtime request"
-		collector.Data.Status = summary.Status
-		collector.Data.Error.Message = summary.ErrorMessage
-		collector.Data.Error.Stage = "prepare"
-		summary.TraceData = collector.Marshal()
-		return summary, fmt.Errorf("%s", summary.ErrorMessage)
-	}
-	if req.AIConfig == nil {
-		summary.Status = "error"
-		summary.ErrorMessage = "ai config is nil"
 		collector.Data.Status = summary.Status
 		collector.Data.Error.Message = summary.ErrorMessage
 		collector.Data.Error.Stage = "prepare"
@@ -149,24 +140,6 @@ func (s *Service) ExecuteResume(ctx context.Context, req ResumeInput) (*RunResul
 	collector := callbacks.NewRuntimeTraceCollector()
 	collector.Data.RunID = summary.RunID
 	collector.Data.Interrupt.CheckPointID = summary.CheckPointID
-	if req.AIAgent == nil {
-		summary.Status = "error"
-		summary.ErrorMessage = "ai agent is nil"
-		collector.Data.Status = summary.Status
-		collector.Data.Error.Message = summary.ErrorMessage
-		collector.Data.Error.Stage = "resume_prepare"
-		summary.TraceData = collector.Marshal()
-		return summary, fmt.Errorf("%s", summary.ErrorMessage)
-	}
-	if req.AIConfig == nil {
-		summary.Status = "error"
-		summary.ErrorMessage = "ai config is nil"
-		collector.Data.Status = summary.Status
-		collector.Data.Error.Message = summary.ErrorMessage
-		collector.Data.Error.Stage = "resume_prepare"
-		summary.TraceData = collector.Marshal()
-		return summary, fmt.Errorf("%s", summary.ErrorMessage)
-	}
 	if summary.CheckPointID == "" {
 		summary.Status = "error"
 		summary.ErrorMessage = "checkpoint id is required"

@@ -31,9 +31,9 @@ type AgentFactory struct {
 // 3. 后续扩展装配项时继续拉长函数签名。
 type BuildCustomerServiceAgentInput struct {
 	// AIAgent 为当前运行的业务 Agent 配置，提供名称、描述、系统提示词等基础信息。
-	AIAgent *models.AIAgent
+	AIAgent models.AIAgent
 	// AIConfig 为模型配置，决定底层使用哪个 ChatModel。
-	AIConfig *models.AIConfig
+	AIConfig models.AIConfig
 	// SelectedSkill 为当前命中的技能；为空表示本次运行未命中专项技能。
 	SelectedSkill *models.SkillDefinition
 	// InstructionToolDefinitions 用于生成 instruction 中的工具说明。
@@ -63,9 +63,6 @@ func NewAgentFactory() *AgentFactory {
 
 // BuildCustomerServiceAgent 根据装配输入构建客服 ChatModelAgent。
 func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input BuildCustomerServiceAgentInput) (*einoagents.CustomerServiceAgent, error) {
-	if input.AIAgent == nil || input.AIConfig == nil {
-		return nil, nil
-	}
 	chatModel, err := f.chatModelFactory.Build(ctx, input.AIConfig)
 	if err != nil {
 		return nil, err

@@ -8,8 +8,8 @@ import (
 type Request struct {
 	Conversation     *models.Conversation
 	UserMessage      *models.Message
-	AIAgent          *models.AIAgent
-	AIConfig         *models.AIConfig
+	AIAgent          models.AIAgent
+	AIConfig         models.AIConfig
 	ManualSkillCode  string
 	SelectedSkill    *models.SkillDefinition
 	SkillRouteReason string
@@ -20,8 +20,8 @@ type Request struct {
 
 type ResumeRequest struct {
 	Conversation *models.Conversation
-	AIAgent      *models.AIAgent
-	AIConfig     *models.AIConfig
+	AIAgent      models.AIAgent
+	AIConfig     models.AIConfig
 	CheckPointID string
 	ResumeData   map[string]string
 	ToolSet      *registry.ToolSet

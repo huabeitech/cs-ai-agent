@@ -20,10 +20,7 @@ func NewToolFactory() *ToolFactory {
 	return &ToolFactory{}
 }
 
-func (f *ToolFactory) BuildMCPTools(aiAgent *models.AIAgent) ([]runtimetooling.MCPToolDefinition, error) {
-	if aiAgent == nil || strings.TrimSpace(aiAgent.AllowedMCPTools) == "" {
-		return nil, nil
-	}
+func (f *ToolFactory) BuildMCPTools(aiAgent models.AIAgent) ([]runtimetooling.MCPToolDefinition, error) {
 	raw, err := toolx.ParseAgentMCPToolsJSON(aiAgent.AllowedMCPTools)
 	if err != nil {
 		return nil, err
@@ -56,7 +53,7 @@ func (f *ToolFactory) BuildMCPTools(aiAgent *models.AIAgent) ([]runtimetooling.M
 	return ret, nil
 }
 
-func (f *ToolFactory) BuildBaseTools(ctx context.Context, aiAgent *models.AIAgent) ([]einotool.BaseTool, error) {
+func (f *ToolFactory) BuildBaseTools(ctx context.Context, aiAgent models.AIAgent) ([]einotool.BaseTool, error) {
 	definitions, err := f.BuildMCPTools(aiAgent)
 	if err != nil {
 		return nil, err

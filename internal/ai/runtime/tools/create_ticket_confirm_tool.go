@@ -17,7 +17,7 @@ import (
 
 type CreateTicketGraphTool struct {
 	conversation *models.Conversation
-	aiAgent      *models.AIAgent
+	aiAgent      models.AIAgent
 }
 
 func NewCreateTicketGraphTool() *CreateTicketGraphTool {
@@ -37,7 +37,7 @@ func (t *CreateTicketGraphTool) Code() string {
 }
 
 func (t *CreateTicketGraphTool) Enabled(ctx registry.Context) bool {
-	return ctx.Conversation != nil && ctx.AIAgent != nil
+	return true
 }
 
 func (t *CreateTicketGraphTool) Build(ctx registry.Context) (einotool.BaseTool, error) {
@@ -100,7 +100,7 @@ func (t *CreateTicketGraphTool) Info(ctx context.Context) (*schema.ToolInfo, err
 }
 
 func (t *CreateTicketGraphTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil || t.aiAgent == nil {
+	if t == nil || t.conversation == nil {
 		return "", fmt.Errorf("create ticket graph tool not initialized")
 	}
 	return graphs.NewCreateTicketGraph(t.conversation, t.aiAgent).Run(ctx, argumentsInJSON)

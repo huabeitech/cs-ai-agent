@@ -65,7 +65,7 @@ func (s *embedding) callEmbeddingAPI(ctx context.Context, text string) (*Embeddi
 	if err != nil {
 		return nil, err
 	}
-	client := newOpenAIClient(config)
+	client := newOpenAIClient(*config)
 	embeddingResp, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
 		Input: openai.EmbeddingNewParamsInputUnion{
 			OfString: openai.String(text),

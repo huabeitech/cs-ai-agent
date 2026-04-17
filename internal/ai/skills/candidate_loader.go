@@ -20,10 +20,7 @@ func (l *candidateLoader) findManualSkillDefinition(skillCode string) *models.Sk
 	return repositories.SkillDefinitionRepository.GetByCode(sqls.DB(), skillCode)
 }
 
-func (l *candidateLoader) loadCandidateSkills(aiAgent *models.AIAgent) []models.SkillDefinition {
-	if aiAgent == nil {
-		return nil
-	}
+func (l *candidateLoader) loadCandidateSkills(aiAgent models.AIAgent) []models.SkillDefinition {
 	skillIDs := utils.SplitInt64s(aiAgent.SkillIDs)
 	skills := repositories.SkillDefinitionRepository.GetByIDs(sqls.DB(), skillIDs)
 	ret := make([]models.SkillDefinition, 0, len(skillIDs))

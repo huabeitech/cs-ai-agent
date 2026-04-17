@@ -16,7 +16,7 @@ type intentTriggerConfig struct {
 }
 
 // MatchSkill 对单个 SkillDefinition 执行命中判断。
-func MatchSkill(execCtx context.Context, ctx RuntimeContext, aiAgent *models.AIAgent, aiConfig *models.AIConfig) (*models.SkillDefinition, string, *RouteTrace, error) {
+func MatchSkill(execCtx context.Context, ctx RuntimeContext) (*models.SkillDefinition, string, *RouteTrace, error) {
 	loader := newCandidateLoader()
 	if strs.IsNotBlank(ctx.ManualSkillCode) {
 		skill := loader.findManualSkillDefinition(ctx.ManualSkillCode)
@@ -29,7 +29,7 @@ func MatchSkill(execCtx context.Context, ctx RuntimeContext, aiAgent *models.AIA
 		}, nil
 	}
 
-	candidates := loader.loadCandidateSkills(aiAgent)
+	candidates := loader.loadCandidateSkills(ctx.AIAgent)
 	trace := &RouteTrace{
 		Status:              "started",
 		CandidateSkillCodes: make([]string, 0, len(candidates)),
@@ -53,7 +53,7 @@ func MatchSkill(execCtx context.Context, ctx RuntimeContext, aiAgent *models.AIA
 		}
 	}
 
-	selected, routeTrace, err := routeSkillWithLLM(execCtx, aiConfig, ctx.UserMessage, candidates)
+	selected, routeTrace, err := routeSkillWithLLM(execCtx, ctx.AIConfig, ctx.UserMessage, candidates)
 	if routeTrace != nil {
 		trace.Status = routeTrace.Status
 		trace.SelectedSkillCode = routeTrace.SelectedSkillCode

@@ -18,27 +18,24 @@ func NewChatModelFactory() *ChatModelFactory {
 	return &ChatModelFactory{}
 }
 
-func (f *ChatModelFactory) Build(ctx context.Context, item *models.AIConfig) (model.ToolCallingChatModel, error) {
-	if item == nil {
-		return nil, nil
-	}
+func (f *ChatModelFactory) Build(ctx context.Context, aiConfig models.AIConfig) (model.ToolCallingChatModel, error) {
 	conf := &openai.ChatModelConfig{
-		APIKey:  strings.TrimSpace(item.APIKey),
-		BaseURL: strings.TrimSpace(item.BaseURL),
-		Model:   strings.TrimSpace(item.ModelName),
+		APIKey:  strings.TrimSpace(aiConfig.APIKey),
+		BaseURL: strings.TrimSpace(aiConfig.BaseURL),
+		Model:   strings.TrimSpace(aiConfig.ModelName),
 	}
-	if item.TimeoutMS > 0 {
-		conf.Timeout = time.Duration(item.TimeoutMS) * time.Millisecond
+	if aiConfig.TimeoutMS > 0 {
+		conf.Timeout = time.Duration(aiConfig.TimeoutMS) * time.Millisecond
 	}
-	if item.MaxOutputTokens > 0 {
-		maxCompletionTokens := item.MaxOutputTokens
+	if aiConfig.MaxOutputTokens > 0 {
+		maxCompletionTokens := aiConfig.MaxOutputTokens
 		conf.MaxCompletionTokens = &maxCompletionTokens
 	}
-	if item.Provider == enums.AIProviderOpenAI && isAzureOpenAIBaseURL(item.BaseURL) {
+	if aiConfig.Provider == enums.AIProviderOpenAI && isAzureOpenAIBaseURL(aiConfig.BaseURL) {
 		conf.ByAzure = true
 		conf.APIVersion = "2024-06-01"
 	}
-	if extraFields := providerExtraFields(item); len(extraFields) > 0 {
+	if extraFields := providerExtraFields(aiConfig); len(extraFields) > 0 {
 		conf.ExtraFields = extraFields
 	}
 	return openai.NewChatModel(ctx, conf)
@@ -49,12 +46,9 @@ func isAzureOpenAIBaseURL(baseURL string) bool {
 	return strings.Contains(baseURL, ".openai.azure.com")
 }
 
-func providerExtraFields(item *models.AIConfig) map[string]any {
-	if item == nil {
-		return nil
-	}
-	baseURL := strings.ToLower(strings.TrimSpace(item.BaseURL))
-	modelName := strings.ToLower(strings.TrimSpace(item.ModelName))
+func providerExtraFields(aiConfig models.AIConfig) map[string]any {
+	baseURL := strings.ToLower(strings.TrimSpace(aiConfig.BaseURL))
+	modelName := strings.ToLower(strings.TrimSpace(aiConfig.ModelName))
 	if strings.Contains(baseURL, "dashscope.aliyuncs.com") && strings.HasPrefix(modelName, "qwen3") {
 		return map[string]any{
 			"enable_thinking": false,

@@ -22,9 +22,7 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 	}
 	if collector != nil {
 		collector.Data.Input.HistoryMessageCount = len(history.Messages)
-		if req.AIAgent != nil {
-			collector.Data.Input.KnowledgeBaseIDs = utils.SplitInt64s(req.AIAgent.KnowledgeIDs)
-		}
+		collector.Data.Input.KnowledgeBaseIDs = utils.SplitInt64s(req.AIAgent.KnowledgeIDs)
 		collector.Data.Input.CurrentUserMessagePreview = preview(req.UserMessage.Content, 120)
 	}
 	messages := make([]*schema.Message, 0, len(history.Messages)+3)
@@ -41,7 +39,7 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 }
 
 func appendRetrievedContext(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector, messages *[]*schema.Message) knowledgeGuardDecision {
-	if req.AIAgent == nil || req.UserMessage == nil || messages == nil {
+	if req.UserMessage == nil || messages == nil {
 		return knowledgeGuardDecision{}
 	}
 	retriever := retrievers.NewKnowledgeRetriever(req.AIAgent)

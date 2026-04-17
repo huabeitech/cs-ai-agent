@@ -47,15 +47,11 @@ func NewService(
 }
 
 func (s *Service) Build(
-	aiAgent *models.AIAgent,
+	aiAgent models.AIAgent,
 	selectedSkill *models.SkillDefinition,
 	toolDefinitions []runtimetooling.MCPToolDefinition,
 	extraToolCodes map[string]string,
 ) AssemblyResult {
-	baseInstruction := ""
-	if aiAgent != nil {
-		baseInstruction = strings.TrimSpace(aiAgent.SystemPrompt)
-	}
 	projectInstruction := ""
 	governanceInstruction := ""
 	skillInstruction := ""
@@ -77,7 +73,7 @@ func (s *Service) Build(
 		assembler = s.assembler
 	}
 	return assembler.Assemble(AssemblerInput{
-		AgentInstruction:      baseInstruction,
+		AgentInstruction:      strings.TrimSpace(aiAgent.SystemPrompt),
 		GovernanceInstruction: governanceInstruction,
 		SkillInstruction:      skillInstruction,
 		ToolAppendices:        toolAppendices,

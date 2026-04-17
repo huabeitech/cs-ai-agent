@@ -18,7 +18,7 @@ type prepareService struct {
 }
 
 func (s *prepareService) selectSkill(ctx context.Context, req Request) (*models.SkillDefinition, string, string, error) {
-	if req.AIAgent == nil || req.AIConfig == nil || req.UserMessage == nil || req.Conversation == nil {
+	if req.UserMessage == nil || req.Conversation == nil {
 		return nil, "", "", nil
 	}
 	result, err := skills.Select(ctx, skills.RuntimeContext{

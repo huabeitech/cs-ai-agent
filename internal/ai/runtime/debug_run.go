@@ -44,8 +44,8 @@ func DebugRunSkill(ctx context.Context, req request.SkillDebugRunRequest) (*resp
 	summary, err := Service.Run(ctx, applicationruntime.Request{
 		Conversation:    conversation,
 		UserMessage:     message,
-		AIAgent:         aiAgent,
-		AIConfig:        aiConfig,
+		AIAgent:         *aiAgent,
+		AIConfig:        *aiConfig,
 		ManualSkillCode: strings.TrimSpace(req.SkillCode),
 	})
 	if err != nil {
@@ -91,8 +91,8 @@ func DebugResumeSkill(ctx context.Context, req request.SkillDebugResumeRequest) 
 	resumeText := strings.TrimSpace(req.UserMessage)
 	summary, err := Service.Resume(ctx, applicationruntime.ResumeRequest{
 		Conversation: conversation,
-		AIAgent:      aiAgent,
-		AIConfig:     aiConfig,
+		AIAgent:      *aiAgent,
+		AIConfig:     *aiConfig,
 		CheckPointID: strings.TrimSpace(req.CheckPointID),
 		ResumeData: map[string]string{
 			strings.TrimSpace(pendingInterrupt.InterruptID): resumeText,

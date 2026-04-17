@@ -288,12 +288,9 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 	return nil
 }
 
-func (s *conversationService) HandoffByAI(conversationID int64, aiAgent *models.AIAgent, reason string) error {
+func (s *conversationService) HandoffByAI(conversationID int64, aiAgent models.AIAgent, reason string) error {
 	if conversationID <= 0 {
 		return errorsx.InvalidParam("会话不存在")
-	}
-	if aiAgent == nil {
-		return errorsx.InvalidParam("AI Agent 不存在")
 	}
 	now := time.Now()
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
