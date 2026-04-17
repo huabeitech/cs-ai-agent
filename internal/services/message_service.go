@@ -1,12 +1,14 @@
 package services
 
 import (
+	"bytes"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/repositories"
+	"cs-agent/internal/services/storage"
 	"log/slog"
 	"slices"
 	"strings"
@@ -163,7 +165,7 @@ func (s *messageService) RecallAgentMessage(messageID int64, operator *dto.AuthP
 	if message.SenderID != operator.UserID {
 		return nil, errorsx.Forbidden("仅允许撤回自己发送的消息")
 	}
-	if message.RecalledAt != nil || message.SendStatus == int(enums.IMMessageStatusRecalled) {
+	if message.RecalledAt != nil || message.SendStatus == enums.IMMessageStatusRecalled {
 		return nil, errorsx.InvalidParam("消息已撤回")
 	}
 
@@ -185,7 +187,7 @@ func (s *messageService) RecallAgentMessage(messageID int64, operator *dto.AuthP
 			return err
 		}
 
-		message.SendStatus = int(enums.IMMessageStatusRecalled)
+		message.SendStatus = enums.IMMessageStatusRecalled
 		message.RecalledAt = &now
 		message.UpdatedAt = now
 		message.UpdateUserID = operator.UserID
@@ -307,7 +309,7 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 		Content:        content,
 		Payload:        payload,
 		SeqNo:          nextSeq,
-		SendStatus:     int(enums.IMMessageStatusSent),
+		SendStatus:     enums.IMMessageStatusSent,
 		SentAt:         &now,
 		AuditFields: models.AuditFields{
 			CreatedAt:      now,
@@ -557,11 +559,11 @@ func readSeqNo(state *models.ConversationReadState) int64 {
 func sanitizeMessageHTML(content string) string {
 	policy := bluemonday.UGCPolicy()
 	policy.AllowElements("img")
-	policy.AllowAttrs("src", "alt", "title").OnElements("img")
+	policy.AllowAttrs("src", "alt", "title", "data-provider", "data-storage-key").OnElements("img")
 	policy.AllowURLSchemes("http", "https")
 	policy.AllowStandardURLs()
 	policy.AllowElements("p", "br")
-	return strings.TrimSpace(policy.Sanitize(content))
+	return stripHTMLImageSrcIfBound(strings.TrimSpace(policy.Sanitize(content)))
 }
 
 func buildHTMLSummary(content string) string {
@@ -593,4 +595,160 @@ func buildHTMLSummary(content string) string {
 	}
 	walk(doc)
 	return strings.TrimSpace(strings.Join(parts, " "))
+}
+
+func BuildRenderableMessage(item *models.Message) (content, payload string) {
+	if item == nil {
+		return "", ""
+	}
+	if item.RecalledAt != nil {
+		return "该消息已撤回", ""
+	}
+	if item.SendStatus == enums.IMMessageStatusRecalled {
+		return "该消息已撤回", ""
+	}
+
+	content = item.Content
+	payload = item.Payload
+	switch item.MessageType {
+	case enums.IMMessageTypeImage, enums.IMMessageTypeAttachment:
+		payload = buildIMMessageAssetPayloadForResponse(item.Payload)
+	case enums.IMMessageTypeHTML:
+		content = buildMessageHTMLForResponse(item.Content)
+	}
+	return content, payload
+}
+
+func buildMessageHTMLForResponse(content string) string {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return ""
+	}
+	doc, err := html.Parse(strings.NewReader("<div>" + content + "</div>"))
+	if err != nil {
+		return content
+	}
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node == nil {
+			return
+		}
+		if node.Type == html.ElementNode && node.Data == "img" {
+			provider := enums.AssetProvider(strings.TrimSpace(findHTMLAttr(node, "data-provider")))
+			storageKey := strings.TrimSpace(findHTMLAttr(node, "data-storage-key"))
+			if provider != "" && storageKey != "" {
+				if storageProvider, err := storage.NewProvider(provider); err == nil {
+					setHTMLAttr(node, "src", storageProvider.GetSignedURL(storageKey))
+				}
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	return renderHTMLFragment(doc)
+}
+
+func stripHTMLImageSrcIfBound(content string) string {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return ""
+	}
+	doc, err := html.Parse(strings.NewReader("<div>" + content + "</div>"))
+	if err != nil {
+		return content
+	}
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node == nil {
+			return
+		}
+		if node.Type == html.ElementNode && node.Data == "img" {
+			provider := strings.TrimSpace(findHTMLAttr(node, "data-provider"))
+			storageKey := strings.TrimSpace(findHTMLAttr(node, "data-storage-key"))
+			if provider != "" && storageKey != "" {
+				removeHTMLAttr(node, "src")
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	return renderHTMLFragment(doc)
+}
+
+func renderHTMLFragment(doc *html.Node) string {
+	if doc == nil {
+		return ""
+	}
+	root := findHTMLRoot(doc)
+	if root == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	for child := root.FirstChild; child != nil; child = child.NextSibling {
+		if err := html.Render(&buf, child); err != nil {
+			return ""
+		}
+	}
+	return strings.TrimSpace(buf.String())
+}
+
+func findHTMLRoot(doc *html.Node) *html.Node {
+	var walk func(*html.Node) *html.Node
+	walk = func(node *html.Node) *html.Node {
+		if node == nil {
+			return nil
+		}
+		if node.Type == html.ElementNode && node.Data == "div" {
+			return node
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			if found := walk(child); found != nil {
+				return found
+			}
+		}
+		return nil
+	}
+	return walk(doc)
+}
+
+func findHTMLAttr(node *html.Node, key string) string {
+	if node == nil {
+		return ""
+	}
+	for _, attr := range node.Attr {
+		if attr.Key == key {
+			return attr.Val
+		}
+	}
+	return ""
+}
+
+func setHTMLAttr(node *html.Node, key, value string) {
+	if node == nil {
+		return
+	}
+	for i := range node.Attr {
+		if node.Attr[i].Key == key {
+			node.Attr[i].Val = value
+			return
+		}
+	}
+	node.Attr = append(node.Attr, html.Attribute{Key: key, Val: value})
+}
+
+func removeHTMLAttr(node *html.Node, key string) {
+	if node == nil {
+		return
+	}
+	dst := node.Attr[:0]
+	for _, attr := range node.Attr {
+		if attr.Key != key {
+			dst = append(dst, attr)
+		}
+	}
+	node.Attr = dst
 }

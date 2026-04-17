@@ -101,7 +101,7 @@ func BuildMessage(item *models.Message) response.MessageResponse {
 }
 
 func BuildMessageWithReadStates(item *models.Message, agentReadState, customerReadState *models.ConversationReadState, aiSenderNames, userSenderNames map[int64]string, agentProfiles map[int64]*models.AgentProfile) response.MessageResponse {
-	content, payload := buildMessageResponseContent(item)
+	content, payload := services.BuildRenderableMessage(item)
 	ret := response.MessageResponse{
 		ID:              item.ID,
 		ConversationID:  item.ConversationID,
@@ -160,16 +160,6 @@ func BuildMessageWithReadStates(item *models.Message, agentReadState, customerRe
 		}
 	}
 	return ret
-}
-
-func buildMessageResponseContent(item *models.Message) (content, payload string) {
-	if item == nil {
-		return "", ""
-	}
-	if item.RecalledAt != nil || item.SendStatus == int(enums.IMMessageStatusRecalled) {
-		return "该消息已撤回", ""
-	}
-	return item.Content, item.Payload
 }
 
 func collectAgentProfilesByMessages(list []models.Message) map[int64]*models.AgentProfile {

@@ -377,22 +377,22 @@ type ConversationReadState struct {
 
 // Message 会话消息。
 type Message struct {
-	ID              int64               `gorm:"primaryKey;autoIncrement"`
-	ConversationID  int64               `gorm:"type:bigint;not null;index;uniqueIndex:uk_conversation_seq;uniqueIndex:uk_conversation_client_msg"`
-	ClientMsgID     string              `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_conversation_client_msg"`
-	SenderType      enums.IMSenderType  `gorm:"type:varchar(30);not null;default:'';index"`
-	SenderID        int64               `gorm:"type:bigint;not null;default:0;index"`
-	ReceiverType    string              `gorm:"type:varchar(30);not null;default:'';index"`
-	MessageType     enums.IMMessageType `gorm:"type:varchar(30);not null;default:'';index"`
-	Content         string              `gorm:"type:text"`
-	Payload         string              `gorm:"type:text"`
-	SeqNo           int64               `gorm:"type:bigint;not null;default:0;uniqueIndex:uk_conversation_seq"`
-	SendStatus      int                 `gorm:"type:int;not null;default:2;index"`
-	SentAt          *time.Time          `gorm:"type:datetime;index"`
-	DeliveredAt     *time.Time          `gorm:"type:datetime"`
-	ReadAt          *time.Time          `gorm:"type:datetime"`
-	RecalledAt      *time.Time          `gorm:"type:datetime"`
-	QuotedMessageID int64               `gorm:"type:bigint;not null;default:0;index"`
+	ID              int64                 `gorm:"primaryKey;autoIncrement"`
+	ConversationID  int64                 `gorm:"type:bigint;not null;index;uniqueIndex:uk_conversation_seq;uniqueIndex:uk_conversation_client_msg"`
+	ClientMsgID     string                `gorm:"type:varchar(128);not null;default:'';uniqueIndex:uk_conversation_client_msg"`
+	SenderType      enums.IMSenderType    `gorm:"type:varchar(30);not null;default:'';index"`
+	SenderID        int64                 `gorm:"type:bigint;not null;default:0;index"`
+	ReceiverType    string                `gorm:"type:varchar(30);not null;default:'';index"`
+	MessageType     enums.IMMessageType   `gorm:"type:varchar(30);not null;default:'';index"`
+	Content         string                `gorm:"type:text"`
+	Payload         string                `gorm:"type:text"`
+	SeqNo           int64                 `gorm:"type:bigint;not null;default:0;uniqueIndex:uk_conversation_seq"`
+	SendStatus      enums.IMMessageStatus `gorm:"type:int;not null;default:2;index"`
+	SentAt          *time.Time            `gorm:"type:datetime;index"`
+	DeliveredAt     *time.Time            `gorm:"type:datetime"`
+	ReadAt          *time.Time            `gorm:"type:datetime"`
+	RecalledAt      *time.Time            `gorm:"type:datetime"`
+	QuotedMessageID int64                 `gorm:"type:bigint;not null;default:0;index"`
 	AuditFields
 }
 
