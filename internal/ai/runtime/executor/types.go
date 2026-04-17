@@ -6,8 +6,8 @@ import (
 )
 
 type RunInput struct {
-	Conversation     *models.Conversation
-	UserMessage      *models.Message
+	Conversation     models.Conversation
+	UserMessage      models.Message
 	AIAgent          models.AIAgent
 	AIConfig         models.AIConfig
 	SelectedSkill    *models.SkillDefinition
@@ -18,7 +18,7 @@ type RunInput struct {
 }
 
 type ResumeInput struct {
-	Conversation *models.Conversation
+	Conversation models.Conversation
 	AIAgent      models.AIAgent
 	AIConfig     models.AIConfig
 	CheckPointID string

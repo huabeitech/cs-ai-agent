@@ -9,10 +9,10 @@ import (
 )
 
 type Context struct {
-	Conversation     *models.Conversation
+	Conversation     models.Conversation
 	AIAgent          models.AIAgent
 	AIConfig         models.AIConfig
-	UserMessage      *models.Message
+	UserMessage      models.Message
 	AllowedToolCodes []string
 }
 

@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"fmt"
 
 	"cs-agent/internal/ai/runtime/graphs"
 	"cs-agent/internal/ai/runtime/registry"
@@ -16,7 +15,7 @@ import (
 )
 
 type TriageServiceRequestTool struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
 func NewTriageServiceRequestTool() *TriageServiceRequestTool {
@@ -36,7 +35,7 @@ func (t *TriageServiceRequestTool) Code() string {
 }
 
 func (t *TriageServiceRequestTool) Enabled(ctx registry.Context) bool {
-	return ctx.Conversation != nil
+	return true
 }
 
 func (t *TriageServiceRequestTool) Build(ctx registry.Context) (einotool.BaseTool, error) {
@@ -99,8 +98,5 @@ func (t *TriageServiceRequestTool) Info(ctx context.Context) (*schema.ToolInfo, 
 }
 
 func (t *TriageServiceRequestTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil {
-		return "", fmt.Errorf("triage service request tool not initialized")
-	}
 	return graphs.NewTriageServiceRequestGraph(t.conversation).Run(ctx, argumentsInJSON)
 }

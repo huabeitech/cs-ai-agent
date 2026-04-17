@@ -6,8 +6,8 @@ import (
 )
 
 type Request struct {
-	Conversation     *models.Conversation
-	UserMessage      *models.Message
+	Conversation     models.Conversation
+	UserMessage      models.Message
 	AIAgent          models.AIAgent
 	AIConfig         models.AIConfig
 	ManualSkillCode  string
@@ -19,7 +19,7 @@ type Request struct {
 }
 
 type ResumeRequest struct {
-	Conversation *models.Conversation
+	Conversation models.Conversation
 	AIAgent      models.AIAgent
 	AIConfig     models.AIConfig
 	CheckPointID string

@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"fmt"
 
 	"cs-agent/internal/ai/runtime/graphs"
 	"cs-agent/internal/ai/runtime/registry"
@@ -16,7 +15,7 @@ import (
 )
 
 type PrepareTicketDraftTool struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
 func NewPrepareTicketDraftTool() *PrepareTicketDraftTool {
@@ -36,7 +35,7 @@ func (t *PrepareTicketDraftTool) Code() string {
 }
 
 func (t *PrepareTicketDraftTool) Enabled(ctx registry.Context) bool {
-	return ctx.Conversation != nil
+	return true
 }
 
 func (t *PrepareTicketDraftTool) Build(ctx registry.Context) (einotool.BaseTool, error) {
@@ -120,8 +119,5 @@ func (t *PrepareTicketDraftTool) Info(ctx context.Context) (*schema.ToolInfo, er
 }
 
 func (t *PrepareTicketDraftTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil {
-		return "", fmt.Errorf("prepare ticket draft tool not initialized")
-	}
 	return graphs.NewPrepareTicketDraftGraph(t.conversation).Run(ctx, argumentsInJSON)
 }

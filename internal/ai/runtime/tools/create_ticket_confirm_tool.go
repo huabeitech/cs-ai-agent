@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"fmt"
 
 	"cs-agent/internal/ai/runtime/graphs"
 	"cs-agent/internal/ai/runtime/registry"
@@ -16,7 +15,7 @@ import (
 )
 
 type CreateTicketGraphTool struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 	aiAgent      models.AIAgent
 }
 
@@ -100,8 +99,5 @@ func (t *CreateTicketGraphTool) Info(ctx context.Context) (*schema.ToolInfo, err
 }
 
 func (t *CreateTicketGraphTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil {
-		return "", fmt.Errorf("create ticket graph tool not initialized")
-	}
 	return graphs.NewCreateTicketGraph(t.conversation, t.aiAgent).Run(ctx, argumentsInJSON)
 }

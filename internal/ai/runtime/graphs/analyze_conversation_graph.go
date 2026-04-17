@@ -30,17 +30,14 @@ type AnalyzeConversationResult struct {
 }
 
 type AnalyzeConversationGraph struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
-func NewAnalyzeConversationGraph(conversation *models.Conversation) *AnalyzeConversationGraph {
+func NewAnalyzeConversationGraph(conversation models.Conversation) *AnalyzeConversationGraph {
 	return &AnalyzeConversationGraph{conversation: conversation}
 }
 
 func (g *AnalyzeConversationGraph) Run(_ context.Context, argumentsInJSON string) (string, error) {
-	if g == nil || g.conversation == nil {
-		return "", fmt.Errorf("analyze conversation graph not initialized")
-	}
 	input, err := g.parseInput(argumentsInJSON)
 	if err != nil {
 		return "", err
@@ -68,7 +65,7 @@ func (g *AnalyzeConversationGraph) parseInput(argumentsInJSON string) (AnalyzeCo
 	return input, nil
 }
 
-func buildAnalyzeConversationResult(conversation *models.Conversation, messages []models.Message, input AnalyzeConversationInput) AnalyzeConversationResult {
+func buildAnalyzeConversationResult(conversation models.Conversation, messages []models.Message, input AnalyzeConversationInput) AnalyzeConversationResult {
 	joined := strings.ToLower(buildConversationCorpus(conversation, messages, input))
 	signals := collectRiskSignals(joined, input)
 	intent := detectUserIntent(joined, input)
@@ -85,14 +82,14 @@ func buildAnalyzeConversationResult(conversation *models.Conversation, messages 
 	return result
 }
 
-func buildConversationSummary(conversation *models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
+func buildConversationSummary(conversation models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
 	parts := make([]string, 0, 4)
-	if conversation != nil && strings.TrimSpace(conversation.Subject) != "" {
+	if strings.TrimSpace(conversation.Subject) != "" {
 		parts = append(parts, "会话主题："+strings.TrimSpace(conversation.Subject))
 	}
 	if input.ObservedIssue != "" {
 		parts = append(parts, "当前问题："+input.ObservedIssue)
-	} else if conversation != nil && strings.TrimSpace(conversation.LastMessageSummary) != "" {
+	} else if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		parts = append(parts, "当前问题："+strings.TrimSpace(conversation.LastMessageSummary))
 	}
 	if digest := buildRecentMessageDigest(messages); digest != "" {
@@ -104,12 +101,10 @@ func buildConversationSummary(conversation *models.Conversation, messages []mode
 	return strings.TrimSpace(strings.Join(parts, "\n"))
 }
 
-func buildConversationCorpus(conversation *models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
+func buildConversationCorpus(conversation models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
 	parts := make([]string, 0, len(messages)+4)
-	if conversation != nil {
-		parts = append(parts, strings.TrimSpace(conversation.Subject))
-		parts = append(parts, strings.TrimSpace(conversation.LastMessageSummary))
-	}
+	parts = append(parts, strings.TrimSpace(conversation.Subject))
+	parts = append(parts, strings.TrimSpace(conversation.LastMessageSummary))
 	parts = append(parts, input.Goal, input.ObservedIssue, input.AdditionalContext)
 	for i := range messages {
 		parts = append(parts, strings.TrimSpace(messages[i].Content))
@@ -203,12 +198,12 @@ func recommendQuestions(intent string, signals []string, input AnalyzeConversati
 	return questions
 }
 
-func buildConversationAnalysisFacts(conversation *models.Conversation, messages []models.Message) []string {
+func buildConversationAnalysisFacts(conversation models.Conversation, messages []models.Message) []string {
 	facts := make([]string, 0, 4)
-	if conversation != nil && strings.TrimSpace(conversation.Subject) != "" {
+	if strings.TrimSpace(conversation.Subject) != "" {
 		facts = append(facts, "会话主题："+strings.TrimSpace(conversation.Subject))
 	}
-	if conversation != nil && strings.TrimSpace(conversation.LastMessageSummary) != "" {
+	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		facts = append(facts, "最近摘要："+strings.TrimSpace(conversation.LastMessageSummary))
 	}
 	if digest := buildRecentMessageDigest(messages); digest != "" {

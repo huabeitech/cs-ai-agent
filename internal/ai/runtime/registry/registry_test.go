@@ -49,7 +49,7 @@ func TestResolveBuildsStaticToolMetadata(t *testing.T) {
 		code: toolx.GraphCreateTicketConfirm.Code,
 	})
 	toolSet, err := r.Resolve(registry.Context{
-		Conversation: &models.Conversation{ID: 1},
+		Conversation: models.Conversation{ID: 1},
 		AIAgent:      models.AIAgent{ID: 1},
 	})
 	if err != nil {

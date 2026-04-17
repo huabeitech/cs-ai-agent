@@ -32,11 +32,11 @@ func init() {
 }
 
 type HandoffGraph struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 	aiAgent      models.AIAgent
 }
 
-func NewHandoffGraph(conversation *models.Conversation, aiAgent models.AIAgent) *HandoffGraph {
+func NewHandoffGraph(conversation models.Conversation, aiAgent models.AIAgent) *HandoffGraph {
 	return &HandoffGraph{
 		conversation: conversation,
 		aiAgent:      aiAgent,
@@ -44,9 +44,6 @@ func NewHandoffGraph(conversation *models.Conversation, aiAgent models.AIAgent) 
 }
 
 func (g *HandoffGraph) Run(ctx context.Context, argumentsInJSON string) (string, error) {
-	if g == nil || g.conversation == nil {
-		return "", fmt.Errorf("handoff graph not initialized")
-	}
 	wasInterrupted, hasState, state := componenttool.GetInterruptState[HandoffGraphState](ctx)
 	if !wasInterrupted {
 		reason, err := g.buildReason(argumentsInJSON)

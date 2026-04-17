@@ -34,17 +34,14 @@ type PrepareTicketDraftResult struct {
 }
 
 type PrepareTicketDraftGraph struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
-func NewPrepareTicketDraftGraph(conversation *models.Conversation) *PrepareTicketDraftGraph {
+func NewPrepareTicketDraftGraph(conversation models.Conversation) *PrepareTicketDraftGraph {
 	return &PrepareTicketDraftGraph{conversation: conversation}
 }
 
 func (g *PrepareTicketDraftGraph) Run(_ context.Context, argumentsInJSON string) (string, error) {
-	if g == nil || g.conversation == nil {
-		return "", fmt.Errorf("prepare ticket draft graph not initialized")
-	}
 	input, err := g.parseInput(argumentsInJSON)
 	if err != nil {
 		return "", err
@@ -75,7 +72,7 @@ func (g *PrepareTicketDraftGraph) parseInput(argumentsInJSON string) (PrepareTic
 	return input, nil
 }
 
-func buildPrepareTicketDraftResult(conversation *models.Conversation, messages []models.Message, input PrepareTicketDraftInput) PrepareTicketDraftResult {
+func buildPrepareTicketDraftResult(conversation models.Conversation, messages []models.Message, input PrepareTicketDraftInput) PrepareTicketDraftResult {
 	result := PrepareTicketDraftResult{
 		Priority:          input.Priority,
 		Severity:          input.Severity,
@@ -97,22 +94,22 @@ func buildPrepareTicketDraftResult(conversation *models.Conversation, messages [
 	return result
 }
 
-func buildDraftTitle(conversation *models.Conversation, input PrepareTicketDraftInput) string {
+func buildDraftTitle(conversation models.Conversation, input PrepareTicketDraftInput) string {
 	switch {
 	case input.Title != "":
 		return limitText(input.Title, 80)
 	case input.Issue != "":
 		return limitText(input.Issue, 80)
-	case conversation != nil && strings.TrimSpace(conversation.Subject) != "":
+	case strings.TrimSpace(conversation.Subject) != "":
 		return limitText(conversation.Subject, 80)
-	case conversation != nil:
+	case strings.TrimSpace(conversation.LastMessageSummary) != "":
 		return limitText(conversation.LastMessageSummary, 80)
 	default:
 		return ""
 	}
 }
 
-func buildDraftDescription(conversation *models.Conversation, messages []models.Message, input PrepareTicketDraftInput) string {
+func buildDraftDescription(conversation models.Conversation, messages []models.Message, input PrepareTicketDraftInput) string {
 	if input.Description != "" {
 		return input.Description
 	}
@@ -129,7 +126,7 @@ func buildDraftDescription(conversation *models.Conversation, messages []models.
 	if input.CurrentAttempt != "" {
 		parts = append(parts, "已尝试处理："+input.CurrentAttempt)
 	}
-	if conversation != nil && strings.TrimSpace(conversation.LastMessageSummary) != "" {
+	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		parts = append(parts, "会话摘要："+strings.TrimSpace(conversation.LastMessageSummary))
 	}
 	if recent := buildRecentMessageDigest(messages); recent != "" {
@@ -145,12 +142,12 @@ func hasSufficientIssueContext(input PrepareTicketDraftInput, description string
 	return len([]rune(strings.TrimSpace(description))) >= 30
 }
 
-func buildConversationFacts(conversation *models.Conversation, messages []models.Message) []string {
+func buildConversationFacts(conversation models.Conversation, messages []models.Message) []string {
 	facts := make([]string, 0, 4)
-	if conversation != nil && strings.TrimSpace(conversation.Subject) != "" {
+	if strings.TrimSpace(conversation.Subject) != "" {
 		facts = append(facts, "会话主题："+strings.TrimSpace(conversation.Subject))
 	}
-	if conversation != nil && strings.TrimSpace(conversation.LastMessageSummary) != "" {
+	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		facts = append(facts, "最近摘要："+strings.TrimSpace(conversation.LastMessageSummary))
 	}
 	if digest := buildRecentMessageDigest(messages); digest != "" {

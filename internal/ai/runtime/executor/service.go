@@ -33,16 +33,6 @@ func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, err
 	}
 	collector := callbacks.NewRuntimeTraceCollector()
 	collector.Data.RunID = summary.RunID
-	if req.Conversation == nil || req.UserMessage == nil {
-		summary.Status = "error"
-		summary.ErrorMessage = "invalid runtime request"
-		collector.Data.Status = summary.Status
-		collector.Data.Error.Message = summary.ErrorMessage
-		collector.Data.Error.Stage = "prepare"
-		summary.TraceData = collector.Marshal()
-		return summary, fmt.Errorf("%s", summary.ErrorMessage)
-	}
-
 	toolDefs, err := factory.NewToolFactory().BuildMCPTools(req.AIAgent)
 	if err != nil {
 		summary.Status = "error"

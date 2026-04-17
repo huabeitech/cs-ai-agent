@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"fmt"
 
 	"cs-agent/internal/ai/runtime/graphs"
 	"cs-agent/internal/ai/runtime/registry"
@@ -16,7 +15,7 @@ import (
 )
 
 type AnalyzeConversationTool struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
 func NewAnalyzeConversationTool() *AnalyzeConversationTool {
@@ -36,7 +35,7 @@ func (t *AnalyzeConversationTool) Code() string {
 }
 
 func (t *AnalyzeConversationTool) Enabled(ctx registry.Context) bool {
-	return ctx.Conversation != nil
+	return true
 }
 
 func (t *AnalyzeConversationTool) Build(ctx registry.Context) (einotool.BaseTool, error) {
@@ -106,8 +105,5 @@ func (t *AnalyzeConversationTool) Info(ctx context.Context) (*schema.ToolInfo, e
 }
 
 func (t *AnalyzeConversationTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...einotool.Option) (string, error) {
-	if t == nil || t.conversation == nil {
-		return "", fmt.Errorf("analyze conversation tool not initialized")
-	}
 	return graphs.NewAnalyzeConversationGraph(t.conversation).Run(ctx, argumentsInJSON)
 }

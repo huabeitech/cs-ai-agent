@@ -26,8 +26,8 @@ func (e *runtimeReplyExecutor) Run(ctx context.Context, conversation models.Conv
 	}
 	runtimeStartedAt := time.Now()
 	summary, err := Service.Run(ctx, applicationruntime.Request{
-		Conversation: &conversation,
-		UserMessage:  &message,
+		Conversation: conversation,
+		UserMessage:  message,
 		AIAgent:      aiAgent,
 		AIConfig:     *aiConfig,
 	})
@@ -51,7 +51,7 @@ func (e *runtimeReplyExecutor) ResumePendingInterrupt(ctx context.Context, conve
 		trace.ResumeSource = "pending_interrupt"
 	}
 	summary, err := Service.Resume(ctx, applicationruntime.ResumeRequest{
-		Conversation: &conversation,
+		Conversation: conversation,
 		AIAgent:      aiAgent,
 		AIConfig:     *aiConfig,
 		CheckPointID: strings.TrimSpace(pendingInterrupt.CheckPointID),

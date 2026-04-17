@@ -28,21 +28,22 @@ func DebugRunSkill(ctx context.Context, req request.SkillDebugRunRequest) (*resp
 	if aiConfig == nil {
 		return nil, errorsx.InvalidParam("AI Agent关联的AI配置不存在")
 	}
-	conversation := &models.Conversation{ID: req.ConversationID, AIAgentID: req.AIAgentID}
+	var conversation *models.Conversation
 	if req.ConversationID > 0 {
-		conversation = svc.ConversationService.Get(req.ConversationID)
-		if conversation == nil {
+		if conversation = svc.ConversationService.Get(req.ConversationID); conversation == nil {
 			return nil, errorsx.InvalidParam("会话不存在")
 		}
+	} else {
+		conversation = &models.Conversation{ID: req.ConversationID, AIAgentID: req.AIAgentID}
 	}
-	message := &models.Message{
+	message := models.Message{
 		ConversationID: req.ConversationID,
 		SenderType:     enums.IMSenderTypeCustomer,
 		MessageType:    enums.IMMessageTypeText,
 		Content:        strings.TrimSpace(req.UserMessage),
 	}
 	summary, err := Service.Run(ctx, applicationruntime.Request{
-		Conversation:    conversation,
+		Conversation:    *conversation,
 		UserMessage:     message,
 		AIAgent:         *aiAgent,
 		AIConfig:        *aiConfig,
@@ -90,7 +91,7 @@ func DebugResumeSkill(ctx context.Context, req request.SkillDebugResumeRequest) 
 	}
 	resumeText := strings.TrimSpace(req.UserMessage)
 	summary, err := Service.Resume(ctx, applicationruntime.ResumeRequest{
-		Conversation: conversation,
+		Conversation: *conversation,
 		AIAgent:      *aiAgent,
 		AIConfig:     *aiConfig,
 		CheckPointID: strings.TrimSpace(req.CheckPointID),

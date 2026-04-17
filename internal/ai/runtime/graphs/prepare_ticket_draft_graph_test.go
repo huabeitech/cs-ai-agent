@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuildPrepareTicketDraftResult_UsesConversationFallbacks(t *testing.T) {
-	conversation := &models.Conversation{
+	conversation := models.Conversation{
 		Subject:            "企业微信登录异常",
 		LastMessageSummary: "用户反馈企业微信扫码后页面空白，无法进入工作台",
 	}
@@ -37,7 +37,7 @@ func TestBuildPrepareTicketDraftResult_UsesConversationFallbacks(t *testing.T) {
 }
 
 func TestBuildPrepareTicketDraftResult_ReadyWithExplicitIssue(t *testing.T) {
-	conversation := &models.Conversation{
+	conversation := models.Conversation{
 		Subject:            "订单支付失败",
 		LastMessageSummary: "用户反馈连续支付失败",
 	}

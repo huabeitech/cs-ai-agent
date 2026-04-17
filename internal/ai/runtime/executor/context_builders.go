@@ -13,9 +13,6 @@ import (
 )
 
 func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector) []*schema.Message {
-	if req.Conversation == nil || req.UserMessage == nil {
-		return nil
-	}
 	history := adapter.BuildHistoryMessages(req.Conversation.ID, req.UserMessage.ID, 12)
 	if summary != nil {
 		summary.HistoryMessageCount = len(history.Messages)
@@ -39,7 +36,7 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 }
 
 func appendRetrievedContext(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector, messages *[]*schema.Message) knowledgeGuardDecision {
-	if req.UserMessage == nil || messages == nil {
+	if messages == nil {
 		return knowledgeGuardDecision{}
 	}
 	retriever := retrievers.NewKnowledgeRetriever(req.AIAgent)

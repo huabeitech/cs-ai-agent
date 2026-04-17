@@ -26,17 +26,14 @@ type TriageServiceRequestResult struct {
 }
 
 type TriageServiceRequestGraph struct {
-	conversation *models.Conversation
+	conversation models.Conversation
 }
 
-func NewTriageServiceRequestGraph(conversation *models.Conversation) *TriageServiceRequestGraph {
+func NewTriageServiceRequestGraph(conversation models.Conversation) *TriageServiceRequestGraph {
 	return &TriageServiceRequestGraph{conversation: conversation}
 }
 
 func (g *TriageServiceRequestGraph) Run(_ context.Context, argumentsInJSON string) (string, error) {
-	if g == nil || g.conversation == nil {
-		return "", fmt.Errorf("triage service request graph not initialized")
-	}
 	input, err := g.parseInput(argumentsInJSON)
 	if err != nil {
 		return "", err
