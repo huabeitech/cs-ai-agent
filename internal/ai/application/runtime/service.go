@@ -3,12 +3,11 @@ package runtime
 import (
 	"context"
 
-	runtimeeino "cs-agent/internal/ai/infra/eino"
 	"cs-agent/internal/ai/runtime/executor"
 )
 
 type Service struct {
-	runtime *runtimeeino.RuntimeExecutor
+	runtime *executor.Service
 	catalog *toolCatalog
 	prepare *prepareService
 }
@@ -16,7 +15,7 @@ type Service struct {
 func NewService() *Service {
 	catalog := newToolCatalog()
 	return &Service{
-		runtime: runtimeeino.NewRuntimeExecutor(),
+		runtime: executor.NewService(),
 		catalog: catalog,
 		prepare: newPrepareService(catalog),
 	}
