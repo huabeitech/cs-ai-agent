@@ -13,6 +13,7 @@ import (
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
 
+	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/silenceper/wechat/v2/work/kf/sendmsg"
 )
@@ -445,27 +446,24 @@ func (s *wxWorkKFOutboundService) buildHTMLChunks(content string) ([]wxWorkKFOut
 	for _, chunk := range contentChunks {
 		switch chunk.Type {
 		case utils.ContentChunkTypeText:
-			text := strings.TrimSpace(chunk.Content)
-			if text == "" {
-				continue
+			if strs.IsNotBlank(chunk.Content) {
+				chunks = append(chunks, wxWorkKFOutboundChunk{
+					MessageType: enums.IMMessageTypeText,
+					Content:     chunk.Content,
+				})
 			}
-			chunks = append(chunks, wxWorkKFOutboundChunk{
-				MessageType: enums.IMMessageTypeText,
-				Content:     text,
-			})
 		case utils.ContentChunkTypeImage:
-			assetID := strings.TrimSpace(chunk.AssetID)
-			if assetID == "" {
+			if strs.IsBlank(chunk.AssetID) {
 				chunks = append(chunks, wxWorkKFOutboundChunk{
 					MessageType: enums.IMMessageTypeText,
 					Content:     "[图片]",
 				})
-				continue
+			} else {
+				chunks = append(chunks, wxWorkKFOutboundChunk{
+					MessageType: enums.IMMessageTypeImage,
+					AssetID:     chunk.AssetID,
+				})
 			}
-			chunks = append(chunks, wxWorkKFOutboundChunk{
-				MessageType: enums.IMMessageTypeImage,
-				AssetID:     assetID,
-			})
 		}
 	}
 	if len(chunks) == 0 {

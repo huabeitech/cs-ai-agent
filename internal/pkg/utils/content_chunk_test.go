@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"cs-agent/internal/pkg/enums"
 	"reflect"
 	"testing"
 )
@@ -55,7 +56,12 @@ func TestSplitHTMLContentChunks(t *testing.T) {
 			name:    "image with asset metadata only",
 			content: `<p><img data-asset-id="asset_1" data-provider="local" data-storage-key="images/a.png" alt="a"></p>`,
 			want: []ContentChunk{
-				{Type: ContentChunkTypeImage, AssetID: "asset_1"},
+				{
+					Type:       ContentChunkTypeImage,
+					AssetID:    "asset_1",
+					Provider:   enums.AssetProviderLocal,
+					StorageKey: "images/a.png",
+				},
 			},
 		},
 		{

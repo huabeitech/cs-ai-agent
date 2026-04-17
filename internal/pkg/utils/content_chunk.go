@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"cs-agent/internal/pkg/enums"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -14,9 +15,11 @@ const (
 )
 
 type ContentChunk struct {
-	Type    ContentChunkType //
-	Content string           // text content or image url
-	AssetID string           // image asset id
+	Type       ContentChunkType    //
+	Content    string              // text content or image url
+	AssetID    string              // image asset id
+	Provider   enums.AssetProvider // image provider
+	StorageKey string              // image storage key
 }
 
 func SplitHTMLContentChunks(content string) ([]ContentChunk, error) {
@@ -59,13 +62,17 @@ func SplitHTMLContentChunks(content string) ([]ContentChunk, error) {
 				flushText()
 				src := strings.TrimSpace(findContentChunkHTMLAttr(node, "src"))
 				assetID := strings.TrimSpace(findContentChunkHTMLAttr(node, "data-asset-id"))
+				provider := enums.AssetProvider(strings.TrimSpace(findContentChunkHTMLAttr(node, "data-provider")))
+				storageKey := strings.TrimSpace(findContentChunkHTMLAttr(node, "data-storage-key"))
 				if src == "" && assetID == "" {
 					return
 				}
 				chunks = append(chunks, ContentChunk{
-					Type:    ContentChunkTypeImage,
-					Content: src,
-					AssetID: assetID,
+					Type:       ContentChunkTypeImage,
+					Content:    src,
+					AssetID:    assetID,
+					Provider:   provider,
+					StorageKey: storageKey,
 				})
 				return
 			}
