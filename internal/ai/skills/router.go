@@ -9,24 +9,28 @@ import (
 
 	"cs-agent/internal/ai"
 	"cs-agent/internal/models"
+
+	"github.com/mlogclub/simple/common/strs"
 )
 
-func routeSkillWithLLM(ctx context.Context, aiConfig models.AIConfig, userMessage string, candidates []models.SkillDefinition) (*models.SkillDefinition, *RouteTrace, error) {
+const routeSkillSystemPrompt = `你是客服技能路由器。你只能在候选 Skill 中选择一个最合适的 skillCode，或者返回 NONE。
+只有当用户问题与 Skill 的职责边界明确匹配时才选择；
+如果不明确、信息不足、多个 Skill 都不够确定，就返回 NONE。
+输出只能是 skillCode 或 NONE，不能输出其他内容。`
+
+func routeSkillWithLLM(ctx context.Context, runtimeCtx RuntimeContext, candidates []models.SkillDefinition) (*models.SkillDefinition, *RouteTrace, error) {
 	trace := &RouteTrace{Status: "started"}
 	if len(candidates) == 0 {
 		trace.Status = "no_candidate"
 		return nil, trace, nil
 	}
-	userMessage = strings.TrimSpace(userMessage)
-	if userMessage == "" {
+	if strs.IsBlank(runtimeCtx.UserMessage) {
 		trace.Status = "empty_user_message"
 		return nil, trace, nil
 	}
-	// TODO 系统体是指为什么不是配置在AIAgent中的？
-	systemPrompt := "你是客服技能路由器。你只能在候选 Skill 中选择一个最合适的 skillCode，或者返回 NONE。只有当用户问题与 Skill 的职责边界明确匹配时才选择；如果不明确、信息不足、多个 Skill 都不够确定，就返回 NONE。输出只能是 skillCode 或 NONE，不能输出其他内容。"
-	userPrompt := buildSkillRoutePrompt(userMessage, candidates)
+	userPrompt := buildSkillRoutePrompt(runtimeCtx.UserMessage, candidates)
 	startedAt := time.Now()
-	result, err := ai.LLM.ChatWithConfig(ctx, aiConfig, systemPrompt, userPrompt)
+	result, err := ai.LLM.ChatWithConfig(ctx, runtimeCtx.AIConfig, routeSkillSystemPrompt, userPrompt)
 	trace.LatencyMs = time.Since(startedAt).Milliseconds()
 	if err != nil {
 		trace.Status = "route_error"

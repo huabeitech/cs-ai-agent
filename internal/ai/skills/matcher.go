@@ -53,7 +53,7 @@ func MatchSkill(execCtx context.Context, ctx RuntimeContext) (*models.SkillDefin
 		}
 	}
 
-	selected, routeTrace, err := routeSkillWithLLM(execCtx, ctx.AIConfig, ctx.UserMessage, candidates)
+	selected, routeTrace, err := routeSkillWithLLM(execCtx, ctx, candidates)
 	if routeTrace != nil {
 		trace.Status = routeTrace.Status
 		trace.SelectedSkillCode = routeTrace.SelectedSkillCode
