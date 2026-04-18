@@ -15,7 +15,6 @@ import (
 func buildInstructionTraceSummary(summary runtimeinstruction.AssemblySummary) einocallbacks.InstructionTraceSummary {
 	return einocallbacks.InstructionTraceSummary{
 		SectionTitles:     append([]string(nil), summary.SectionTitles...),
-		HasProjectRule:    summary.HasProjectRule,
 		HasGovernanceRule: summary.HasGovernanceRule,
 		HasAgentRule:      summary.HasAgentRule,
 		HasSkillRule:      summary.HasSkillRule,

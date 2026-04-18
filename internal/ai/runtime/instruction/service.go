@@ -9,7 +9,6 @@ import (
 
 type Service struct {
 	assembler                     *Assembler
-	projectInstructionProvider    *ProjectInstructionProvider
 	governanceInstructionProvider *GovernanceInstructionProvider
 	skillInstructionProvider      *SkillInstructionProvider
 	toolAppendixProvider          *ToolAppendixProvider
@@ -17,16 +16,12 @@ type Service struct {
 
 func NewService(
 	assembler *Assembler,
-	projectProvider *ProjectInstructionProvider,
 	governanceProvider *GovernanceInstructionProvider,
 	skillProvider *SkillInstructionProvider,
 	toolProvider *ToolAppendixProvider,
 ) *Service {
 	if assembler == nil {
 		assembler = NewAssembler()
-	}
-	if projectProvider == nil {
-		projectProvider = NewProjectInstructionProvider()
 	}
 	if governanceProvider == nil {
 		governanceProvider = NewGovernanceInstructionProvider()
@@ -39,7 +34,6 @@ func NewService(
 	}
 	return &Service{
 		assembler:                     assembler,
-		projectInstructionProvider:    projectProvider,
 		governanceInstructionProvider: governanceProvider,
 		skillInstructionProvider:      skillProvider,
 		toolAppendixProvider:          toolProvider,
@@ -52,13 +46,9 @@ func (s *Service) Build(
 	toolDefinitions []runtimetooling.MCPToolDefinition,
 	extraToolCodes map[string]string,
 ) AssemblyResult {
-	projectInstruction := ""
 	governanceInstruction := ""
 	skillInstruction := ""
 	toolAppendices := make([]string, 0)
-	if s != nil && s.projectInstructionProvider != nil {
-		projectInstruction = s.projectInstructionProvider.Resolve()
-	}
 	if s != nil && s.governanceInstructionProvider != nil {
 		governanceInstruction = s.governanceInstructionProvider.Resolve()
 	}
@@ -77,6 +67,5 @@ func (s *Service) Build(
 		GovernanceInstruction: governanceInstruction,
 		SkillInstruction:      skillInstruction,
 		ToolAppendices:        toolAppendices,
-		ProjectInstruction:    projectInstruction,
 	})
 }

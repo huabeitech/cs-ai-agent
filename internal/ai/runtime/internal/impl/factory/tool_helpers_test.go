@@ -8,8 +8,7 @@ import (
 
 func TestBuildInstructionTraceSummary(t *testing.T) {
 	got := buildInstructionTraceSummary(runtimeinstruction.AssemblySummary{
-		SectionTitles:     []string{"项目级规则", "当前技能上下文"},
-		HasProjectRule:    true,
+		SectionTitles:     []string{"系统治理规则", "当前技能上下文"},
 		HasGovernanceRule: true,
 		HasAgentRule:      true,
 		HasSkillRule:      true,
@@ -19,7 +18,7 @@ func TestBuildInstructionTraceSummary(t *testing.T) {
 	if len(got.SectionTitles) != 2 {
 		t.Fatalf("unexpected section titles: %#v", got.SectionTitles)
 	}
-	if !got.HasProjectRule || !got.HasGovernanceRule || !got.HasAgentRule || !got.HasSkillRule {
+	if !got.HasGovernanceRule || !got.HasAgentRule || !got.HasSkillRule {
 		t.Fatalf("unexpected summary flags: %#v", got)
 	}
 	if got.HasToolRule {

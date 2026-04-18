@@ -7,15 +7,11 @@ import (
 
 func TestAssemblerRespectsProvidedSources(t *testing.T) {
 	result := NewAssembler().Assemble(AssemblerInput{
-		ProjectInstruction:    "project-rule",
 		GovernanceInstruction: "governance-rule",
 		AgentInstruction:      "agent-rule",
 		SkillInstruction:      "skill-rule",
 		ToolAppendices:        []string{"tool-rule-1", "tool-rule-2"},
 	})
-	if !strings.Contains(result.Text, "项目级规则：\nproject-rule") {
-		t.Fatalf("missing project instruction: %s", result.Text)
-	}
 	if !strings.Contains(result.Text, "系统治理规则：\ngovernance-rule") {
 		t.Fatalf("missing governance instruction: %s", result.Text)
 	}
@@ -25,7 +21,7 @@ func TestAssemblerRespectsProvidedSources(t *testing.T) {
 	if !strings.Contains(result.Text, "工具补充规则：\ntool-rule-1") {
 		t.Fatalf("missing tool appendix: %s", result.Text)
 	}
-	if !result.Summary.HasProjectRule || !result.Summary.HasGovernanceRule || !result.Summary.HasAgentRule || !result.Summary.HasSkillRule || !result.Summary.HasToolRule {
+	if !result.Summary.HasGovernanceRule || !result.Summary.HasAgentRule || !result.Summary.HasSkillRule || !result.Summary.HasToolRule {
 		t.Fatalf("unexpected summary: %#v", result.Summary)
 	}
 }

@@ -20,12 +20,10 @@ type AssemblerInput struct {
 	GovernanceInstruction string
 	SkillInstruction      string
 	ToolAppendices        []string
-	ProjectInstruction    string
 }
 
 type AssemblySummary struct {
 	SectionTitles     []string
-	HasProjectRule    bool
 	HasGovernanceRule bool
 	HasAgentRule      bool
 	HasSkillRule      bool
@@ -46,17 +44,8 @@ func (a *Assembler) Build(input AssemblerInput) string {
 }
 
 func (a *Assembler) Assemble(input AssemblerInput) AssemblyResult {
-	parts := make([]string, 0, 5)
-	summary := AssemblySummary{SectionTitles: make([]string, 0, 5)}
-	projectInstruction := strings.TrimSpace(input.ProjectInstruction)
-	if projectInstruction == "" {
-		projectInstruction = strings.TrimSpace(DefaultProjectInstruction)
-	}
-	if projectInstruction != "" {
-		parts = append(parts, buildInstructionSection("项目级规则", projectInstruction))
-		summary.HasProjectRule = true
-		summary.SectionTitles = append(summary.SectionTitles, "项目级规则")
-	}
+	parts := make([]string, 0, 4)
+	summary := AssemblySummary{SectionTitles: make([]string, 0, 4)}
 	governanceInstruction := strings.TrimSpace(input.GovernanceInstruction)
 	if governanceInstruction == "" && a != nil {
 		governanceInstruction = strings.TrimSpace(a.governanceInstruction)

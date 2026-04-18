@@ -56,7 +56,7 @@ func NewAgentFactory() *AgentFactory {
 	return &AgentFactory{
 		chatModelFactory:   NewChatModelFactory(),
 		toolFactory:        NewToolFactory(),
-		instructionService: runtimeinstruction.NewService(nil, nil, nil, nil, nil),
+		instructionService: runtimeinstruction.NewService(nil, nil, nil, nil),
 		handlerService:     NewAgentHandlerService(nil),
 	}
 }

@@ -48,7 +48,6 @@ func (c *RuntimeTraceCollector) SetInstructionSummary(summary InstructionTraceSu
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Instruction.SectionTitles = append([]string(nil), summary.SectionTitles...)
-	c.Data.Instruction.HasProjectRule = summary.HasProjectRule
 	c.Data.Instruction.HasGovernanceRule = summary.HasGovernanceRule
 	c.Data.Instruction.HasAgentRule = summary.HasAgentRule
 	c.Data.Instruction.HasSkillRule = summary.HasSkillRule

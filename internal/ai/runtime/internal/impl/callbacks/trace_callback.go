@@ -71,7 +71,6 @@ type RetrieverPolicyTraceItem struct {
 
 type InstructionTraceSummary struct {
 	SectionTitles     []string
-	HasProjectRule    bool
 	HasGovernanceRule bool
 	HasAgentRule      bool
 	HasSkillRule      bool
@@ -93,7 +92,6 @@ type RuntimeTraceData struct {
 	} `json:"model"`
 	Instruction struct {
 		SectionTitles     []string `json:"sectionTitles,omitempty"`
-		HasProjectRule    bool     `json:"hasProjectRule,omitempty"`
 		HasGovernanceRule bool     `json:"hasGovernanceRule,omitempty"`
 		HasAgentRule      bool     `json:"hasAgentRule,omitempty"`
 		HasSkillRule      bool     `json:"hasSkillRule,omitempty"`
