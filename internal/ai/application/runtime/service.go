@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"cs-agent/internal/ai/runtime/executor"
+	"cs-agent/internal/pkg/utils"
 )
 
 type Service struct {
@@ -25,6 +26,7 @@ func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
 	if s == nil || s.runtime == nil || s.prepare == nil {
 		return nil, nil
 	}
+	req.UserMessage.Content = utils.BuildRuntimeMessageText(req.UserMessage.MessageType, req.UserMessage.Content)
 	selectedSkill, skillReason, skillTrace, skillErr := s.prepare.selectSkill(ctx, req)
 	req.SelectedSkill = selectedSkill
 	req.SkillRouteReason = skillReason

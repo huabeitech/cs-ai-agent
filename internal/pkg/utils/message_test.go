@@ -71,6 +71,22 @@ func TestBuildMessageHTMLForResponseAddsSignedURL(t *testing.T) {
 	}
 }
 
+func TestBuildRuntimeMessageTextForHTML(t *testing.T) {
+	got := BuildRuntimeMessageText(enums.IMMessageTypeHTML, `<p>你好</p><p><img data-provider="local" data-storage-key="images/demo.png" alt="demo"></p>`)
+	if got != "你好 [图片]" {
+		t.Fatalf("expected html converted to plain text summary, got: %q", got)
+	}
+}
+
+func TestBuildRuntimeMessageTextForAssetMessages(t *testing.T) {
+	if got := BuildRuntimeMessageText(enums.IMMessageTypeImage, "demo.png"); got != "[图片] demo.png" {
+		t.Fatalf("unexpected image runtime text: %q", got)
+	}
+	if got := BuildRuntimeMessageText(enums.IMMessageTypeAttachment, "spec.pdf"); got != "[附件] spec.pdf" {
+		t.Fatalf("unexpected attachment runtime text: %q", got)
+	}
+}
+
 func TestBuildRenderableMessageTransformsPayloadAndHTML(t *testing.T) {
 	config.SetCurrent(&config.Config{
 		Storage: config.StorageConfig{

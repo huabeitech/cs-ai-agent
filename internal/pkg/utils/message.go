@@ -105,6 +105,26 @@ func BuildHTMLSummary(content string) string {
 	return strings.TrimSpace(strings.Join(parts, " "))
 }
 
+func BuildRuntimeMessageText(messageType enums.IMMessageType, content string) string {
+	content = strings.TrimSpace(content)
+	switch messageType {
+	case enums.IMMessageTypeHTML:
+		return BuildHTMLSummary(content)
+	case enums.IMMessageTypeImage:
+		if content != "" {
+			return "[图片] " + content
+		}
+		return "[图片]"
+	case enums.IMMessageTypeAttachment:
+		if content != "" {
+			return "[附件] " + content
+		}
+		return "[附件]"
+	default:
+		return content
+	}
+}
+
 func BuildRenderableMessage(item *models.Message) (content, payload string) {
 	if item == nil {
 		return "", ""

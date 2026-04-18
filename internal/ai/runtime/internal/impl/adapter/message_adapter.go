@@ -1,10 +1,9 @@
 package adapter
 
 import (
-	"strings"
-
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
 	"github.com/cloudwego/eino/schema"
@@ -54,7 +53,7 @@ func BuildSchemaMessage(item *models.Message) *schema.Message {
 	if item == nil {
 		return nil
 	}
-	content := strings.TrimSpace(item.Content)
+	content := utils.BuildRuntimeMessageText(item.MessageType, item.Content)
 	if content == "" {
 		return nil
 	}
