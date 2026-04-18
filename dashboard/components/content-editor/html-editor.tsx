@@ -46,6 +46,7 @@ type HtmlEditorProps = {
   value: string
   onChange: (nextValue: string) => void
   mode: ContentMode
+  allowedModes: ReadonlyArray<ContentMode>
   onModeChange: (nextMode: ContentMode) => void
   fullscreen: boolean
   onToggleFullscreen: () => void
@@ -61,6 +62,7 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       value,
       onChange,
       mode,
+      allowedModes,
       onModeChange,
       fullscreen,
       onToggleFullscreen,
@@ -180,12 +182,12 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
         content: (
           <EditorModeSwitch
             value={mode}
+            allowedModes={allowedModes}
             disabled={disabled}
             onChange={onModeChange}
           />
         ),
       },
-      { key: "separator-mode", type: "separator" },
       {
         key: "bold",
         label: "粗体",
@@ -326,6 +328,10 @@ export const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
         onClick: handleTogglePreviewOnly,
       },
     ]
+
+    if (allowedModes.length > 1) {
+      actions.splice(1, 0, { key: "separator-mode", type: "separator" })
+    }
 
     if (!editor) {
       return null

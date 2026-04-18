@@ -2,6 +2,8 @@ import type { ComponentType, ReactNode } from "react"
 
 export type ContentMode = "markdown" | "html"
 
+export const CONTENT_MODE_OPTIONS = ["markdown", "html"] as const
+
 export type ContentValue = {
   mode: ContentMode
   raw: string

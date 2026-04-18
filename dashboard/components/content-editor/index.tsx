@@ -8,7 +8,12 @@ import { cn } from "@/lib/utils"
 import { htmlToMarkdown, markdownToHtml } from "./convert"
 import { HtmlEditor } from "./html-editor"
 import { MarkdownEditor } from "./markdown-editor"
-import type { ContentMode, ContentValue, UploadImageHandler } from "./types"
+import {
+  CONTENT_MODE_OPTIONS,
+  type ContentMode,
+  type ContentValue,
+  type UploadImageHandler,
+} from "./types"
 
 type ContentEditorProps = {
   value: ContentValue
@@ -17,6 +22,7 @@ type ContentEditorProps = {
   disabled?: boolean
   onUploadImage?: UploadImageHandler
   height?: number | string
+  allowedModes?: ReadonlyArray<ContentMode>
 }
 
 function normalizeHeight(height?: number | string) {
@@ -47,10 +53,15 @@ export function ContentEditor({
   disabled = false,
   onUploadImage,
   height,
+  allowedModes = CONTENT_MODE_OPTIONS,
 }: ContentEditorProps) {
   const editorHeight = normalizeHeight(height)
   const [fullscreen, setFullscreen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const normalizedAllowedModes = allowedModes.length > 0 ? allowedModes : CONTENT_MODE_OPTIONS
+  const activeMode = normalizedAllowedModes.includes(value.mode)
+    ? value.mode
+    : normalizedAllowedModes[0]
 
   useEffect(() => {
     setMounted(true)
@@ -79,7 +90,12 @@ export function ContentEditor({
 
   const handleModeChange = useCallback(
     (nextMode: ContentMode) => {
-      if (disabled || nextMode === value.mode) {
+      if (
+        disabled ||
+        normalizedAllowedModes.length <= 1 ||
+        nextMode === activeMode ||
+        !normalizedAllowedModes.includes(nextMode)
+      ) {
         return
       }
       const currentText = value.raw.trim()
@@ -97,11 +113,17 @@ export function ContentEditor({
 
       onChange({
         mode: nextMode,
-        raw: convertContent(value.mode, value.raw),
+        raw: convertContent(activeMode, value.raw),
       })
     },
-    [disabled, onChange, value.mode, value.raw]
+    [activeMode, disabled, normalizedAllowedModes, onChange, value.raw]
   )
+
+  useEffect(() => {
+    if (value.mode !== activeMode) {
+      onChange({ mode: activeMode, raw: value.raw })
+    }
+  }, [activeMode, onChange, value.mode, value.raw])
 
   const content = (
     <div
@@ -110,11 +132,12 @@ export function ContentEditor({
         fullscreen && "fixed inset-0 z-[10000] overflow-hidden bg-background p-4"
       )}
     >
-      {value.mode === "markdown" ? (
+      {activeMode === "markdown" ? (
         <MarkdownEditor
           value={value.raw}
           onChange={(nextRaw) => onChange({ mode: "markdown", raw: nextRaw })}
-          mode={value.mode}
+          mode={activeMode}
+          allowedModes={normalizedAllowedModes}
           onModeChange={handleModeChange}
           fullscreen={fullscreen}
           onToggleFullscreen={() => setFullscreen((current) => !current)}
@@ -127,7 +150,8 @@ export function ContentEditor({
         <HtmlEditor
           value={value.raw}
           onChange={(nextRaw) => onChange({ mode: "html", raw: nextRaw })}
-          mode={value.mode}
+          mode={activeMode}
+          allowedModes={normalizedAllowedModes}
           onModeChange={handleModeChange}
           fullscreen={fullscreen}
           onToggleFullscreen={() => setFullscreen((current) => !current)}

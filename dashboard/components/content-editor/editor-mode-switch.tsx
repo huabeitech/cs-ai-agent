@@ -2,10 +2,14 @@
 
 import { cn } from "@/lib/utils"
 
-import type { ContentMode } from "./types"
+import {
+  CONTENT_MODE_OPTIONS,
+  type ContentMode,
+} from "./types"
 
 type EditorModeSwitchProps = {
   value: ContentMode
+  allowedModes?: ReadonlyArray<ContentMode>
   disabled?: boolean
   onChange: (nextMode: ContentMode) => void
 }
@@ -17,13 +21,20 @@ const MODE_OPTIONS: Array<{ value: ContentMode; label: string }> = [
 
 export function EditorModeSwitch({
   value,
+  allowedModes = CONTENT_MODE_OPTIONS,
   disabled = false,
   onChange,
 }: EditorModeSwitchProps) {
+  const options = MODE_OPTIONS.filter((option) => allowedModes.includes(option.value))
+
+  if (options.length <= 1) {
+    return null
+  }
+
   return (
     <div className="mx-0.5 rounded-[3px] border border-border/80 bg-transparent p-0">
       <div className="flex items-center">
-        {MODE_OPTIONS.map((option) => {
+        {options.map((option) => {
           const active = option.value === value
           return (
             <button

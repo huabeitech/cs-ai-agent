@@ -24,6 +24,7 @@ type MarkdownEditorProps = {
   value: string
   onChange: (nextValue: string) => void
   mode: ContentMode
+  allowedModes: ReadonlyArray<ContentMode>
   onModeChange: (nextMode: ContentMode) => void
   fullscreen: boolean
   onToggleFullscreen: () => void
@@ -39,6 +40,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
       value,
       onChange,
       mode,
+      allowedModes,
       onModeChange,
       fullscreen,
       onToggleFullscreen,
@@ -57,6 +59,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
         <EditorModeSwitch
           key="mode-switch"
           value={mode}
+          allowedModes={allowedModes}
           disabled={disabled}
           onChange={onModeChange}
         />,
@@ -73,7 +76,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           )}
         </NormalToolbar>,
       ],
-      [disabled, fullscreen, mode, onModeChange, onToggleFullscreen]
+      [allowedModes, disabled, fullscreen, mode, onModeChange, onToggleFullscreen]
     )
 
     useImperativeHandle(ref, () => ({
