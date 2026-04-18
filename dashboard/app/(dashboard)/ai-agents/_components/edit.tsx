@@ -677,7 +677,6 @@ function EditDialogBody({
         >
           <SectionCard
             title="基础信息"
-            description="定义这个 Agent 是谁、使用哪个模型、以什么服务模式工作，并配置基础话术。"
           >
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
               <Field data-invalid={!!errors.name}>
@@ -750,44 +749,6 @@ function EditDialogBody({
               </FieldContent>
             </Field>
 
-            <Field data-invalid={!!errors.fallbackMode}>
-              <FieldLabel>知识库兜底策略</FieldLabel>
-              <FieldContent className="space-y-3">
-                <Controller
-                  control={control}
-                  name="fallbackMode"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={fallbackModeOptions}
-                      placeholder="请选择兜底策略"
-                      searchPlaceholder="搜索兜底策略"
-                      emptyText="未找到兜底策略"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.fallbackMode]} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={!!errors.fallbackMessage}>
-              <FieldLabel htmlFor="ai-agent-fallback-message">
-                兜底文案
-              </FieldLabel>
-              <FieldContent>
-                <div className="text-xs text-muted-foreground mb-1">
-                  知识库未命中或命中证据不足时，会按这里的策略和文案进行兜底回复。转人工请通过 Graph Tool 配合转人工模式实现。
-                </div>
-                <Textarea
-                  id="ai-agent-fallback-message"
-                  rows={5}
-                  {...register("fallbackMessage")}
-                />
-                <FieldError errors={[errors.fallbackMessage]} />
-              </FieldContent>
-            </Field>
-
             <Field data-invalid={!!errors.systemPrompt}>
               <FieldLabel htmlFor="ai-agent-system-prompt">
                 系统提示词
@@ -805,7 +766,6 @@ function EditDialogBody({
 
           <SectionCard
             title="服务策略"
-            description="控制 Graph Tool 转人工配置、兜底策略和自动回复边界。"
           >
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,1.15fr)]">
               <div className="space-y-4">
@@ -1011,6 +971,46 @@ function EditDialogBody({
                     ) : null}
                   </FieldContent>
                 </Field>
+
+                <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-1">
+                  <Field data-invalid={!!errors.fallbackMode}>
+                    <FieldLabel>兜底策略</FieldLabel>
+                    <FieldContent className="space-y-3">
+                      <Controller
+                        control={control}
+                        name="fallbackMode"
+                        render={({ field }) => (
+                          <OptionCombobox
+                            value={field.value}
+                            options={fallbackModeOptions}
+                            placeholder="请选择兜底策略"
+                            searchPlaceholder="搜索兜底策略"
+                            emptyText="未找到兜底策略"
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <FieldError errors={[errors.fallbackMode]} />
+                    </FieldContent>
+                  </Field>
+
+                  <Field data-invalid={!!errors.fallbackMessage}>
+                    <FieldLabel htmlFor="ai-agent-fallback-message">
+                      兜底文案
+                    </FieldLabel>
+                    <FieldContent>
+                      <div className="mb-1 text-xs text-muted-foreground">
+                        知识库未命中或命中证据不足时，会按这里的策略和文案进行兜底回复。
+                      </div>
+                      <Textarea
+                        id="ai-agent-fallback-message"
+                        rows={5}
+                        {...register("fallbackMessage")}
+                      />
+                      <FieldError errors={[errors.fallbackMessage]} />
+                    </FieldContent>
+                  </Field>
+                </div>
               </div>
 
               <div className="rounded-xl border bg-muted/10 p-4">

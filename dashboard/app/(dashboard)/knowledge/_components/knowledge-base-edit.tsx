@@ -28,15 +28,15 @@ import {
   type CreateKnowledgeBasePayload,
   type KnowledgeBase,
 } from "@/lib/api/admin";
+import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 import {
+  KnowledgeAnswerMode,
+  KnowledgeAnswerModeLabels,
   KnowledgeBaseType,
   KnowledgeBaseTypeLabels,
   KnowledgeChunkProvider,
   KnowledgeChunkProviderLabels,
-  KnowledgeAnswerMode,
-  KnowledgeAnswerModeLabels,
 } from "@/lib/generated/enums";
-import { getEnumLabel, getEnumOptions } from "@/lib/enums";
 
 type KnowledgeBaseEditDialogProps = {
   open: boolean;
@@ -383,7 +383,7 @@ function KnowledgeBaseFormDialogBody({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <Field data-invalid={!!errors.defaultTopK}>
               <FieldLabel htmlFor="kb-default-top-k">默认TopK</FieldLabel>
               <FieldContent>
@@ -431,9 +431,6 @@ function KnowledgeBaseFormDialogBody({
                 <FieldError errors={[errors.defaultRerankLimit]} />
               </FieldContent>
             </Field>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.answerMode}>
               <FieldLabel htmlFor="kb-answer-mode">回答模式</FieldLabel>
               <FieldContent>
