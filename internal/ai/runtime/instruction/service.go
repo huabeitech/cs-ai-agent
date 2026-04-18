@@ -3,7 +3,7 @@ package instruction
 import (
 	"strings"
 
-	runtimetooling "cs-agent/internal/ai/runtime/tooling"
+	"cs-agent/internal/ai/runtime/tooling"
 	"cs-agent/internal/models"
 )
 
@@ -14,36 +14,19 @@ type Service struct {
 	toolAppendixProvider          *ToolAppendixProvider
 }
 
-func NewService(
-	assembler *Assembler,
-	governanceProvider *GovernanceInstructionProvider,
-	skillProvider *SkillInstructionProvider,
-	toolProvider *ToolAppendixProvider,
-) *Service {
-	if assembler == nil {
-		assembler = NewAssembler()
-	}
-	if governanceProvider == nil {
-		governanceProvider = NewGovernanceInstructionProvider()
-	}
-	if skillProvider == nil {
-		skillProvider = NewSkillInstructionProvider()
-	}
-	if toolProvider == nil {
-		toolProvider = NewToolAppendixProvider()
-	}
+func NewService() *Service {
 	return &Service{
-		assembler:                     assembler,
-		governanceInstructionProvider: governanceProvider,
-		skillInstructionProvider:      skillProvider,
-		toolAppendixProvider:          toolProvider,
+		assembler:                     NewAssembler(),
+		governanceInstructionProvider: NewGovernanceInstructionProvider(),
+		skillInstructionProvider:      NewSkillInstructionProvider(),
+		toolAppendixProvider:          NewToolAppendixProvider(),
 	}
 }
 
 func (s *Service) Build(
 	aiAgent models.AIAgent,
 	selectedSkill *models.SkillDefinition,
-	toolDefinitions []runtimetooling.MCPToolDefinition,
+	toolDefinitions []tooling.MCPToolDefinition,
 	extraToolCodes map[string]string,
 ) AssemblyResult {
 	governanceInstruction := ""

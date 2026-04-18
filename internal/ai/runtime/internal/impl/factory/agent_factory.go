@@ -4,22 +4,22 @@ import (
 	"context"
 	"strings"
 
-	runtimeinstruction "cs-agent/internal/ai/runtime/instruction"
-	einoagents "cs-agent/internal/ai/runtime/internal/impl/agents"
-	einocallbacks "cs-agent/internal/ai/runtime/internal/impl/callbacks"
+	"cs-agent/internal/ai/runtime/instruction"
+	"cs-agent/internal/ai/runtime/internal/impl/agents"
+	"cs-agent/internal/ai/runtime/internal/impl/callbacks"
 	"cs-agent/internal/ai/runtime/registry"
-	runtimetooling "cs-agent/internal/ai/runtime/tooling"
+	"cs-agent/internal/ai/runtime/tooling"
 	"cs-agent/internal/models"
 
 	"github.com/cloudwego/eino/adk"
-	einobasetool "github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 )
 
 type AgentFactory struct {
 	chatModelFactory   *ChatModelFactory
 	toolFactory        *ToolFactory
-	instructionService *runtimeinstruction.Service
+	instructionService *instruction.Service
 	handlerService     *AgentHandlerService
 }
 
@@ -38,31 +38,31 @@ type BuildCustomerServiceAgentInput struct {
 	SelectedSkill *models.SkillDefinition
 	// InstructionToolDefinitions 用于生成 instruction 中的工具说明。
 	// 它描述“当前允许模型理解和使用的 MCP 工具范围”。
-	InstructionToolDefinitions []runtimetooling.MCPToolDefinition
+	InstructionToolDefinitions []tooling.MCPToolDefinition
 	// DynamicMCPToolDefinitions 用于接入 Eino tool_search middleware 的动态工具集合。
 	// 这些工具默认不直接挂在 ToolsNode 上，而是经 tool_search 选择后再暴露给模型。
-	DynamicMCPToolDefinitions []runtimetooling.MCPToolDefinition
+	DynamicMCPToolDefinitions []tooling.MCPToolDefinition
 	// StaticTools 为当前运行时直接挂载到 ToolsNode 的固定工具，例如 Graph Tool。
-	StaticTools []einobasetool.BaseTool
+	StaticTools []tool.BaseTool
 	// StaticToolCodes 为固定工具的 modelName -> toolCode 映射，用于 trace 和运行日志归因。
 	StaticToolCodes map[string]string
 	// StaticToolMetadata 为固定工具的 modelName -> metadata 映射，用于 trace 和运行日志归因。
 	StaticToolMetadata map[string]registry.ToolMetadata
 	// Collector 用于收集运行链路中的 tool trace、graph trace 等调试信息。
-	Collector *einocallbacks.RuntimeTraceCollector
+	Collector *callbacks.RuntimeTraceCollector
 }
 
 func NewAgentFactory() *AgentFactory {
 	return &AgentFactory{
 		chatModelFactory:   NewChatModelFactory(),
 		toolFactory:        NewToolFactory(),
-		instructionService: runtimeinstruction.NewService(nil, nil, nil, nil),
+		instructionService: instruction.NewService(),
 		handlerService:     NewAgentHandlerService(nil),
 	}
 }
 
 // BuildCustomerServiceAgent 根据装配输入构建客服 ChatModelAgent。
-func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input BuildCustomerServiceAgentInput) (*einoagents.CustomerServiceAgent, error) {
+func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input BuildCustomerServiceAgentInput) (*agents.CustomerServiceAgent, error) {
 	chatModel, err := f.chatModelFactory.Build(ctx, input.AIConfig)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	if err != nil {
 		return nil, err
 	}
-	allTools := make([]einobasetool.BaseTool, 0, len(input.StaticTools))
+	allTools := make([]tool.BaseTool, 0, len(input.StaticTools))
 	allTools = append(allTools, input.StaticTools...)
 	instructionResult := f.instructionService.Build(input.AIAgent, input.SelectedSkill, input.InstructionToolDefinitions, input.StaticToolCodes)
 	handlers := make([]adk.ChatModelAgentMiddleware, 0, 3)
@@ -105,5 +105,5 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	if err != nil {
 		return nil, err
 	}
-	return &einoagents.CustomerServiceAgent{Inner: inner}, nil
+	return &agents.CustomerServiceAgent{Inner: inner}, nil
 }
