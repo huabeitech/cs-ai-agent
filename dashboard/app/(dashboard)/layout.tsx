@@ -1,14 +1,14 @@
 "use client"
 
-import type { CSSProperties, ReactNode } from "react"
+import { Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import type { CSSProperties, ReactNode } from "react"
 import { useEffect } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { useAuth } from "@/components/auth-provider"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Card, CardContent } from "@/components/ui/card"
 
 export default function DashboardLayout({
   children,
@@ -27,17 +27,17 @@ export default function DashboardLayout({
   if (!ready || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(160deg,#f3f4f6_0%,#fff7ed_45%,#ecfeff_100%)] p-6">
-        <Card className="w-full max-w-md border-0 bg-white/90 shadow-xl shadow-slate-200/60 backdrop-blur">
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="size-10 animate-pulse rounded-full bg-primary/10" />
-            <div className="space-y-1">
-              <p className="text-base font-medium">正在校验后台登录态</p>
-              <p className="text-sm text-muted-foreground">
-                将自动同步当前管理员信息与权限数据
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Loader2Icon className="size-5 animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-medium">正在校验登录态</p>
+            <p className="text-sm text-muted-foreground">
+              将自动同步当前管理员信息与权限数据
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
