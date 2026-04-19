@@ -9,7 +9,7 @@ import (
 
 func TestAgentHandlerServiceBuildWithCollectorOnly(t *testing.T) {
 	collector := einocallbacks.NewRuntimeTraceCollector()
-	service := NewAgentHandlerService(nil)
+	service := NewAgentHandlerService(NewSkillMiddlewareService())
 
 	handlers, err := service.Build(context.Background(), BuildAgentHandlersInput{
 		Collector: collector,
@@ -33,7 +33,7 @@ func TestAgentHandlerServiceBuildWithCollectorOnly(t *testing.T) {
 }
 
 func TestAgentHandlerServiceBuildWithEmptyInput(t *testing.T) {
-	service := NewAgentHandlerService(nil)
+	service := NewAgentHandlerService(NewSkillMiddlewareService())
 
 	handlers, err := service.Build(context.Background(), BuildAgentHandlersInput{})
 	if err != nil {

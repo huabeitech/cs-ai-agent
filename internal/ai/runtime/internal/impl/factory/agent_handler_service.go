@@ -31,7 +31,7 @@ type BuildAgentHandlersInput struct {
 
 func NewAgentHandlerService(skillMiddleware *SkillMiddlewareService) *AgentHandlerService {
 	if skillMiddleware == nil {
-		skillMiddleware = NewSkillMiddlewareService()
+		panic("skill middleware is required")
 	}
 	return &AgentHandlerService{skillMiddleware: skillMiddleware}
 }

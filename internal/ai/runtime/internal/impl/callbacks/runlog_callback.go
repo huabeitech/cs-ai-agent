@@ -18,9 +18,6 @@ func NewRuntimeTraceCollector() *RuntimeTraceCollector {
 }
 
 func (c *RuntimeTraceCollector) Marshal() string {
-	if c == nil {
-		return ""
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	buf, err := json.Marshal(c.Data)
@@ -31,9 +28,6 @@ func (c *RuntimeTraceCollector) Marshal() string {
 }
 
 func (c *RuntimeTraceCollector) SetTooling(staticToolCodes []string, dynamicToolCodes []string, toolSearchEnabled bool) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Input.StaticToolCodes = append([]string(nil), staticToolCodes...)
@@ -42,9 +36,6 @@ func (c *RuntimeTraceCollector) SetTooling(staticToolCodes []string, dynamicTool
 }
 
 func (c *RuntimeTraceCollector) SetInstructionSummary(summary InstructionTraceSummary) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Instruction.SectionTitles = append([]string(nil), summary.SectionTitles...)
@@ -54,9 +45,6 @@ func (c *RuntimeTraceCollector) SetInstructionSummary(summary InstructionTraceSu
 }
 
 func (c *RuntimeTraceCollector) SetSkillMiddleware(enabled bool, toolName string) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Skill.MiddlewareEnabled = enabled
@@ -71,7 +59,7 @@ type SkillMetadata struct {
 }
 
 func (c *RuntimeTraceCollector) SetVisibleSkills(skills map[string]SkillMetadata) {
-	if c == nil || len(skills) == 0 {
+	if len(skills) == 0 {
 		return
 	}
 	c.mu.Lock()
@@ -87,9 +75,6 @@ func (c *RuntimeTraceCollector) SetVisibleSkills(skills map[string]SkillMetadata
 }
 
 func (c *RuntimeTraceCollector) ActivateSkill(skill SkillMetadata, routeReason string, routeTrace string) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Skill.Code = skill.Code
@@ -101,18 +86,12 @@ func (c *RuntimeTraceCollector) ActivateSkill(skill SkillMetadata, routeReason s
 }
 
 func (c *RuntimeTraceCollector) SetFilteredToolCodes(toolCodes []string) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Skill.FilteredToolCodes = append([]string(nil), toolCodes...)
 }
 
 func (c *RuntimeTraceCollector) SetRetrieverSummary(summary RetrieverTraceSummary) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Retriever.TopK = summary.TopK
@@ -128,9 +107,6 @@ func (c *RuntimeTraceCollector) SetRetrieverSummary(summary RetrieverTraceSummar
 }
 
 func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.Tools.Count++
@@ -138,9 +114,6 @@ func (c *RuntimeTraceCollector) AddToolItem(item ToolTraceItem) {
 }
 
 func (c *RuntimeTraceCollector) AddToolSearchItem(item ToolSearchTraceItem) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.ToolSearch.Count++
@@ -148,9 +121,6 @@ func (c *RuntimeTraceCollector) AddToolSearchItem(item ToolSearchTraceItem) {
 }
 
 func (c *RuntimeTraceCollector) AddGraphToolItem(item GraphToolTraceItem) {
-	if c == nil {
-		return
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Data.GraphTools.Count++

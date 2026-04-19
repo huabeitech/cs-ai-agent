@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	applicationruntime "cs-agent/internal/ai/application/runtime"
@@ -16,8 +17,8 @@ func newReplyInterruptService() *replyInterruptService {
 }
 
 func (s *replyInterruptService) ResumePendingInterrupt(ctx context.Context, owner *aiReplyService, replyCtx aiReplyContext) error {
-	if replyCtx.PendingInterrupt == nil || owner == nil {
-		return nil
+	if replyCtx.PendingInterrupt == nil {
+		return fmt.Errorf("pending interrupt is required")
 	}
 	summary, err := owner.executor.ResumePendingInterrupt(ctx, runtimeReplyResumeInput{
 		Conversation:     replyCtx.Conversation,
@@ -83,9 +84,6 @@ func (s *replyInterruptService) ResumePendingInterrupt(ctx context.Context, owne
 }
 
 func (s *replyInterruptService) HandleInterruptedSummary(owner *aiReplyService, replyCtx aiReplyContext, summary *applicationruntime.Summary) error {
-	if owner == nil {
-		return nil
-	}
 	pending := buildConversationInterrupt(replyCtx.Conversation, replyCtx.Message, replyCtx.AIAgent, summary)
 	if err := svc.ConversationInterruptService.CreateOrUpdatePending(pending); err != nil {
 		return err
@@ -110,8 +108,8 @@ func (s *replyInterruptService) HandleInterruptedSummary(owner *aiReplyService, 
 }
 
 func (s *replyInterruptService) HandleInterruptedResume(owner *aiReplyService, replyCtx aiReplyContext, summary *applicationruntime.Summary) error {
-	if replyCtx.PendingInterrupt == nil || owner == nil {
-		return nil
+	if replyCtx.PendingInterrupt == nil {
+		return fmt.Errorf("pending interrupt is required")
 	}
 	replyText := resolveInterruptPrompt(summary)
 	replyMessage, err := owner.commit.CommitAIReply(replyCommitInput{

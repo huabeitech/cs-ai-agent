@@ -55,7 +55,7 @@ func NewAgentFactory() *AgentFactory {
 		chatModelFactory:   NewChatModelFactory(),
 		toolFactory:        NewToolFactory(),
 		instructionService: instruction.NewService(nil, nil, nil),
-		handlerService:     NewAgentHandlerService(nil),
+		handlerService:     NewAgentHandlerService(NewSkillMiddlewareService()),
 	}
 }
 
@@ -73,21 +73,19 @@ func (f *AgentFactory) BuildCustomerServiceAgent(ctx context.Context, input Buil
 	allTools = append(allTools, input.StaticTools...)
 	instructionResult := f.instructionService.Build(input.AIAgent, nil, input.InstructionToolDefinitions, input.StaticToolCodes)
 	handlers := make([]adk.ChatModelAgentMiddleware, 0, 3)
-	if f.handlerService != nil {
-		builtHandlers, err := f.handlerService.Build(ctx, BuildAgentHandlersInput{
-			AIAgent:                    input.AIAgent,
-			InstructionToolDefinitions: input.InstructionToolDefinitions,
-			DynamicToolDefinitions:     input.DynamicMCPToolDefinitions,
-			DynamicTools:               dynamicTools,
-			StaticToolMetadata:         input.StaticToolMetadata,
-			Collector:                  input.Collector,
-			InstructionSummary:         buildInstructionTraceSummary(instructionResult.Summary),
-		})
-		if err != nil {
-			return nil, err
-		}
-		handlers = append(handlers, builtHandlers...)
+	builtHandlers, err := f.handlerService.Build(ctx, BuildAgentHandlersInput{
+		AIAgent:                    input.AIAgent,
+		InstructionToolDefinitions: input.InstructionToolDefinitions,
+		DynamicToolDefinitions:     input.DynamicMCPToolDefinitions,
+		DynamicTools:               dynamicTools,
+		StaticToolMetadata:         input.StaticToolMetadata,
+		Collector:                  input.Collector,
+		InstructionSummary:         buildInstructionTraceSummary(instructionResult.Summary),
+	})
+	if err != nil {
+		return nil, err
 	}
+	handlers = append(handlers, builtHandlers...)
 	inner, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
 		Name:        strings.TrimSpace(input.AIAgent.Name),
 		Description: strings.TrimSpace(input.AIAgent.Description),

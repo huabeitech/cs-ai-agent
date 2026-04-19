@@ -55,7 +55,7 @@ func (e *runtimeReplyExecutor) Run(ctx context.Context, input runtimeReplyRunInp
 
 func (e *runtimeReplyExecutor) ResumePendingInterrupt(ctx context.Context, input runtimeReplyResumeInput) (*applicationruntime.Summary, error) {
 	if input.PendingInterrupt == nil {
-		return nil, nil
+		return nil, fmt.Errorf("pending interrupt is required")
 	}
 	aiConfig := svc.AIConfigService.Get(input.AIAgent.AIConfigID)
 	if aiConfig == nil {
