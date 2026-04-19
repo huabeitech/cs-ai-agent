@@ -100,14 +100,10 @@ build-widget:
 package-current:
 	@$(MAKE) package-platform PLATFORM=$(CURRENT_PLATFORM)
 
-build-server-linux-amd64:
-	@dist_dir="$(CURDIR)/$(DIST_DIR)"; \
-	output="$$dist_dir/$(APP_NAME)-linux-amd64"; \
-	echo "[build-server] start linux-amd64"; \
-	mkdir -p "$$dist_dir"; \
-	echo "[build-server] go build -> $$output"; \
-	GOOS=linux GOARCH=amd64 go build -o "$$output" $(APP_ENTRY); \
-	echo "[build-server] done -> $$output"
+build-linux-amd64: clean-dist build-assets
+	@$(MAKE) package-platform PLATFORM=linux-amd64
+	@$(MAKE) clean-temp
+	@echo "[build-server-linux-amd64] done"
 
 package-platform:
 	@platform="$(PLATFORM)"; \
