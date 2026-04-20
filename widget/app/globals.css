@@ -21,10 +21,10 @@ html,
 body {
   margin: 0;
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at top, rgba(37, 99, 235, 0.12), transparent 34%),
-    linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.08), transparent 30%),
+    linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
   color: var(--foreground);
   font-family:
     "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
