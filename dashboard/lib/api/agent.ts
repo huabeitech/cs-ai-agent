@@ -1,6 +1,4 @@
 import { request } from "@/lib/api/client"
-import { readSession } from "@/lib/auth"
-import { createWebSocketBaseUrl } from "@/lib/api/websocket"
 
 export type Paging = {
   page: number
@@ -253,17 +251,4 @@ export function removeConversationTag(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   })
-}
-
-export function createAgentWebSocketUrl() {
-  const session = readSession()
-  if (!session?.accessToken) {
-    throw new Error("未登录或登录已过期")
-  }
-
-  const baseUrl = createWebSocketBaseUrl()
-  const params = new URLSearchParams({
-    accessToken: session.accessToken,
-  })
-  return `${baseUrl}/api/dashboard/ws?${params.toString()}`
 }

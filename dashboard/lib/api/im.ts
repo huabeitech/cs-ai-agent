@@ -1,6 +1,5 @@
 import { request } from "@/lib/api/client"
 import { generateUUID } from "@/lib/utils"
-import { createWebSocketBaseUrl } from "@/lib/api/websocket"
 
 export type Paging = {
   page: number
@@ -123,16 +122,6 @@ export function getImVisitorId() {
   const visitorId = buildVisitorId()
   window.localStorage.setItem(VISITOR_STORAGE_KEY, visitorId)
   return visitorId
-}
-
-export function createImWebSocketUrl() {
-  const baseUrl = createWebSocketBaseUrl()
-  const params = new URLSearchParams({
-    externalId: getImVisitorId(),
-    externalSource: OPEN_IM_EXTERNAL_SOURCE,
-    channelId: OPEN_IM_CHANNEL_ID,
-  })
-  return `${baseUrl}/api/open/im/ws?${params.toString()}`
 }
 
 function createImHeaders() {
