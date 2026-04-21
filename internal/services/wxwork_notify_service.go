@@ -107,7 +107,7 @@ func (s *wxWorkNotifyService) resolveToUsersByUserIDs(userIDs []int64) []string 
 
 func (s *wxWorkNotifyService) defaultToUsers() []string {
 	cfg := config.Current().WxWork.Notify
-	return arrs.Distinct(cfg.ToUsers)
+	return s.resolveToUsersByUserIDs(cfg.ToUsers)
 }
 
 func (s *wxWorkNotifyService) buildTextContent(title, body string) string {
