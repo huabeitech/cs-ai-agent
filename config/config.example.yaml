@@ -88,10 +88,6 @@ wxWork:
     enabled: false
     # 默认接收通知的成员ID列表；如业务目标用户已绑定企业微信身份，会优先发给目标用户。
     toUsers: []
-    # 默认接收通知的部门ID列表。
-    toParties: []
-    # 默认接收通知的标签ID列表。
-    toTags: []
     # 是否发送保密消息。
     safe: false
     # 是否开启重复消息检查。

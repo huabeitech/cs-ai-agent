@@ -22,8 +22,6 @@ type Config struct {
 type WxWorkNotifyConfig struct {
 	Enabled                bool     `yaml:"enabled"`
 	ToUsers                []string `yaml:"toUsers"`
-	ToParties              []string `yaml:"toParties"`
-	ToTags                 []string `yaml:"toTags"`
 	Safe                   bool     `yaml:"safe"`
 	EnableDuplicateCheck   bool     `yaml:"enableDuplicateCheck"`
 	DuplicateCheckInterval int      `yaml:"duplicateCheckInterval"`

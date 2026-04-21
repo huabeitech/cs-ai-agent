@@ -18,10 +18,8 @@ func TestWxWorkNotifyDefaultRecipients(t *testing.T) {
 	config.SetCurrent(&config.Config{
 		WxWork: config.WxWorkConfig{
 			Notify: config.WxWorkNotifyConfig{
-				Enabled:   true,
-				ToUsers:   []string{" user_a ", "user_a", ""},
-				ToParties: []string{"2", "2"},
-				ToTags:    []string{"tag-1"},
+				Enabled: true,
+				ToUsers: []string{" user_a ", "user_a", ""},
 			},
 		},
 	})
@@ -30,12 +28,6 @@ func TestWxWorkNotifyDefaultRecipients(t *testing.T) {
 	recipients := svc.defaultRecipients()
 	if len(recipients.ToUsers) != 1 || recipients.ToUsers[0] != "user_a" {
 		t.Fatalf("unexpected users: %#v", recipients.ToUsers)
-	}
-	if len(recipients.ToParties) != 1 || recipients.ToParties[0] != "2" {
-		t.Fatalf("unexpected parties: %#v", recipients.ToParties)
-	}
-	if len(recipients.ToTags) != 1 || recipients.ToTags[0] != "tag-1" {
-		t.Fatalf("unexpected tags: %#v", recipients.ToTags)
 	}
 }
 

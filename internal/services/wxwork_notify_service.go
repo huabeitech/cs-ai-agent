@@ -22,9 +22,7 @@ type wxWorkMessageSender interface {
 }
 
 type wxWorkNotifyRecipients struct {
-	ToUsers   []string
-	ToParties []string
-	ToTags    []string
+	ToUsers []string
 }
 
 type wxWorkNotifyService struct {
@@ -79,8 +77,6 @@ func (s *wxWorkNotifyService) sendText(title, body string, recipients wxWorkNoti
 	req := wxmessage.SendTextRequest{
 		SendRequestCommon: &wxmessage.SendRequestCommon{
 			ToUser:                 strings.Join(recipients.ToUsers, "|"),
-			ToParty:                strings.Join(recipients.ToParties, "|"),
-			ToTag:                  strings.Join(recipients.ToTags, "|"),
 			AgentID:                strings.TrimSpace(cfg.AgentID),
 			Safe:                   cast.ToInt(cfg.Notify.Safe),
 			EnableDuplicateCheck:   cast.ToInt(cfg.Notify.EnableDuplicateCheck),
@@ -117,9 +113,7 @@ func (s *wxWorkNotifyService) resolveRecipientsByUserIDs(userIDs []int64) wxWork
 func (s *wxWorkNotifyService) defaultRecipients() wxWorkNotifyRecipients {
 	cfg := config.Current().WxWork.Notify
 	return wxWorkNotifyRecipients{
-		ToUsers:   arrs.Distinct(cfg.ToUsers),
-		ToParties: arrs.Distinct(cfg.ToParties),
-		ToTags:    arrs.Distinct(cfg.ToTags),
+		ToUsers: arrs.Distinct(cfg.ToUsers),
 	}
 }
 
@@ -149,7 +143,7 @@ func (s *wxWorkNotifyService) normalizeDuplicateCheckInterval(value int) int {
 }
 
 func (r wxWorkNotifyRecipients) empty() bool {
-	return len(r.ToUsers) == 0 && len(r.ToParties) == 0 && len(r.ToTags) == 0
+	return len(r.ToUsers) == 0
 }
 
 func truncateRunes(value string, max int) string {
