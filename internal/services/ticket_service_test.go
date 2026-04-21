@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -10,11 +11,13 @@ import (
 
 	"cs-agent/internal/bootstrap"
 	"cs-agent/internal/builders"
+	"cs-agent/internal/events"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/eventbus"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/services"
 
@@ -61,6 +64,34 @@ func TestCreateTicketSetsTicketNoAndDeadlines(t *testing.T) {
 	}
 }
 
+func TestCreateTicketPublishesTicketCreatedEvent(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+	eventsCh := make(chan events.TicketCreatedEvent, 1)
+	_, unsubscribe := eventbus.Subscribe(func(ctx context.Context, event events.TicketCreatedEvent) error {
+		eventsCh <- event
+		return nil
+	})
+	defer unsubscribe()
+
+	created, err := services.TicketService.CreateTicket(createTestTicketRequest("event-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+
+	select {
+	case event := <-eventsCh:
+		if event.TicketID != created.ID {
+			t.Fatalf("expected ticket id %d, got %d", created.ID, event.TicketID)
+		}
+		if event.OperatorID != operator.UserID {
+			t.Fatalf("expected operator id %d, got %d", operator.UserID, event.OperatorID)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("expected ticket created event")
+	}
+}
+
 func TestAddInternalNoteAllowsMentionSameUserAcrossTickets(t *testing.T) {
 	setupTicketTestDB(t)
 	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
@@ -86,6 +117,55 @@ func TestAddInternalNoteAllowsMentionSameUserAcrossTickets(t *testing.T) {
 	mentions := services.TicketMentionService.Find(sqls.NewCnd().Eq("mentioned_user_id", mentionedUserID).Asc("id"))
 	if len(mentions) != 2 {
 		t.Fatalf("expected 2 mention records, got %d", len(mentions))
+	}
+}
+
+func TestBatchAssignTicketsPublishesTicketAssignedEvents(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := &dto.AuthPrincipal{UserID: 1, Username: "admin"}
+	teamID, assigneeID := createTestAgentProfile(t, "batch-event-assignee")
+	first, err := services.TicketService.CreateTicket(createTestTicketRequest("batch-event-1"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() first error = %v", err)
+	}
+	second, err := services.TicketService.CreateTicket(createTestTicketRequest("batch-event-2"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() second error = %v", err)
+	}
+
+	eventsCh := make(chan events.TicketAssignedEvent, 2)
+	_, unsubscribe := eventbus.Subscribe(func(ctx context.Context, event events.TicketAssignedEvent) error {
+		eventsCh <- event
+		return nil
+	})
+	defer unsubscribe()
+
+	if err := services.TicketService.BatchAssignTickets(request.BatchAssignTicketRequest{
+		TicketIDs: []int64{first.ID, second.ID},
+		ToUserID:  assigneeID,
+		ToTeamID:  teamID,
+		Reason:    "batch assign event",
+	}, operator); err != nil {
+		t.Fatalf("BatchAssignTickets() error = %v", err)
+	}
+
+	got := map[int64]events.TicketAssignedEvent{}
+	for len(got) < 2 {
+		select {
+		case event := <-eventsCh:
+			got[event.TicketID] = event
+		case <-time.After(time.Second):
+			t.Fatalf("expected 2 ticket assigned events, got %d", len(got))
+		}
+	}
+	for _, ticketID := range []int64{first.ID, second.ID} {
+		event, ok := got[ticketID]
+		if !ok {
+			t.Fatalf("missing event for ticket %d", ticketID)
+		}
+		if event.ToUserID != assigneeID {
+			t.Fatalf("expected assignee id %d, got %d", assigneeID, event.ToUserID)
+		}
 	}
 }
 

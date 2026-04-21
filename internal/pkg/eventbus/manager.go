@@ -23,7 +23,7 @@ func Register[T any](opts ...Option[T]) *Bus[T] {
 		return bus.(*Bus[T])
 	}
 
-	created := New[T](opts...)
+	created := New(opts...)
 	buss[key] = created
 	return created
 }

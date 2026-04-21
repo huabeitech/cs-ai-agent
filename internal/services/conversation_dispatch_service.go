@@ -1,11 +1,7 @@
 package services
 
 import (
-	"cs-agent/internal/models"
-	"cs-agent/internal/pkg/dto"
-	"cs-agent/internal/pkg/enums"
-	"cs-agent/internal/pkg/utils"
-	"cs-agent/internal/repositories"
+	"context"
 	"errors"
 	"log/slog"
 	"math"
@@ -13,6 +9,14 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"cs-agent/internal/events"
+	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
+	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/eventbus"
+	"cs-agent/internal/pkg/utils"
+	"cs-agent/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
 )
@@ -121,7 +125,13 @@ func (s *conversationDispatchService) DispatchPendingConversation(conversation *
 				"requested_team_ids", report.RequestedTeamIDs,
 			)
 			WsService.PublishConversationChanged(dispatched, enums.IMRealtimeEventConversationAssigned)
-			WxWorkNotifyService.NotifyConversationAssigned(dispatched.ID, dispatched.CurrentAssigneeID, "自动分配")
+			eventbus.PublishAsync(context.Background(), events.ConversationAssignedEvent{
+				ConversationID: dispatched.ID,
+				ToUserID:       dispatched.CurrentAssigneeID,
+				OperatorID:     systemDispatchPrincipal().UserID,
+				Reason:         "自动分配",
+				AssignType:     events.ConversationAssignTypeAutoAssign,
+			})
 			return dispatched, nil
 		}
 	}

@@ -1,16 +1,19 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"cs-agent/internal/events"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/eventbus"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 
@@ -832,7 +835,10 @@ func (s *ticketService) CreateTicket(req request.CreateTicketRequest, operator *
 		return nil, err
 	}
 	current := s.Get(ticket.ID)
-	WxWorkNotifyService.NotifyTicketCreated(ticket.ID)
+	eventbus.PublishAsync(context.Background(), events.TicketCreatedEvent{
+		TicketID:   ticket.ID,
+		OperatorID: operator.UserID,
+	})
 	return current, nil
 }
 
@@ -983,29 +989,37 @@ func (s *ticketService) LinkTicketCustomer(ticketID, customerID int64, operator 
 }
 
 func (s *ticketService) AssignTicket(req request.AssignTicketRequest, operator *dto.AuthPrincipal) error {
+	var assignedEvent *events.TicketAssignedEvent
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		return s.assignTicketTx(ctx.Tx, req, operator)
+		event, err := s.assignTicketTx(ctx.Tx, req, operator)
+		if err != nil {
+			return err
+		}
+		assignedEvent = event
+		return nil
 	}); err != nil {
 		return err
 	}
-	WxWorkNotifyService.NotifyTicketAssigned(req.TicketID, req.ToUserID, req.Reason)
+	if assignedEvent != nil {
+		eventbus.PublishAsync(context.Background(), *assignedEvent)
+	}
 	return nil
 }
 
-func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequest, operator *dto.AuthPrincipal) error {
+func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequest, operator *dto.AuthPrincipal) (*events.TicketAssignedEvent, error) {
 	if operator == nil {
-		return errorsx.Unauthorized("未登录或登录已过期")
+		return nil, errorsx.Unauthorized("未登录或登录已过期")
 	}
 	ticket := repositories.TicketRepository.Get(tx, req.TicketID)
 	if ticket == nil {
-		return errorsx.InvalidParam("工单不存在")
+		return nil, errorsx.InvalidParam("工单不存在")
 	}
 	teamID, assigneeID, err := s.normalizeAssignmentTx(tx, req.ToTeamID, req.ToUserID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if assigneeID <= 0 {
-		return errorsx.InvalidParam("目标处理人不能为空")
+		return nil, errorsx.InvalidParam("目标处理人不能为空")
 	}
 	now := time.Now()
 	eventType := enums.TicketEventTypeAssigned
@@ -1026,9 +1040,18 @@ func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequ
 		"update_user_name":    operator.Username,
 		"updated_at":          now,
 	}); err != nil {
-		return err
+		return nil, err
 	}
-	return s.logEvent(tx, ticket.ID, eventType, operator, fmt.Sprintf("%d", ticket.CurrentAssigneeID), fmt.Sprintf("%d", assigneeID), strings.TrimSpace(content), strings.TrimSpace(req.Reason))
+	if err := s.logEvent(tx, ticket.ID, eventType, operator, fmt.Sprintf("%d", ticket.CurrentAssigneeID), fmt.Sprintf("%d", assigneeID), strings.TrimSpace(content), strings.TrimSpace(req.Reason)); err != nil {
+		return nil, err
+	}
+	return &events.TicketAssignedEvent{
+		TicketID:   ticket.ID,
+		FromUserID: ticket.CurrentAssigneeID,
+		ToUserID:   assigneeID,
+		OperatorID: operator.UserID,
+		Reason:     strings.TrimSpace(req.Reason),
+	}, nil
 }
 
 func (s *ticketService) ChangeStatus(req request.ChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {
@@ -1457,19 +1480,30 @@ func (s *ticketService) BatchAssignTickets(req request.BatchAssignTicketRequest,
 	if len(ticketIDs) == 0 {
 		return errorsx.InvalidParam("请选择工单")
 	}
-	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+	assignedEvents := make([]events.TicketAssignedEvent, 0, len(ticketIDs))
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		for _, ticketID := range ticketIDs {
-			if err := s.assignTicketTx(ctx.Tx, request.AssignTicketRequest{
+			event, err := s.assignTicketTx(ctx.Tx, request.AssignTicketRequest{
 				TicketID: ticketID,
 				ToUserID: req.ToUserID,
 				ToTeamID: req.ToTeamID,
 				Reason:   req.Reason,
-			}, operator); err != nil {
+			}, operator)
+			if err != nil {
 				return err
+			}
+			if event != nil {
+				assignedEvents = append(assignedEvents, *event)
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	for _, event := range assignedEvents {
+		eventbus.PublishAsync(context.Background(), event)
+	}
+	return nil
 }
 
 func (s *ticketService) BatchChangeStatus(req request.BatchChangeTicketStatusRequest, operator *dto.AuthPrincipal) error {

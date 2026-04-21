@@ -2,11 +2,8 @@ package services
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
-	"time"
 
-	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/repositories"
@@ -43,57 +40,6 @@ func newWxWorkNotifyService() *wxWorkNotifyService {
 	}
 }
 
-func (s *wxWorkNotifyService) NotifyConversationAssigned(conversationID, assigneeID int64, reason string) {
-	if conversationID <= 0 {
-		return
-	}
-	conversation := ConversationService.Get(conversationID)
-	if conversation == nil {
-		return
-	}
-	if err := s.sendToAssigneeOrDefault(assigneeID, "会话分配提醒", s.buildConversationAssignedBody(conversation, assigneeID, reason)); err != nil {
-		slog.Warn("send wxwork conversation assignment notify failed",
-			"conversation_id", conversationID,
-			"assignee_id", assigneeID,
-			"error", err,
-		)
-	}
-}
-
-func (s *wxWorkNotifyService) NotifyTicketCreated(ticketID int64) {
-	if ticketID <= 0 {
-		return
-	}
-	ticket := TicketService.Get(ticketID)
-	if ticket == nil {
-		return
-	}
-	if err := s.sendToAssigneeOrDefault(ticket.CurrentAssigneeID, "工单创建提醒", s.buildTicketCreatedBody(ticket)); err != nil {
-		slog.Warn("send wxwork ticket created notify failed",
-			"ticket_id", ticketID,
-			"assignee_id", ticket.CurrentAssigneeID,
-			"error", err,
-		)
-	}
-}
-
-func (s *wxWorkNotifyService) NotifyTicketAssigned(ticketID, assigneeID int64, reason string) {
-	if ticketID <= 0 || assigneeID <= 0 {
-		return
-	}
-	ticket := TicketService.Get(ticketID)
-	if ticket == nil {
-		return
-	}
-	if err := s.sendToAssigneeOrDefault(assigneeID, "工单指派提醒", s.buildTicketAssignedBody(ticket, assigneeID, reason)); err != nil {
-		slog.Warn("send wxwork ticket assigned notify failed",
-			"ticket_id", ticketID,
-			"assignee_id", assigneeID,
-			"error", err,
-		)
-	}
-}
-
 func (s *wxWorkNotifyService) Enabled() bool {
 	if !wxwork.Enabled() {
 		return false
@@ -101,7 +47,7 @@ func (s *wxWorkNotifyService) Enabled() bool {
 	return config.Current().WxWork.Notify.Enabled
 }
 
-func (s *wxWorkNotifyService) sendToAssigneeOrDefault(assigneeID int64, title, body string) error {
+func (s *wxWorkNotifyService) SendTextToAssigneeOrDefault(assigneeID int64, title, body string) error {
 	if !s.Enabled() {
 		return nil
 	}
@@ -173,75 +119,6 @@ func (s *wxWorkNotifyService) defaultRecipients() wxWorkNotifyRecipients {
 		ToParties: uniqueStrings(cfg.ToParties),
 		ToTags:    uniqueStrings(cfg.ToTags),
 	}
-}
-
-func (s *wxWorkNotifyService) buildConversationAssignedBody(conversation *models.Conversation, assigneeID int64, reason string) string {
-	if conversation == nil {
-		return ""
-	}
-	lines := []string{
-		fmt.Sprintf("会话ID: #%d", conversation.ID),
-		fmt.Sprintf("会话主题: %s", defaultIfBlank(conversation.Subject, "-")),
-		fmt.Sprintf("接入渠道: %s", enums.GetExternalSourceLabel(conversation.ExternalSource)),
-		fmt.Sprintf("当前状态: %s", enums.GetIMConversationStatusLabel(conversation.Status)),
-		fmt.Sprintf("处理人: %s", s.resolveUserLabel(assigneeID)),
-	}
-	if strings.TrimSpace(reason) != "" {
-		lines = append(lines, fmt.Sprintf("分配原因: %s", strings.TrimSpace(reason)))
-	}
-	lines = append(lines, fmt.Sprintf("时间: %s", time.Now().Format("2006-01-02 15:04:05")))
-	return strings.Join(lines, "\n")
-}
-
-func (s *wxWorkNotifyService) buildTicketCreatedBody(ticket *models.Ticket) string {
-	if ticket == nil {
-		return ""
-	}
-	lines := []string{
-		fmt.Sprintf("工单号: %s", defaultIfBlank(ticket.TicketNo, fmt.Sprintf("#%d", ticket.ID))),
-		fmt.Sprintf("工单标题: %s", defaultIfBlank(ticket.Title, "-")),
-		fmt.Sprintf("工单来源: %s", defaultIfBlank(string(ticket.Source), "-")),
-		fmt.Sprintf("当前状态: %s", enums.GetTicketStatusLabel(ticket.Status)),
-	}
-	if ticket.CurrentAssigneeID > 0 {
-		lines = append(lines, fmt.Sprintf("处理人: %s", s.resolveUserLabel(ticket.CurrentAssigneeID)))
-	}
-	lines = append(lines, fmt.Sprintf("时间: %s", time.Now().Format("2006-01-02 15:04:05")))
-	return strings.Join(lines, "\n")
-}
-
-func (s *wxWorkNotifyService) buildTicketAssignedBody(ticket *models.Ticket, assigneeID int64, reason string) string {
-	if ticket == nil {
-		return ""
-	}
-	lines := []string{
-		fmt.Sprintf("工单号: %s", defaultIfBlank(ticket.TicketNo, fmt.Sprintf("#%d", ticket.ID))),
-		fmt.Sprintf("工单标题: %s", defaultIfBlank(ticket.Title, "-")),
-		fmt.Sprintf("当前状态: %s", enums.GetTicketStatusLabel(ticket.Status)),
-		fmt.Sprintf("处理人: %s", s.resolveUserLabel(assigneeID)),
-	}
-	if strings.TrimSpace(reason) != "" {
-		lines = append(lines, fmt.Sprintf("指派原因: %s", strings.TrimSpace(reason)))
-	}
-	lines = append(lines, fmt.Sprintf("时间: %s", time.Now().Format("2006-01-02 15:04:05")))
-	return strings.Join(lines, "\n")
-}
-
-func (s *wxWorkNotifyService) resolveUserLabel(userID int64) string {
-	if userID <= 0 {
-		return "-"
-	}
-	user := UserService.Get(userID)
-	if user == nil {
-		return fmt.Sprintf("用户#%d", userID)
-	}
-	if nickname := strings.TrimSpace(user.Nickname); nickname != "" {
-		return nickname
-	}
-	if username := strings.TrimSpace(user.Username); username != "" {
-		return username
-	}
-	return fmt.Sprintf("用户#%d", userID)
 }
 
 func (s *wxWorkNotifyService) buildTextContent(title, body string) string {

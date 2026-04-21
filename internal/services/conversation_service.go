@@ -1,18 +1,21 @@
 package services
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 
+	"cs-agent/internal/events"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/eventbus"
 	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
@@ -162,6 +165,7 @@ func (s *conversationService) AssignConversation(req request.AssignConversationR
 	if targetProfile == nil || targetProfile.Status != enums.StatusOk {
 		return errorsx.InvalidParam("目标客服不存在")
 	}
+	var assignedEvent events.ConversationAssignedEvent
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		conversation := repositories.ConversationRepository.Get(ctx.Tx, req.ConversationID)
 		if conversation == nil {
@@ -186,20 +190,31 @@ func (s *conversationService) AssignConversation(req request.AssignConversationR
 		}); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, req.ConversationID, enums.IMEventTypeAssign, enums.IMSenderTypeAgent, operator.UserID, "会话已分配", s.buildEventPayload(map[string]any{
+		if err := ConversationEventLogService.CreateEvent(ctx, req.ConversationID, enums.IMEventTypeAssign, enums.IMSenderTypeAgent, operator.UserID, "会话已分配", s.buildEventPayload(map[string]any{
 			"fromStatus":     conversation.Status,
 			"toStatus":       enums.IMConversationStatusActive,
 			"fromAssigneeId": conversation.CurrentAssigneeID,
 			"toAssigneeId":   req.AssigneeID,
 			"reason":         strings.TrimSpace(req.Reason),
-		}))
+		})); err != nil {
+			return err
+		}
+		assignedEvent = events.ConversationAssignedEvent{
+			ConversationID: req.ConversationID,
+			FromUserID:     conversation.CurrentAssigneeID,
+			ToUserID:       req.AssigneeID,
+			OperatorID:     operator.UserID,
+			Reason:         strings.TrimSpace(req.Reason),
+			AssignType:     events.ConversationAssignTypeAssign,
+		}
+		return nil
 	}); err != nil {
 		return err
 	}
 	if conversation := s.Get(req.ConversationID); conversation != nil {
 		WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationAssigned)
 	}
-	WxWorkNotifyService.NotifyConversationAssigned(req.ConversationID, req.AssigneeID, req.Reason)
+	eventbus.PublishAsync(context.Background(), assignedEvent)
 	return nil
 }
 
@@ -240,6 +255,7 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 	if targetProfile == nil || targetProfile.Status != enums.StatusOk {
 		return errorsx.InvalidParam("目标客服不存在")
 	}
+	var assignedEvent events.ConversationAssignedEvent
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
 		if conversation == nil {
@@ -273,20 +289,31 @@ func (s *conversationService) TransferConversation(conversationID, toUserID int6
 		}); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeTransfer, enums.IMSenderTypeAgent, operator.UserID, "会话已转接", s.buildEventPayload(map[string]any{
+		if err := ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeTransfer, enums.IMSenderTypeAgent, operator.UserID, "会话已转接", s.buildEventPayload(map[string]any{
 			"fromStatus":     conversation.Status,
 			"toStatus":       enums.IMConversationStatusActive,
 			"fromAssigneeId": conversation.CurrentAssigneeID,
 			"toAssigneeId":   toUserID,
 			"reason":         strings.TrimSpace(reason),
-		}))
+		})); err != nil {
+			return err
+		}
+		assignedEvent = events.ConversationAssignedEvent{
+			ConversationID: conversationID,
+			FromUserID:     conversation.CurrentAssigneeID,
+			ToUserID:       toUserID,
+			OperatorID:     operator.UserID,
+			Reason:         strings.TrimSpace(reason),
+			AssignType:     events.ConversationAssignTypeTransfer,
+		}
+		return nil
 	}); err != nil {
 		return err
 	}
 	if conversation := s.Get(conversationID); conversation != nil {
 		WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationTransferred)
 	}
-	WxWorkNotifyService.NotifyConversationAssigned(conversationID, toUserID, reason)
+	eventbus.PublishAsync(context.Background(), assignedEvent)
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"cs-agent/internal/pkg/config"
 	"cs-agent/internal/pkg/logx"
 	"cs-agent/internal/services/cronx"
+	"cs-agent/internal/services/event_handlers"
 	"cs-agent/internal/wxwork"
 	"log/slog"
 )
@@ -35,6 +36,8 @@ func Init(configPath string) error {
 		slog.Error("init vector db failed", "error", err)
 		return err
 	}
+
+	event_handlers.Register()
 
 	// 启动任务调度器
 	cronx.Init()

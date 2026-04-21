@@ -7,11 +7,19 @@ import (
 	"testing"
 )
 
+type userCreatedEvent struct {
+	UserID int64
+}
+
+type orderCreatedEvent struct {
+	OrderID int64
+}
+
 func TestGetReturnsSameBusForSameType(t *testing.T) {
 	resetManagerForTest(t)
 
-	first := Get[UserCreated]()
-	second := Get[UserCreated]()
+	first := Get[userCreatedEvent]()
+	second := Get[userCreatedEvent]()
 
 	if first != second {
 		t.Fatalf("expected same bus instance for same event type")
@@ -21,8 +29,8 @@ func TestGetReturnsSameBusForSameType(t *testing.T) {
 func TestGetReturnsDifferentBusForDifferentTypes(t *testing.T) {
 	resetManagerForTest(t)
 
-	userBus := Get[UserCreated]()
-	orderBus := Get[OrderCreated]()
+	userBus := Get[userCreatedEvent]()
+	orderBus := Get[orderCreatedEvent]()
 
 	if userBus == any(orderBus) {
 		t.Fatalf("expected different bus instances for different event types")
@@ -34,21 +42,21 @@ func TestGetCreatesOnlyOneBusUnderConcurrency(t *testing.T) {
 
 	const workers = 32
 
-	results := make(chan *Bus[UserCreated], workers)
+	results := make(chan *Bus[userCreatedEvent], workers)
 	var wg sync.WaitGroup
 
 	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			results <- Get[UserCreated]()
+			results <- Get[userCreatedEvent]()
 		}()
 	}
 
 	wg.Wait()
 	close(results)
 
-	var first *Bus[UserCreated]
+	var first *Bus[userCreatedEvent]
 	for bus := range results {
 		if first == nil {
 			first = bus
