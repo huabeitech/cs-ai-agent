@@ -1,6 +1,7 @@
 package eventbus
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"testing"
@@ -57,6 +58,31 @@ func TestGetCreatesOnlyOneBusUnderConcurrency(t *testing.T) {
 			t.Fatalf("expected same bus instance for concurrent access")
 		}
 	}
+}
+
+func TestRegisterReturnsConfiguredGlobalBus(t *testing.T) {
+	resetManagerForTest(t)
+
+	var handled bool
+	registered := Register[testEvent](WithErrorHandler[testEvent](func(ctx context.Context, err error) {
+		handled = true
+	}))
+	got := Get[testEvent]()
+
+	if registered != got {
+		t.Fatalf("expected registered bus to be returned by Get")
+	}
+
+	got.handleError(context.Background(), assertErr{})
+	if !handled {
+		t.Fatalf("expected registered error handler to be used")
+	}
+}
+
+type assertErr struct{}
+
+func (assertErr) Error() string {
+	return "assert"
 }
 
 func resetManagerForTest(t *testing.T) {
