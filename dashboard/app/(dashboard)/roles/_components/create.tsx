@@ -26,7 +26,6 @@ import { Textarea } from "@/components/ui/textarea"
 type CreateRoleDrawerProps = {
   open: boolean
   saving: boolean
-  defaultSortNo: number
   onOpenChange: (open: boolean) => void
   onSubmit: (payload: CreateAdminRolePayload) => Promise<void>
 }
@@ -38,11 +37,6 @@ const createFormSchema = z.object({
     .trim()
     .min(1, "角色编码不能为空")
     .regex(/^[A-Za-z][A-Za-z0-9:_-]*$/, "角色编码需以字母开头，仅支持字母、数字、冒号、下划线和短横线"),
-  sortNo: z
-    .string()
-    .trim()
-    .min(1, "排序不能为空")
-    .regex(/^\d+$/, "排序值必须是大于等于 0 的整数"),
   remark: z.string().trim(),
 })
 
@@ -54,12 +48,15 @@ const createFormResolver = zodResolver(createFormSchema as never) as Resolver<
   z.output<typeof createFormSchema>
 >
 
-function buildEmptyForm(defaultSortNo: number): CreateForm {
+const emptyForm: CreateForm = {
+  name: "",
+  code: "",
+  remark: "",
+}
+
+function buildEmptyForm(): CreateForm {
   return {
-    name: "",
-    code: "",
-    sortNo: String(defaultSortNo),
-    remark: "",
+    ...emptyForm,
   }
 }
 
@@ -67,7 +64,6 @@ function buildPayload(form: CreateForm): CreateAdminRolePayload {
   return {
     name: form.name.trim(),
     code: form.code.trim(),
-    sortNo: Number(form.sortNo),
     remark: form.remark.trim(),
   }
 }
@@ -75,7 +71,6 @@ function buildPayload(form: CreateForm): CreateAdminRolePayload {
 export function CreateRoleDrawer({
   open,
   saving,
-  defaultSortNo,
   onOpenChange,
   onSubmit,
 }: CreateRoleDrawerProps) {
@@ -83,9 +78,8 @@ export function CreateRoleDrawer({
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
       {open ? (
         <CreateRoleDrawerBody
-          key={`create-role-${defaultSortNo}`}
+          key="create-role"
           saving={saving}
-          defaultSortNo={defaultSortNo}
           onOpenChange={onOpenChange}
           onSubmit={onSubmit}
         />
@@ -96,14 +90,12 @@ export function CreateRoleDrawer({
 
 type CreateRoleDrawerBodyProps = {
   saving: boolean
-  defaultSortNo: number
   onOpenChange: (open: boolean) => void
   onSubmit: (payload: CreateAdminRolePayload) => Promise<void>
 }
 
 function CreateRoleDrawerBody({
   saving,
-  defaultSortNo,
   onOpenChange,
   onSubmit,
 }: CreateRoleDrawerBodyProps) {
@@ -113,7 +105,7 @@ function CreateRoleDrawerBody({
     z.output<typeof createFormSchema>
   >({
     resolver: createFormResolver,
-    defaultValues: buildEmptyForm(defaultSortNo),
+    defaultValues: buildEmptyForm(),
   })
   const {
     handleSubmit,
@@ -124,7 +116,7 @@ function CreateRoleDrawerBody({
 
   async function onFormSubmit(values: CreateForm) {
     await onSubmit(buildPayload(values))
-    reset(buildEmptyForm(defaultSortNo))
+    reset(buildEmptyForm())
   }
 
   return (
@@ -162,18 +154,6 @@ function CreateRoleDrawerBody({
                 {...register("code")}
               />
               <FieldError errors={[errors.code]} />
-            </FieldContent>
-          </Field>
-          <Field data-invalid={!!errors.sortNo}>
-            <FieldLabel htmlFor="create-role-sort-no">排序</FieldLabel>
-            <FieldContent>
-              <Input
-                id="create-role-sort-no"
-                inputMode="numeric"
-                aria-invalid={!!errors.sortNo}
-                {...register("sortNo")}
-              />
-              <FieldError errors={[errors.sortNo]} />
             </FieldContent>
           </Field>
           <Field data-invalid={!!errors.remark}>

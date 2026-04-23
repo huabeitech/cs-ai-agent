@@ -310,9 +310,6 @@ export default function DashboardRolesPage() {
     void loadRoles()
   }, [])
 
-  const defaultSortNo =
-    result.results.reduce((max, item) => Math.max(max, item.sortNo), -1) + 1
-
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -398,7 +395,6 @@ export default function DashboardRolesPage() {
       <CreateRoleDrawer
         open={creatingOpen}
         saving={savingCreate}
-        defaultSortNo={defaultSortNo}
         onOpenChange={handleCreateDrawerOpenChange}
         onSubmit={handleCreateRole}
       />

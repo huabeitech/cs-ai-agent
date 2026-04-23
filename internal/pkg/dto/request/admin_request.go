@@ -50,7 +50,6 @@ type AssignRoleRequest struct {
 type CreateRoleRequest struct {
 	Name   string `json:"name"`
 	Code   string `json:"code"`
-	SortNo int    `json:"sortNo"`
 	Remark string `json:"remark"`
 }
 

@@ -88,7 +88,7 @@ func (s *roleService) CreateRole(req request.CreateRoleRequest, operator *dto.Au
 		Code:        code,
 		Status:      enums.StatusOk,
 		IsSystem:    false,
-		SortNo:      req.SortNo,
+		SortNo:      s.NextSortNo(),
 		Remark:      strings.TrimSpace(req.Remark),
 		AuditFields: utils.BuildAuditFields(operator),
 	}
@@ -115,7 +115,7 @@ func (s *roleService) UpdateRole(req request.UpdateRoleRequest, operator *dto.Au
 }
 
 func (s *roleService) NextSortNo() int {
-	if latest := s.FindOne(sqls.NewCnd().Asc("sort_no").Desc("id")); latest != nil {
+	if latest := s.FindOne(sqls.NewCnd().Desc("sort_no").Desc("id")); latest != nil {
 		return latest.SortNo + 1
 	}
 	return 0

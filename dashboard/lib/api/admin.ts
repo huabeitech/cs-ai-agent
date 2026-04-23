@@ -75,7 +75,6 @@ export type AdminRole = {
 export type CreateAdminRolePayload = {
   name: string
   code: string
-  sortNo: number
   remark: string
 }
 
