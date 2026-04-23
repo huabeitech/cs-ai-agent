@@ -96,7 +96,7 @@ func ensureRoles(tx *gorm.DB) (map[string]*models.Role, error) {
 	now := time.Now()
 
 	for _, spec := range constants.Roles {
-		role := repositories.RoleRepository.FindOne(tx, sqls.NewCnd().Eq("code", spec.Code))
+		role := repositories.RoleRepository.GetByCode(tx, spec.Code)
 		if role == nil {
 			role = &models.Role{
 				Name:     spec.Name,

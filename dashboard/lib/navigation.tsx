@@ -31,7 +31,7 @@ export type DashboardNavMenuItem = {
 export type DashboardNavItemConfig = DashboardNavMenuItem & {
   /**
    * 与后端 Permission.Code 一致；缺省表示任意已登录管理员可见
-   * （对应控制台接口尚未 RequirePermission 的模块，如接入站点、AI Agent）
+   * （对应控制台接口尚未 RequirePermission 的模块）
    */
   requiredPermission?: string;
 };
@@ -182,6 +182,7 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         title: "接入渠道",
         url: "/channels",
         icon: <GlobeIcon />,
+        requiredPermission: "channel.view",
       },
     ],
   },
@@ -204,6 +205,7 @@ export const dashboardNavSections: DashboardNavSectionConfig[] = [
         title: "AI Agent",
         url: "/ai-agents",
         icon: <MessageSquareMoreIcon />,
+        requiredPermission: "aiAgent.view",
       },
       {
         title: "Skills",

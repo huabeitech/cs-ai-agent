@@ -99,3 +99,7 @@ func (r *roleRepository) UpdateColumn(db *gorm.DB, id int64, name string, value 
 func (r *roleRepository) Delete(db *gorm.DB, id int64) {
 	db.Delete(&models.Role{}, "id = ?", id)
 }
+
+func (r *roleRepository) GetByCode(db *gorm.DB, code string) *models.Role {
+	return r.FindOne(db, sqls.NewCnd().Eq("code", code))
+}

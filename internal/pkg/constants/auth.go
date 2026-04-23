@@ -147,6 +147,12 @@ var (
 	PermissionAssetCreate = Permission{Name: "上传文件资源", Code: "asset.create", Type: "api", GroupName: "asset", Method: "POST", APIPath: "/api/dashboard/asset/create", SortNo: 1220}
 	PermissionAssetDelete = Permission{Name: "删除文件资源", Code: "asset.delete", Type: "api", GroupName: "asset", Method: "POST", APIPath: "/api/dashboard/asset/delete", SortNo: 1230}
 
+	// AI Agent 相关权限
+	PermissionAIAgentView   = Permission{Name: "查看 AI Agent", Code: "aiAgent.view", Type: "api", GroupName: "aiAgent", Method: "ANY", APIPath: "/api/dashboard/ai-agent/list", SortNo: 1310}
+	PermissionAIAgentCreate = Permission{Name: "创建 AI Agent", Code: "aiAgent.create", Type: "api", GroupName: "aiAgent", Method: "POST", APIPath: "/api/dashboard/ai-agent/create", SortNo: 1320}
+	PermissionAIAgentUpdate = Permission{Name: "更新 AI Agent", Code: "aiAgent.update", Type: "api", GroupName: "aiAgent", Method: "POST", APIPath: "/api/dashboard/ai-agent/update", SortNo: 1330}
+	PermissionAIAgentDelete = Permission{Name: "删除 AI Agent", Code: "aiAgent.delete", Type: "api", GroupName: "aiAgent", Method: "POST", APIPath: "/api/dashboard/ai-agent/delete", SortNo: 1340}
+
 	// AI 配置相关权限
 	PermissionAIConfigView   = Permission{Name: "查看 AI 配置", Code: "aiConfig.view", Type: "api", GroupName: "aiConfig", Method: "ANY", APIPath: "/api/dashboard/ai-config/list", SortNo: 1390}
 	PermissionAIConfigCreate = Permission{Name: "创建 AI 配置", Code: "aiConfig.create", Type: "api", GroupName: "aiConfig", Method: "POST", APIPath: "/api/dashboard/ai-config/create", SortNo: 1400}
@@ -259,6 +265,10 @@ var Permissions = []Permission{
 	PermissionAssetView,
 	PermissionAssetCreate,
 	PermissionAssetDelete,
+	PermissionAIAgentView,
+	PermissionAIAgentCreate,
+	PermissionAIAgentUpdate,
+	PermissionAIAgentDelete,
 	PermissionAIConfigView,
 	PermissionAIConfigCreate,
 	PermissionAIConfigUpdate,
@@ -326,6 +336,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentTeamView, PermissionAgentTeamCreate, PermissionAgentTeamUpdate, PermissionAgentTeamDelete,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
 		PermissionAssetView, PermissionAssetCreate, PermissionAssetDelete,
+		PermissionAIAgentView, PermissionAIAgentCreate, PermissionAIAgentUpdate, PermissionAIAgentDelete,
 		PermissionAIConfigView, PermissionAIConfigCreate, PermissionAIConfigUpdate, PermissionAIConfigDelete,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate, PermissionSkillDefinitionDelete,
 	},
@@ -347,6 +358,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentTeamView,
 		PermissionAgentTeamScheduleView, PermissionAgentTeamScheduleCreate, PermissionAgentTeamScheduleUpdate, PermissionAgentTeamScheduleDelete, PermissionAgentTeamScheduleBatchGenerate,
 		PermissionAssetView, PermissionAssetCreate, PermissionAssetDelete,
+		PermissionAIAgentView, PermissionAIAgentCreate, PermissionAIAgentUpdate,
 		PermissionAIConfigView,
 		PermissionSkillDefinitionView, PermissionSkillDefinitionCreate, PermissionSkillDefinitionUpdate,
 	},
@@ -366,6 +378,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionAgentView,
 		PermissionAgentTeamView,
 		PermissionAgentTeamScheduleView,
+		PermissionAIAgentView,
 		PermissionAIConfigView,
 		PermissionSkillDefinitionView,
 	},

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
@@ -23,6 +24,9 @@ type AIAgentController struct {
 }
 
 func (c *AIAgentController) AnyList() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentView); err != nil {
+		return web.JsonError(err)
+	}
 	cnd := params.NewPagedSqlCnd(c.Ctx,
 		params.QueryFilter{ParamName: "status"},
 		params.QueryFilter{ParamName: "name", Op: params.Like},
@@ -37,6 +41,9 @@ func (c *AIAgentController) AnyList() *web.JsonResult {
 }
 
 func (c *AIAgentController) GetList_all() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentView); err != nil {
+		return web.JsonError(err)
+	}
 	list := services.AIAgentService.Find(sqls.NewCnd().Where("status = ?", enums.StatusOk).Desc("sort_no").Desc("id"))
 	results := make([]response.AIAgentResponse, 0, len(list))
 	for _, item := range list {
@@ -46,6 +53,9 @@ func (c *AIAgentController) GetList_all() *web.JsonResult {
 }
 
 func (c *AIAgentController) GetBy(id int64) *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentView); err != nil {
+		return web.JsonError(err)
+	}
 	item := services.AIAgentService.Get(id)
 	if item == nil {
 		return web.JsonErrorMsg("AI Agent 不存在")
@@ -54,11 +64,15 @@ func (c *AIAgentController) GetBy(id int64) *web.JsonResult {
 }
 
 func (c *AIAgentController) PostCreate() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentCreate)
+	if err != nil {
+		return web.JsonError(err)
+	}
 	req := request.CreateAIAgentRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	item, err := services.AIAgentService.CreateAIAgent(req, services.AuthService.GetAuthPrincipal(c.Ctx))
+	item, err := services.AIAgentService.CreateAIAgent(req, operator)
 	if err != nil {
 		return web.JsonError(err)
 	}
@@ -66,28 +80,39 @@ func (c *AIAgentController) PostCreate() *web.JsonResult {
 }
 
 func (c *AIAgentController) PostUpdate() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
 	req := request.UpdateAIAgentRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIAgentService.UpdateAIAgent(req, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AIAgentService.UpdateAIAgent(req, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *AIAgentController) PostDelete() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentDelete)
+	if err != nil {
+		return web.JsonError(err)
+	}
 	req := request.DeleteAIAgentRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIAgentService.DeleteAIAgent(req.ID, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AIAgentService.DeleteAIAgent(req.ID, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
 }
 
 func (c *AIAgentController) PostUpdate_sort() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentUpdate); err != nil {
+		return web.JsonError(err)
+	}
 	var ids []int64
 	if err := c.Ctx.ReadJSON(&ids); err != nil {
 		return web.JsonError(err)
@@ -99,11 +124,15 @@ func (c *AIAgentController) PostUpdate_sort() *web.JsonResult {
 }
 
 func (c *AIAgentController) PostUpdate_status() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAIAgentUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
 	req := request.UpdateAIAgentStatusRequest{}
 	if err := params.ReadJSON(c.Ctx, &req); err != nil {
 		return web.JsonError(err)
 	}
-	if err := services.AIAgentService.UpdateStatus(req.ID, req.Status, services.AuthService.GetAuthPrincipal(c.Ctx)); err != nil {
+	if err := services.AIAgentService.UpdateStatus(req.ID, req.Status, operator); err != nil {
 		return web.JsonError(err)
 	}
 	return web.JsonSuccess()
