@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:sdk": "node scripts/build-sdk.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"

@@ -92,7 +92,7 @@ function injectWidget(config: KefuWidgetHostConfig) {
 
   const script = document.createElement("script")
   script.async = true
-  script.src = `${window.location.origin}/sdk/cs-agent-widget.js`
+  script.src = `${window.location.origin}/sdk/cs-ai-agent-sdk.min.js`
   script.dataset.csAgentWidget = "script"
   document.body.appendChild(script)
 }
@@ -120,8 +120,8 @@ export function KefuWidgetDemo() {
 
   const snippet = useMemo(() => {
     const scriptSrc = config.baseUrl
-      ? `${config.baseUrl.replace(/\/$/, "")}/sdk/cs-agent-widget.js`
-      : "/sdk/cs-agent-widget.js"
+      ? `${config.baseUrl.replace(/\/$/, "")}/sdk/cs-ai-agent-sdk.min.js`
+      : "/sdk/cs-ai-agent-sdk.min.js"
 
     return `<script>
   window.CSAgentConfig = {
