@@ -11,3 +11,7 @@ type AuthPrincipal struct {
 	Roles       []string
 	Permissions []string
 }
+
+type WxWorkKFChannelConfig struct {
+	OpenKfID string `json:"openKfId"`
+}

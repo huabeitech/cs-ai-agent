@@ -26,10 +26,6 @@ func newChannelService() *channelService {
 type channelService struct {
 }
 
-type WxWorkKFChannelConfig struct {
-	OpenKfID string `json:"openKfId"`
-}
-
 func (s *channelService) Get(id int64) *models.Channel {
 	return repositories.ChannelRepository.Get(sqls.DB(), id)
 }
@@ -150,12 +146,12 @@ func (s *channelService) DeleteChannel(id int64, operator *dto.AuthPrincipal) er
 	})
 }
 
-func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*WxWorkKFChannelConfig, error) {
+func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*dto.WxWorkKFChannelConfig, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return &WxWorkKFChannelConfig{}, nil
+		return &dto.WxWorkKFChannelConfig{}, nil
 	}
-	cfg := &WxWorkKFChannelConfig{}
+	cfg := &dto.WxWorkKFChannelConfig{}
 	if err := json.Unmarshal([]byte(raw), cfg); err != nil {
 		return nil, err
 	}
