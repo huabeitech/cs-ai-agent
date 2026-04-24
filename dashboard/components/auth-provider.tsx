@@ -33,7 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [session, setSession] = useState<AuthSession | null>(null)
   const [ready, setReady] = useState(false)
-  const requiresAuth = pathname?.startsWith("/dashboard") ?? false
+  const isDashboardLoginRoute = pathname?.startsWith("/dashboard/login") ?? false
+  const requiresAuth = (pathname?.startsWith("/dashboard") ?? false) && !isDashboardLoginRoute
 
   const refreshProfile = useCallback(async () => {
     const stored = readSession()
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null)
       if (requiresAuth) {
         startTransition(() => {
-          router.replace("/login")
+          router.replace("/dashboard/login")
         })
       }
     } finally {
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logout(current?.refreshToken)
     setSession(null)
     startTransition(() => {
-      router.replace("/login")
+      router.replace("/dashboard/login")
     })
   }
 
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReady(true)
     if (requiresAuth) {
       startTransition(() => {
-        router.replace("/login")
+        router.replace("/dashboard/login")
       })
     }
   }, [requiresAuth, refreshProfile, router])

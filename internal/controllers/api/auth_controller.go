@@ -75,7 +75,7 @@ func (c *AuthController) GetWxwork_callback() {
 		c.redirectWxWorkError(err.Error())
 		return
 	}
-	c.Ctx.Redirect("/login/wxwork/callback?ticket="+url.QueryEscape(ticket)+"&next="+url.QueryEscape(next), iris.StatusFound)
+	c.Ctx.Redirect("/dashboard/login/wxwork/callback?ticket="+url.QueryEscape(ticket)+"&next="+url.QueryEscape(next), iris.StatusFound)
 }
 
 func (c *AuthController) PostWxwork_exchange() *web.JsonResult {

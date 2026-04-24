@@ -15,7 +15,7 @@ export default function HomePage() {
           <Link href="/dashboard">
             进入控制台
           </Link>
-          <Link href="/login">
+          <Link href="/dashboard/login">
             登录后台
           </Link>
         </div>

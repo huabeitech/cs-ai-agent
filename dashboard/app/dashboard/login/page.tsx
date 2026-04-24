@@ -1,5 +1,5 @@
 import { LoginForm } from "@/components/login-form"
-import { BotMessageSquareIcon, ShieldCheckIcon, UsersIcon, KeyRoundIcon } from "lucide-react"
+import { BotMessageSquareIcon, ShieldCheckIcon } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
       </div>
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/login" className="flex items-center gap-2 font-medium">
+          <Link href="/dashboard/login" className="flex items-center gap-2 font-medium">
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <BotMessageSquareIcon className="size-4" />
             </div>

@@ -31,7 +31,7 @@ function WxWorkLoginCallbackContent() {
 
     if (!ticket) {
       toast.error("企业微信登录票据不存在")
-      router.replace("/login")
+      router.replace("/dashboard/login")
       return
     }
 
@@ -42,7 +42,7 @@ function WxWorkLoginCallbackContent() {
       })
       .catch((error) => {
         toast.error(error instanceof Error ? error.message : "企业微信登录失败")
-        router.replace("/login")
+        router.replace("/dashboard/login")
       })
   }, [router, searchParams])
 
