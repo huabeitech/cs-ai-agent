@@ -2,11 +2,13 @@ package channel
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/repositories"
 	"fmt"
 	"time"
 
+	"github.com/mlogclub/simple/common/jsons"
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 )
@@ -62,8 +64,15 @@ func buildSeedItems(aiAgentID int64) []models.Channel {
 			ChannelType: enums.ChannelTypeWeb,
 			ChannelID:   strs.UUID(),
 			AIAgentID:   aiAgentID,
-			Status:      enums.StatusOk,
-			Remark:      "Local testdata seed",
+			ConfigJSON: jsons.ToJsonStr(dto.WebChannelConfig{
+				Title:      "在线客服",
+				Subtitle:   "贝壳AI提供技术支持",
+				ThemeColor: "#2563eb",
+				Position:   "right",
+				Width:      "780px",
+			}),
+			Status: enums.StatusOk,
+			Remark: "Local testdata seed",
 			AuditFields: models.AuditFields{
 				CreatedAt:      now,
 				CreateUserID:   0,
