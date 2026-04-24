@@ -44,23 +44,23 @@ install:
 
 run:
 	@server_pid=0; \
-	dashboard_pid=0; \
+	web_pid=0; \
 	widget_pid=0; \
-	trap 'kill $$server_pid $$dashboard_pid $$widget_pid 2>/dev/null || true' INT TERM EXIT; \
+	trap 'kill $$server_pid $$web_pid $$widget_pid 2>/dev/null || true' INT TERM EXIT; \
 	$(MAKE) run-server & \
 	server_pid=$$!; \
 	$(MAKE) run-web & \
-	dashboard_pid=$$!; \
+	web_pid=$$!; \
 	$(MAKE) run-widget & \
 	widget_pid=$$!; \
-	while kill -0 $$server_pid 2>/dev/null && kill -0 $$dashboard_pid 2>/dev/null && kill -0 $$widget_pid 2>/dev/null; do \
+	while kill -0 $$server_pid 2>/dev/null && kill -0 $$web_pid 2>/dev/null && kill -0 $$widget_pid 2>/dev/null; do \
 		sleep 1; \
 	done; \
 	status=0; \
 	wait $$server_pid || status=$$?; \
-	wait $$dashboard_pid || status=$$?; \
+	wait $$web_pid || status=$$?; \
 	wait $$widget_pid || status=$$?; \
-	kill $$server_pid $$dashboard_pid $$widget_pid 2>/dev/null || true; \
+	kill $$server_pid $$web_pid $$widget_pid 2>/dev/null || true; \
 	exit $$status
 
 run-server:
