@@ -41,7 +41,11 @@
       }
     }
     merged.baseUrl = String(merged.baseUrl || window.location.origin).replace(/\/$/, "");
-    merged.apiBaseUrl = String(merged.apiBaseUrl || merged.baseUrl).replace(/\/$/, "");
+    if (merged.apiBaseUrl) {
+      merged.apiBaseUrl = String(merged.apiBaseUrl).replace(/\/$/, "");
+    } else {
+      delete merged.apiBaseUrl;
+    }
     merged.channelId = String(merged.channelId || "");
     merged.externalSource = String(merged.externalSource || "web_chat");
     return merged;
@@ -364,9 +368,6 @@
     var widgetBaseUrl = resolveWidgetBaseUrl(state.config);
     if (!rawConfig.baseUrl) {
       state.config.baseUrl = widgetBaseUrl;
-    }
-    if (!rawConfig.apiBaseUrl) {
-      state.config.apiBaseUrl = state.config.baseUrl;
     }
     if (!state.config.channelId) {
       console.error("[cs-agent-widget] channelId is required");

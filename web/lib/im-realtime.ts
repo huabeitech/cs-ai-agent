@@ -17,7 +17,7 @@ export type ImRealtimeEnvelope = {
 
 export function createImRealtimeConnection() {
   const config = readKefuWidgetConfig()
-  const apiBaseUrl = (config.apiBaseUrl || config.baseUrl || "").trim()
+  const apiBaseUrl = (config.apiBaseUrl || "").trim()
   const baseUrl = apiBaseUrl
     ? apiBaseUrl.replace(/^http/, "ws").replace(/\/$/, "")
     : createWebSocketBaseUrl()
