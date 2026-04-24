@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 
-import "./globals.css"
+import "@/app/globals.css"
 import "md-editor-rt/lib/style.css"
 import "@/styles/main.scss"
 

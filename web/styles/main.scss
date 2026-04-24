@@ -4,6 +4,31 @@
 $thumb: #cbd5e1;
 $thumb-hover: #94a3b8;
 
+textarea.cs-agent-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: $thumb transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: $thumb;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: $thumb-hover;
+    background-clip: padding-box;
+  }
+}
+
 .cs-agent-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: $thumb transparent;
@@ -27,6 +52,73 @@ $thumb-hover: #94a3b8;
     background: $thumb-hover;
     background-clip: padding-box;
   }
+}
+
+.cs-agent-shell {
+  /* 与 widget 保持一致：容器本身不额外加 padding。 */
+}
+
+.cs-agent-panel {
+  border-radius: 28px;
+  box-shadow:
+    0 24px 80px rgba(15, 23, 42, 0.14),
+    0 10px 24px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.cs-agent-grid-bg,
+.\.cs-agent-grid-bg {
+  background-image:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.72), transparent 32%),
+    linear-gradient(180deg, rgba(247, 249, 252, 0.92) 0%, rgba(238, 244, 251, 0.94) 100%),
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    22px 22px,
+    22px 22px;
+  background-position:
+    center top,
+    center,
+    center,
+    center;
+}
+
+.cs-agent-fade-up {
+  animation: cs-agent-fade-up 220ms ease-out;
+}
+
+.cs-agent-status-dot {
+  animation: cs-agent-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cs-agent-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cs-agent-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* 图片预览：遮罩在 dialog 内部绘制，避免与原生 ::backdrop 叠色 */
+.cs-agent-image-lightbox::backdrop {
+  background: transparent;
 }
 
 .dark .cs-agent-scrollbar {

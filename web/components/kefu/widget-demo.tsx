@@ -102,15 +102,18 @@ export function KefuWidgetDemo() {
   const [status, setStatus] = useState("请填写 channelId")
 
   useEffect(() => {
-    const initialConfig = getDefaultConfig()
-    setConfig(initialConfig)
-    setStatus(initialConfig.channelId ? "Widget 已挂载" : "请填写 channelId")
+    const timer = window.setTimeout(() => {
+      const initialConfig = getDefaultConfig()
+      setConfig(initialConfig)
+      setStatus(initialConfig.channelId ? "Widget 已挂载" : "请填写 channelId")
 
-    if (initialConfig.channelId) {
-      injectWidget(initialConfig)
-    }
+      if (initialConfig.channelId) {
+        injectWidget(initialConfig)
+      }
+    }, 0)
 
     return () => {
+      window.clearTimeout(timer)
       removeMountedWidget()
     }
   }, [])
