@@ -24,13 +24,12 @@ func (c *ImWidgetController) AnyConfig() *web.JsonResult {
 	}
 
 	ret := response.WidgetConfigResponse{
-		ChannelID:   channel.ChannelID,
-		Title:       cfg.Title,
-		Subtitle:    cfg.Subtitle,
-		WelcomeText: cfg.WelcomeText,
-		ThemeColor:  cfg.ThemeColor,
-		Position:    cfg.Position,
-		Width:       cfg.Width,
+		ChannelID:  channel.ChannelID,
+		Title:      cfg.Title,
+		Subtitle:   cfg.Subtitle,
+		ThemeColor: cfg.ThemeColor,
+		Position:   cfg.Position,
+		Width:      cfg.Width,
 	}
 	return web.JsonData(ret)
 }

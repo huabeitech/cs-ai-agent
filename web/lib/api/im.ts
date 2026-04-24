@@ -106,7 +106,6 @@ export type ImWidgetConfig = {
   channelId?: string
   title?: string
   subtitle?: string
-  welcomeText?: string
   themeColor?: string
   position?: "left" | "right"
   width?: string

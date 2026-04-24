@@ -17,10 +17,9 @@ type WxWorkKFChannelConfig struct {
 }
 
 type WebChannelConfig struct {
-	Title       string `json:"title"`
-	Subtitle    string `json:"subtitle"`
-	WelcomeText string `json:"welcomeText"`
-	ThemeColor  string `json:"themeColor"`
-	Position    string `json:"position"`
-	Width       string `json:"width"`
+	Title      string `json:"title"`
+	Subtitle   string `json:"subtitle"`
+	ThemeColor string `json:"themeColor"`
+	Position   string `json:"position"`
+	Width      string `json:"width"`
 }

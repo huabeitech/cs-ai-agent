@@ -45,7 +45,6 @@ const widgetPositionOptions = [
 type WebChannelConfig = {
   title?: string
   subtitle?: string
-  welcomeText?: string
   themeColor?: string
   position?: "left" | "right"
   width?: string
@@ -54,7 +53,6 @@ type WebChannelConfig = {
 const defaultWebChannelConfig: Required<WebChannelConfig> = {
   title: "在线客服",
   subtitle: "欢迎咨询",
-  welcomeText: "",
   themeColor: "#2563eb",
   position: "right",
   width: "380px",
@@ -67,7 +65,6 @@ const schema = z.object({
   openKfId: z.string().trim(),
   widgetTitle: z.string().trim(),
   widgetSubtitle: z.string().trim(),
-  widgetWelcomeText: z.string().trim(),
   widgetThemeColor: z.string().trim(),
   widgetPosition: z.enum(["left", "right"]),
   widgetWidth: z.string().trim(),
@@ -89,7 +86,6 @@ const emptyForm: EditForm = {
   openKfId: "",
   widgetTitle: defaultWebChannelConfig.title,
   widgetSubtitle: defaultWebChannelConfig.subtitle,
-  widgetWelcomeText: defaultWebChannelConfig.welcomeText,
   widgetThemeColor: defaultWebChannelConfig.themeColor,
   widgetPosition: defaultWebChannelConfig.position,
   widgetWidth: defaultWebChannelConfig.width,
@@ -118,7 +114,6 @@ function parseWebChannelConfig(configJson: string): Required<WebChannelConfig> {
     return {
       title: parsed.title?.trim() || defaultWebChannelConfig.title,
       subtitle: parsed.subtitle?.trim() ?? defaultWebChannelConfig.subtitle,
-      welcomeText: parsed.welcomeText?.trim() ?? defaultWebChannelConfig.welcomeText,
       themeColor:
         parsed.themeColor?.trim() || defaultWebChannelConfig.themeColor,
       position,
@@ -141,7 +136,6 @@ function buildForm(item: AdminChannel | null): EditForm {
     openKfId: parseOpenKfId(item.configJson),
     widgetTitle: widgetConfig.title,
     widgetSubtitle: widgetConfig.subtitle,
-    widgetWelcomeText: widgetConfig.welcomeText,
     widgetThemeColor: widgetConfig.themeColor,
     widgetPosition: widgetConfig.position,
     widgetWidth: widgetConfig.width,
@@ -157,7 +151,6 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
       : JSON.stringify({
           title: form.widgetTitle.trim() || defaultWebChannelConfig.title,
           subtitle: form.widgetSubtitle.trim(),
-          welcomeText: form.widgetWelcomeText.trim(),
           themeColor:
             form.widgetThemeColor.trim() || defaultWebChannelConfig.themeColor,
           position: form.widgetPosition || defaultWebChannelConfig.position,
@@ -290,7 +283,15 @@ function ChannelFormBody({
         </div>
       ) : (
         <form id={formId} onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
+            <Field data-invalid={!!errors.name}>
+              <FieldLabel htmlFor="channel-name">渠道名称</FieldLabel>
+              <FieldContent>
+                <Input id="channel-name" {...register("name")} />
+                <FieldError errors={[errors.name]} />
+              </FieldContent>
+            </Field>
+
             <Field data-invalid={!!errors.channelType}>
               <FieldLabel>渠道类型</FieldLabel>
               <FieldContent>
@@ -330,14 +331,6 @@ function ChannelFormBody({
                   )}
                 />
                 <FieldError errors={[errors.aiAgentId]} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="channel-name">渠道名称</FieldLabel>
-              <FieldContent>
-                <Input id="channel-name" {...register("name")} />
-                <FieldError errors={[errors.name]} />
               </FieldContent>
             </Field>
 
@@ -418,16 +411,6 @@ function ChannelFormBody({
                 </FieldContent>
               </Field>
 
-              <Field data-invalid={!!errors.widgetWelcomeText}>
-                <FieldLabel htmlFor="channel-widget-welcome-text">欢迎语</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="channel-widget-welcome-text"
-                    {...register("widgetWelcomeText")}
-                  />
-                  <FieldError errors={[errors.widgetWelcomeText]} />
-                </FieldContent>
-              </Field>
             </div>
           ) : null}
 

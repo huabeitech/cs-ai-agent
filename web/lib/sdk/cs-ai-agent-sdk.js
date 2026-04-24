@@ -77,7 +77,7 @@
         merged[key] = config[key];
       }
     }
-    var remoteKeys = ["title", "subtitle", "welcomeText", "themeColor", "position", "width"];
+    var remoteKeys = ["title", "subtitle", "themeColor", "position", "width"];
     for (var i = 0; i < remoteKeys.length; i += 1) {
       key = remoteKeys[i];
       if (

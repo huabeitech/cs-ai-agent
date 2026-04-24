@@ -162,12 +162,11 @@ func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*dto.WxWorkKFCh
 func (s *channelService) ParseWebChannelConfig(raw string) (*dto.WebChannelConfig, error) {
 	raw = strings.TrimSpace(raw)
 	cfg := &dto.WebChannelConfig{
-		Title:       "在线客服",
-		Subtitle:    "欢迎咨询",
-		WelcomeText: "",
-		ThemeColor:  "#2563eb",
-		Position:    "right",
-		Width:       "380px",
+		Title:      "在线客服",
+		Subtitle:   "欢迎咨询",
+		ThemeColor: "#2563eb",
+		Position:   "right",
+		Width:      "380px",
 	}
 	if raw != "" {
 		if err := json.Unmarshal([]byte(raw), cfg); err != nil {
@@ -179,7 +178,6 @@ func (s *channelService) ParseWebChannelConfig(raw string) (*dto.WebChannelConfi
 		cfg.Title = "在线客服"
 	}
 	cfg.Subtitle = strings.TrimSpace(cfg.Subtitle)
-	cfg.WelcomeText = strings.TrimSpace(cfg.WelcomeText)
 	cfg.ThemeColor = strings.TrimSpace(cfg.ThemeColor)
 	if cfg.ThemeColor == "" {
 		cfg.ThemeColor = "#2563eb"

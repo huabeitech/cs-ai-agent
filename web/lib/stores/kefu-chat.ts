@@ -118,7 +118,6 @@ function hasMoreAfterLatestSyncMerge(args: {
 export type KefuChatStore = {
   title: string
   subtitle: string
-  welcomeText: string
   themeColor: string
   conversation: ImConversation | null
   messages: ImMessage[]
@@ -300,7 +299,6 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
   return {
     title: "在线客服",
     subtitle: "",
-    welcomeText: "",
     themeColor: "#2563eb",
     conversation: null,
     messages: [],
@@ -350,7 +348,6 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
           set({
             title: widgetConfig.title || "在线客服",
             subtitle: widgetConfig.subtitle || "",
-            welcomeText: widgetConfig.welcomeText || "",
             themeColor: widgetConfig.themeColor || "#2563eb",
           })
 
