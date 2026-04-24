@@ -1,4 +1,5 @@
 import { request } from "@/lib/api/client"
+import { readKefuWidgetConfig } from "@/lib/kefu-widget-config"
 import { generateUUID } from "@/lib/utils"
 
 export type Paging = {
@@ -8,7 +9,7 @@ export type Paging = {
 }
 
 export type PageResult<T> = {
-  results: T[]
+  results?: T[] | null
   page: Paging
   cursor?: string
   hasMore?: boolean
@@ -133,11 +134,46 @@ export function getImVisitorId() {
   return visitorId
 }
 
-function createImHeaders() {
+function getRuntimeImConfig() {
+  const widgetConfig = readKefuWidgetConfig()
+  const baseUrl = (widgetConfig.apiBaseUrl || widgetConfig.baseUrl || API_BASE_URL)
+    .trim()
+    .replace(/\/$/, "")
   return {
-    "X-External-Source": OPEN_IM_EXTERNAL_SOURCE,
+    baseUrl,
+    channelId: widgetConfig.channelId || OPEN_IM_CHANNEL_ID,
+    externalSource:
+      (widgetConfig.externalSource || OPEN_IM_EXTERNAL_SOURCE).trim() || "web_chat",
+    externalName: (widgetConfig.subject || "").trim(),
+  }
+}
+
+function createImHeaders() {
+  const config = getRuntimeImConfig()
+  const headers: Record<string, string> = {
+    "X-External-Source": config.externalSource,
     "X-External-Id": getImVisitorId(),
-    "X-Channel-Id": OPEN_IM_CHANNEL_ID,
+    "X-Channel-Id": config.channelId,
+  }
+  if (config.externalName) {
+    headers["X-External-Name"] = encodeURIComponent(config.externalName)
+  }
+  return {
+    ...headers,
+  }
+}
+
+function createRequestOptions(
+  init?: RequestInit
+): RequestInit & { baseUrl?: string; skipAuth?: boolean } {
+  return {
+    ...init,
+    skipAuth: true,
+    headers: {
+      ...createImHeaders(),
+      ...(init?.headers as Record<string, string> | undefined),
+    },
+    baseUrl: getRuntimeImConfig().baseUrl,
   }
 }
 
@@ -159,7 +195,7 @@ function toQueryString(query?: Record<string, string | number | undefined>) {
 
 export function fetchImConversationDetail(id: number) {
   return request<ImConversationDetail>(`/api/open/im/conversation/${id}`, {
-    headers: createImHeaders(),
+    ...createRequestOptions(),
   })
 }
 
@@ -168,34 +204,32 @@ export function fetchImMessages(
 ) {
   return request<PageResult<ImMessage>>(
     `/api/open/im/message/list${toQueryString(query)}`,
-    { headers: createImHeaders() }
+    createRequestOptions()
   )
 }
 
 /** 外部身份仅通过 createImHeaders()（X-External-*）传递，无 JSON body */
 export function createOrMatchImConversation() {
   return request<ImConversation>("/api/open/im/conversation/create_or_match", {
-    method: "POST",
-    headers: createImHeaders(),
+    ...createRequestOptions({ method: "POST" }),
   })
 }
 
 export function fetchImWidgetConfig() {
   return request<ImWidgetConfig>(
     `/api/open/im/widget/config${toQueryString({
-      channelId: OPEN_IM_CHANNEL_ID,
+      channelId: getRuntimeImConfig().channelId,
     })}`,
-    {
-      headers: createImHeaders(),
-    }
+    createRequestOptions()
   )
 }
 
 export function closeImConversation(conversationId: number) {
   return request<void>("/api/open/im/conversation/close", {
-    method: "POST",
-    headers: createImHeaders(),
-    body: JSON.stringify({ conversationId }),
+    ...createRequestOptions({
+      method: "POST",
+      body: JSON.stringify({ conversationId }),
+    }),
   })
 }
 
@@ -207,17 +241,19 @@ export function sendImMessage(payload: {
   clientMsgId?: string
 }) {
   return request<ImMessage>("/api/open/im/message/send", {
-    method: "POST",
-    headers: createImHeaders(),
-    body: JSON.stringify(payload),
+    ...createRequestOptions({
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   })
 }
 
 export function markImMessageRead(conversationId: number, messageId = 0) {
   return request<void>("/api/open/im/message/read", {
-    method: "POST",
-    headers: createImHeaders(),
-    body: JSON.stringify({ conversationId, messageId }),
+    ...createRequestOptions({
+      method: "POST",
+      body: JSON.stringify({ conversationId, messageId }),
+    }),
   })
 }
 
@@ -226,9 +262,10 @@ export function uploadImImage(conversationId: number, file: File) {
   formData.set("conversationId", String(conversationId))
   formData.set("file", file)
   return request<ImAsset>("/api/open/im/message/upload_image", {
-    method: "POST",
-    headers: createImHeaders(),
-    body: formData,
+    ...createRequestOptions({
+      method: "POST",
+      body: formData,
+    }),
   })
 }
 
@@ -237,8 +274,9 @@ export function uploadImAttachment(conversationId: number, file: File) {
   formData.set("conversationId", String(conversationId))
   formData.set("file", file)
   return request<ImAsset>("/api/open/im/message/upload_attachment", {
-    method: "POST",
-    headers: createImHeaders(),
-    body: formData,
+    ...createRequestOptions({
+      method: "POST",
+      body: formData,
+    }),
   })
 }

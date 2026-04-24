@@ -18,7 +18,7 @@ import { renderIMMessageHTML } from "@/lib/im-message"
 import { cn, formatDateTime } from "@/lib/utils"
 
 type KefuMessageListProps = {
-  messages: ImMessage[]
+  messages?: ImMessage[] | null
   onNearBottomVisible?: () => void
   hasMoreOlder?: boolean
   loadingOlder?: boolean
@@ -76,7 +76,8 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
     const contentRef = useRef<HTMLDivElement>(null)
     const frameRef = useRef<number | null>(null)
     const shouldStickToBottomRef = useRef(true)
-    const lastMessageId = messages.at(-1)?.id
+    const safeMessages = Array.isArray(messages) ? messages : []
+    const lastMessageId = safeMessages.at(-1)?.id
 
     const isNearBottom = useCallback(
       (element: HTMLElement, threshold = 80) =>
@@ -221,8 +222,8 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
             </div>
           ) : null}
 
-          {messages.map((message, index) => {
-            const previousMessage = index > 0 ? messages[index - 1] : null
+          {safeMessages.map((message, index) => {
+            const previousMessage = index > 0 ? safeMessages[index - 1] : null
             const showTimeline =
               index === 0 ||
               getDayKey(previousMessage?.sentAt) !== getDayKey(message.sentAt)

@@ -1,10 +1,6 @@
 import { createWebSocketBaseUrl } from "@/lib/api/websocket"
 import { getImVisitorId } from "@/lib/api/im"
-
-const OPEN_IM_CHANNEL_ID =
-  process.env.NEXT_PUBLIC_OPEN_IM_CHANNEL_ID?.trim() || ""
-const OPEN_IM_EXTERNAL_SOURCE =
-  process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() || "web_chat"
+import { readKefuWidgetConfig } from "@/lib/kefu-widget-config"
 
 export type ImRealtimeEnvelope = {
   type: string
@@ -20,11 +16,22 @@ export type ImRealtimeEnvelope = {
 }
 
 export function createImRealtimeConnection() {
-  const baseUrl = createWebSocketBaseUrl()
+  const config = readKefuWidgetConfig()
+  const apiBaseUrl = (config.apiBaseUrl || config.baseUrl || "").trim()
+  const baseUrl = apiBaseUrl
+    ? apiBaseUrl.replace(/^http/, "ws").replace(/\/$/, "")
+    : createWebSocketBaseUrl()
   const externalId = encodeURIComponent(getImVisitorId())
-  const externalSource = encodeURIComponent(OPEN_IM_EXTERNAL_SOURCE)
-  const channelId = encodeURIComponent(OPEN_IM_CHANNEL_ID)
+  const externalSource = encodeURIComponent(
+    (config.externalSource ?? "web_chat").trim() || "web_chat"
+  )
+  const channelId = encodeURIComponent(config.channelId || "")
+  const externalName = (config.subject ?? "").trim()
+  const nameQuery =
+    externalName !== ""
+      ? `&externalName=${encodeURIComponent(externalName)}`
+      : ""
   return new WebSocket(
-    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&channelId=${channelId}`
+    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&channelId=${channelId}${nameQuery}`
   )
 }

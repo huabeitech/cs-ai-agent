@@ -13,6 +13,7 @@ type JsonResult<T> = {
 type RequestOptions = RequestInit & {
   skipAuth?: boolean
   retryOnAuthError?: boolean
+  baseUrl?: string
 }
 
 async function parseResult<T>(response: Response) {
@@ -57,8 +58,9 @@ export async function request<T>(
   options: RequestOptions = {},
   retryOnAuthError = true
 ): Promise<T> {
-  const { headers, skipAuth, ...rest } = options
+  const { headers, skipAuth, baseUrl, ...rest } = options
   delete (rest as RequestOptions).retryOnAuthError
+  delete (rest as RequestOptions).baseUrl
   const session = readSession()
   const authHeaders = new Headers(headers)
 
@@ -73,7 +75,8 @@ export async function request<T>(
     authHeaders.set("Content-Type", "application/json")
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const requestBaseUrl = baseUrl !== undefined ? baseUrl : API_BASE_URL
+  const response = await fetch(`${requestBaseUrl}${path}`, {
     ...rest,
     headers: authHeaders,
     cache: "no-store",

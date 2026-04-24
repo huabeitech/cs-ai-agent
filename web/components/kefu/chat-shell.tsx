@@ -79,6 +79,7 @@ export function KefuChatShell() {
       closeConversation: state.closeConversation,
     }))
   )
+  const safeMessages = Array.isArray(messages) ? messages : []
 
   const maybeMarkConversationRead = useCallback(() => {
     if (!isVisible || !conversation || typeof document === "undefined") {
@@ -119,7 +120,7 @@ export function KefuChatShell() {
 
   useEffect(() => {
     maybeMarkConversationRead()
-  }, [maybeMarkConversationRead, messages.length])
+  }, [maybeMarkConversationRead, safeMessages.length])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -252,7 +253,7 @@ export function KefuChatShell() {
         <div className=".cs-agent-grid-bg grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
           <KefuMessageList
             ref={messageListRef}
-            messages={messages}
+            messages={safeMessages}
             onNearBottomVisible={maybeMarkConversationRead}
             hasMoreOlder={messagesHasMore}
             loadingOlder={messagesLoadingMore}
@@ -311,4 +312,3 @@ export function KefuChatShell() {
     </main>
   )
 }
-

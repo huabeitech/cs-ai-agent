@@ -1,9 +1,15 @@
+import {
+  setKefuWidgetConfig,
+  type KefuWidgetHostConfig,
+} from "@/lib/kefu-widget-config"
+
 type HostBridgeOptions = {
   onOpen?: () => void
   onMinimize?: () => void
   onMaximizedChange?: (isMaximized: boolean) => void
 }
 
+const INIT_MESSAGE_TYPE = "cs-agent:init"
 const OPEN_MESSAGE_TYPE = "cs-agent:open"
 const MINIMIZE_MESSAGE_TYPE = "cs-agent:minimize"
 const MAXIMIZED_MESSAGE_TYPE = "cs-agent:maximized"
@@ -25,10 +31,15 @@ export function bindKefuHostBridge(options: HostBridgeOptions = {}) {
     const data = event.data as
       | {
           type?: string
-          payload?: { isMaximized?: boolean }
+          payload?: KefuWidgetHostConfig | { isMaximized?: boolean }
         }
       | undefined
     if (!data?.type) {
+      return
+    }
+
+    if (data.type === INIT_MESSAGE_TYPE && data.payload) {
+      setKefuWidgetConfig(data.payload as KefuWidgetHostConfig)
       return
     }
 
@@ -43,7 +54,8 @@ export function bindKefuHostBridge(options: HostBridgeOptions = {}) {
     }
 
     if (data.type === MAXIMIZED_MESSAGE_TYPE) {
-      options.onMaximizedChange?.(Boolean(data.payload?.isMaximized))
+      const payload = data.payload as { isMaximized?: boolean } | undefined
+      options.onMaximizedChange?.(Boolean(payload?.isMaximized))
     }
   }
 
@@ -71,4 +83,3 @@ export function requestKefuHostClose() {
 export function requestKefuHostToggleMaximize() {
   postToParent(REQUEST_TOGGLE_MAXIMIZE_MESSAGE_TYPE)
 }
-

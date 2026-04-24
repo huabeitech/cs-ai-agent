@@ -72,6 +72,10 @@ function mergeMessagesByIdAsc(a: ImMessage[], b: ImMessage[]): ImMessage[] {
   return Array.from(byId.values()).sort((x, y) => x.id - y.id)
 }
 
+function ensureMessageList(value: ImMessage[] | null | undefined): ImMessage[] {
+  return Array.isArray(value) ? value : []
+}
+
 function parseCursorId(cursor: string): number {
   const value = Number.parseInt(cursor, 10)
   return Number.isFinite(value) && value > 0 ? value : 0
@@ -394,10 +398,11 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
           conversationId,
           limit: DEFAULT_PAGE_LIMIT,
         })
+        const results = ensureMessageList(page.results)
         set({
-          messages: page.results,
-          messagesCursor: cursorFromLoadedMessages(page.results) || page.cursor || "",
-          messagesHasMore: Boolean(page.hasMore) || page.results.length >= DEFAULT_PAGE_LIMIT,
+          messages: results,
+          messagesCursor: cursorFromLoadedMessages(results) || page.cursor || "",
+          messagesHasMore: Boolean(page.hasMore) || results.length >= DEFAULT_PAGE_LIMIT,
         })
       } catch (error) {
         set({
@@ -418,7 +423,7 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
           conversationId,
           limit: DEFAULT_PAGE_LIMIT,
         })
-        const batch = page.results
+        const batch = ensureMessageList(page.results)
         if (batch.length === 0) {
           return
         }
@@ -466,12 +471,13 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
           cursor: cursorId,
           limit: DEFAULT_PAGE_LIMIT,
         })
+        const results = ensureMessageList(page.results)
         set((state) => {
-          const merged = mergeMessagesByIdAsc(page.results, state.messages)
+          const merged = mergeMessagesByIdAsc(results, ensureMessageList(state.messages))
           return {
             messages: merged,
             messagesCursor: cursorFromLoadedMessages(merged) || page.cursor || "",
-            messagesHasMore: Boolean(page.hasMore) || page.results.length >= DEFAULT_PAGE_LIMIT,
+            messagesHasMore: Boolean(page.hasMore) || results.length >= DEFAULT_PAGE_LIMIT,
             messagesLoadingMore: false,
           }
         })
