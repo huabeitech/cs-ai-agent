@@ -72,10 +72,12 @@ function injectWidget(config: KefuWidgetHostConfig) {
 export function KefuWidgetDemo() {
   const [config, setConfig] = useState<KefuWidgetHostConfig>(INITIAL_CONFIG)
   const [status, setStatus] = useState("请填写 channelId")
+  const [origin, setOrigin] = useState("")
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const initialConfig = getDefaultConfig()
+      setOrigin(window.location.origin)
       setConfig(initialConfig)
       setStatus(initialConfig.channelId ? "Widget 已挂载" : "请填写 channelId")
 
@@ -91,13 +93,17 @@ export function KefuWidgetDemo() {
   }, [])
 
   const snippet = useMemo(() => {
+    const scriptSrc = origin
+      ? `${origin}/sdk/cs-ai-agent-sdk.min.js`
+      : "/sdk/cs-ai-agent-sdk.min.js"
+
     return `<script>
   window.CSAgentConfig = {
     channelId: "${config.channelId || ""}"
   };
 </script>
-<script async src="/sdk/cs-ai-agent-sdk.min.js"></script>`
-  }, [config])
+<script async src="${scriptSrc}"></script>`
+  }, [config, origin])
 
   function updateField<K extends keyof KefuWidgetHostConfig>(
     key: K,
