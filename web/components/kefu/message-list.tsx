@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import {
   forwardRef,
   memo,
@@ -13,6 +12,9 @@ import {
 
 import { ImMessageHTML } from "@/components/im-message-html"
 import { useImageLightbox } from "@/components/image-lightbox"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import type { ImMessage } from "@/lib/api/im"
 import { renderIMMessageHTML } from "@/lib/im-message"
 import { cn, formatDateTime } from "@/lib/utils"
@@ -211,14 +213,16 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
         <div ref={contentRef} className="flex flex-col gap-4">
           {hasMoreOlder && onLoadOlder ? (
             <div className="flex justify-center py-1">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={loadingOlder}
                 onClick={() => void handleLoadOlder()}
-                className="rounded-full border border-white/70 bg-white/75 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.04)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-700 disabled:translate-y-0 disabled:opacity-60"
+                className="h-7 rounded-full border-slate-200 bg-white/90 text-xs text-slate-600 shadow-sm hover:bg-white hover:text-sky-700"
               >
                 {loadingOlder ? "加载中…" : "加载更早的消息"}
-              </button>
+              </Button>
             </div>
           ) : null}
 
@@ -257,35 +261,38 @@ const MessageItem = memo(
     const avatarSrc =
       !isCustomer && message.senderAvatar?.trim() ? message.senderAvatar.trim() : undefined
     const htmlContent = renderIMMessageHTML(message)
+    const fallbackName = senderName.slice(0, 1).toUpperCase()
 
     return (
-      <div className="cs-agent-fade-up">
+      <div>
         {showTimeline ? (
           <div className="mb-3 flex items-center justify-center">
-            <div className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.04)] backdrop-blur">
+            <Badge
+              variant="outline"
+              className="border-slate-200 bg-white/85 text-[11px] font-medium text-slate-500 shadow-sm"
+            >
               {getTimelineLabel(message.sentAt)}
-            </div>
+            </Badge>
           </div>
         ) : null}
 
-        <div className={cn("flex gap-2", isCustomer ? "justify-end" : "justify-start")}>
-          {!isCustomer && avatarSrc ? (
-            <Image
-              src={avatarSrc}
-              alt=""
-              width={32}
-              height={32}
-              className="size-8 shrink-0 rounded-full object-cover ring-1 ring-white/80"
-            />
+        <div className={cn("flex gap-2.5", isCustomer ? "justify-end" : "justify-start")}>
+          {!isCustomer ? (
+            <Avatar className="mt-5">
+              {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
+              <AvatarFallback className="bg-slate-200 text-slate-600">
+                {fallbackName || "客"}
+              </AvatarFallback>
+            </Avatar>
           ) : null}
 
           <div
             className={cn(
-              "flex max-w-[86%] flex-col gap-1",
+              "flex max-w-[86%] flex-col gap-1.5",
               isCustomer ? "items-end" : "items-start"
             )}
           >
-            <div className="flex items-center gap-2 px-1 text-[11px] text-slate-400">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[11px] text-slate-400">
               <span className="font-medium">{senderName}</span>
               <span>{formatDateTime(message.sentAt)}</span>
               {isCustomer ? (
@@ -294,10 +301,10 @@ const MessageItem = memo(
             </div>
             <div
               className={cn(
-                "rounded-lg px-3 py-2 text-sm leading-normal shadow-[0_14px_28px_rgba(15,23,42,0.08)]",
+                "rounded-lg px-3 py-2 text-sm leading-normal shadow-[0_10px_22px_rgba(15,23,42,0.06)]",
                 isCustomer
-                  ? "bg-[#A9EA7A] text-[#161616]"
-                  : "border border-white/80 bg-white/94 text-slate-900"
+                  ? "bg-[#a9ea7a] text-[#161616]"
+                  : "border border-slate-200/80 bg-white text-slate-900"
               )}
             >
               <ImMessageHTML

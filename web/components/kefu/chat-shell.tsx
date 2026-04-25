@@ -7,7 +7,7 @@ import {
   RotateCwIcon,
   XIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react"
 import { useShallow } from "zustand/react/shallow"
 
 import { KefuConnectionStatus } from "@/components/kefu/connection-status"
@@ -23,6 +23,15 @@ import {
   requestKefuHostToggleMaximize,
 } from "@/lib/kefu-host-bridge"
 import { useKefuChatStore } from "@/lib/stores/kefu-chat"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export function KefuChatShell() {
   const messageListRef = useRef<KefuMessageListHandle | null>(null)
@@ -191,74 +200,81 @@ export function KefuChatShell() {
 
   return (
     <main
-      className="cs-agent-shell relative flex h-screen overflow-hidden bg-(--background)"
-      style={{ "--primary": themeColor } as React.CSSProperties}
+      className="relative flex h-screen overflow-hidden bg-[#f6f8fb] text-slate-950"
+      style={{ "--primary": themeColor } as CSSProperties}
     >
-      <section className="cs-agent-panel flex h-full w-full flex-col overflow-hidden border border-white/70">
-        <header className="relative shrink-0 overflow-hidden border-b border-white/60 px-4 pb-3 pt-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-          <div className="absolute inset-x-0 top-0 h-20 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.14),transparent_52%)]" />
-          <div className="relative flex items-center justify-between gap-3">
+      <section className="flex h-full w-full flex-col overflow-hidden border border-slate-200/70 bg-white">
+        <header className="shrink-0 border-b border-slate-200/70 bg-white/95 px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-[16px] font-semibold tracking-[0.01em] text-slate-950">
+              <div className="truncate text-base font-semibold text-slate-950">
                 {title}
               </div>
-              <div className="mt-1 text-[12px] text-slate-500">{subtitle}</div>
+              <div className="mt-1 truncate text-xs text-slate-500">{subtitle}</div>
             </div>
             <div className="flex items-center gap-2">
               {status !== "connected" ? (
                 <KefuConnectionStatus status={status} />
               ) : null}
-              <div className="inline-flex items-center gap-1 rounded-[18px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(241,245,249,0.82))] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-                <button
+              <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={retry}
                   aria-label="重新连接"
                   title="重新连接"
-                  className="group inline-flex h-6 w-6 items-center justify-center rounded-[14px] text-slate-400 transition duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(239,246,255,0.96))] hover:text-sky-600 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_18px_rgba(56,189,248,0.16)]"
+                  className="text-slate-500 hover:bg-white hover:text-sky-600"
                 >
-                  <RotateCwIcon className="size-3.75 transition duration-200 group-hover:rotate-[-20deg]" />
-                </button>
+                  <RotateCwIcon />
+                </Button>
                 {showHostActions ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={handleMinimize}
                     aria-label="收起聊天窗口"
                     title="收起聊天窗口"
-                    className="group inline-flex h-6 w-6 items-center justify-center rounded-[14px] text-slate-400 transition duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] hover:text-slate-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_18px_rgba(15,23,42,0.10)]"
+                    className="text-slate-500 hover:bg-white hover:text-slate-800"
                   >
-                    <MinusIcon className="size-3.75 transition duration-200 group-hover:scale-x-[0.88]" />
-                  </button>
+                    <MinusIcon />
+                  </Button>
                 ) : null}
                 {showHostActions ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={handleToggleMaximize}
                     aria-label={isMaximized ? "取消最大化" : "最大化聊天窗口"}
                     title={isMaximized ? "取消最大化" : "最大化聊天窗口"}
-                    className="group inline-flex h-6 w-6 items-center justify-center rounded-[14px] text-slate-400 transition duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(238,249,244,0.96))] hover:text-emerald-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_18px_rgba(16,185,129,0.14)]"
+                    className="text-slate-500 hover:bg-white hover:text-emerald-700"
                   >
                     {isMaximized ? (
-                      <Minimize2Icon className="size-3.75 transition duration-200 group-hover:scale-[0.94]" />
+                      <Minimize2Icon />
                     ) : (
-                      <Maximize2Icon className="size-3.75 transition duration-200 group-hover:scale-[1.04]" />
+                      <Maximize2Icon />
                     )}
-                  </button>
+                  </Button>
                 ) : null}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => setIsCloseDialogOpen(true)}
                   aria-label="关闭聊天窗口"
                   title="关闭聊天窗口"
-                  className="group inline-flex h-6 w-6 items-center justify-center rounded-[14px] text-rose-400 transition duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,241,242,0.98))] hover:text-rose-600 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_18px_rgba(244,63,94,0.16)]"
+                  className="text-rose-500 hover:bg-rose-50 hover:text-rose-600"
                 >
-                  <XIcon className="size-3.75 transition duration-200 group-hover:scale-[0.92]" />
-                </button>
+                  <XIcon />
+                </Button>
               </div>
             </div>
           </div>
         </header>
 
-        <div className=".cs-agent-grid-bg grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-[#f6f8fb]">
           <KefuMessageList
             ref={messageListRef}
             messages={safeMessages}
@@ -282,41 +298,41 @@ export function KefuChatShell() {
         ) : null}
       </section>
 
-      {isCloseDialogOpen ? (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.16),transparent_38%),rgba(15,23,42,0.24)] px-5 backdrop-blur-sm">
-          <div className="cs-agent-fade-up w-full max-w-[320px] rounded-[26px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.94))] p-5 shadow-[0_28px_80px_rgba(15,23,42,0.18),inset_0_1px_0_rgba(255,255,255,0.92)]">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold tracking-[0.01em] text-slate-950">
-                  结束当前对话？
-                </div>
-                <div className="mt-1.5 text-[12px] leading-5 text-slate-500">
-                  结束会话，客服将无法再查看您的消息记录，如需再次联系请重新发起对话。
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                disabled={isClosingConversation}
-                onClick={() => setIsCloseDialogOpen(false)}
-                className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 px-4 text-[12px] font-medium text-slate-600 shadow-[0_10px_20px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:text-slate-800 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                继续对话
-              </button>
-              <button
-                type="button"
-                disabled={isClosingConversation}
-                onClick={() => void confirmCloseConversation()}
-                className="inline-flex h-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#f43f5e,#fb7185)] px-4 text-[12px] font-semibold text-white shadow-[0_14px_28px_rgba(244,63,94,0.24)] transition hover:-translate-y-0.5 hover:opacity-92 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isClosingConversation ? "结束中..." : "确认结束"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <Dialog
+        open={isCloseDialogOpen}
+        onOpenChange={(open) => {
+          if (!isClosingConversation) {
+            setIsCloseDialogOpen(open)
+          }
+        }}
+      >
+        <DialogContent className="max-w-[320px]" showCloseButton={!isClosingConversation}>
+          <DialogHeader>
+            <DialogTitle>结束当前对话？</DialogTitle>
+            <DialogDescription className="text-xs leading-5">
+              结束会话，客服将无法再查看您的消息记录，如需再次联系请重新发起对话。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isClosingConversation}
+              onClick={() => setIsCloseDialogOpen(false)}
+            >
+              继续对话
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isClosingConversation}
+              onClick={() => void confirmCloseConversation()}
+            >
+              {isClosingConversation ? "结束中..." : "确认结束"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

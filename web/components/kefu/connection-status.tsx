@@ -1,5 +1,6 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 type KefuConnectionStatusProps = {
@@ -15,17 +16,15 @@ const statusText: Record<KefuConnectionStatusProps["status"], string> = {
 export function KefuConnectionStatus({ status }: KefuConnectionStatusProps) {
   const toneClass =
     status === "connected"
-      ? "border-emerald-200/80 bg-emerald-50 text-emerald-700"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
       : status === "connecting"
-        ? "border-amber-200/80 bg-amber-50 text-amber-700"
-        : "border-slate-200/80 bg-slate-100 text-slate-600"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-slate-200 bg-slate-100 text-slate-600"
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] shadow-[0_6px_16px_rgba(15,23,42,0.06)]",
-        toneClass
-      )}
+    <Badge
+      variant="outline"
+      className={cn("h-6 gap-2 px-2.5 text-[11px] font-medium shadow-sm", toneClass)}
     >
       <span
         className={cn(
@@ -38,7 +37,6 @@ export function KefuConnectionStatus({ status }: KefuConnectionStatusProps) {
         )}
       />
       <span>{statusText[status]}</span>
-    </div>
+    </Badge>
   )
 }
-

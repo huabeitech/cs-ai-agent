@@ -7,6 +7,7 @@ import Placeholder from "@tiptap/extension-placeholder"
 import StarterKit from "@tiptap/starter-kit"
 import { ImageIcon, PaperclipIcon, SendHorizonalIcon } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { generateUUID } from "@/lib/utils"
 
 type UploadedImage = {
@@ -99,7 +100,7 @@ export function KefuMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-[13px] leading-6 text-slate-900 outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-xl [&_img]:object-contain",
+          "min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-slate-900 outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-lg [&_img]:object-contain",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -232,8 +233,8 @@ export function KefuMessageEditor({
   }
 
   return (
-    <div className="px-3 pb-3 pt-2">
-      <div className="rounded-xl border border-white/60 bg-white/78 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur">
+    <div className="border-t border-slate-200/70 bg-white px-3 pb-3 pt-2">
+      <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
         <input
           ref={imageInputRef}
           type="file"
@@ -250,10 +251,12 @@ export function KefuMessageEditor({
         <div className="min-h-10">
           <EditorContent editor={editor} />
         </div>
-        <div className="mt-1.5 flex items-center justify-between">
+        <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 shouldRestoreFocusRef.current = editor?.isFocused ?? true
@@ -261,12 +264,15 @@ export function KefuMessageEditor({
               }}
               disabled={disabled || isUploading}
               aria-label={isUploading ? "图片上传中" : "发送图片"}
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:text-slate-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
+              title={isUploading ? "图片上传中" : "发送图片"}
+              className="text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             >
-              <ImageIcon className="size-4" />
-            </button>
-            <button
+              <ImageIcon />
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 shouldRestoreFocusRef.current = editor?.isFocused ?? true
@@ -274,22 +280,25 @@ export function KefuMessageEditor({
               }}
               disabled={disabled || isUploading}
               aria-label={isUploading ? "附件上传中" : "发送附件"}
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 text-slate-500 shadow-[0_8px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:text-slate-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
+              title={isUploading ? "附件上传中" : "发送附件"}
+              className="text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             >
-              <PaperclipIcon className="size-4" />
-            </button>
+              <PaperclipIcon />
+            </Button>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <p className="text-[10px] text-slate-400">Enter 发送</p>
-            <button
+            <Button
               type="button"
+              size="icon"
               onClick={() => void handleSend()}
               disabled={disabled || isUploading}
               aria-label="发送"
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--primary),color-mix(in_srgb,var(--primary)_75%,white_25%))] text-white shadow-[0_10px_20px_color-mix(in_srgb,var(--primary)_28%,transparent)] transition duration-200 hover:-translate-y-0.5 hover:brightness-105 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+              title="发送"
+              className="bg-[var(--primary)] text-white shadow-[0_10px_20px_color-mix(in_srgb,var(--primary)_24%,transparent)] hover:bg-[var(--primary)] hover:brightness-105"
             >
-              <SendHorizonalIcon className="size-4" />
-            </button>
+              <SendHorizonalIcon />
+            </Button>
           </div>
         </div>
       </div>
