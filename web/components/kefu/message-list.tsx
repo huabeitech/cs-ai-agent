@@ -78,8 +78,13 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
     const contentRef = useRef<HTMLDivElement>(null)
     const frameRef = useRef<number | null>(null)
     const shouldStickToBottomRef = useRef(true)
+    const onNearBottomVisibleRef = useRef(onNearBottomVisible)
     const safeMessages = Array.isArray(messages) ? messages : []
     const lastMessageId = safeMessages.at(-1)?.id
+
+    useEffect(() => {
+      onNearBottomVisibleRef.current = onNearBottomVisible
+    }, [onNearBottomVisible])
 
     const isNearBottom = useCallback(
       (element: HTMLElement, threshold = 80) =>
@@ -127,9 +132,9 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
     const handleImageSettled = useCallback(() => {
       if (shouldStickToBottomRef.current) {
         scheduleScrollToBottom()
-        onNearBottomVisible?.()
+        onNearBottomVisibleRef.current?.()
       }
-    }, [onNearBottomVisible, scheduleScrollToBottom])
+    }, [scheduleScrollToBottom])
 
     useImperativeHandle(ref, () => ({
       scrollToBottom,
@@ -325,7 +330,21 @@ const MessageItem = memo(
     )
   },
   (prevProps, nextProps) =>
-    prevProps.message === nextProps.message &&
+    isSameMessageItemRender(prevProps.message, nextProps.message) &&
     prevProps.showTimeline === nextProps.showTimeline &&
     prevProps.onImageSettled === nextProps.onImageSettled
 )
+
+function isSameMessageItemRender(prev: ImMessage, next: ImMessage) {
+  return (
+    prev.id === next.id &&
+    prev.senderType === next.senderType &&
+    prev.senderName === next.senderName &&
+    prev.senderAvatar === next.senderAvatar &&
+    prev.messageType === next.messageType &&
+    prev.content === next.content &&
+    prev.payload === next.payload &&
+    prev.sentAt === next.sentAt &&
+    prev.agentRead === next.agentRead
+  )
+}

@@ -15,6 +15,7 @@ import {
   type AgentMessage,
 } from "@/lib/api/agent"
 import type { RealtimeConnectionStatusValue } from "@/components/realtime-connection-status"
+import { mergeImMessagesByIdAsc } from "@/lib/im-message-merge"
 import { summarizeIMMessage } from "@/lib/im-message"
 import { generateUUID } from "@/lib/utils"
 
@@ -46,20 +47,6 @@ type LoadMessagesOptions = {
 
 function ensureArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
-}
-
-function mergeMessagesByIdAsc(
-  a: AgentMessage[],
-  b: AgentMessage[]
-): AgentMessage[] {
-  const byId = new Map<number, AgentMessage>()
-  for (const m of a) {
-    byId.set(m.id, m)
-  }
-  for (const m of b) {
-    byId.set(m.id, m)
-  }
-  return Array.from(byId.values()).sort((x, y) => x.id - y.id)
 }
 
 function parseCursorId(cursor: string): number {
@@ -344,7 +331,7 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       }
       const incoming = ensureArray(data.results)
       set((state) => {
-        const merged = mergeMessagesByIdAsc(incoming, state.messages)
+        const merged = mergeImMessagesByIdAsc(state.messages, incoming)
         return {
           messages: merged,
           messagesCursor:
@@ -376,10 +363,8 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
       if (batch.length === 0) {
         return
       }
-      const firstId = batch[0]!.id
       set((state) => {
-        const preserved = state.messages.filter((m) => m.id < firstId)
-        const merged = mergeMessagesByIdAsc(preserved, batch)
+        const merged = mergeImMessagesByIdAsc(state.messages, batch)
         return {
           messages: merged,
           messagesCursor:
@@ -425,14 +410,12 @@ export const useAgentConversationsStore = create<AgentConversationsStore>((set, 
         }
         return {
           readingMessageId: 0,
-          messages: current.messages.map((item) =>
-            item.seqNo <= lastMessage.seqNo
-              ? {
-                  ...item,
-                  agentRead: true,
-                }
-              : item
-          ),
+          messages: current.messages.map((item) => {
+            if (item.seqNo > lastMessage.seqNo) {
+              return item
+            }
+            return item.agentRead ? item : { ...item, agentRead: true }
+          }),
           conversations: current.conversations.map((item) =>
             item.id === conversationId
               ? {

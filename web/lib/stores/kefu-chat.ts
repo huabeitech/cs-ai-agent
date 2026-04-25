@@ -20,6 +20,7 @@ import {
   createImRealtimeConnection,
   type ImRealtimeEnvelope,
 } from "@/lib/im-realtime"
+import { mergeImMessagesByIdAsc } from "@/lib/im-message-merge"
 import { summarizeIMMessage } from "@/lib/im-message"
 import { generateUUID } from "@/lib/utils"
 
@@ -59,17 +60,6 @@ function showNotification(title: string, body: string, onClick?: () => void) {
       }
     })
   }
-}
-
-function mergeMessagesByIdAsc(a: ImMessage[], b: ImMessage[]): ImMessage[] {
-  const byId = new Map<number, ImMessage>()
-  for (const message of a) {
-    byId.set(message.id, message)
-  }
-  for (const message of b) {
-    byId.set(message.id, message)
-  }
-  return Array.from(byId.values()).sort((x, y) => x.id - y.id)
 }
 
 function ensureMessageList(value: ImMessage[] | null | undefined): ImMessage[] {
@@ -424,10 +414,8 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
         if (batch.length === 0) {
           return
         }
-        const firstId = batch[0]!.id
         set((state) => {
-          const preserved = state.messages.filter((message) => message.id < firstId)
-          const merged = mergeMessagesByIdAsc(preserved, batch)
+          const merged = mergeImMessagesByIdAsc(state.messages, batch)
           return {
             messages: merged,
             messagesCursor: cursorFromLoadedMessages(merged) || page.cursor || "",
@@ -470,7 +458,10 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
         })
         const results = ensureMessageList(page.results)
         set((state) => {
-          const merged = mergeMessagesByIdAsc(results, ensureMessageList(state.messages))
+          const merged = mergeImMessagesByIdAsc(
+            ensureMessageList(state.messages),
+            results
+          )
           return {
             messages: merged,
             messagesCursor: cursorFromLoadedMessages(merged) || page.cursor || "",
@@ -510,11 +501,12 @@ export const useKefuChatStore = create<KefuChatStore>((set, get) => {
         await markImMessageRead(conversation.id, lastMessage.id)
         set((current) => ({
           readingMessageId: 0,
-          messages: current.messages.map((item) =>
-            (item.seqNo ?? 0) <= (lastMessage.seqNo ?? 0)
-              ? { ...item, customerRead: true }
-              : item
-          ),
+          messages: current.messages.map((item) => {
+            if ((item.seqNo ?? 0) > (lastMessage.seqNo ?? 0)) {
+              return item
+            }
+            return item.customerRead ? item : { ...item, customerRead: true }
+          }),
           conversation: current.conversation
             ? {
                 ...current.conversation,
