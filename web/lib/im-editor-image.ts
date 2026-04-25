@@ -40,7 +40,18 @@ export function markEditorImageUploadedByTitle(
   image.setAttribute("data-provider", uploaded.provider)
   image.setAttribute("data-storage-key", uploaded.storageKey)
   image.setAttribute("alt", uploaded.filename || image.getAttribute("alt") || "image")
+  image.classList.remove("cs-agent-editor-image-uploading")
+  image.removeAttribute("data-uploading")
   image.removeAttribute("title")
+}
+
+export function setEditorImageUploadingByTitle(editor: Editor, title: string) {
+  const image = findEditorImageElementByTitle(editor, title)
+  if (!image) {
+    return
+  }
+  image.classList.add("cs-agent-editor-image-uploading")
+  image.setAttribute("data-uploading", "true")
 }
 
 export function buildSendableEditorHTML(

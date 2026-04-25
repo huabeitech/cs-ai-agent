@@ -15,6 +15,7 @@ import {
   removeEditorImageByTitle,
   revokeEditorObjectUrl,
   revokeEditorObjectUrls,
+  setEditorImageUploadingByTitle,
 } from "@/lib/im-editor-image"
 import { generateUUID } from "@/lib/utils"
 
@@ -117,7 +118,7 @@ export function KefuMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "cs-agent-scrollbar min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-lg [&_img]:object-contain",
+          "cs-agent-scrollbar min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-lg [&_img]:object-contain [&_img.cs-agent-editor-image-uploading]:animate-pulse [&_img.cs-agent-editor-image-uploading]:opacity-55 [&_img.cs-agent-editor-image-uploading]:ring-2 [&_img.cs-agent-editor-image-uploading]:ring-primary/35",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -208,6 +209,7 @@ export function KefuMessageEditor({
         title: placeholderId,
       })
       .run()
+    setEditorImageUploadingByTitle(editor, placeholderId)
 
     try {
       setLocalUploading(true)

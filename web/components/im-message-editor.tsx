@@ -26,6 +26,7 @@ import {
   removeEditorImageByTitle,
   revokeEditorObjectUrl,
   revokeEditorObjectUrls,
+  setEditorImageUploadingByTitle,
 } from "@/lib/im-editor-image"
 import { generateUUID } from "@/lib/utils"
 
@@ -153,7 +154,7 @@ export function ImMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "h-full min-h-12 max-h-[20vh] overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none sm:max-h-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain [&_p.is-editor-empty:first-child]:before:text-muted-foreground",
+          "h-full min-h-12 max-h-[20vh] overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none sm:max-h-none [&_.ProseMirror-focused]:outline-none [&_p]:m-0 [&_p+img]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-md [&_img]:object-contain [&_img.cs-agent-editor-image-uploading]:animate-pulse [&_img.cs-agent-editor-image-uploading]:opacity-55 [&_img.cs-agent-editor-image-uploading]:ring-2 [&_img.cs-agent-editor-image-uploading]:ring-primary/35 [&_p.is-editor-empty:first-child]:before:text-muted-foreground",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -246,6 +247,7 @@ export function ImMessageEditor({
         title: placeholderId,
       })
       .run()
+    setEditorImageUploadingByTitle(editor, placeholderId)
 
     try {
       const uploaded = await onUploadImageRef.current(file)
