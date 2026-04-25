@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import { EditorContent, useEditor } from "@tiptap/react"
-import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
 import StarterKit from "@tiptap/starter-kit"
 import { ImageIcon, PaperclipIcon, SendHorizonalIcon } from "lucide-react"
@@ -12,6 +11,7 @@ import {
   buildSendableEditorHTML,
   hasUploadingEditorImages,
   markEditorImageUploadedByTitle,
+  MessageImageExtension,
   removeEditorImageByTitle,
   revokeEditorObjectUrl,
   revokeEditorObjectUrls,
@@ -26,32 +26,6 @@ type UploadedImage = {
   url: string
   filename?: string
 }
-
-const MessageImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      dataAssetId: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-asset-id"),
-        renderHTML: (attributes) =>
-          attributes.dataAssetId ? { "data-asset-id": attributes.dataAssetId } : {},
-      },
-      dataProvider: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-provider"),
-        renderHTML: (attributes) =>
-          attributes.dataProvider ? { "data-provider": attributes.dataProvider } : {},
-      },
-      dataStorageKey: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-storage-key"),
-        renderHTML: (attributes) =>
-          attributes.dataStorageKey ? { "data-storage-key": attributes.dataStorageKey } : {},
-      },
-    }
-  },
-})
 
 type KefuMessageEditorProps = {
   disabled?: boolean
@@ -109,7 +83,7 @@ export function KefuMessageEditor({
         orderedList: false,
         horizontalRule: false,
       }),
-      MessageImage,
+      MessageImageExtension,
       Placeholder.configure({
         placeholder: "输入消息，Enter 发送，Shift + Enter 换行",
       }),
@@ -118,7 +92,7 @@ export function KefuMessageEditor({
     editorProps: {
       attributes: {
         class:
-          "cs-agent-scrollbar min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_img]:my-2 [&_img]:max-h-64 [&_img]:rounded-lg [&_img]:object-contain [&_img.cs-agent-editor-image-uploading]:animate-pulse [&_img.cs-agent-editor-image-uploading]:opacity-55 [&_img.cs-agent-editor-image-uploading]:ring-2 [&_img.cs-agent-editor-image-uploading]:ring-primary/35",
+          "cs-agent-scrollbar min-h-12 max-h-40 overflow-y-auto px-1.5 py-1 text-sm leading-6 text-foreground outline-none [&_p]:m-0 [&_p+*]:mt-2 [&_.cs-agent-editor-image-wrap]:my-2 [&_.cs-agent-editor-image]:max-h-64 [&_.cs-agent-editor-image]:max-w-full [&_.cs-agent-editor-image]:rounded-lg [&_.cs-agent-editor-image]:object-contain [&_.cs-agent-editor-image-wrap-uploading_.cs-agent-editor-image]:opacity-55",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {

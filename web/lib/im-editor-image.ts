@@ -1,4 +1,79 @@
 import type { Editor } from "@tiptap/react"
+import Image from "@tiptap/extension-image"
+
+export const MessageImageExtension = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      dataAssetId: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-asset-id"),
+        renderHTML: (attributes) =>
+          attributes.dataAssetId ? { "data-asset-id": attributes.dataAssetId } : {},
+      },
+      dataProvider: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-provider"),
+        renderHTML: (attributes) =>
+          attributes.dataProvider ? { "data-provider": attributes.dataProvider } : {},
+      },
+      dataStorageKey: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-storage-key"),
+        renderHTML: (attributes) =>
+          attributes.dataStorageKey ? { "data-storage-key": attributes.dataStorageKey } : {},
+      },
+    }
+  },
+
+  addNodeView() {
+    return ({ node }) => {
+      const wrapper = document.createElement("span")
+      wrapper.className =
+        "cs-agent-editor-image-wrap relative inline-block max-w-full align-middle"
+
+      const image = document.createElement("img")
+      image.className = "cs-agent-editor-image"
+      image.draggable = true
+
+      const overlay = document.createElement("span")
+      overlay.className =
+        "cs-agent-editor-image-loading pointer-events-none absolute inset-0 hidden items-center justify-center rounded-lg bg-background/55 backdrop-blur-[1px]"
+
+      const spinner = document.createElement("span")
+      spinner.className =
+        "size-6 animate-spin rounded-full border-2 border-primary/25 border-t-primary shadow-sm"
+
+      overlay.appendChild(spinner)
+      wrapper.appendChild(image)
+      wrapper.appendChild(overlay)
+
+      const applyAttrs = (attrs: Record<string, unknown>) => {
+        setImageAttr(image, "src", attrs.src)
+        setImageAttr(image, "alt", attrs.alt)
+        setImageAttr(image, "title", attrs.title)
+        setImageAttr(image, "data-asset-id", attrs.dataAssetId)
+        setImageAttr(image, "data-provider", attrs.dataProvider)
+        setImageAttr(image, "data-storage-key", attrs.dataStorageKey)
+        setImageUploading(wrapper, Boolean(String(attrs.title ?? "").startsWith("uploading-")))
+      }
+
+      applyAttrs(node.attrs)
+
+      return {
+        dom: wrapper,
+        update: (updatedNode) => {
+          if (updatedNode.type.name !== node.type.name) {
+            return false
+          }
+          applyAttrs(updatedNode.attrs)
+          return true
+        },
+        ignoreMutation: () => true,
+      }
+    }
+  },
+})
 
 export type UploadedEditorImage = {
   assetId: string
@@ -43,6 +118,7 @@ export function markEditorImageUploadedByTitle(
   image.classList.remove("cs-agent-editor-image-uploading")
   image.removeAttribute("data-uploading")
   image.removeAttribute("title")
+  setImageUploading(image.closest(".cs-agent-editor-image-wrap"), false)
 }
 
 export function setEditorImageUploadingByTitle(editor: Editor, title: string) {
@@ -52,6 +128,7 @@ export function setEditorImageUploadingByTitle(editor: Editor, title: string) {
   }
   image.classList.add("cs-agent-editor-image-uploading")
   image.setAttribute("data-uploading", "true")
+  setImageUploading(image.closest(".cs-agent-editor-image-wrap"), true)
 }
 
 export function buildSendableEditorHTML(
@@ -129,4 +206,27 @@ function isUnfinishedUploadingImage(
 ) {
   const title = image.getAttribute("title") ?? ""
   return title.startsWith("uploading-") && !uploadedImages?.has(title)
+}
+
+function setImageAttr(image: HTMLImageElement, name: string, value: unknown) {
+  const normalized = typeof value === "string" ? value : ""
+  if (!normalized) {
+    image.removeAttribute(name)
+    return
+  }
+  if (image.getAttribute(name) !== normalized) {
+    image.setAttribute(name, normalized)
+  }
+}
+
+function setImageUploading(wrapper: Element | null, uploading: boolean) {
+  if (!(wrapper instanceof HTMLElement)) {
+    return
+  }
+  wrapper.classList.toggle("cs-agent-editor-image-wrap-uploading", uploading)
+  const overlay = wrapper.querySelector<HTMLElement>(".cs-agent-editor-image-loading")
+  if (overlay) {
+    overlay.classList.toggle("hidden", !uploading)
+    overlay.classList.toggle("flex", uploading)
+  }
 }
