@@ -18,7 +18,7 @@ import {
 import { useShallow } from "zustand/react/shallow"
 
 import { KefuConnectionStatus } from "@/components/kefu/connection-status"
-import { KefuMessageEditor } from "@/components/kefu/message-editor"
+import { CustomerMessageEditor } from "@/components/kefu/customer-message-editor"
 import {
   KefuMessageList,
   type KefuMessageListHandle,
@@ -319,7 +319,7 @@ export function KefuChatShell() {
             loadingOlder={messagesLoadingMore}
             onLoadOlder={loadOlderMessages}
           />
-          <KefuMessageEditor
+          <CustomerMessageEditor
             disabled={!conversation}
             onSend={handleSend}
             onUploadImage={uploadMessageImage}

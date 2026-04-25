@@ -4,7 +4,6 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import { toast } from "sonner";
 
 import { ConversationTransferDialog } from "@/components/conversation-actions/transfer-dialog";
-import { ImMessageEditor } from "@/components/im-message-editor";
 import { ImMessageHTML } from "@/components/im-message-html";
 import { useImageLightbox } from "@/components/image-lightbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,6 +34,7 @@ import {
   type AgentConversationFilterKey,
 } from "@/lib/stores/agent-conversations";
 import { formatDateTime } from "@/lib/utils";
+import { AgentMessageEditor } from "./agent-message-editor";
 
 const EMPTY_AGENT_MESSAGES: AgentMessage[] = [];
 
@@ -410,7 +410,7 @@ export function ChatPanel() {
       ) : (
         <div className="flex h-full min-h-0 flex-col">
           <div className="min-h-0 flex-1">
-            <ImMessageEditor
+            <AgentMessageEditor
               disabled={!conversation || sending}
               uploadingAsset={uploadingAsset}
               onSend={handleSend}
