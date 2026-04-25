@@ -13,6 +13,7 @@ import (
 	"cs-agent/internal/controllers/third"
 	"cs-agent/internal/middleware"
 	"cs-agent/internal/pkg/config"
+	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/cors"
@@ -91,12 +92,16 @@ func addRouter(app *iris.Application) {
 		mcpHandler.ServeHTTP(w, r)
 	})))
 
-	app.Get("/api/dashboard/ws", middleware.AuthMiddleware, middleware.DashboardWsMiddleware)
-	app.Get("/api/open/im/ws", middleware.OpenImWsMiddleware)
+	mvc.Configure(app.Party("/api/ws"), func(m *mvc.Application) {
+		m.Router.Get("/dashboard", middleware.AuthMiddleware, services.WsService.HandleDashboardWS)
+		m.Router.Get("/open", services.WsService.HandleOpenWS)
+	})
 
 	mvc.Configure(app.Party("/api"), func(m *mvc.Application) {
 		m.Party("/auth").Handle(new(api.AuthController))
 		m.Party("/channel").Handle(new(api.ChannelController))
+
+		// m.Router.Get("/ws", middleware.OpenImWsMiddleware)
 
 		m.Party("/conversation", middleware.ExternalInfoMiddleware).Handle(new(api.ConversationController))
 		m.Party("/message", middleware.ExternalInfoMiddleware).Handle(new(api.MessageController))

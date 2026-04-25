@@ -4,6 +4,7 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/enums"
+	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"encoding/json"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/kataras/iris/v12"
+	"github.com/mlogclub/simple/web"
 )
 
 var WsService = newWsService()
@@ -38,14 +40,43 @@ func newWsService() *wsService {
 	}
 }
 
-// UpgradeUserConnection 开放 IM 用户侧 WebSocket。
-// principal 非空时表示站内用户；否则应传入 external（IM 访客）。二者勿混用为同一业务身份。
-func (s *wsService) UpgradeUserConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalInfo) error {
-	return s.upgradeConnection(ctx, principal, external, realtimeRoleUser)
+func (s *wsService) HandleDashboardWS(ctx iris.Context) {
+	principal := AuthService.GetAuthPrincipal(ctx)
+	if principal == nil {
+		_ = ctx.StopWithJSON(iris.StatusUnauthorized, web.JsonError(errorsx.Unauthorized("未登录或登录已过期")))
+		return
+	}
+	if err := s.upgradeConnection(ctx, principal, nil, realtimeRoleAdmin); err != nil {
+		slog.Error("upgrade admin websocket failed", "error", err, "path", ctx.Path())
+		ctx.StopExecution()
+		return
+	}
 }
 
-func (s *wsService) UpgradeAdminConnection(ctx iris.Context, principal *dto.AuthPrincipal) error {
-	return s.upgradeConnection(ctx, principal, nil, realtimeRoleAdmin)
+func (s *wsService) HandleOpenWS(ctx iris.Context) {
+	channel := ChannelService.GetEnabledChannel(ctx)
+	if channel == nil {
+		_ = ctx.StopWithJSON(iris.StatusBadRequest, web.JsonErrorMsg("接入渠道不存在或已停用"))
+		return
+	}
+
+	var (
+		principal = AuthService.GetAuthPrincipal(ctx)
+		external  *openidentity.ExternalInfo
+	)
+	if principal == nil {
+		ext, err := openidentity.GetExternalInfo(ctx)
+		if err != nil {
+			_ = ctx.StopWithJSON(iris.StatusUnauthorized, web.JsonError(err))
+			return
+		}
+		external = ext
+	}
+	if err := s.upgradeConnection(ctx, principal, external, realtimeRoleUser); err != nil {
+		slog.Error("upgrade open im websocket failed", "error", err, "path", ctx.Path(), "channelId", channel.ChannelID, "channel_id", channel.ID)
+		ctx.StopExecution()
+		return
+	}
 }
 
 func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalInfo, role string) error {

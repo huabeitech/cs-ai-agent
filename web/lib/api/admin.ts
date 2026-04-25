@@ -542,7 +542,7 @@ export function createAdminWebSocketUrl() {
   const params = new URLSearchParams({
     accessToken: session.accessToken,
   })
-  return `${baseUrl}/api/dashboard/ws?${params.toString()}`
+  return `${baseUrl}/api/ws/dashboard?${params.toString()}`
 }
 
 export function fetchChannels(

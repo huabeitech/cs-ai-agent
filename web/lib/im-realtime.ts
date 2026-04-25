@@ -32,6 +32,6 @@ export function createImRealtimeConnection() {
       ? `&externalName=${encodeURIComponent(externalName)}`
       : ""
   return new WebSocket(
-    `${baseUrl}/api/open/im/ws?externalId=${externalId}&externalSource=${externalSource}&channelId=${channelId}${nameQuery}`
+    `${baseUrl}/api/ws/open?externalId=${externalId}&externalSource=${externalSource}&channelId=${channelId}${nameQuery}`
   )
 }
