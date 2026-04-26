@@ -83,13 +83,10 @@ export function LoginForm({
     >
       <FieldGroup>
         <div className="flex flex-col gap-2 text-center">
-          {/* <span className="mx-auto inline-flex rounded-full border border-amber-300/60 bg-amber-50 px-3 py-1 text-[11px] font-medium tracking-[0.22em] text-amber-900 uppercase">
-            AI Service Console
-          </span> */}
-          <h1 className="text-3xl font-semibold tracking-tight">登录管理后台</h1>
-          <p className="text-sm text-balance text-muted-foreground">
-            使用账号登录后进入对应工作区，可访问后台管理台或用户会话页。
-          </p>
+          <span className="mx-auto inline-flex rounded-full border border-amber-300/60 bg-amber-50 px-3 py-1 text-[11px] font-medium tracking-[0.22em] text-amber-900 uppercase">
+            贝壳AI
+          </span>
+          <h1 className="text-3xl font-semibold tracking-tight">欢迎使用贝壳 AI 客服平台</h1>
         </div>
         <Field>
           <FieldLabel htmlFor="username">用户名</FieldLabel>

@@ -16,7 +16,7 @@ export type AuthSession = {
   roles: string[]
 }
 
-const SESSION_STORAGE_KEY = "cs-agent.admin.session"
+const SESSION_STORAGE_KEY = "cs-ai-agent-session"
 
 function hasWindow() {
   return typeof window !== "undefined"
