@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	// "gorm.io/gorm/logger"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
@@ -35,15 +37,15 @@ func InitDB(cfg config.DBConfig) (*gorm.DB, error) {
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		// Logger: logger.New(
-		// 	log.New(os.Stdout, "\r\n", log.LstdFlags),
-		// 	logger.Config{
-		// 		SlowThreshold:             time.Second,
-		// 		LogLevel:                  logger.Info,
-		// 		IgnoreRecordNotFoundError: true,
-		// 		Colorful:                  true,
-		// 	},
-		// ),
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold:             time.Second,
+				LogLevel:                  logger.Warn,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  true,
+			},
+		),
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "t_",
 			SingularTable: true,
