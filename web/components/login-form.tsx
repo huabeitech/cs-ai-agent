@@ -128,7 +128,7 @@ export function LoginForm({
               window.location.href = `${path}?next=${encodeURIComponent(redirectPath)}`
             }}
           >
-            <Image src="/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
+            <Image src="/images/wxwork.svg" alt="" width={16} height={16} className="size-4 shrink-0" />
             企业微信登录
           </Button>
         </Field>
