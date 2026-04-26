@@ -21,7 +21,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { BotMessageSquareIcon } from "lucide-react"
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { session } = useAuth()
@@ -48,7 +47,13 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
               render={<Link href="/dashboard" />}
             >
-              <BotMessageSquareIcon className="size-5!" />
+              <img
+                src="/images/logo.svg"
+                alt="贝壳AGENT"
+                width="32"
+                height="32"
+                className="size-7 shrink-0 object-contain"
+              />
               <span className="text-base font-semibold">贝壳AGENT</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
