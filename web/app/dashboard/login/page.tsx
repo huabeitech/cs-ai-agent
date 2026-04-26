@@ -16,7 +16,7 @@ export default function LoginPage() {
             </div>
             <div className="space-y-3">
               <h2 className="max-w-lg text-5xl font-semibold tracking-tight">
-                贝壳客服平台
+                贝壳AI客服
               </h2>
               <p className="max-w-xl text-sm leading-6 text-white/72">
                 懂问题，更懂用户；快响应，更能落地。
