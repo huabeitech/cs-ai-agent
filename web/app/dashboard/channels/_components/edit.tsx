@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, Resolver, useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v4"
+import { CopyIcon, ExternalLinkIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { OptionCombobox } from "@/components/option-combobox"
 import { ProjectDialog } from "@/components/project-dialog"
@@ -214,6 +216,7 @@ function ChannelFormBody({
   const [wxWorkKFAccounts, setWxWorkKFAccounts] = useState<WxWorkKFAccount[]>([])
   const [wxWorkKFAccountsLoading, setWxWorkKFAccountsLoading] = useState(false)
   const [wxWorkKFAccountsError, setWxWorkKFAccountsError] = useState("")
+  const [channelDetail, setChannelDetail] = useState<AdminChannel | null>(null)
   const [currentStatus, setCurrentStatus] = useState(0)
   const form = useForm<
     z.input<typeof schema>,
@@ -249,12 +252,14 @@ function ChannelFormBody({
     async function loadDetail() {
       if (!itemId) {
         setCurrentStatus(0)
+        setChannelDetail(null)
         reset(emptyForm)
         return
       }
       setLoading(true)
       try {
         const data = await fetchChannel(itemId)
+        setChannelDetail(data)
         setCurrentStatus(data.status)
         reset(buildForm(data))
       } catch (error) {
@@ -436,71 +441,74 @@ function ChannelFormBody({
             ) : null}
 
             {channelType === "web" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field data-invalid={!!errors.widgetTitle}>
-                  <FieldLabel htmlFor="channel-widget-title">窗口标题</FieldLabel>
-                  <FieldContent>
-                    <Input id="channel-widget-title" {...register("widgetTitle")} />
-                    <FieldError errors={[errors.widgetTitle]} />
-                  </FieldContent>
-                </Field>
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field data-invalid={!!errors.widgetTitle}>
+                    <FieldLabel htmlFor="channel-widget-title">窗口标题</FieldLabel>
+                    <FieldContent>
+                      <Input id="channel-widget-title" {...register("widgetTitle")} />
+                      <FieldError errors={[errors.widgetTitle]} />
+                    </FieldContent>
+                  </Field>
 
-                <Field data-invalid={!!errors.widgetSubtitle}>
-                  <FieldLabel htmlFor="channel-widget-subtitle">窗口副标题</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="channel-widget-subtitle"
-                      {...register("widgetSubtitle")}
-                    />
-                    <FieldError errors={[errors.widgetSubtitle]} />
-                  </FieldContent>
-                </Field>
+                  <Field data-invalid={!!errors.widgetSubtitle}>
+                    <FieldLabel htmlFor="channel-widget-subtitle">窗口副标题</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="channel-widget-subtitle"
+                        {...register("widgetSubtitle")}
+                      />
+                      <FieldError errors={[errors.widgetSubtitle]} />
+                    </FieldContent>
+                  </Field>
 
-                <Field data-invalid={!!errors.widgetThemeColor}>
-                  <FieldLabel htmlFor="channel-widget-theme-color">主题色</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="channel-widget-theme-color"
-                      placeholder="#2563eb"
-                      {...register("widgetThemeColor")}
-                    />
-                    <FieldError errors={[errors.widgetThemeColor]} />
-                  </FieldContent>
-                </Field>
+                  <Field data-invalid={!!errors.widgetThemeColor}>
+                    <FieldLabel htmlFor="channel-widget-theme-color">主题色</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="channel-widget-theme-color"
+                        placeholder="#2563eb"
+                        {...register("widgetThemeColor")}
+                      />
+                      <FieldError errors={[errors.widgetThemeColor]} />
+                    </FieldContent>
+                  </Field>
 
-                <Field data-invalid={!!errors.widgetPosition}>
-                  <FieldLabel>挂载位置</FieldLabel>
-                  <FieldContent>
-                    <Controller
-                      control={control}
-                      name="widgetPosition"
-                      render={({ field }) => (
-                        <OptionCombobox
-                          value={field.value}
-                          options={[...widgetPositionOptions]}
-                          placeholder="请选择挂载位置"
-                          searchPlaceholder="搜索挂载位置"
-                          emptyText="未找到挂载位置"
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                    <FieldError errors={[errors.widgetPosition]} />
-                  </FieldContent>
-                </Field>
+                  <Field data-invalid={!!errors.widgetPosition}>
+                    <FieldLabel>挂载位置</FieldLabel>
+                    <FieldContent>
+                      <Controller
+                        control={control}
+                        name="widgetPosition"
+                        render={({ field }) => (
+                          <OptionCombobox
+                            value={field.value}
+                            options={[...widgetPositionOptions]}
+                            placeholder="请选择挂载位置"
+                            searchPlaceholder="搜索挂载位置"
+                            emptyText="未找到挂载位置"
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <FieldError errors={[errors.widgetPosition]} />
+                    </FieldContent>
+                  </Field>
 
-                <Field data-invalid={!!errors.widgetWidth}>
-                  <FieldLabel htmlFor="channel-widget-width">窗口宽度</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="channel-widget-width"
-                      placeholder="380px"
-                      {...register("widgetWidth")}
-                    />
-                    <FieldError errors={[errors.widgetWidth]} />
-                  </FieldContent>
-                </Field>
-              </div>
+                  <Field data-invalid={!!errors.widgetWidth}>
+                    <FieldLabel htmlFor="channel-widget-width">窗口宽度</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="channel-widget-width"
+                        placeholder="380px"
+                        {...register("widgetWidth")}
+                      />
+                      <FieldError errors={[errors.widgetWidth]} />
+                    </FieldContent>
+                  </Field>
+                </div>
+                <WebAccessGuide channelId={channelDetail?.channelId || ""} />
+              </>
             ) : null}
           </div>
 
@@ -514,5 +522,142 @@ function ChannelFormBody({
         </form>
       )}
     </ProjectDialog>
+  )
+}
+
+function WebAccessGuide({ channelId }: { channelId: string }) {
+  const [origin, setOrigin] = useState("")
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
+  const accessUrl = useMemo(() => {
+    if (!origin || !channelId) {
+      return ""
+    }
+    const url = new URL("/kefu/chat/", origin)
+    url.searchParams.set("channelId", channelId)
+    return url.toString()
+  }, [channelId, origin])
+
+  const testUrl = useMemo(() => {
+    if (!origin || !channelId) {
+      return ""
+    }
+    const url = new URL("/kefu", origin)
+    url.searchParams.set("channelId", channelId)
+    return url.toString()
+  }, [channelId, origin])
+
+  const snippet = useMemo(() => {
+    if (!origin || !channelId) {
+      return ""
+    }
+    return `<script>
+  window.CSAgentConfig = {
+    channelId: "${channelId}"
+  };
+</script>
+<script async src="${origin}/sdk/cs-ai-agent-sdk.min.js"></script>`
+  }, [channelId, origin])
+
+  async function copyText(text: string, successMessage: string) {
+    if (!text) {
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(successMessage)
+    } catch {
+      toast.error("复制失败")
+    }
+  }
+
+  return (
+    <div className="space-y-4 border-t pt-4">
+      <div>
+        <div className="text-sm font-medium">Web 接入信息</div>
+        <div className="text-xs text-muted-foreground">
+          {channelId
+            ? "复制链接或嵌入代码即可接入当前 Web 渠道。"
+            : "保存渠道后生成接入链接和 SDK 代码。"}
+        </div>
+      </div>
+
+      {!channelId ? (
+        <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+          当前为新建渠道，保存后会生成 channelId。
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-muted-foreground">直接访问链接</div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input readOnly value={accessUrl} className="font-mono text-xs" />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title="复制链接"
+                  onClick={() => copyText(accessUrl, "已复制接入链接")}
+                >
+                  <CopyIcon className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title="打开链接"
+                  onClick={() => window.open(accessUrl, "_blank", "noopener,noreferrer")}
+                >
+                  <ExternalLinkIcon className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                嵌入式接入代码
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => copyText(snippet, "已复制接入代码")}
+              >
+                <CopyIcon className="size-4" />
+                复制代码
+              </Button>
+            </div>
+            <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs leading-5">
+              <code>{snippet}</code>
+            </pre>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-md bg-muted px-3 py-3 text-xs text-muted-foreground">
+            <div className="font-medium text-foreground">接入教程</div>
+            <div>1. 确认该渠道已启用。</div>
+            <div>2. 将嵌入代码粘贴到目标网站 HTML 的 body 结束标签前。</div>
+            <div>3. 发布网站后刷新页面，客服入口会按渠道配置展示。</div>
+            <div>4. 独立页面或二维码场景可直接使用访问链接。</div>
+            <div className="pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(testUrl, "_blank", "noopener,noreferrer")}
+              >
+                <ExternalLinkIcon className="size-4" />
+                打开测试页
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
