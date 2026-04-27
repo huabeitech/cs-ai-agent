@@ -33,6 +33,7 @@ export type ImConversationParticipant = {
 
 export type ImConversation = {
   id: number
+  channelId: number
   externalSource: string
   externalId: string
   subject: string

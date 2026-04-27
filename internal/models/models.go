@@ -325,6 +325,7 @@ type Tag struct {
 type Conversation struct {
 	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为会话主键。
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
+	ChannelID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // ChannelID 为该会话来源接入渠道ID。
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为已关联的 CRM 客户 ID；0 表示未关联（访客仅 ExternalUserID）。
 	ExternalSource      enums.ExternalSource            `gorm:"type:varchar(50);not null;default:'';index"`  // ExternalSource 为外部身份来源。
 	ExternalID          string                          `gorm:"type:varchar(128);not null;default:'';index"` // ExternalID 为外部访客ID。

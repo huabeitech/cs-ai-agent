@@ -35,6 +35,7 @@ export type AgentConversationParticipant = {
 export type AgentConversation = {
   id: number
   aiAgentId?: number
+  channelId?: number
   customerId?: number
   externalSource: string
   externalId: string

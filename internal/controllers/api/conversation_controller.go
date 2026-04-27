@@ -50,7 +50,7 @@ func (c *ConversationController) PostCreate_or_match() *web.JsonResult {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
 
-	item, err := services.ConversationService.Create(*external, channel.AIAgentID)
+	item, err := services.ConversationService.Create(*external, channel.ID, channel.AIAgentID)
 	if err != nil {
 		return web.JsonError(err)
 	}

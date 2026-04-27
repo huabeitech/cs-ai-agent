@@ -99,7 +99,7 @@ func (s *conversationService) getLatestNotFinished(externalInfo openidentity.Ext
 	return s.FindOne(cnd)
 }
 
-func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiAgentID int64) (*models.Conversation, error) {
+func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, channelID, aiAgentID int64) (*models.Conversation, error) {
 	subject := s.buildDefaultSubject(externalInfo)
 
 	// 会话存在，直接返回
@@ -114,6 +114,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, aiA
 
 	conversation := &models.Conversation{
 		AIAgentID:         aiAgentID,
+		ChannelID:         channelID,
 		ExternalSource:    externalInfo.ExternalSource,
 		Subject:           subject,
 		Status:            s.resolveInitialStatus(aiAgent.ServiceMode),

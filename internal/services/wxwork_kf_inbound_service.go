@@ -389,7 +389,7 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 		Desc("id"))
 
 	if conversation == nil {
-		conversation, err = ConversationService.Create(external, channel.AIAgentID)
+		conversation, err = ConversationService.Create(external, channel.ID, channel.AIAgentID)
 		if err != nil {
 			return nil, err
 		}

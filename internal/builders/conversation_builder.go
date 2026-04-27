@@ -17,6 +17,7 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 	ret := response.ConversationResponse{
 		ID:                        item.ID,
 		AIAgentID:                 item.AIAgentID,
+		ChannelID:                 item.ChannelID,
 		CustomerID:                item.CustomerID,
 		ExternalSource:            item.ExternalSource,
 		ExternalID:                item.ExternalID,
