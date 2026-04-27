@@ -8,6 +8,7 @@ import (
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"cs-agent/internal/pkg/openidentity"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"strings"
@@ -108,6 +109,49 @@ func (s *customerService) Count(cnd *sqls.Cnd) int64 {
 
 func (s *customerService) CountByCompanyIDs(companyIDs []int64) map[int64]int64 {
 	return repositories.CustomerRepository.CountByCompanyIDs(sqls.DB(), companyIDs, int(enums.StatusDeleted))
+}
+
+func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalInfo openidentity.ExternalInfo) (int64, error) {
+	externalSource := externalInfo.ExternalSource
+	externalID := strings.TrimSpace(externalInfo.ExternalID)
+	if strings.TrimSpace(string(externalSource)) == "" || externalID == "" {
+		return 0, errorsx.Unauthorized("外部用户标识不能为空")
+	}
+	now := time.Now()
+	if identity := repositories.CustomerIdentityRepository.GetBy(db, externalSource, externalID); identity != nil {
+		_ = repositories.CustomerRepository.Updates(db, identity.CustomerID, map[string]any{
+			"last_active_at": now,
+			"updated_at":     now,
+		})
+		return identity.CustomerID, nil
+	}
+
+	customer := &models.Customer{
+		Name:         buildExternalCustomerName(externalInfo),
+		LastActiveAt: &now,
+		Status:       enums.StatusOk,
+		AuditFields:  utils.BuildAuditFields(nil),
+	}
+	if err := repositories.CustomerRepository.Create(db, customer); err != nil {
+		return 0, err
+	}
+	if err := repositories.CustomerIdentityRepository.Create(db, &models.CustomerIdentity{
+		CustomerID:     customer.ID,
+		ExternalSource: externalSource,
+		ExternalID:     externalID,
+		Status:         enums.StatusOk,
+		AuditFields:    utils.BuildAuditFields(nil),
+	}); err != nil {
+		return 0, err
+	}
+	return customer.ID, nil
+}
+
+func buildExternalCustomerName(externalInfo openidentity.ExternalInfo) string {
+	if strs.IsNotBlank(externalInfo.ExternalName) {
+		return externalInfo.ExternalName
+	}
+	return "访客" + hashUUID(externalInfo.ExternalID)
 }
 
 func (s *customerService) CreateCustomer(req request.CreateCustomerRequest, operator *dto.AuthPrincipal) (*models.Customer, error) {

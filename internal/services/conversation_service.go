@@ -113,7 +113,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 	var conversation *models.Conversation
 	created := false
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		customerID, err := s.ensureExternalCustomer(ctx.Tx, externalInfo)
+		customerID, err := CustomerService.EnsureExternalCustomer(ctx.Tx, externalInfo)
 		if err != nil {
 			return err
 		}
@@ -168,43 +168,6 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 		}
 	}
 	return s.Get(conversation.ID), nil
-}
-
-func (s *conversationService) ensureExternalCustomer(db *gorm.DB, externalInfo openidentity.ExternalInfo) (int64, error) {
-	externalSource := externalInfo.ExternalSource
-	externalID := strings.TrimSpace(externalInfo.ExternalID)
-	if strings.TrimSpace(string(externalSource)) == "" || externalID == "" {
-		return 0, errorsx.Unauthorized("外部用户标识不能为空")
-	}
-	now := time.Now()
-	if identity := repositories.CustomerIdentityRepository.GetBy(db, externalSource, externalID); identity != nil {
-		_ = repositories.CustomerRepository.Updates(db, identity.CustomerID, map[string]any{
-			"last_active_at": now,
-			"updated_at":     now,
-		})
-		return identity.CustomerID, nil
-	}
-
-	customer := &models.Customer{
-		Name:         s.buildDefaultSubject(externalInfo),
-		LastActiveAt: &now,
-		Status:       enums.StatusOk,
-		AuditFields:  utils.BuildAuditFields(nil),
-	}
-	if err := repositories.CustomerRepository.Create(db, customer); err != nil {
-		return 0, err
-	}
-	identity := &models.CustomerIdentity{
-		CustomerID:     customer.ID,
-		ExternalSource: externalSource,
-		ExternalID:     externalID,
-		Status:         enums.StatusOk,
-		AuditFields:    utils.BuildAuditFields(nil),
-	}
-	if err := repositories.CustomerIdentityRepository.Create(db, identity); err != nil {
-		return 0, err
-	}
-	return customer.ID, nil
 }
 
 func (s *conversationService) AssignConversation(req request.AssignConversationRequest, operator *dto.AuthPrincipal) error {
