@@ -852,7 +852,7 @@ func (s *ticketService) CreateFromConversation(req request.CreateTicketFromConve
 	}
 	title := strings.TrimSpace(req.Title)
 	if title == "" {
-		title = strings.TrimSpace(conversation.Subject)
+		title = ConversationService.BuildConversationSummary(conversation)
 	}
 	description := strings.TrimSpace(req.Description)
 	if description == "" {

@@ -9,7 +9,6 @@ import (
 
 func TestBuildAnalyzeConversationResult_RecommendsHandoffForComplaint(t *testing.T) {
 	conversation := models.Conversation{
-		Subject:            "用户投诉扣费异常",
 		LastMessageSummary: "用户反馈被重复扣费，并要求人工处理",
 	}
 	messages := []models.Message{
@@ -33,7 +32,6 @@ func TestBuildAnalyzeConversationResult_RecommendsHandoffForComplaint(t *testing
 
 func TestBuildAnalyzeConversationResult_RecommendsPrepareTicket(t *testing.T) {
 	conversation := models.Conversation{
-		Subject:            "订单无法支付",
 		LastMessageSummary: "用户要求登记问题并尽快处理",
 	}
 	messages := []models.Message{

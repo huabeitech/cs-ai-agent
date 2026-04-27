@@ -22,7 +22,7 @@ type ConversationResponse struct {
 	AIAgentID                 int64                           `json:"aiAgentId"`
 	ChannelID                 int64                           `json:"channelId"`
 	CustomerID                int64                           `json:"customerId"`
-	Subject                   string                          `json:"subject"`
+	CustomerName              string                          `json:"customerName"`
 	Status                    enums.IMConversationStatus      `json:"status"`
 	ServiceMode               enums.IMConversationServiceMode `json:"serviceMode"`
 	Priority                  int                             `json:"priority"`

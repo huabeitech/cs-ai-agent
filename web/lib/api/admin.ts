@@ -109,7 +109,8 @@ export type ConversationParticipant = {
 export type AdminConversation = {
   id: number
   channelId: number
-  subject: string
+  customerId: number
+  customerName: string
   status: number
   serviceMode: number
   priority: number

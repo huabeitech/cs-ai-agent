@@ -73,7 +73,7 @@ export function ConversationList({ onAfterSelect }: ConversationListProps) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span className="min-w-0 flex-1 truncate font-medium text-sm leading-4">
-                          {conversation.subject}
+                          {conversation.customerName || `客户 #${conversation.customerId || conversation.id}`}
                         </span>
                         {conversation.agentUnreadCount > 0 ? (
                           <div className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">

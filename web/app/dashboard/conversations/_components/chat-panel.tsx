@@ -480,7 +480,7 @@ export function ChatPanel() {
             <DialogTitle>确认认领会话</DialogTitle>
             <DialogDescription>
               {conversation
-                ? `确认认领“${conversation.subject}”吗？认领后会话会进入我的列表。`
+                ? `确认认领“${conversation.customerName || `客户 #${conversation.customerId || conversation.id}`}”吗？认领后会话会进入我的列表。`
                 : "确认认领当前会话吗？"}
             </DialogDescription>
           </DialogHeader>

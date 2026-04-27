@@ -1,6 +1,8 @@
 package services
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"log/slog"
 
 	"cs-agent/internal/models"
@@ -152,6 +154,15 @@ func buildExternalCustomerName(externalInfo openidentity.ExternalInfo) string {
 		return externalInfo.ExternalName
 	}
 	return "访客" + hashUUID(externalInfo.ExternalID)
+}
+
+func hashUUID(uuid string) string {
+	if uuid == "" {
+		return "unknown"
+	}
+
+	h := md5.Sum([]byte(uuid))
+	return hex.EncodeToString(h[:])[:8]
 }
 
 func (s *customerService) CreateCustomer(req request.CreateCustomerRequest, operator *dto.AuthPrincipal) (*models.Customer, error) {

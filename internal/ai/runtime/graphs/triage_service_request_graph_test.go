@@ -9,7 +9,6 @@ import (
 
 func TestTriageServiceRequestResult_PrepareTicket(t *testing.T) {
 	conversation := models.Conversation{
-		Subject:            "支付失败需要登记工单",
 		LastMessageSummary: "用户要求建单跟进支付失败问题",
 	}
 	messages := []models.Message{
@@ -31,7 +30,6 @@ func TestTriageServiceRequestResult_PrepareTicket(t *testing.T) {
 
 func TestTriageServiceRequestResult_Handoff(t *testing.T) {
 	conversation := models.Conversation{
-		Subject:            "投诉转人工",
 		LastMessageSummary: "用户要求人工处理扣费投诉",
 	}
 	messages := []models.Message{

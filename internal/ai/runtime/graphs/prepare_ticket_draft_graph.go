@@ -100,8 +100,6 @@ func buildDraftTitle(conversation models.Conversation, input PrepareTicketDraftI
 		return limitText(input.Title, 80)
 	case input.Issue != "":
 		return limitText(input.Issue, 80)
-	case strings.TrimSpace(conversation.Subject) != "":
-		return limitText(conversation.Subject, 80)
 	case strings.TrimSpace(conversation.LastMessageSummary) != "":
 		return limitText(conversation.LastMessageSummary, 80)
 	default:
@@ -144,9 +142,6 @@ func hasSufficientIssueContext(input PrepareTicketDraftInput, description string
 
 func buildConversationFacts(conversation models.Conversation, messages []models.Message) []string {
 	facts := make([]string, 0, 4)
-	if strings.TrimSpace(conversation.Subject) != "" {
-		facts = append(facts, "会话主题："+strings.TrimSpace(conversation.Subject))
-	}
 	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		facts = append(facts, "最近摘要："+strings.TrimSpace(conversation.LastMessageSummary))
 	}

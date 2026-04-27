@@ -880,7 +880,7 @@ export default function TicketDetailPage() {
                       {sourceConversation ? (
                         <SurfacePanel className="p-2.5">
                           <div className="text-sm font-medium">
-                            {sourceConversation.subject || "未命名会话"}
+                            {sourceConversation.customerName || "未命名客户"}
                           </div>
                           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span>

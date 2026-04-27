@@ -272,7 +272,7 @@ export default function ConversationsPage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="min-w-0 truncate font-medium leading-tight">
-                    {conversation.subject}
+                    {conversation.customerName || `客户 #${conversation.customerId || conversation.id}`}
                   </p>
                   <span
                     className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 text-[11px] ${
@@ -474,7 +474,7 @@ export default function ConversationsPage() {
           conversation
             ? {
                 id: conversation.id,
-                subject: conversation.subject,
+                customerName: conversation.customerName,
                 customerId: conversation.customerId ?? 0,
                 lastMessageSummary: conversation.lastMessageSummary,
                 currentAssigneeId: conversation.currentAssigneeId,

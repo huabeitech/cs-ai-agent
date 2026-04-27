@@ -34,7 +34,7 @@ export type ImConversationParticipant = {
 export type ImConversation = {
   id: number
   channelId: number
-  subject: string
+  customerName: string
   status: number
   serviceMode: number
   priority: number

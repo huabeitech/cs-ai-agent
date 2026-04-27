@@ -55,7 +55,7 @@ func buildConversationAssignedNotifyBody(conversation *models.Conversation, assi
 	}
 	lines := []string{
 		fmt.Sprintf("会话ID: #%d", conversation.ID),
-		fmt.Sprintf("会话主题: %s", strs.DefaultIfBlank(conversation.Subject, "-")),
+		fmt.Sprintf("会话摘要: %s", strs.DefaultIfBlank(services.ConversationService.BuildConversationSummary(conversation), "-")),
 		fmt.Sprintf("接入渠道: %s", resolveConversationChannelLabel(conversation)),
 		fmt.Sprintf("当前状态: %s", enums.GetIMConversationStatusLabel(conversation.Status)),
 		fmt.Sprintf("处理人: %s", resolveNotifyUserLabel(assigneeID)),

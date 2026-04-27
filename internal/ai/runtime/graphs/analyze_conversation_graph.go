@@ -84,9 +84,6 @@ func buildAnalyzeConversationResult(conversation models.Conversation, messages [
 
 func buildConversationSummary(conversation models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
 	parts := make([]string, 0, 4)
-	if strings.TrimSpace(conversation.Subject) != "" {
-		parts = append(parts, "会话主题："+strings.TrimSpace(conversation.Subject))
-	}
 	if input.ObservedIssue != "" {
 		parts = append(parts, "当前问题："+input.ObservedIssue)
 	} else if strings.TrimSpace(conversation.LastMessageSummary) != "" {
@@ -103,7 +100,6 @@ func buildConversationSummary(conversation models.Conversation, messages []model
 
 func buildConversationCorpus(conversation models.Conversation, messages []models.Message, input AnalyzeConversationInput) string {
 	parts := make([]string, 0, len(messages)+4)
-	parts = append(parts, strings.TrimSpace(conversation.Subject))
 	parts = append(parts, strings.TrimSpace(conversation.LastMessageSummary))
 	parts = append(parts, input.Goal, input.ObservedIssue, input.AdditionalContext)
 	for i := range messages {
@@ -200,9 +196,6 @@ func recommendQuestions(intent string, signals []string, input AnalyzeConversati
 
 func buildConversationAnalysisFacts(conversation models.Conversation, messages []models.Message) []string {
 	facts := make([]string, 0, 4)
-	if strings.TrimSpace(conversation.Subject) != "" {
-		facts = append(facts, "会话主题："+strings.TrimSpace(conversation.Subject))
-	}
 	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		facts = append(facts, "最近摘要："+strings.TrimSpace(conversation.LastMessageSummary))
 	}

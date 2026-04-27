@@ -327,7 +327,6 @@ type Conversation struct {
 	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`  // AIAgentID 为当前会话绑定的 AI Agent ID。
 	ChannelID           int64                           `gorm:"type:bigint;not null;default:0;index"`  // ChannelID 为该会话来源接入渠道ID。
 	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`  // CustomerID 为会话所属客户 ID。
-	Subject             string                          `gorm:"type:varchar(255);not null;default:''"` // Subject 为会话标题或摘要。
 	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`     // Status 为会话状态，如待接入、处理中、已关闭。
 	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`     // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
 	Priority            int                             `gorm:"type:int;not null;default:0;index"`     // Priority 为会话优先级。

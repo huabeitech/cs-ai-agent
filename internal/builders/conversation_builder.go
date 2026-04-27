@@ -19,7 +19,7 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 		AIAgentID:                 item.AIAgentID,
 		ChannelID:                 item.ChannelID,
 		CustomerID:                item.CustomerID,
-		Subject:                   item.Subject,
+		CustomerName:              buildConversationCustomerName(item.CustomerID),
 		Status:                    item.Status,
 		ServiceMode:               item.ServiceMode,
 		Priority:                  item.Priority,
@@ -60,6 +60,16 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 		}
 	}
 	return ret
+}
+
+func buildConversationCustomerName(customerID int64) string {
+	if customerID <= 0 {
+		return ""
+	}
+	if customer := services.CustomerService.Get(customerID); customer != nil {
+		return strings.TrimSpace(customer.Name)
+	}
+	return ""
 }
 
 func BuildParticipantResponses(conversationID int64) []response.ConversationParticipantResponse {

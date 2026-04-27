@@ -597,7 +597,7 @@ export default function DashboardConversationsPage() {
     setActionLoadingId(item.id)
     try {
       await markConversationRead(item.id)
-      toast.success(`已标记已读：${item.subject || `#${item.id}`}`)
+      toast.success(`已标记已读：${item.customerName || `#${item.id}`}`)
       await loadConversations()
       if (detailItem?.id === item.id) {
         await refreshDetail()
@@ -613,7 +613,7 @@ export default function DashboardConversationsPage() {
     setActionLoadingId(item.id)
     try {
       await dispatchConversation(item.id)
-      toast.success(`已触发自动分配：${item.subject || `#${item.id}`}`)
+      toast.success(`已触发自动分配：${item.customerName || `#${item.id}`}`)
       await loadConversations()
       if (detailItem?.id === item.id) {
         await refreshDetail()
@@ -724,7 +724,7 @@ export default function DashboardConversationsPage() {
                     <TableRow key={item.id}>
                       <TableCell className="max-w-60">
                         <div className="min-w-0">
-                          <div className="font-medium">{item.subject || `会话 #${item.id}`}</div>
+                          <div className="font-medium">{item.customerName || `客户 #${item.customerId || item.id}`}</div>
                           <div className="mt-1 text-sm text-muted-foreground">
                             渠道ID：{item.channelId || "-"}
                           </div>
@@ -755,7 +755,7 @@ export default function DashboardConversationsPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={<Button variant="outline" size="icon-sm" />}
-                              aria-label={`更多操作 ${item.subject || item.id}`}
+                              aria-label={`更多操作 ${item.customerName || item.id}`}
                             >
                               <MoreHorizontalIcon />
                             </DropdownMenuTrigger>

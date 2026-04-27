@@ -249,7 +249,7 @@ export function ConversationDetailDialog({
       onOpenChange={onOpenChange}
       title={
         <div className="flex items-center gap-3">
-          <span>{currentConversation?.subject || "会话详情"}</span>
+          <span>{currentConversation?.customerName || "会话详情"}</span>
 
           <div>
             {statusMeta ? (

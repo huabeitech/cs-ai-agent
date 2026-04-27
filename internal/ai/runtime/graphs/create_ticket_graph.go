@@ -114,7 +114,7 @@ func (g *CreateTicketGraph) buildCreateRequest(argumentsInJSON string) (request.
 	req.Priority = args.Priority
 	req.Severity = args.Severity
 	if req.Title == "" {
-		req.Title = strings.TrimSpace(g.conversation.Subject)
+		req.Title = strings.TrimSpace(g.conversation.LastMessageSummary)
 	}
 	if req.Description == "" {
 		req.Description = strings.TrimSpace(g.conversation.LastMessageSummary)

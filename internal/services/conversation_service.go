@@ -2,10 +2,7 @@ package services
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
 	"cs-agent/internal/events"
@@ -61,7 +58,8 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 
 	if strs.IsNotBlank(keyword) {
 		keyword = strings.TrimSpace(keyword)
-		cnd.Where("subject LIKE ? OR last_message_summary LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+		keywordLike := "%" + keyword + "%"
+		cnd.Where("last_message_summary LIKE ? OR customer_id IN (SELECT id FROM t_customer WHERE name LIKE ?)", keywordLike, keywordLike)
 	}
 
 	switch filter {
@@ -103,8 +101,6 @@ func (s *conversationService) getLatestNotFinishedByCustomerID(db *gorm.DB, cust
 }
 
 func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, channelID, aiAgentID int64) (*models.Conversation, error) {
-	subject := s.buildDefaultSubject(externalInfo)
-
 	aiAgent := AIAgentService.Get(aiAgentID)
 	if aiAgent == nil || aiAgent.Status != enums.StatusOk {
 		return nil, errorsx.InvalidParam("AI Agent not found")
@@ -127,7 +123,6 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 			AIAgentID:         aiAgentID,
 			ChannelID:         channelID,
 			CustomerID:        customerID,
-			Subject:           subject,
 			Status:            s.resolveInitialStatus(aiAgent.ServiceMode),
 			ServiceMode:       aiAgent.ServiceMode,
 			Priority:          0,
@@ -667,7 +662,10 @@ func (s *conversationService) BuildConversationSummary(conversation *models.Conv
 	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		return conversation.LastMessageSummary
 	}
-	return strings.TrimSpace(conversation.Subject)
+	if customer := CustomerService.Get(conversation.CustomerID); customer != nil {
+		return strings.TrimSpace(customer.Name)
+	}
+	return ""
 }
 
 func (s *conversationService) canCloseConversation(conversation *models.Conversation, operator *dto.AuthPrincipal) bool {
@@ -804,22 +802,6 @@ func (s *conversationService) canLinkConversationCustomer(conv *models.Conversat
 	default:
 		return false
 	}
-}
-
-func (s *conversationService) buildDefaultSubject(externalInfo openidentity.ExternalInfo) string {
-	if strs.IsNotBlank(externalInfo.ExternalName) {
-		return externalInfo.ExternalName
-	}
-	return fmt.Sprintf("访客%s", hashUUID(externalInfo.ExternalID))
-}
-
-func hashUUID(uuid string) string {
-	if uuid == "" {
-		return "unknown"
-	}
-
-	h := md5.Sum([]byte(uuid))
-	return hex.EncodeToString(h[:])[:8]
 }
 
 func (s *conversationService) resolveInitialStatus(serviceMode enums.IMConversationServiceMode) enums.IMConversationStatus {

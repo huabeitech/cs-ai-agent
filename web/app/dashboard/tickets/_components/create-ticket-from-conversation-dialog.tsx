@@ -7,7 +7,7 @@ import { EditDialog } from "./edit"
 
 type ConversationSeed = {
   id: number
-  subject: string
+  customerName: string
   customerId?: number
   lastMessageSummary?: string
   currentAssigneeId?: number
@@ -28,7 +28,7 @@ export function CreateTicketFromConversationDialog({
 }: CreateTicketFromConversationDialogProps) {
   const initialValues = conversation
     ? {
-        title: conversation.subject || "",
+        title: conversation.customerName || "",
         description: conversation.lastMessageSummary || "",
         priority: 2,
         severity: 1,
