@@ -4,11 +4,13 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/irisx"
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
+	"cs-agent/internal/wxwork"
 	"encoding/json"
 	"strings"
 	"time"
@@ -17,6 +19,7 @@ import (
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
+	"github.com/silenceper/wechat/v2/work/kf"
 )
 
 var ChannelService = newChannelService()
@@ -159,6 +162,44 @@ func (s *channelService) ParseWxWorkKFChannelConfig(raw string) (*dto.WxWorkKFCh
 	}
 	cfg.OpenKfID = strings.TrimSpace(cfg.OpenKfID)
 	return cfg, nil
+}
+
+func (s *channelService) ListWxWorkKFAccounts() ([]response.WxWorkKFAccountResponse, error) {
+	if !wxwork.Enabled() || wxwork.GetWorkCli() == nil {
+		return nil, errorsx.BusinessError(1, "企业微信未启用或配置不完整")
+	}
+	cli, err := wxwork.GetWorkCli().GetKF()
+	if err != nil {
+		return nil, err
+	}
+
+	const limit = 100
+	accounts := make([]response.WxWorkKFAccountResponse, 0)
+	for offset := 0; ; offset += limit {
+		result, err := cli.AccountPaging(&kf.AccountPagingRequest{
+			Offset: offset,
+			Limit:  limit,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range result.AccountList {
+			openKfID := strings.TrimSpace(item.OpenKFID)
+			if openKfID == "" {
+				continue
+			}
+			accounts = append(accounts, response.WxWorkKFAccountResponse{
+				OpenKfID:        openKfID,
+				Name:            strings.TrimSpace(item.Name),
+				Avatar:          strings.TrimSpace(item.Avatar),
+				ManagePrivilege: item.ManagePrivilege,
+			})
+		}
+		if len(result.AccountList) < limit {
+			break
+		}
+	}
+	return accounts, nil
 }
 
 func (s *channelService) ParseWebChannelConfig(raw string) (*dto.WebChannelConfig, error) {

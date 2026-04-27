@@ -17,6 +17,13 @@ type ChannelResponse struct {
 	Remark      string       `json:"remark"`
 }
 
+type WxWorkKFAccountResponse struct {
+	OpenKfID        string `json:"openKfId"`
+	Name            string `json:"name"`
+	Avatar          string `json:"avatar"`
+	ManagePrivilege bool   `json:"managePrivilege"`
+}
+
 func BuildChannelResponse(item *models.Channel) ChannelResponse {
 	if item == nil {
 		return ChannelResponse{}

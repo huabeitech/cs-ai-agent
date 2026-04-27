@@ -20,8 +20,10 @@ import {
   type AIAgent,
   type AdminChannel,
   type CreateAdminChannelPayload,
+  type WxWorkKFAccount,
   fetchAIAgentsAll,
   fetchChannel,
+  fetchWxWorkKFAccounts,
 } from "@/lib/api/admin"
 
 type ChannelFormDialogProps = {
@@ -58,18 +60,28 @@ const defaultWebChannelConfig: Required<WebChannelConfig> = {
   width: "380px",
 }
 
-const schema = z.object({
-  channelType: z.enum(["web", "wxwork_kf"], "请选择渠道类型"),
-  aiAgentId: z.string().trim().regex(/^\d+$/, "请选择 AI Agent"),
-  name: z.string().trim().min(1, "渠道名称不能为空"),
-  openKfId: z.string().trim(),
-  widgetTitle: z.string().trim(),
-  widgetSubtitle: z.string().trim(),
-  widgetThemeColor: z.string().trim(),
-  widgetPosition: z.enum(["left", "right"]),
-  widgetWidth: z.string().trim(),
-  remark: z.string().trim(),
-})
+const schema = z
+  .object({
+    channelType: z.enum(["web", "wxwork_kf"], "请选择渠道类型"),
+    aiAgentId: z.string().trim().regex(/^\d+$/, "请选择 AI Agent"),
+    name: z.string().trim().min(1, "渠道名称不能为空"),
+    openKfId: z.string().trim(),
+    widgetTitle: z.string().trim(),
+    widgetSubtitle: z.string().trim(),
+    widgetThemeColor: z.string().trim(),
+    widgetPosition: z.enum(["left", "right"]),
+    widgetWidth: z.string().trim(),
+    remark: z.string().trim(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.channelType === "wxwork_kf" && !values.openKfId.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["openKfId"],
+        message: "请选择企业微信客服账号",
+      })
+    }
+  })
 
 type EditForm = z.infer<typeof schema>
 
@@ -199,6 +211,9 @@ function ChannelFormBody({
   const formId = "channel-edit-form"
   const [loading, setLoading] = useState(false)
   const [aiAgents, setAIAgents] = useState<AIAgent[]>([])
+  const [wxWorkKFAccounts, setWxWorkKFAccounts] = useState<WxWorkKFAccount[]>([])
+  const [wxWorkKFAccountsLoading, setWxWorkKFAccountsLoading] = useState(false)
+  const [wxWorkKFAccountsError, setWxWorkKFAccountsError] = useState("")
   const [currentStatus, setCurrentStatus] = useState(0)
   const form = useForm<
     z.input<typeof schema>,
@@ -216,6 +231,7 @@ function ChannelFormBody({
     formState: { errors },
   } = form
   const channelType = useWatch({ control, name: "channelType" })
+  const openKfId = useWatch({ control, name: "openKfId" })
 
   useEffect(() => {
     async function loadAIAgents() {
@@ -250,10 +266,54 @@ function ChannelFormBody({
     void loadDetail()
   }, [itemId, reset])
 
+  useEffect(() => {
+    if (
+      channelType !== "wxwork_kf" ||
+      wxWorkKFAccounts.length > 0 ||
+      wxWorkKFAccountsLoading ||
+      wxWorkKFAccountsError
+    ) {
+      return
+    }
+    async function loadWxWorkKFAccounts() {
+      setWxWorkKFAccountsLoading(true)
+      setWxWorkKFAccountsError("")
+      try {
+        const data = await fetchWxWorkKFAccounts()
+        setWxWorkKFAccounts(data)
+      } catch (error) {
+        console.error("Failed to load WeCom KF accounts:", error)
+        setWxWorkKFAccountsError("企业微信客服账号加载失败")
+      } finally {
+        setWxWorkKFAccountsLoading(false)
+      }
+    }
+    void loadWxWorkKFAccounts()
+  }, [
+    channelType,
+    wxWorkKFAccounts.length,
+    wxWorkKFAccountsError,
+    wxWorkKFAccountsLoading,
+  ])
+
   const aiAgentOptions = aiAgents.map((item) => ({
     value: String(item.id),
     label: item.name,
   }))
+  const wxWorkKFAccountOptions = wxWorkKFAccounts.map((item) => ({
+    value: item.openKfId,
+    label: item.name ? `${item.name} (${item.openKfId})` : item.openKfId,
+  }))
+  if (
+    channelType === "wxwork_kf" &&
+    openKfId &&
+    !wxWorkKFAccountOptions.some((item) => item.value === openKfId)
+  ) {
+    wxWorkKFAccountOptions.unshift({
+      value: openKfId,
+      label: openKfId,
+    })
+  }
 
   async function onFormSubmit(values: EditForm) {
     await onSubmit(buildPayload(values, currentStatus))
@@ -336,9 +396,27 @@ function ChannelFormBody({
 
             {channelType === "wxwork_kf" ? (
               <Field data-invalid={!!errors.openKfId}>
-                <FieldLabel htmlFor="channel-open-kf-id">OpenKfID</FieldLabel>
+                <FieldLabel>企业微信客服账号</FieldLabel>
                 <FieldContent>
-                  <Input id="channel-open-kf-id" {...register("openKfId")} />
+                  <Controller
+                    control={control}
+                    name="openKfId"
+                    render={({ field }) => (
+                      <OptionCombobox
+                        value={field.value}
+                        options={wxWorkKFAccountOptions}
+                        placeholder={
+                          wxWorkKFAccountsLoading ? "正在加载客服账号" : "请选择客服账号"
+                        }
+                        searchPlaceholder="搜索客服账号"
+                        emptyText={
+                          wxWorkKFAccountsError || "未找到企业微信客服账号"
+                        }
+                        disabled={wxWorkKFAccountsLoading}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
                   <FieldError errors={[errors.openKfId]} />
                 </FieldContent>
               </Field>

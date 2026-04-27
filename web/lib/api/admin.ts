@@ -185,6 +185,13 @@ export type AdminChannel = {
   remark: string
 }
 
+export type WxWorkKFAccount = {
+  openKfId: string
+  name: string
+  avatar: string
+  managePrivilege: boolean
+}
+
 export type CreateAdminChannelPayload = {
   channelType: string
   aiAgentId: number
@@ -555,6 +562,10 @@ export function fetchChannels(
 
 export function fetchChannel(id: number) {
   return request<AdminChannel>(`/api/dashboard/channel/${id}`)
+}
+
+export function fetchWxWorkKFAccounts() {
+  return request<WxWorkKFAccount[]>("/api/dashboard/channel/wxwork/kf/accounts")
 }
 
 export function createChannel(payload: CreateAdminChannelPayload) {

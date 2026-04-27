@@ -45,6 +45,17 @@ func (c *ChannelController) GetBy(id int64) *web.JsonResult {
 	return web.JsonData(buildChannelResponse(item))
 }
 
+func (c *ChannelController) AnyWxworkKfAccounts() *web.JsonResult {
+	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionChannelView); err != nil {
+		return web.JsonError(err)
+	}
+	list, err := services.ChannelService.ListWxWorkKFAccounts()
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(list)
+}
+
 func (c *ChannelController) PostCreate() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionChannelCreate)
 	if err != nil {
