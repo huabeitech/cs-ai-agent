@@ -1,6 +1,6 @@
 package enums
 
-const CustomerSourceTypeWebChat = ExternalSourceWebChat
+const CustomerSourceTypeWebChat = ExternalSourceGuest
 
 func GetCustomerSourceTypeLabel(sourceType ExternalSource) string {
 	return GetExternalSourceLabel(ExternalSource(sourceType))
