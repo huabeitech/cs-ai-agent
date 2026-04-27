@@ -283,7 +283,9 @@ function ChannelFormBody({
         setWxWorkKFAccounts(data)
       } catch (error) {
         console.error("Failed to load WeCom KF accounts:", error)
-        setWxWorkKFAccountsError("企业微信客服账号加载失败")
+        setWxWorkKFAccountsError(
+          error instanceof Error ? error.message : "企业微信客服账号加载失败"
+        )
       } finally {
         setWxWorkKFAccountsLoading(false)
       }
