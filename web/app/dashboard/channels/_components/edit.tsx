@@ -344,34 +344,13 @@ function ChannelFormBody({
           <div className="text-muted-foreground">加载中...</div>
         </div>
       ) : (
-        <form id={formId} onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
+        <form id={formId} onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
+          <div className="grid grid-cols-1 gap-4">
             <Field data-invalid={!!errors.name}>
               <FieldLabel htmlFor="channel-name">渠道名称</FieldLabel>
               <FieldContent>
                 <Input id="channel-name" {...register("name")} />
                 <FieldError errors={[errors.name]} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={!!errors.channelType}>
-              <FieldLabel>渠道类型</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={control}
-                  name="channelType"
-                  render={({ field }) => (
-                    <OptionCombobox
-                      value={field.value}
-                      options={[...channelTypeOptions]}
-                      placeholder="请选择渠道类型"
-                      searchPlaceholder="搜索渠道类型"
-                      emptyText="未找到渠道类型"
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <FieldError errors={[errors.channelType]} />
               </FieldContent>
             </Field>
 
@@ -395,6 +374,38 @@ function ChannelFormBody({
                 <FieldError errors={[errors.aiAgentId]} />
               </FieldContent>
             </Field>
+
+            <Field data-invalid={!!errors.channelType}>
+              <FieldLabel>接入渠道</FieldLabel>
+              <FieldContent>
+                <Controller
+                  control={control}
+                  name="channelType"
+                  render={({ field }) => (
+                    <OptionCombobox
+                      value={field.value}
+                      options={[...channelTypeOptions]}
+                      placeholder="请选择接入渠道"
+                      searchPlaceholder="搜索接入渠道"
+                      emptyText="未找到接入渠道"
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                <FieldError errors={[errors.channelType]} />
+              </FieldContent>
+            </Field>
+          </div>
+
+          <div className="space-y-4 rounded-md border p-4">
+            <div>
+              <div className="text-sm font-medium">渠道配置</div>
+              <div className="text-xs text-muted-foreground">
+                {channelType === "wxwork_kf"
+                  ? "配置企业微信客服账号，用于匹配回调消息和对外发送消息。"
+                  : "配置 Web 站点客服窗口的展示参数。"}
+              </div>
+            </div>
 
             {channelType === "wxwork_kf" ? (
               <Field data-invalid={!!errors.openKfId}>
@@ -423,76 +434,75 @@ function ChannelFormBody({
                 </FieldContent>
               </Field>
             ) : null}
+
+            {channelType === "web" ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field data-invalid={!!errors.widgetTitle}>
+                  <FieldLabel htmlFor="channel-widget-title">窗口标题</FieldLabel>
+                  <FieldContent>
+                    <Input id="channel-widget-title" {...register("widgetTitle")} />
+                    <FieldError errors={[errors.widgetTitle]} />
+                  </FieldContent>
+                </Field>
+
+                <Field data-invalid={!!errors.widgetSubtitle}>
+                  <FieldLabel htmlFor="channel-widget-subtitle">窗口副标题</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="channel-widget-subtitle"
+                      {...register("widgetSubtitle")}
+                    />
+                    <FieldError errors={[errors.widgetSubtitle]} />
+                  </FieldContent>
+                </Field>
+
+                <Field data-invalid={!!errors.widgetThemeColor}>
+                  <FieldLabel htmlFor="channel-widget-theme-color">主题色</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="channel-widget-theme-color"
+                      placeholder="#2563eb"
+                      {...register("widgetThemeColor")}
+                    />
+                    <FieldError errors={[errors.widgetThemeColor]} />
+                  </FieldContent>
+                </Field>
+
+                <Field data-invalid={!!errors.widgetPosition}>
+                  <FieldLabel>挂载位置</FieldLabel>
+                  <FieldContent>
+                    <Controller
+                      control={control}
+                      name="widgetPosition"
+                      render={({ field }) => (
+                        <OptionCombobox
+                          value={field.value}
+                          options={[...widgetPositionOptions]}
+                          placeholder="请选择挂载位置"
+                          searchPlaceholder="搜索挂载位置"
+                          emptyText="未找到挂载位置"
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <FieldError errors={[errors.widgetPosition]} />
+                  </FieldContent>
+                </Field>
+
+                <Field data-invalid={!!errors.widgetWidth}>
+                  <FieldLabel htmlFor="channel-widget-width">窗口宽度</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="channel-widget-width"
+                      placeholder="380px"
+                      {...register("widgetWidth")}
+                    />
+                    <FieldError errors={[errors.widgetWidth]} />
+                  </FieldContent>
+                </Field>
+              </div>
+            ) : null}
           </div>
-
-          {channelType === "web" ? (
-            <div className="grid grid-cols-1 gap-4 rounded-md border p-4 sm:grid-cols-2">
-              <Field data-invalid={!!errors.widgetTitle}>
-                <FieldLabel htmlFor="channel-widget-title">窗口标题</FieldLabel>
-                <FieldContent>
-                  <Input id="channel-widget-title" {...register("widgetTitle")} />
-                  <FieldError errors={[errors.widgetTitle]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.widgetSubtitle}>
-                <FieldLabel htmlFor="channel-widget-subtitle">窗口副标题</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="channel-widget-subtitle"
-                    {...register("widgetSubtitle")}
-                  />
-                  <FieldError errors={[errors.widgetSubtitle]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.widgetThemeColor}>
-                <FieldLabel htmlFor="channel-widget-theme-color">主题色</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="channel-widget-theme-color"
-                    placeholder="#2563eb"
-                    {...register("widgetThemeColor")}
-                  />
-                  <FieldError errors={[errors.widgetThemeColor]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.widgetPosition}>
-                <FieldLabel>挂载位置</FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={control}
-                    name="widgetPosition"
-                    render={({ field }) => (
-                      <OptionCombobox
-                        value={field.value}
-                        options={[...widgetPositionOptions]}
-                        placeholder="请选择挂载位置"
-                        searchPlaceholder="搜索挂载位置"
-                        emptyText="未找到挂载位置"
-                        onChange={field.onChange}
-                      />
-                    )}
-                  />
-                  <FieldError errors={[errors.widgetPosition]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.widgetWidth}>
-                <FieldLabel htmlFor="channel-widget-width">窗口宽度</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="channel-widget-width"
-                    placeholder="380px"
-                    {...register("widgetWidth")}
-                  />
-                  <FieldError errors={[errors.widgetWidth]} />
-                </FieldContent>
-              </Field>
-
-            </div>
-          ) : null}
 
           <Field data-invalid={!!errors.remark}>
             <FieldLabel htmlFor="channel-remark">备注</FieldLabel>
