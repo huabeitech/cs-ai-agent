@@ -114,7 +114,7 @@ export type ImWidgetConfig = {
   width?: string
 }
 
-const VISITOR_STORAGE_KEY = "cs_agent_im_visitor_id"
+const GUEST_STORAGE_KEY = "cs_agent_im_guest_id"
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
 const OPEN_IM_CHANNEL_ID =
@@ -122,21 +122,21 @@ const OPEN_IM_CHANNEL_ID =
 const OPEN_IM_EXTERNAL_SOURCE =
   process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() || "web_chat"
 
-function buildVisitorId() {
-  return `visitor_${generateUUID()}`
+function buildGuestId() {
+  return `guest_${generateUUID()}`
 }
 
-export function getImVisitorId() {
+export function getGuestId() {
   if (typeof window === "undefined") {
-    return "visitor_ssr"
+    return ""
   }
-  const existing = window.localStorage.getItem(VISITOR_STORAGE_KEY)?.trim()
+  const existing = window.localStorage.getItem(GUEST_STORAGE_KEY)?.trim()
   if (existing) {
     return existing
   }
-  const visitorId = buildVisitorId()
-  window.localStorage.setItem(VISITOR_STORAGE_KEY, visitorId)
-  return visitorId
+  const guestId = buildGuestId()
+  window.localStorage.setItem(GUEST_STORAGE_KEY, guestId)
+  return guestId
 }
 
 function getRuntimeImConfig() {
@@ -158,7 +158,7 @@ function createImHeaders() {
   const config = getRuntimeImConfig()
   const headers: Record<string, string> = {
     "X-External-Source": config.externalSource,
-    "X-External-Id": config.externalId || getImVisitorId(),
+    "X-External-Id": config.externalId || getGuestId(),
     "X-Channel-Id": config.channelId,
   }
   if (config.externalName) {

@@ -28,9 +28,9 @@ func NewServer() (*iris.Application, error) {
 	app := iris.New()
 	corsHandler := cors.New().
 		AllowOrigin("*").
-		AllowHeaders("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Visitor-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
+		AllowHeaders("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Guest-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
 		MaxAge(600).
-		ExposeHeaders("Content-Length", "Content-Type", "Authorization", "X-Visitor-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
+		ExposeHeaders("Content-Length", "Content-Type", "Authorization", "X-Guest-Id", "X-Channel-Id", "X-External-Source", "X-External-Id", "X-External-Name").
 		Handler()
 	app.UseRouter(func(ctx iris.Context) {
 		// WebSocket upgrade is validated by the upgrader's origin policy.

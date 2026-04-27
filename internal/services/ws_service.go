@@ -132,7 +132,7 @@ func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrinc
 		Payload: RealtimeConnectedPayload{
 			ConnID:       session.ID,
 			UserID:       logUserID,
-			VisitorID:    logExternalID,
+			GuestID:      logExternalID,
 			Role:         role,
 			TerminalType: session.TerminalType,
 			Topics:       session.topicList(),
@@ -500,12 +500,12 @@ func (s *wsService) PublishToTopics(topics []string, event RealtimeEvent) {
 	}
 }
 
-func (s *wsService) IsVisitorOnline(visitorID string) bool {
-	visitorID = strings.TrimSpace(visitorID)
-	if visitorID == "" {
+func (s *wsService) IsGuestOnline(guestID string) bool {
+	guestID = strings.TrimSpace(guestID)
+	if guestID == "" {
 		return false
 	}
-	return s.manager.HasTopic(s.visitorTopic(visitorID))
+	return s.manager.HasTopic(s.guestTopic(guestID))
 }
 
 func (s *wsService) routeConversationTopics(conversation *models.Conversation) []string {
@@ -515,7 +515,7 @@ func (s *wsService) routeConversationTopics(conversation *models.Conversation) [
 
 	topics := []string{s.conversationTopic(conversation.ID)}
 	if strings.TrimSpace(conversation.ExternalID) != "" {
-		topics = append(topics, s.visitorTopic(conversation.ExternalID))
+		topics = append(topics, s.guestTopic(conversation.ExternalID))
 	}
 	if conversation.CurrentAssigneeID > 0 {
 		topics = append(topics, s.adminTopic(conversation.CurrentAssigneeID))
@@ -537,9 +537,9 @@ func (s *wsService) defaultTopics(session *ClientSession) []string {
 		}
 		return []string{s.adminTopic(session.Principal.UserID), realtimeTopicAdminAll}
 	default:
-		// 开放 IM：仅 External、无 AuthPrincipal 的访客连接必须仍能订阅 visitor:{externalId}，否则收不到推送。
+		// 开放 IM：仅 External、无 AuthPrincipal 的访客连接必须仍能订阅 guest:{externalId}，否则收不到推送。
 		if session.External != nil && strings.TrimSpace(session.External.ExternalID) != "" {
-			return []string{s.visitorTopic(session.External.ExternalID)}
+			return []string{s.guestTopic(session.External.ExternalID)}
 		}
 		if session.Principal != nil && session.Principal.UserID > 0 {
 			return []string{s.userTopic(session.Principal.UserID)}
@@ -637,8 +637,8 @@ func (s *wsService) userTopic(userID int64) string {
 	return realtimeTopicUserPrefix + strconv.FormatInt(userID, 10)
 }
 
-func (s *wsService) visitorTopic(visitorID string) string {
-	return realtimeTopicVisitorPrefix + strings.TrimSpace(visitorID)
+func (s *wsService) guestTopic(guestID string) string {
+	return realtimeTopicGuestPrefix + strings.TrimSpace(guestID)
 }
 
 func (s *wsService) adminTopic(userID int64) string {

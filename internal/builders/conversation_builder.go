@@ -38,7 +38,7 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 		AgentLastReadMessageID:    readStateMessageID(agentReadState),
 		AgentLastReadSeqNo:        readStateSeqNo(agentReadState),
 		AgentLastReadAt:           readStateAt(agentReadState),
-		CustomerOnline:            services.WsService.IsVisitorOnline(item.ExternalID),
+		CustomerOnline:            services.WsService.IsGuestOnline(item.ExternalID),
 		ClosedAt:                  utils.FormatTimePtr(item.ClosedAt),
 		ClosedBy:                  item.ClosedBy,
 		CloseReason:               item.CloseReason,

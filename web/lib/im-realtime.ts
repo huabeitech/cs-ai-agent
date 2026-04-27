@@ -1,5 +1,5 @@
 import { createWebSocketBaseUrl } from "@/lib/api/websocket"
-import { getImVisitorId, type ImMessage } from "@/lib/api/im"
+import { getGuestId, type ImMessage } from "@/lib/api/im"
 import { readKefuWidgetConfig } from "@/lib/kefu-widget-config"
 import type {
   RealtimeConversationPatch,
@@ -20,7 +20,7 @@ export function createImRealtimeConnection() {
     ? apiBaseUrl.replace(/^http/, "ws").replace(/\/$/, "")
     : createWebSocketBaseUrl()
   const resolvedExternalId = encodeURIComponent(
-    (config.externalId ?? "").trim() || getImVisitorId()
+    (config.externalId ?? "").trim() || getGuestId()
   )
   const externalSource = encodeURIComponent(
     (config.externalSource ?? "web_chat").trim() || "web_chat"

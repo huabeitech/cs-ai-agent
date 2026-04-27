@@ -28,7 +28,7 @@ const (
 
 const (
 	realtimeTopicUserPrefix         = "user:"
-	realtimeTopicVisitorPrefix      = "visitor:"
+	realtimeTopicGuestPrefix        = "guest:"
 	realtimeTopicAdminPrefix        = "admin:"
 	realtimeTopicConversationPrefix = "conversation:"
 	realtimeTopicAdminAll           = "admin:all"
@@ -54,7 +54,7 @@ type RealtimeEventPayload interface {
 type RealtimeConnectedPayload struct {
 	ConnID       string   `json:"connId,omitempty"`
 	UserID       int64    `json:"userId,omitempty"`
-	VisitorID    string   `json:"visitorId,omitempty"`
+	GuestID      string   `json:"guestId,omitempty"`
 	Role         string   `json:"role,omitempty"`
 	TerminalType string   `json:"terminalType,omitempty"`
 	Topics       []string `json:"topics,omitempty"`
