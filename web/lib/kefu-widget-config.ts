@@ -6,13 +6,13 @@ export type KefuWidgetHostConfig = {
   externalSource?: string
   /** 外部访客稳定标识；未传时使用浏览器本地访客 ID */
   externalId?: string
+  /** 访客展示名，随请求以 X-External-Name / WS query externalName 传给后端 */
+  externalName?: string
   title?: string
   subtitle?: string
   position?: "left" | "right"
   themeColor?: string
   width?: string
-  /** 访客展示名，随请求以 X-External-Name / WS query externalName 传给后端 */
-  subject?: string
 }
 
 declare global {
@@ -51,12 +51,12 @@ export function readKefuWidgetConfig(): KefuWidgetHostConfig {
       process.env.NEXT_PUBLIC_OPEN_IM_EXTERNAL_SOURCE?.trim() ??
       undefined,
     externalId: query.get("externalId") ?? undefined,
+    externalName: query.get("externalName") ?? undefined,
     title: query.get("title") ?? undefined,
     subtitle: query.get("subtitle") ?? undefined,
     position: (query.get("position") as "left" | "right" | null) ?? undefined,
     themeColor: query.get("themeColor") ?? undefined,
     width: query.get("width") ?? undefined,
-    subject: query.get("subject") ?? undefined,
   }
 
   return window.__CS_AGENT_WIDGET_CONFIG__ ?? window.CSAgentConfig ?? fallback

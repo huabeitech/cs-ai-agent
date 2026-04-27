@@ -66,7 +66,7 @@
     frameUrl.searchParams.set("baseUrl", config.baseUrl);
     if (config.apiBaseUrl) frameUrl.searchParams.set("apiBaseUrl", config.apiBaseUrl);
     if (config.externalSource) frameUrl.searchParams.set("externalSource", config.externalSource);
-    if (config.subject) frameUrl.searchParams.set("subject", config.subject);
+    if (config.externalName) frameUrl.searchParams.set("externalName", config.externalName);
     return frameUrl;
   }
 

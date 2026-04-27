@@ -26,7 +26,7 @@ export function createImRealtimeConnection() {
     (config.externalSource ?? "web_chat").trim() || "web_chat"
   )
   const channelId = encodeURIComponent(config.channelId || "")
-  const externalName = (config.subject ?? "").trim()
+  const externalName = (config.externalName ?? "").trim()
   const nameQuery =
     externalName !== ""
       ? `&externalName=${encodeURIComponent(externalName)}`

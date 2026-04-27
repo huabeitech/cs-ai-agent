@@ -66,7 +66,7 @@
     if (config.position) frameUrl.searchParams.set("position", config.position);
     if (config.themeColor) frameUrl.searchParams.set("themeColor", config.themeColor);
     if (config.width) frameUrl.searchParams.set("width", config.width);
-    if (config.subject) frameUrl.searchParams.set("subject", config.subject);
+    if (config.externalName) frameUrl.searchParams.set("externalName", config.externalName);
     return frameUrl;
   }
 
@@ -360,4 +360,3 @@
     mount(window.CSAgentConfig);
   }
 })();
-

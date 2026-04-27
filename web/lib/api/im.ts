@@ -149,7 +149,7 @@ function getRuntimeImConfig() {
     externalSource:
       (widgetConfig.externalSource || OPEN_IM_EXTERNAL_SOURCE).trim() || "web_chat",
     externalId: (widgetConfig.externalId || "").trim(),
-    externalName: (widgetConfig.subject || "").trim(),
+    externalName: (widgetConfig.externalName || "").trim(),
   }
 }
 
