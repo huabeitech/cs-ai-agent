@@ -82,6 +82,15 @@ export const ExternalSourceLabels: Record<ExternalSource, string> = {
   [ExternalSource.WxWorkKF]: "企业微信客服",
 }
 
+export enum ExternalType {
+  Guest = "guest",
+  User = "user",
+}
+export const ExternalTypeLabels: Record<ExternalType, string> = {
+  [ExternalType.Guest]: "访客",
+  [ExternalType.User]: "用户",
+}
+
 export enum Gender {
   Unknown = 0,
   Male = 1,

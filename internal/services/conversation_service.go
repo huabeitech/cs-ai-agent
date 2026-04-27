@@ -744,6 +744,7 @@ func (s *conversationService) LinkConversationCustomer(conversationID, customerI
 			} else {
 				idRow := &models.CustomerIdentity{
 					CustomerID:     customerID,
+					ExternalType:   enums.ExternalTypeGuest,
 					ExternalSource: enums.ExternalSource(extSrc),
 					ExternalID:     extID,
 					Status:         enums.StatusOk,

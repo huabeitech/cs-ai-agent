@@ -6,6 +6,26 @@ func GetCustomerSourceTypeLabel(sourceType ExternalSource) string {
 	return GetExternalSourceLabel(ExternalSource(sourceType))
 }
 
+// ExternalType 客户外部身份类型。
+type ExternalType string
+
+const (
+	ExternalTypeGuest ExternalType = "guest"
+	ExternalTypeUser  ExternalType = "user"
+)
+
+var externalTypeLabelMap = map[ExternalType]string{
+	ExternalTypeGuest: "访客",
+	ExternalTypeUser:  "用户",
+}
+
+func GetExternalTypeLabel(externalType ExternalType) string {
+	if s, ok := externalTypeLabelMap[externalType]; ok {
+		return s
+	}
+	return string(externalType)
+}
+
 // 联系方式类型
 type ContactType string
 

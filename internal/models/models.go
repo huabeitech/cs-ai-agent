@@ -188,6 +188,7 @@ type Customer struct {
 type CustomerIdentity struct {
 	ID             int64                `gorm:"primaryKey;autoIncrement"`
 	CustomerID     int64                `gorm:"type:bigint;not null;uniqueIndex:uk_customer_external"`                    // 为所属客户ID。
+	ExternalType   enums.ExternalType   `gorm:"type:varchar(30);not null;default:'guest';index"`                          // ExternalType 为外部身份类型：guest访客，user主动设置的用户信息。
 	ExternalSource enums.ExternalSource `gorm:"type:varchar(30);uniqueIndex:uk_customer_external"`                        // 为外部身份来源
 	ExternalID     string               `gorm:"type:varchar(128);index:idx_external_id;uniqueIndex:uk_customer_external"` // 为平台侧用户唯一ID，与访客 ExternalID 对齐。
 	RawProfile     string               `gorm:"type:text"`                                                                // 为第三方原始资料JSON。
