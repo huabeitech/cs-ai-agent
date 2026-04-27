@@ -91,6 +91,11 @@ func (r *conversationRepository) Updates(db *gorm.DB, id int64, columns map[stri
 	return
 }
 
+func (r *conversationRepository) UpdatesByCustomerID(db *gorm.DB, customerID int64, columns map[string]interface{}) (err error) {
+	err = db.Model(&models.Conversation{}).Where("customer_id = ?", customerID).Updates(columns).Error
+	return
+}
+
 func (r *conversationRepository) UpdateColumn(db *gorm.DB, id int64, name string, value interface{}) (err error) {
 	err = db.Model(&models.Conversation{}).Where("id = ?", id).UpdateColumn(name, value).Error
 	return

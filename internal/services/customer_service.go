@@ -218,16 +218,22 @@ func (s *customerService) UpdateCustomer(req request.UpdateCustomerRequest, oper
 		}
 	}
 
-	return repositories.CustomerRepository.Updates(sqls.DB(), req.ID, map[string]any{
-		"name":             name,
-		"gender":           req.Gender,
-		"company_id":       req.CompanyID,
-		"primary_mobile":   strings.TrimSpace(req.PrimaryMobile),
-		"primary_email":    strings.TrimSpace(req.PrimaryEmail),
-		"remark":           strings.TrimSpace(req.Remark),
-		"update_user_id":   operator.UserID,
-		"update_user_name": operator.Username,
-		"updated_at":       time.Now(),
+	return sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		now := time.Now()
+		if err := repositories.CustomerRepository.Updates(ctx.Tx, req.ID, map[string]any{
+			"name":             name,
+			"gender":           req.Gender,
+			"company_id":       req.CompanyID,
+			"primary_mobile":   strings.TrimSpace(req.PrimaryMobile),
+			"primary_email":    strings.TrimSpace(req.PrimaryEmail),
+			"remark":           strings.TrimSpace(req.Remark),
+			"update_user_id":   operator.UserID,
+			"update_user_name": operator.Username,
+			"updated_at":       now,
+		}); err != nil {
+			return err
+		}
+		return s.syncConversationCustomerName(ctx.Tx, req.ID, name, operator, now)
 	})
 }
 
@@ -242,6 +248,21 @@ func (s *customerService) DeleteCustomer(id int64, operator dto.AuthPrincipal) e
 		"update_user_name": operator.Username,
 		"updated_at":       time.Now(),
 	})
+}
+
+func (s *customerService) syncConversationCustomerName(db *gorm.DB, customerID int64, name string, operator *dto.AuthPrincipal, now time.Time) error {
+	if customerID <= 0 {
+		return nil
+	}
+	updates := map[string]any{
+		"customer_name": strings.TrimSpace(name),
+		"updated_at":    now,
+	}
+	if operator != nil {
+		updates["update_user_id"] = operator.UserID
+		updates["update_user_name"] = operator.Username
+	}
+	return repositories.ConversationRepository.UpdatesByCustomerID(db, customerID, updates)
 }
 
 func (s *customerService) UpdateStatus(id int64, status int, operator *dto.AuthPrincipal) error {
@@ -314,6 +335,9 @@ func (s *customerService) SaveCustomerProfile(req request.SaveCustomerProfileReq
 				"update_user_name": operator.Username,
 				"updated_at":       now,
 			}); err != nil {
+				return err
+			}
+			if err := s.syncConversationCustomerName(ctx.Tx, customerID, name, operator, now); err != nil {
 				return err
 			}
 			out = repositories.CustomerRepository.Get(ctx.Tx, customerID)

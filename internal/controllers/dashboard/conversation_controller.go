@@ -36,7 +36,7 @@ func (c *ConversationController) AnyList() *web.JsonResult {
 
 	if keyword, _ := params.Get(c.Ctx, "keyword"); strs.IsNotBlank(keyword) {
 		keywordLike := "%" + strings.TrimSpace(keyword) + "%"
-		cnd.Where("last_message_summary LIKE ? OR customer_id IN (SELECT id FROM t_customer WHERE name LIKE ?)", keywordLike, keywordLike)
+		cnd.Where("customer_name LIKE ? OR last_message_summary LIKE ?", keywordLike, keywordLike)
 	}
 
 	// 标签搜索

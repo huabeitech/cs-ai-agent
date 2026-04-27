@@ -323,27 +323,28 @@ type Tag struct {
 
 // Conversation 客服会话。
 type Conversation struct {
-	ID                  int64                           `gorm:"primaryKey;autoIncrement"`              // ID 为会话主键。
-	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`  // AIAgentID 为当前会话绑定的 AI Agent ID。
-	ChannelID           int64                           `gorm:"type:bigint;not null;default:0;index"`  // ChannelID 为该会话来源接入渠道ID。
-	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`  // CustomerID 为会话所属客户 ID。
-	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`     // Status 为会话状态，如待接入、处理中、已关闭。
-	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`     // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
-	Priority            int                             `gorm:"type:int;not null;default:0;index"`     // Priority 为会话优先级。
-	CurrentAssigneeID   int64                           `gorm:"type:bigint;not null;default:0;index"`  // CurrentAssigneeID 为当前接待客服ID。
-	CurrentTeamID       int64                           `gorm:"type:bigint;not null;default:0;index"`  // CurrentTeamID 为当前处理客服组ID。
-	LastMessageID       int64                           `gorm:"type:bigint;not null;default:0;index"`  // LastMessageID 为最后一条消息ID。
-	LastMessageAt       time.Time                       `gorm:"type:datetime;index"`                   // LastMessageAt 为最后消息时间。
-	LastActiveAt        time.Time                       `gorm:"type:datetime;index"`                   // LastActiveAt 为会话最近活跃时间。
-	LastMessageSummary  string                          `gorm:"type:varchar(255);not null;default:''"` // LastMessageSummary 为最后一条消息摘要。
-	CustomerUnreadCount int                             `gorm:"type:int;not null;default:0"`           // CustomerUnreadCount 为用户侧未读数。
-	AgentUnreadCount    int                             `gorm:"type:int;not null;default:0"`           // AgentUnreadCount 为客服侧未读数。
-	HandoffAt           *time.Time                      `gorm:"type:datetime;index"`                   // HandoffAt 为最近一次转人工时间。
-	HandoffReason       string                          `gorm:"type:varchar(255);not null;default:''"` // HandoffReason 为最近一次转人工原因。
-	AIReplyRounds       int                             `gorm:"type:int;not null;default:0"`           // AIReplyRounds 为当前会话内 AI 已成功回复次数。
-	ClosedAt            *time.Time                      `gorm:"type:datetime;index"`                   // ClosedAt 为会话关闭时间。
-	ClosedBy            int64                           `gorm:"type:bigint;not null;default:0;index"`  // ClosedBy 为关闭人用户ID，访客关闭时写0。
-	CloseReason         string                          `gorm:"type:varchar(255);not null;default:''"` // CloseReason 为关闭原因。
+	ID                  int64                           `gorm:"primaryKey;autoIncrement"`                    // ID 为会话主键。
+	AIAgentID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // AIAgentID 为当前会话绑定的 AI Agent ID。
+	ChannelID           int64                           `gorm:"type:bigint;not null;default:0;index"`        // ChannelID 为该会话来源接入渠道ID。
+	CustomerID          int64                           `gorm:"type:bigint;not null;default:0;index"`        // CustomerID 为会话所属客户 ID。
+	CustomerName        string                          `gorm:"type:varchar(100);not null;default:'';index"` // CustomerName 为客户名称冗余字段，用于列表展示和搜索。
+	Status              enums.IMConversationStatus      `gorm:"type:int;not null;default:1;index"`           // Status 为会话状态，如待接入、处理中、已关闭。
+	ServiceMode         enums.IMConversationServiceMode `gorm:"type:int;not null;default:3;index"`           // ServiceMode 为服务模式，如仅AI、仅人工、AI优先人工接管。
+	Priority            int                             `gorm:"type:int;not null;default:0;index"`           // Priority 为会话优先级。
+	CurrentAssigneeID   int64                           `gorm:"type:bigint;not null;default:0;index"`        // CurrentAssigneeID 为当前接待客服ID。
+	CurrentTeamID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // CurrentTeamID 为当前处理客服组ID。
+	LastMessageID       int64                           `gorm:"type:bigint;not null;default:0;index"`        // LastMessageID 为最后一条消息ID。
+	LastMessageAt       time.Time                       `gorm:"type:datetime;index"`                         // LastMessageAt 为最后消息时间。
+	LastActiveAt        time.Time                       `gorm:"type:datetime;index"`                         // LastActiveAt 为会话最近活跃时间。
+	LastMessageSummary  string                          `gorm:"type:varchar(255);not null;default:''"`       // LastMessageSummary 为最后一条消息摘要。
+	CustomerUnreadCount int                             `gorm:"type:int;not null;default:0"`                 // CustomerUnreadCount 为用户侧未读数。
+	AgentUnreadCount    int                             `gorm:"type:int;not null;default:0"`                 // AgentUnreadCount 为客服侧未读数。
+	HandoffAt           *time.Time                      `gorm:"type:datetime;index"`                         // HandoffAt 为最近一次转人工时间。
+	HandoffReason       string                          `gorm:"type:varchar(255);not null;default:''"`       // HandoffReason 为最近一次转人工原因。
+	AIReplyRounds       int                             `gorm:"type:int;not null;default:0"`                 // AIReplyRounds 为当前会话内 AI 已成功回复次数。
+	ClosedAt            *time.Time                      `gorm:"type:datetime;index"`                         // ClosedAt 为会话关闭时间。
+	ClosedBy            int64                           `gorm:"type:bigint;not null;default:0;index"`        // ClosedBy 为关闭人用户ID，访客关闭时写0。
+	CloseReason         string                          `gorm:"type:varchar(255);not null;default:''"`       // CloseReason 为关闭原因。
 	AuditFields
 }
 

@@ -59,7 +59,7 @@ func (s *conversationService) ListConversations(userID int64, filter request.Age
 	if strs.IsNotBlank(keyword) {
 		keyword = strings.TrimSpace(keyword)
 		keywordLike := "%" + keyword + "%"
-		cnd.Where("last_message_summary LIKE ? OR customer_id IN (SELECT id FROM t_customer WHERE name LIKE ?)", keywordLike, keywordLike)
+		cnd.Where("customer_name LIKE ? OR last_message_summary LIKE ?", keywordLike, keywordLike)
 	}
 
 	switch filter {
@@ -113,8 +113,18 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 		if err != nil {
 			return err
 		}
+		customerName := s.getCustomerName(ctx.Tx, customerID)
 		if existing := s.getLatestNotFinishedByCustomerID(ctx.Tx, customerID); existing != nil {
 			conversation = existing
+			if customerName != "" && existing.CustomerName != customerName {
+				if err := repositories.ConversationRepository.Updates(ctx.Tx, existing.ID, map[string]any{
+					"customer_name": customerName,
+					"updated_at":    time.Now(),
+				}); err != nil {
+					return err
+				}
+				conversation.CustomerName = customerName
+			}
 			return nil
 		}
 		created = true
@@ -123,6 +133,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 			AIAgentID:         aiAgentID,
 			ChannelID:         channelID,
 			CustomerID:        customerID,
+			CustomerName:      customerName,
 			Status:            s.resolveInitialStatus(aiAgent.ServiceMode),
 			ServiceMode:       aiAgent.ServiceMode,
 			Priority:          0,
@@ -662,7 +673,14 @@ func (s *conversationService) BuildConversationSummary(conversation *models.Conv
 	if strings.TrimSpace(conversation.LastMessageSummary) != "" {
 		return conversation.LastMessageSummary
 	}
-	if customer := CustomerService.Get(conversation.CustomerID); customer != nil {
+	return strings.TrimSpace(conversation.CustomerName)
+}
+
+func (s *conversationService) getCustomerName(db *gorm.DB, customerID int64) string {
+	if customerID <= 0 {
+		return ""
+	}
+	if customer := repositories.CustomerRepository.Get(db, customerID); customer != nil {
 		return strings.TrimSpace(customer.Name)
 	}
 	return ""
@@ -739,6 +757,7 @@ func (s *conversationService) LinkConversationCustomer(conversationID, customerI
 		now := time.Now()
 		return repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
 			"customer_id":      customerID,
+			"customer_name":    strings.TrimSpace(cust.Name),
 			"update_user_id":   operator.UserID,
 			"update_user_name": operator.Username,
 			"updated_at":       now,
