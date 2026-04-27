@@ -75,7 +75,6 @@ export function KefuChatShell() {
   const [isMaximized, setIsMaximized] = useState(false)
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false)
   const [isClosingConversation, setIsClosingConversation] = useState(false)
-  const [showHostActions, setShowHostActions] = useState(false)
 
   const {
     title,
@@ -142,9 +141,6 @@ export function KefuChatShell() {
 
   useEffect(() => {
     return bindKefuHostBridge({
-      onInit: () => {
-        setShowHostActions(true)
-      },
       onOpen: () => {
         setIsOpen(true)
         setIsVisible(true)
@@ -265,36 +261,32 @@ export function KefuChatShell() {
                 >
                   <RotateCwIcon className="size-4" />
                 </Button>
-                {showHostActions ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={handleMinimize}
-                    aria-label="收起聊天窗口"
-                    title="收起聊天窗口"
-                    className="bg-background text-muted-foreground hover:text-foreground"
-                  >
-                    <MinusIcon className="size-4" />
-                  </Button>
-                ) : null}
-                {showHostActions ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={handleToggleMaximize}
-                    aria-label={isMaximized ? "取消最大化" : "最大化聊天窗口"}
-                    title={isMaximized ? "取消最大化" : "最大化聊天窗口"}
-                    className="bg-background text-muted-foreground hover:text-emerald-700 dark:hover:text-emerald-400"
-                  >
-                    {isMaximized ? (
-                      <Minimize2Icon className="size-4" />
-                    ) : (
-                      <Maximize2Icon className="size-4" />
-                    )}
-                  </Button>
-                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleMinimize}
+                  aria-label="收起聊天窗口"
+                  title="收起聊天窗口"
+                  className="bg-background text-muted-foreground hover:text-foreground"
+                >
+                  <MinusIcon className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleToggleMaximize}
+                  aria-label={isMaximized ? "取消最大化" : "最大化聊天窗口"}
+                  title={isMaximized ? "取消最大化" : "最大化聊天窗口"}
+                  className="bg-background text-muted-foreground hover:text-emerald-700 dark:hover:text-emerald-400"
+                >
+                  {isMaximized ? (
+                    <Minimize2Icon className="size-4" />
+                  ) : (
+                    <Maximize2Icon className="size-4" />
+                  )}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
