@@ -8,7 +8,6 @@ import (
 
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/web"
-	"github.com/mlogclub/simple/web/params"
 )
 
 type ChannelController struct {
@@ -36,27 +35,6 @@ func (c *ChannelController) AnyConfig() *web.JsonResult {
 		Width:          cfg.Width,
 	}
 	return web.JsonData(ret)
-}
-
-func (c *ChannelController) AnyWechat_mpOauthAuthorize() *web.JsonResult {
-	channelID, _ := params.Get(c.Ctx, "channelId")
-	redirectURL, err := services.ChannelService.BuildWechatMPOAuthURL(c.Ctx, channelID)
-	if err != nil {
-		return web.JsonError(err)
-	}
-	c.Ctx.Redirect(redirectURL)
-	return nil
-}
-
-func (c *ChannelController) AnyWechat_mpOauthCallback() *web.JsonResult {
-	code, _ := params.Get(c.Ctx, "code")
-	state, _ := params.Get(c.Ctx, "state")
-	result, err := services.ChannelService.CompleteWechatMPOAuth(c.Ctx.Request().Context(), code, state)
-	if err != nil {
-		return web.JsonError(err)
-	}
-	c.Ctx.Redirect(services.BuildWechatMPChatRedirectURL(c.Ctx, result))
-	return nil
 }
 
 type webLikeWidgetConfig struct {

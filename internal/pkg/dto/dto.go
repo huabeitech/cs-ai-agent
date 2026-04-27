@@ -28,7 +28,4 @@ type WechatMPChannelConfig struct {
 	Title      string `json:"title"`
 	Subtitle   string `json:"subtitle"`
 	ThemeColor string `json:"themeColor"`
-	AppID      string `json:"appId"`
-	AppSecret  string `json:"appSecret"`
-	OAuthScope string `json:"oauthScope"`
 }

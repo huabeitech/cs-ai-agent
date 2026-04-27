@@ -42,11 +42,6 @@ const channelTypeOptions = [
   { value: "wxwork_kf", label: "企业微信客服" },
 ] as const
 
-const oauthScopeOptions = [
-  { value: "snsapi_base", label: "静默授权" },
-  { value: "snsapi_userinfo", label: "用户信息授权" },
-] as const
-
 const widgetPositionOptions = [
   { value: "right", label: "右下角" },
   { value: "left", label: "左下角" },
@@ -64,9 +59,6 @@ type WechatMPChannelConfig = {
   title?: string
   subtitle?: string
   themeColor?: string
-  appId?: string
-  appSecret?: string
-  oauthScope?: "snsapi_base" | "snsapi_userinfo"
 }
 
 const defaultWebChannelConfig: Required<WebChannelConfig> = {
@@ -88,9 +80,6 @@ const schema = z
     widgetThemeColor: z.string().trim(),
     widgetPosition: z.enum(["left", "right"]),
     widgetWidth: z.string().trim(),
-    wechatAppId: z.string().trim(),
-    wechatAppSecret: z.string().trim(),
-    wechatOAuthScope: z.enum(["snsapi_base", "snsapi_userinfo"]),
     remark: z.string().trim(),
   })
   .superRefine((values, ctx) => {
@@ -100,22 +89,6 @@ const schema = z
         path: ["openKfId"],
         message: "请选择企业微信客服账号",
       })
-    }
-    if (values.channelType === "wechat_mp") {
-      if (!values.wechatAppId.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["wechatAppId"],
-          message: "请填写公众号 AppID",
-        })
-      }
-      if (!values.wechatAppSecret.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["wechatAppSecret"],
-          message: "请填写公众号 AppSecret",
-        })
-      }
     }
   })
 
@@ -137,9 +110,6 @@ const emptyForm: EditForm = {
   widgetThemeColor: defaultWebChannelConfig.themeColor,
   widgetPosition: defaultWebChannelConfig.position,
   widgetWidth: defaultWebChannelConfig.width,
-  wechatAppId: "",
-  wechatAppSecret: "",
-  wechatOAuthScope: "snsapi_base",
   remark: "",
 }
 
@@ -180,25 +150,17 @@ function parseWechatMPChannelConfig(configJson: string): Required<WechatMPChanne
     title: "公众号客服",
     subtitle: defaultWebChannelConfig.subtitle,
     themeColor: defaultWebChannelConfig.themeColor,
-    appId: "",
-    appSecret: "",
-    oauthScope: "snsapi_base" as const,
   }
   if (!configJson.trim()) {
     return fallback
   }
   try {
     const parsed = JSON.parse(configJson) as WechatMPChannelConfig
-    const oauthScope =
-      parsed.oauthScope === "snsapi_userinfo" ? "snsapi_userinfo" : "snsapi_base"
     return {
       title: parsed.title?.trim() || fallback.title,
       subtitle: parsed.subtitle?.trim() ?? fallback.subtitle,
       themeColor:
         parsed.themeColor?.trim() || defaultWebChannelConfig.themeColor,
-      appId: parsed.appId?.trim() || "",
-      appSecret: parsed.appSecret?.trim() || "",
-      oauthScope,
     }
   } catch {
     return fallback
@@ -229,9 +191,6 @@ function buildForm(item: AdminChannel | null): EditForm {
     widgetThemeColor: wechatConfig?.themeColor ?? webConfig.themeColor,
     widgetPosition: webConfig.position,
     widgetWidth: webConfig.width,
-    wechatAppId: wechatConfig?.appId ?? "",
-    wechatAppSecret: wechatConfig?.appSecret ?? "",
-    wechatOAuthScope: wechatConfig?.oauthScope ?? "snsapi_base",
     remark: item.remark || "",
   }
 }
@@ -250,12 +209,7 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
     channelType === "wxwork_kf"
       ? JSON.stringify({ openKfId: form.openKfId.trim() })
       : channelType === "wechat_mp"
-        ? JSON.stringify({
-            ...webLikeConfig,
-            appId: form.wechatAppId.trim(),
-            appSecret: form.wechatAppSecret.trim(),
-            oauthScope: form.wechatOAuthScope || "snsapi_base",
-          })
+        ? JSON.stringify(webLikeConfig)
         : JSON.stringify({
             ...webLikeConfig,
             position: form.widgetPosition || defaultWebChannelConfig.position,
@@ -500,7 +454,7 @@ function ChannelFormBody({
                 {channelType === "wxwork_kf"
                   ? "配置企业微信客服账号，用于匹配回调消息和对外发送消息。"
                   : channelType === "wechat_mp"
-                    ? "配置公众号网页授权和客服窗口展示参数。"
+                    ? "配置公众号菜单直达聊天页的展示参数。"
                     : "配置 Web 站点客服窗口的展示参数。"}
               </div>
             </div>
@@ -536,59 +490,6 @@ function ChannelFormBody({
             {channelType === "web" || channelType === "wechat_mp" ? (
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {channelType === "wechat_mp" ? (
-                    <>
-                      <Field data-invalid={!!errors.wechatAppId}>
-                        <FieldLabel htmlFor="channel-wechat-app-id">
-                          公众号 AppID
-                        </FieldLabel>
-                        <FieldContent>
-                          <Input
-                            id="channel-wechat-app-id"
-                            {...register("wechatAppId")}
-                          />
-                          <FieldError errors={[errors.wechatAppId]} />
-                        </FieldContent>
-                      </Field>
-
-                      <Field data-invalid={!!errors.wechatAppSecret}>
-                        <FieldLabel htmlFor="channel-wechat-app-secret">
-                          公众号 AppSecret
-                        </FieldLabel>
-                        <FieldContent>
-                          <Input
-                            id="channel-wechat-app-secret"
-                            type="password"
-                            autoComplete="new-password"
-                            {...register("wechatAppSecret")}
-                          />
-                          <FieldError errors={[errors.wechatAppSecret]} />
-                        </FieldContent>
-                      </Field>
-
-                      <Field data-invalid={!!errors.wechatOAuthScope}>
-                        <FieldLabel>网页授权方式</FieldLabel>
-                        <FieldContent>
-                          <Controller
-                            control={control}
-                            name="wechatOAuthScope"
-                            render={({ field }) => (
-                              <OptionCombobox
-                                value={field.value}
-                                options={[...oauthScopeOptions]}
-                                placeholder="请选择网页授权方式"
-                                searchPlaceholder="搜索网页授权方式"
-                                emptyText="未找到网页授权方式"
-                                onChange={field.onChange}
-                              />
-                            )}
-                          />
-                          <FieldError errors={[errors.wechatOAuthScope]} />
-                        </FieldContent>
-                      </Field>
-                    </>
-                  ) : null}
-
                   <Field data-invalid={!!errors.widgetTitle}>
                     <FieldLabel htmlFor="channel-widget-title">窗口标题</FieldLabel>
                     <FieldContent>
@@ -827,8 +728,9 @@ function WechatMPAccessGuide({ channelId }: { channelId: string }) {
     if (!origin || !channelId) {
       return ""
     }
-    const url = new URL("/api/channel/wechat_mp/oauth/authorize", origin)
+    const url = new URL("/kefu/chat/", origin)
     url.searchParams.set("channelId", channelId)
+    url.searchParams.set("externalSource", "wechat_mp")
     return url.toString()
   }, [channelId, origin])
 
@@ -850,7 +752,7 @@ function WechatMPAccessGuide({ channelId }: { channelId: string }) {
         <div className="text-sm font-medium">微信公众号接入信息</div>
         <div className="text-xs text-muted-foreground">
           {channelId
-            ? "将该链接配置到微信公众号自定义菜单，用户点击菜单后进入客服聊天页。"
+            ? "将该链接配置到微信公众号自定义菜单，用户点击菜单后直接进入客服聊天页。"
             : "保存渠道后生成公众号菜单链接。"}
         </div>
       </div>
@@ -892,9 +794,9 @@ function WechatMPAccessGuide({ channelId }: { channelId: string }) {
 
           <div className="flex flex-col gap-2 rounded-md bg-muted px-3 py-3 text-xs text-muted-foreground">
             <div className="font-medium text-foreground">接入教程</div>
-            <div>1. 确认该渠道已启用，并在微信公众平台配置网页授权域名。</div>
+            <div>1. 确认该渠道已启用。</div>
             <div>2. 将公众号自定义菜单跳转地址设置为上方链接。</div>
-            <div>3. 用户点击菜单并授权后，会以 openid 作为稳定客户身份进入客服聊天页。</div>
+            <div>3. 用户点击菜单后会直接进入客服聊天页。</div>
           </div>
         </div>
       )}

@@ -1,9 +1,6 @@
 package services
 
 import (
-	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
@@ -14,12 +11,7 @@ import (
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,8 +19,6 @@ import (
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/sqls"
 	"github.com/mlogclub/simple/web/params"
-	"github.com/silenceper/wechat/v2"
-	offConfig "github.com/silenceper/wechat/v2/officialaccount/config"
 	"github.com/silenceper/wechat/v2/work/kf"
 )
 
@@ -39,17 +29,6 @@ func newChannelService() *channelService {
 }
 
 type channelService struct {
-}
-
-type wechatMPOAuthState struct {
-	ChannelID string `json:"channelId"`
-	ExpiresAt int64  `json:"expiresAt"`
-}
-
-type WechatMPOAuthResult struct {
-	ChannelID    string
-	ExternalID   string
-	ExternalName string
 }
 
 func (s *channelService) Get(id int64) *models.Channel {
@@ -266,7 +245,6 @@ func (s *channelService) ParseWechatMPChannelConfig(raw string) (*dto.WechatMPCh
 		Title:      "公众号客服",
 		Subtitle:   "欢迎咨询",
 		ThemeColor: "#2563eb",
-		OAuthScope: "snsapi_base",
 	}
 	if raw != "" {
 		if err := json.Unmarshal([]byte(raw), cfg); err != nil {
@@ -282,97 +260,7 @@ func (s *channelService) ParseWechatMPChannelConfig(raw string) (*dto.WechatMPCh
 	if cfg.ThemeColor == "" {
 		cfg.ThemeColor = "#2563eb"
 	}
-	cfg.AppID = strings.TrimSpace(cfg.AppID)
-	cfg.AppSecret = strings.TrimSpace(cfg.AppSecret)
-	cfg.OAuthScope = strings.TrimSpace(cfg.OAuthScope)
-	if cfg.OAuthScope == "" {
-		cfg.OAuthScope = "snsapi_base"
-	}
-	if cfg.OAuthScope != "snsapi_base" && cfg.OAuthScope != "snsapi_userinfo" {
-		return nil, errorsx.InvalidParam("微信公众号渠道配置 oauthScope 只能为 snsapi_base 或 snsapi_userinfo")
-	}
 	return cfg, nil
-}
-
-func (s *channelService) BuildWechatMPOAuthURL(ctx iris.Context, channelID string) (string, error) {
-	channelID = strings.TrimSpace(channelID)
-	if channelID == "" {
-		return "", errorsx.InvalidParam("channelId不能为空")
-	}
-	channel := repositories.ChannelRepository.GetByChannelID(sqls.DB(), channelID)
-	if channel == nil || channel.Status != enums.StatusOk || channel.ChannelType != enums.ChannelTypeWechatMP {
-		return "", errorsx.InvalidParam("微信公众号渠道不存在或已停用")
-	}
-	cfg, err := s.ParseWechatMPChannelConfig(channel.ConfigJSON)
-	if err != nil {
-		return "", errorsx.InvalidParam("微信公众号渠道配置不合法")
-	}
-	if cfg.AppID == "" || cfg.AppSecret == "" {
-		return "", errorsx.InvalidParam("微信公众号渠道缺少 appId 或 appSecret")
-	}
-
-	state, err := s.signWechatMPOAuthState(wechatMPOAuthState{
-		ChannelID: channel.ChannelID,
-		ExpiresAt: time.Now().Add(10 * time.Minute).Unix(),
-	}, cfg.AppSecret)
-	if err != nil {
-		return "", err
-	}
-	redirectURI := buildAbsoluteURL(ctx, "/api/channel/wechat_mp/oauth/callback", nil)
-	oa := wechat.NewWechat().GetOfficialAccount(&offConfig.Config{
-		AppID:     cfg.AppID,
-		AppSecret: cfg.AppSecret,
-	})
-	return oa.GetOauth().GetRedirectURL(redirectURI, cfg.OAuthScope, state)
-}
-
-func (s *channelService) CompleteWechatMPOAuth(ctx context.Context, code, state string) (*WechatMPOAuthResult, error) {
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return nil, errorsx.InvalidParam("code不能为空")
-	}
-	payload, err := decodeWechatMPOAuthStatePayload(state)
-	if err != nil {
-		return nil, errorsx.InvalidParam("OAuth state不合法")
-	}
-	channel := repositories.ChannelRepository.GetByChannelID(sqls.DB(), payload.ChannelID)
-	if channel == nil || channel.Status != enums.StatusOk || channel.ChannelType != enums.ChannelTypeWechatMP {
-		return nil, errorsx.InvalidParam("微信公众号渠道不存在或已停用")
-	}
-	cfg, err := s.ParseWechatMPChannelConfig(channel.ConfigJSON)
-	if err != nil {
-		return nil, errorsx.InvalidParam("微信公众号渠道配置不合法")
-	}
-	if cfg.AppID == "" || cfg.AppSecret == "" {
-		return nil, errorsx.InvalidParam("微信公众号渠道缺少 appId 或 appSecret")
-	}
-	if _, err := s.verifyWechatMPOAuthState(state, cfg.AppSecret); err != nil {
-		return nil, err
-	}
-
-	oa := wechat.NewWechat().GetOfficialAccount(&offConfig.Config{
-		AppID:     cfg.AppID,
-		AppSecret: cfg.AppSecret,
-	})
-	oauth := oa.GetOauth()
-	token, err := oauth.GetUserAccessTokenContext(ctx, code)
-	if err != nil {
-		return nil, err
-	}
-	externalName := ""
-	if strings.Contains(token.Scope, "snsapi_userinfo") {
-		if info, infoErr := oauth.GetUserInfoContext(ctx, token.AccessToken, token.OpenID, "zh_CN"); infoErr == nil {
-			externalName = strings.TrimSpace(info.Nickname)
-		}
-	}
-	if strings.TrimSpace(token.OpenID) == "" {
-		return nil, errorsx.InvalidParam("微信授权未返回 openid")
-	}
-	return &WechatMPOAuthResult{
-		ChannelID:    channel.ChannelID,
-		ExternalID:   strings.TrimSpace(token.OpenID),
-		ExternalName: externalName,
-	}, nil
 }
 
 func (s *channelService) GetEnabledWxWorkKFChannelByOpenKfID(openKfID string) *models.Channel {
@@ -469,9 +357,6 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 		if err != nil {
 			return nil, errorsx.InvalidParam("微信公众号渠道配置不合法")
 		}
-		if cfg == nil || cfg.AppID == "" || cfg.AppSecret == "" {
-			return nil, errorsx.InvalidParam("微信公众号渠道配置缺少 appId 或 appSecret")
-		}
 		configBytes, err := json.Marshal(cfg)
 		if err != nil {
 			return nil, err
@@ -505,108 +390,4 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 		Status:      status,
 		Remark:      strings.TrimSpace(req.Remark),
 	}, nil
-}
-
-func (s *channelService) signWechatMPOAuthState(payload wechatMPOAuthState, secret string) (string, error) {
-	payload.ChannelID = strings.TrimSpace(payload.ChannelID)
-	if payload.ChannelID == "" || payload.ExpiresAt <= 0 {
-		return "", errors.New("invalid oauth state payload")
-	}
-	encodedPayload := base64.RawURLEncoding.EncodeToString([]byte(
-		fmt.Sprintf("%s|%d", payload.ChannelID, payload.ExpiresAt),
-	))
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(encodedPayload))
-	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return encodedPayload + "." + signature, nil
-}
-
-func (s *channelService) verifyWechatMPOAuthState(raw, secret string) (*wechatMPOAuthState, error) {
-	raw = strings.TrimSpace(raw)
-	parts := strings.Split(raw, ".")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil, errorsx.InvalidParam("OAuth state不合法")
-	}
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(parts[0]))
-	expected := mac.Sum(nil)
-	actual, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil || !hmac.Equal(actual, expected) {
-		return nil, errorsx.InvalidParam("OAuth state签名不合法")
-	}
-	payload, err := decodeWechatMPOAuthStatePayload(raw)
-	if err != nil {
-		return nil, errorsx.InvalidParam("OAuth state不合法")
-	}
-	if time.Now().Unix() > payload.ExpiresAt {
-		return nil, errorsx.InvalidParam("OAuth state已过期")
-	}
-	return payload, nil
-}
-
-func decodeWechatMPOAuthStatePayload(raw string) (*wechatMPOAuthState, error) {
-	raw = strings.TrimSpace(raw)
-	parts := strings.Split(raw, ".")
-	if len(parts) != 2 || parts[0] == "" {
-		return nil, errors.New("invalid oauth state")
-	}
-	data, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return nil, err
-	}
-	stateParts := strings.Split(string(data), "|")
-	if len(stateParts) != 2 {
-		return nil, errors.New("invalid oauth state payload")
-	}
-	expiresAt, err := strconv.ParseInt(stateParts[1], 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	payload := &wechatMPOAuthState{
-		ChannelID: strings.TrimSpace(stateParts[0]),
-		ExpiresAt: expiresAt,
-	}
-	payload.ChannelID = strings.TrimSpace(payload.ChannelID)
-	if payload.ChannelID == "" || payload.ExpiresAt <= 0 {
-		return nil, errors.New("invalid oauth state payload")
-	}
-	return payload, nil
-}
-
-func buildAbsoluteURL(ctx iris.Context, path string, values url.Values) string {
-	scheme := ctx.GetHeader("X-Forwarded-Proto")
-	if scheme == "" {
-		scheme = ctx.GetHeader("X-Scheme")
-	}
-	if scheme == "" {
-		if ctx.Request().TLS != nil {
-			scheme = "https"
-		} else {
-			scheme = "http"
-		}
-	}
-	host := ctx.GetHeader("X-Forwarded-Host")
-	if host == "" {
-		host = ctx.Host()
-	}
-	u := url.URL{
-		Scheme: scheme,
-		Host:   host,
-		Path:   path,
-	}
-	if values != nil {
-		u.RawQuery = values.Encode()
-	}
-	return u.String()
-}
-
-func BuildWechatMPChatRedirectURL(ctx iris.Context, result *WechatMPOAuthResult) string {
-	values := url.Values{}
-	values.Set("channelId", result.ChannelID)
-	values.Set("externalSource", string(enums.ExternalSourceWechatMP))
-	values.Set("externalId", result.ExternalID)
-	if result.ExternalName != "" {
-		values.Set("subject", result.ExternalName)
-	}
-	return buildAbsoluteURL(ctx, "/kefu/chat/", values)
 }

@@ -4,7 +4,7 @@ export type KefuWidgetHostConfig = {
   apiBaseUrl?: string
   /** 与后端 enums.ExternalSource 一致，默认 web_chat */
   externalSource?: string
-  /** 外部访客稳定标识；微信公众号 OAuth 场景使用 openid */
+  /** 外部访客稳定标识；未传时使用浏览器本地访客 ID */
   externalId?: string
   title?: string
   subtitle?: string
