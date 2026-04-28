@@ -54,6 +54,19 @@ func (s *wsService) HandleDashboardWS(ctx iris.Context) {
 	}
 }
 
+func (s *wsService) HandleDashboardNotificationWS(ctx iris.Context) {
+	principal := AuthService.GetAuthPrincipal(ctx)
+	if principal == nil {
+		_ = ctx.StopWithJSON(iris.StatusUnauthorized, web.JsonError(errorsx.Unauthorized("未登录或登录已过期")))
+		return
+	}
+	if err := s.upgradeConnection(ctx, principal, nil, realtimeRoleNotification); err != nil {
+		slog.Error("upgrade dashboard notification websocket failed", "error", err, "path", ctx.Path())
+		ctx.StopExecution()
+		return
+	}
+}
+
 func (s *wsService) HandleOpenWS(ctx iris.Context) {
 	channel := ChannelService.GetEnabledChannel(ctx)
 	if channel == nil {
@@ -420,6 +433,19 @@ func (s *wsService) PublishConversationChanged(conversation *models.Conversation
 	s.PublishToTopics(s.routeConversationTopics(conversation), event)
 }
 
+func (s *wsService) PublishNotificationCreated(userID int64, notification response.NotificationResponse) {
+	if userID <= 0 || notification.ID <= 0 {
+		return
+	}
+	topic := s.notificationTopic(userID)
+	event := s.newEvent(topic, RealtimeNotificationCreatedEvent{
+		Payload: RealtimeNotificationCreatedPayload{
+			Notification: notification,
+		},
+	})
+	s.PublishToTopic(topic, event)
+}
+
 func (s *wsService) PublishResyncRequired(topics []string, reason string) {
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
@@ -531,6 +557,11 @@ func (s *wsService) defaultTopics(session *ClientSession) []string {
 	}
 
 	switch session.Role {
+	case realtimeRoleNotification:
+		if session.Principal == nil || session.Principal.UserID <= 0 {
+			return nil
+		}
+		return []string{s.notificationTopic(session.Principal.UserID)}
 	case realtimeRoleAdmin:
 		if session.Principal == nil || session.Principal.UserID <= 0 {
 			return []string{realtimeTopicAdminAll}
@@ -554,6 +585,10 @@ func (s *wsService) filterAllowedTopics(session *ClientSession, topics []string)
 		return nil
 	}
 	switch session.Role {
+	case realtimeRoleNotification:
+		if session.Principal == nil {
+			return nil
+		}
 	case realtimeRoleAdmin:
 		if session.Principal == nil {
 			return nil
@@ -643,6 +678,10 @@ func (s *wsService) guestTopic(guestID string) string {
 
 func (s *wsService) adminTopic(userID int64) string {
 	return realtimeTopicAdminPrefix + strconv.FormatInt(userID, 10)
+}
+
+func (s *wsService) notificationTopic(userID int64) string {
+	return realtimeTopicNotificationPrefix + strconv.FormatInt(userID, 10)
 }
 
 func (s *wsService) conversationTopic(conversationID int64) string {
