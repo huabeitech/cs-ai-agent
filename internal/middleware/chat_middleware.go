@@ -11,11 +11,13 @@ import (
 
 func ExternalInfoMiddleware(ctx iris.Context) {
 	channel := services.ChannelService.GetEnabledChannel(ctx)
-	var userTokenSecret string
-	if channel != nil {
-		userTokenSecret = services.ChannelService.GetUserTokenSecret(channel)
+	if channel == nil {
+		ctx.StopExecution()
+		_ = ctx.JSON(web.JsonErrorMsg("接入渠道异常"))
+		return
 	}
-	ext, err := openidentity.GetExternalInfoWithUserTokenSecret(ctx, userTokenSecret)
+	secret := services.ChannelService.GetUserTokenSecret(channel)
+	ext, err := openidentity.GetExternalInfo(ctx, secret)
 	if err != nil {
 		ctx.StopExecution()
 		_ = ctx.JSON(web.JsonError(err))

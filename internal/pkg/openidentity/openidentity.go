@@ -34,14 +34,9 @@ type userTokenJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-// GetExternalInfo 从 Header（X-External-*）或 query（externalSource、externalId、externalName）解析身份。
-func GetExternalInfo(ctx iris.Context) (*ExternalInfo, error) {
-	return GetExternalInfoWithUserTokenSecret(ctx, "")
-}
-
-func GetExternalInfoWithUserTokenSecret(ctx iris.Context, userTokenSecret string) (*ExternalInfo, error) {
-	if userToken := parseUserToken(ctx); userToken != "" {
-		claims, err := VerifyUserToken(userToken, userTokenSecret)
+func GetExternalInfo(ctx iris.Context, secret string) (*ExternalInfo, error) {
+	if userToken := parseUserToken(ctx); strs.IsNotBlank(userToken) {
+		claims, err := VerifyUserToken(userToken, secret)
 		if err != nil {
 			return nil, err
 		}
@@ -67,19 +62,16 @@ func GetExternalInfoWithUserTokenSecret(ctx iris.Context, userTokenSecret string
 	}
 	return &ExternalInfo{
 		ExternalSource: externalSource,
-		// TODO: 对接业务系统后，根据业务系统用户信息识别 user；未对接时统一按访客处理。
-		ExternalID:   externalID,
-		ExternalName: parseExternalName(ctx),
+		ExternalID:     externalID,
+		ExternalName:   parseExternalName(ctx),
 	}, nil
 }
 
 func VerifyUserToken(userToken, secret string) (*UserTokenClaims, error) {
-	userToken = strings.TrimSpace(userToken)
-	secret = strings.TrimSpace(secret)
-	if userToken == "" {
+	if strs.IsBlank(userToken) {
 		return nil, errorsx.Unauthorized("用户身份不能为空")
 	}
-	if secret == "" {
+	if strs.IsBlank(secret) {
 		return nil, errorsx.Unauthorized("用户身份校验未配置")
 	}
 
@@ -104,12 +96,10 @@ func VerifyUserToken(userToken, secret string) (*UserTokenClaims, error) {
 		return nil, errorsx.Unauthorized("用户身份校验失败")
 	}
 
-	userID := strings.TrimSpace(claims.UserID)
-	name := strings.TrimSpace(claims.Name)
-	if userID == "" {
+	if strs.IsBlank(claims.UserID) {
 		return nil, errorsx.Unauthorized("用户标识不能为空")
 	}
-	if name == "" {
+	if strs.IsBlank(claims.Name) {
 		return nil, errorsx.Unauthorized("用户名称不能为空")
 	}
 	if claims.ExpiresAt == nil {
@@ -117,8 +107,8 @@ func VerifyUserToken(userToken, secret string) (*UserTokenClaims, error) {
 	}
 
 	result := &UserTokenClaims{
-		UserID: userID,
-		Name:   name,
+		UserID: claims.UserID,
+		Name:   claims.Name,
 		Exp:    claims.ExpiresAt.Unix(),
 	}
 	if claims.IssuedAt != nil {
