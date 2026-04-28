@@ -109,7 +109,7 @@ func (s *conversationService) Create(externalUser openidentity.ExternalUser, cha
 	var conversation *models.Conversation
 	created := false
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		customerID, err := CustomerService.EnsureExternalCustomer(ctx.Tx, externalUser)
+		customerID, err := CustomerService.EnsureExternalCustomer(ctx, externalUser)
 		if err != nil {
 			return err
 		}

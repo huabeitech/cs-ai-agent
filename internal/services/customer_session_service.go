@@ -57,7 +57,7 @@ func (s *customerSessionService) Exchange(channel *models.Channel, externalUser 
 	}
 	var customerID int64
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		id, err := CustomerService.EnsureExternalCustomer(ctx.Tx, externalUser)
+		id, err := CustomerService.EnsureExternalCustomer(ctx, externalUser)
 		if err != nil {
 			return err
 		}

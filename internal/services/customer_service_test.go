@@ -18,12 +18,16 @@ import (
 func TestEnsureExternalCustomerUpdatesNameFromExternalIdentity(t *testing.T) {
 	db := setupCustomerServiceTestDB(t)
 
-	firstID, err := services.CustomerService.EnsureExternalCustomer(db, openidentity.ExternalUser{
-		ExternalSource: enums.ExternalSourceUser,
-		ExternalID:     "user-1",
-		ExternalName:   "张三",
-	})
-	if err != nil {
+	var firstID int64
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		id, err := services.CustomerService.EnsureExternalCustomer(ctx, openidentity.ExternalUser{
+			ExternalSource: enums.ExternalSourceUser,
+			ExternalID:     "user-1",
+			ExternalName:   "张三",
+		})
+		firstID = id
+		return err
+	}); err != nil {
 		t.Fatalf("EnsureExternalCustomer() first error = %v", err)
 	}
 
@@ -37,12 +41,16 @@ func TestEnsureExternalCustomerUpdatesNameFromExternalIdentity(t *testing.T) {
 		t.Fatalf("create conversation error = %v", err)
 	}
 
-	secondID, err := services.CustomerService.EnsureExternalCustomer(db, openidentity.ExternalUser{
-		ExternalSource: enums.ExternalSourceUser,
-		ExternalID:     "user-1",
-		ExternalName:   "李四",
-	})
-	if err != nil {
+	var secondID int64
+	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
+		id, err := services.CustomerService.EnsureExternalCustomer(ctx, openidentity.ExternalUser{
+			ExternalSource: enums.ExternalSourceUser,
+			ExternalID:     "user-1",
+			ExternalName:   "李四",
+		})
+		secondID = id
+		return err
+	}); err != nil {
 		t.Fatalf("EnsureExternalCustomer() second error = %v", err)
 	}
 	if secondID != firstID {

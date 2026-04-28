@@ -113,14 +113,17 @@ func (s *customerService) CountByCompanyIDs(companyIDs []int64) map[int64]int64 
 	return repositories.CustomerRepository.CountByCompanyIDs(sqls.DB(), companyIDs, int(enums.StatusDeleted))
 }
 
-func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalUser openidentity.ExternalUser) (int64, error) {
+func (s *customerService) EnsureExternalCustomer(ctx *sqls.TxContext, externalUser openidentity.ExternalUser) (int64, error) {
+	if ctx == nil || ctx.Tx == nil {
+		return 0, errorsx.InvalidParam("事务上下文不能为空")
+	}
 	externalSource := externalUser.ExternalSource
 	externalID := strings.TrimSpace(externalUser.ExternalID)
 	if strings.TrimSpace(string(externalSource)) == "" || externalID == "" {
 		return 0, errorsx.Unauthorized("外部用户标识不能为空")
 	}
 	now := time.Now()
-	if identity := repositories.CustomerIdentityRepository.GetBy(db, externalSource, externalID); identity != nil {
+	if identity := repositories.CustomerIdentityRepository.GetBy(ctx.Tx, externalSource, externalID); identity != nil {
 		updates := map[string]any{
 			"last_active_at": now,
 			"updated_at":     now,
@@ -128,14 +131,23 @@ func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalUser openi
 		if strs.IsNotBlank(externalUser.ExternalName) {
 			updates["name"] = externalUser.ExternalName
 		}
-		if err := repositories.CustomerRepository.Updates(db, identity.CustomerID, updates); err != nil {
+		if err := repositories.CustomerRepository.Updates(ctx.Tx, identity.CustomerID, updates); err != nil {
 			return 0, err
 		}
-		if strs.IsNotBlank(externalUser.ExternalName) {
-			if err := s.syncConversationCustomerName(db, identity.CustomerID, externalUser.ExternalName, nil, now); err != nil {
-				return 0, err
-			}
-		}
+
+		ctx.RegisterCallback(func() {
+			go func() {
+				if strs.IsNotBlank(externalUser.ExternalName) {
+					if err := s.syncConversationCustomerName(sqls.DB(), identity.CustomerID, externalUser.ExternalName, nil, now); err != nil {
+						slog.Error("sync conversation customer name failed",
+							"customerId", identity.CustomerID,
+							"customerName", externalUser.ExternalName,
+							"error", err,
+						)
+					}
+				}
+			}()
+		})
 		return identity.CustomerID, nil
 	}
 
@@ -145,10 +157,10 @@ func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalUser openi
 		Status:       enums.StatusOk,
 		AuditFields:  utils.BuildAuditFields(nil),
 	}
-	if err := repositories.CustomerRepository.Create(db, customer); err != nil {
+	if err := repositories.CustomerRepository.Create(ctx.Tx, customer); err != nil {
 		return 0, err
 	}
-	if err := repositories.CustomerIdentityRepository.Create(db, &models.CustomerIdentity{
+	if err := repositories.CustomerIdentityRepository.Create(ctx.Tx, &models.CustomerIdentity{
 		CustomerID:     customer.ID,
 		ExternalSource: externalSource,
 		ExternalID:     externalID,
