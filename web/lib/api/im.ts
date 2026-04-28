@@ -105,6 +105,7 @@ export type ImWidgetConfig = {
   channelId?: string
   channelType?: string
   externalSource?: string
+  userToken?: string
   title?: string
   subtitle?: string
   themeColor?: string
@@ -149,18 +150,23 @@ function getRuntimeImConfig() {
       (widgetConfig.externalSource || OPEN_IM_EXTERNAL_SOURCE).trim() || "web_chat",
     externalId: (widgetConfig.externalId || "").trim(),
     externalName: (widgetConfig.externalName || "").trim(),
+    userToken: (widgetConfig.userToken || "").trim(),
   }
 }
 
 function createImHeaders() {
   const config = getRuntimeImConfig()
   const headers: Record<string, string> = {
-    "X-External-Source": config.externalSource,
-    "X-External-Id": config.externalId || getGuestId(),
     "X-Channel-Id": config.channelId,
   }
-  if (config.externalName) {
-    headers["X-External-Name"] = encodeURIComponent(config.externalName)
+  if (config.userToken) {
+    headers.Authorization = `Bearer ${config.userToken}`
+  } else {
+    headers["X-External-Source"] = config.externalSource
+    headers["X-External-Id"] = config.externalId || getGuestId()
+    if (config.externalName) {
+      headers["X-External-Name"] = encodeURIComponent(config.externalName)
+    }
   }
   return {
     ...headers,
@@ -212,7 +218,7 @@ export function fetchImMessages(
   )
 }
 
-/** 外部身份仅通过 createImHeaders()（X-External-*）传递，无 JSON body */
+/** 外部身份仅通过 createImHeaders()（Authorization 或 X-External-*）传递，无 JSON body */
 export function createOrMatchImConversation() {
   return request<ImConversation>("/api/conversation/create_or_match", {
     ...createRequestOptions({ method: "POST" }),

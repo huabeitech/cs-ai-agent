@@ -26,6 +26,7 @@ import {
   fetchAIAgentsAll,
   fetchChannel,
   fetchWxWorkKFAccounts,
+  resetChannelUserTokenSecret,
 } from "@/lib/api/admin"
 
 type ChannelFormDialogProps = {
@@ -53,12 +54,14 @@ type WebChannelConfig = {
   themeColor?: string
   position?: "left" | "right"
   width?: string
+  userTokenSecret?: string
 }
 
 type WechatMPChannelConfig = {
   title?: string
   subtitle?: string
   themeColor?: string
+  userTokenSecret?: string
 }
 
 const defaultWebChannelConfig: Required<WebChannelConfig> = {
@@ -67,6 +70,7 @@ const defaultWebChannelConfig: Required<WebChannelConfig> = {
   themeColor: "#2563eb",
   position: "right",
   width: "380px",
+  userTokenSecret: "",
 }
 
 const schema = z
@@ -80,6 +84,7 @@ const schema = z
     widgetThemeColor: z.string().trim(),
     widgetPosition: z.enum(["left", "right"]),
     widgetWidth: z.string().trim(),
+    userTokenSecret: z.string().trim(),
     remark: z.string().trim(),
   })
   .superRefine((values, ctx) => {
@@ -110,6 +115,7 @@ const emptyForm: EditForm = {
   widgetThemeColor: defaultWebChannelConfig.themeColor,
   widgetPosition: defaultWebChannelConfig.position,
   widgetWidth: defaultWebChannelConfig.width,
+  userTokenSecret: "",
   remark: "",
 }
 
@@ -139,6 +145,7 @@ function parseWebChannelConfig(configJson: string): Required<WebChannelConfig> {
         parsed.themeColor?.trim() || defaultWebChannelConfig.themeColor,
       position,
       width: parsed.width?.trim() || defaultWebChannelConfig.width,
+      userTokenSecret: parsed.userTokenSecret?.trim() || "",
     }
   } catch {
     return defaultWebChannelConfig
@@ -150,6 +157,7 @@ function parseWechatMPChannelConfig(configJson: string): Required<WechatMPChanne
     title: "公众号客服",
     subtitle: defaultWebChannelConfig.subtitle,
     themeColor: defaultWebChannelConfig.themeColor,
+    userTokenSecret: "",
   }
   if (!configJson.trim()) {
     return fallback
@@ -161,6 +169,7 @@ function parseWechatMPChannelConfig(configJson: string): Required<WechatMPChanne
       subtitle: parsed.subtitle?.trim() ?? fallback.subtitle,
       themeColor:
         parsed.themeColor?.trim() || defaultWebChannelConfig.themeColor,
+      userTokenSecret: parsed.userTokenSecret?.trim() || "",
     }
   } catch {
     return fallback
@@ -191,6 +200,7 @@ function buildForm(item: AdminChannel | null): EditForm {
     widgetThemeColor: wechatConfig?.themeColor ?? webConfig.themeColor,
     widgetPosition: webConfig.position,
     widgetWidth: webConfig.width,
+    userTokenSecret: wechatConfig?.userTokenSecret ?? webConfig.userTokenSecret,
     remark: item.remark || "",
   }
 }
@@ -204,6 +214,7 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
     subtitle: form.widgetSubtitle.trim(),
     themeColor:
       form.widgetThemeColor.trim() || defaultWebChannelConfig.themeColor,
+    userTokenSecret: form.userTokenSecret.trim(),
   }
   const configJson =
     channelType === "wxwork_kf"
@@ -214,6 +225,7 @@ function buildPayload(form: EditForm, status: number): CreateAdminChannelPayload
             ...webLikeConfig,
             position: form.widgetPosition || defaultWebChannelConfig.position,
             width: form.widgetWidth.trim() || defaultWebChannelConfig.width,
+            userTokenSecret: form.userTokenSecret.trim(),
           })
   return {
     channelType,
@@ -276,10 +288,12 @@ function ChannelFormBody({
     handleSubmit,
     register,
     reset,
+    setValue,
     formState: { errors },
   } = form
   const channelType = useWatch({ control, name: "channelType" })
   const openKfId = useWatch({ control, name: "openKfId" })
+  const userTokenSecret = useWatch({ control, name: "userTokenSecret" })
 
   useEffect(() => {
     async function loadAIAgents() {
@@ -369,6 +383,44 @@ function ChannelFormBody({
 
   async function onFormSubmit(values: EditForm) {
     await onSubmit(buildPayload(values, currentStatus))
+  }
+
+  async function handleResetUserTokenSecret() {
+    if (!itemId) {
+      return
+    }
+    if (!window.confirm("重置后旧 userToken 将在过期后失效，确认重置？")) {
+      return
+    }
+    try {
+      const result = await resetChannelUserTokenSecret(itemId)
+      setValue("userTokenSecret", result.userTokenSecret, {
+        shouldDirty: true,
+      })
+      if (channelDetail) {
+        const parsed = JSON.parse(channelDetail.configJson || "{}") as Record<string, unknown>
+        parsed.userTokenSecret = result.userTokenSecret
+        setChannelDetail({
+          ...channelDetail,
+          configJson: JSON.stringify(parsed),
+        })
+      }
+      toast.success("已重置用户 JWT Secret")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "重置用户 JWT Secret 失败")
+    }
+  }
+
+  async function copyUserTokenSecret() {
+    if (!userTokenSecret) {
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(userTokenSecret)
+      toast.success("已复制用户 JWT Secret")
+    } catch {
+      toast.error("复制失败")
+    }
   }
 
   return (
@@ -557,6 +609,52 @@ function ChannelFormBody({
                       </Field>
                     </>
                   ) : null}
+                </div>
+                <div className="space-y-3 rounded-md border p-3">
+                  <div>
+                    <div className="text-sm font-medium">用户 JWT Secret</div>
+                    <div className="text-xs text-muted-foreground">
+                      业务系统使用该 secret 签发 userToken。重置后请同步更新业务系统配置。
+                    </div>
+                  </div>
+                  {!itemId ? (
+                    <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                      保存渠道后可生成用户 JWT Secret。
+                    </div>
+                  ) : (
+                    <Field data-invalid={!!errors.userTokenSecret}>
+                      <FieldLabel htmlFor="channel-user-token-secret">Secret</FieldLabel>
+                      <FieldContent>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
+                            id="channel-user-token-secret"
+                            readOnly
+                            className="font-mono text-xs"
+                            {...register("userTokenSecret")}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={copyUserTokenSecret}
+                              disabled={!userTokenSecret}
+                            >
+                              <CopyIcon className="size-4" />
+                              复制
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => void handleResetUserTokenSecret()}
+                            >
+                              重置
+                            </Button>
+                          </div>
+                        </div>
+                        <FieldError errors={[errors.userTokenSecret]} />
+                      </FieldContent>
+                    </Field>
+                  )}
                 </div>
                 {channelType === "wechat_mp" ? (
                   <WechatMPAccessGuide channelId={channelDetail?.channelId || ""} />

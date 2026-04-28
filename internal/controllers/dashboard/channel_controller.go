@@ -102,6 +102,22 @@ func (c *ChannelController) PostUpdate_status() *web.JsonResult {
 	return web.JsonSuccess()
 }
 
+func (c *ChannelController) PostReset_user_token_secret() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionChannelUpdate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.ResetChannelUserTokenSecretRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	secret, err := services.ChannelService.ResetUserTokenSecret(req.ID, operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(map[string]string{"userTokenSecret": secret})
+}
+
 func (c *ChannelController) PostDelete() *web.JsonResult {
 	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionChannelDelete)
 	if err != nil {

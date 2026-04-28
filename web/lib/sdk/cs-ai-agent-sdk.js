@@ -48,6 +48,9 @@
     }
     merged.channelId = String(merged.channelId || "");
     merged.externalSource = String(merged.externalSource || "web_chat");
+    if (merged.userToken) {
+      merged.userToken = String(merged.userToken);
+    }
     return merged;
   }
 
@@ -67,6 +70,7 @@
     if (config.apiBaseUrl) frameUrl.searchParams.set("apiBaseUrl", config.apiBaseUrl);
     if (config.externalSource) frameUrl.searchParams.set("externalSource", config.externalSource);
     if (config.externalName) frameUrl.searchParams.set("externalName", config.externalName);
+    if (config.userToken) frameUrl.searchParams.set("userToken", config.userToken);
     return frameUrl;
   }
 

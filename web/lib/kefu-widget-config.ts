@@ -8,6 +8,8 @@ export type KefuWidgetHostConfig = {
   externalId?: string
   /** 访客展示名，随请求以 X-External-Name / WS query externalName 传给后端 */
   externalName?: string
+  /** 业务系统签发的前台用户 JWT */
+  userToken?: string
   title?: string
   subtitle?: string
   position?: "left" | "right"
@@ -52,6 +54,7 @@ export function readKefuWidgetConfig(): KefuWidgetHostConfig {
       undefined,
     externalId: query.get("externalId") ?? undefined,
     externalName: query.get("externalName") ?? undefined,
+    userToken: query.get("userToken") ?? undefined,
     title: query.get("title") ?? undefined,
     subtitle: query.get("subtitle") ?? undefined,
     position: (query.get("position") as "left" | "right" | null) ?? undefined,

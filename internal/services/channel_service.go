@@ -1,6 +1,7 @@
 package services
 
 import (
+	"crypto/rand"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
@@ -11,6 +12,7 @@ import (
 	"cs-agent/internal/pkg/utils"
 	"cs-agent/internal/repositories"
 	"cs-agent/internal/wxwork"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"time"
@@ -236,6 +238,7 @@ func (s *channelService) ParseWebChannelConfig(raw string) (*dto.WebChannelConfi
 	if cfg.Width == "" {
 		cfg.Width = "380px"
 	}
+	cfg.UserTokenSecret = strings.TrimSpace(cfg.UserTokenSecret)
 	return cfg, nil
 }
 
@@ -260,7 +263,89 @@ func (s *channelService) ParseWechatMPChannelConfig(raw string) (*dto.WechatMPCh
 	if cfg.ThemeColor == "" {
 		cfg.ThemeColor = "#2563eb"
 	}
+	cfg.UserTokenSecret = strings.TrimSpace(cfg.UserTokenSecret)
 	return cfg, nil
+}
+
+func (s *channelService) GetUserTokenSecret(channel *models.Channel) string {
+	if channel == nil {
+		return ""
+	}
+	switch channel.ChannelType {
+	case enums.ChannelTypeWeb:
+		cfg, err := s.ParseWebChannelConfig(channel.ConfigJSON)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(cfg.UserTokenSecret)
+	case enums.ChannelTypeWechatMP:
+		cfg, err := s.ParseWechatMPChannelConfig(channel.ConfigJSON)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(cfg.UserTokenSecret)
+	default:
+		return ""
+	}
+}
+
+func (s *channelService) ResetUserTokenSecret(channelID int64, operator *dto.AuthPrincipal) (string, error) {
+	if operator == nil {
+		return "", errorsx.Unauthorized("未登录或登录已过期")
+	}
+	channel := s.Get(channelID)
+	if channel == nil || channel.Status == enums.StatusDeleted {
+		return "", errorsx.InvalidParam("接入渠道不存在")
+	}
+	if channel.ChannelType != enums.ChannelTypeWeb && channel.ChannelType != enums.ChannelTypeWechatMP {
+		return "", errorsx.InvalidParam("当前渠道不支持用户 JWT Secret")
+	}
+	secret, err := generateUserTokenSecret()
+	if err != nil {
+		return "", err
+	}
+	var configJSON string
+	switch channel.ChannelType {
+	case enums.ChannelTypeWeb:
+		cfg, err := s.ParseWebChannelConfig(channel.ConfigJSON)
+		if err != nil {
+			return "", err
+		}
+		cfg.UserTokenSecret = secret
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			return "", err
+		}
+		configJSON = string(raw)
+	case enums.ChannelTypeWechatMP:
+		cfg, err := s.ParseWechatMPChannelConfig(channel.ConfigJSON)
+		if err != nil {
+			return "", err
+		}
+		cfg.UserTokenSecret = secret
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			return "", err
+		}
+		configJSON = string(raw)
+	}
+	if err := repositories.ChannelRepository.Updates(sqls.DB(), channelID, map[string]any{
+		"config_json":      configJSON,
+		"update_user_id":   operator.UserID,
+		"update_user_name": operator.Username,
+		"updated_at":       time.Now(),
+	}); err != nil {
+		return "", err
+	}
+	return secret, nil
+}
+
+func generateUserTokenSecret() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 func (s *channelService) GetEnabledWxWorkKFChannelByOpenKfID(openKfID string) *models.Channel {
@@ -341,6 +426,13 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 		if err != nil {
 			return nil, errorsx.InvalidParam("Web渠道配置不合法")
 		}
+		if strings.TrimSpace(cfg.UserTokenSecret) == "" {
+			secret, err := generateUserTokenSecret()
+			if err != nil {
+				return nil, err
+			}
+			cfg.UserTokenSecret = secret
+		}
 		configBytes, err := json.Marshal(cfg)
 		if err != nil {
 			return nil, err
@@ -356,6 +448,13 @@ func (s *channelService) buildChannelModel(id int64, req request.CreateChannelRe
 		cfg, err := s.ParseWechatMPChannelConfig(configJSON)
 		if err != nil {
 			return nil, errorsx.InvalidParam("微信公众号渠道配置不合法")
+		}
+		if strings.TrimSpace(cfg.UserTokenSecret) == "" {
+			secret, err := generateUserTokenSecret()
+			if err != nil {
+				return nil, err
+			}
+			cfg.UserTokenSecret = secret
 		}
 		configBytes, err := json.Marshal(cfg)
 		if err != nil {

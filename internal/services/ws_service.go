@@ -66,7 +66,7 @@ func (s *wsService) HandleOpenWS(ctx iris.Context) {
 		external  *openidentity.ExternalInfo
 	)
 	if principal == nil {
-		ext, err := openidentity.GetExternalInfo(ctx)
+		ext, err := openidentity.GetExternalInfoWithUserTokenSecret(ctx, ChannelService.GetUserTokenSecret(channel))
 		if err != nil {
 			_ = ctx.StopWithJSON(iris.StatusUnauthorized, web.JsonError(err))
 			return

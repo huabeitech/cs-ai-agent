@@ -26,6 +26,12 @@ export function createImRealtimeConnection() {
     (config.externalSource ?? "web_chat").trim() || "web_chat"
   )
   const channelId = encodeURIComponent(config.channelId || "")
+  const userToken = (config.userToken ?? "").trim()
+  if (userToken) {
+    return new WebSocket(
+      `${baseUrl}/api/ws/open?channelId=${channelId}&userToken=${encodeURIComponent(userToken)}`
+    )
+  }
   const externalName = (config.externalName ?? "").trim()
   const nameQuery =
     externalName !== ""

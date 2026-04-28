@@ -43,6 +43,9 @@
     merged.apiBaseUrl = String(merged.apiBaseUrl || merged.baseUrl).replace(/\/$/, "");
     merged.channelId = String(merged.channelId || "");
     merged.externalSource = String(merged.externalSource || "web_chat");
+    if (merged.userToken) {
+      merged.userToken = String(merged.userToken);
+    }
     return merged;
   }
 
@@ -67,6 +70,7 @@
     if (config.themeColor) frameUrl.searchParams.set("themeColor", config.themeColor);
     if (config.width) frameUrl.searchParams.set("width", config.width);
     if (config.externalName) frameUrl.searchParams.set("externalName", config.externalName);
+    if (config.userToken) frameUrl.searchParams.set("userToken", config.userToken);
     return frameUrl;
   }
 

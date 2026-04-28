@@ -4,9 +4,11 @@ package openidentity
 import (
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
+	"errors"
 	"net/url"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/kataras/iris/v12"
 	"github.com/mlogclub/simple/common/strs"
 	"github.com/mlogclub/simple/web/params"
@@ -19,14 +21,45 @@ type ExternalInfo struct {
 	ExternalName   string               `json:"externalName"`
 }
 
+type UserTokenClaims struct {
+	UserID string `json:"userId"`
+	Name   string `json:"name"`
+	Exp    int64  `json:"exp"`
+	Iat    int64  `json:"iat"`
+}
+
+type userTokenJWTClaims struct {
+	UserID string `json:"userId"`
+	Name   string `json:"name"`
+	jwt.RegisteredClaims
+}
+
 // GetExternalInfo 从 Header（X-External-*）或 query（externalSource、externalId、externalName）解析身份。
 func GetExternalInfo(ctx iris.Context) (*ExternalInfo, error) {
+	return GetExternalInfoWithUserTokenSecret(ctx, "")
+}
+
+func GetExternalInfoWithUserTokenSecret(ctx iris.Context, userTokenSecret string) (*ExternalInfo, error) {
+	if userToken := parseUserToken(ctx); userToken != "" {
+		claims, err := VerifyUserToken(userToken, userTokenSecret)
+		if err != nil {
+			return nil, err
+		}
+		return &ExternalInfo{
+			ExternalSource: enums.ExternalSourceUser,
+			ExternalID:     claims.UserID,
+			ExternalName:   claims.Name,
+		}, nil
+	}
 	externalSource, err := parseExternalSource(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if !enums.IsAllowedOpenImExternalSource(externalSource) {
 		return nil, errorsx.InvalidParam("不支持的外部来源")
+	}
+	if externalSource == enums.ExternalSourceUser {
+		return nil, errorsx.Unauthorized("用户身份不能为空")
 	}
 	externalID, err := parseExternalID(ctx)
 	if err != nil {
@@ -38,6 +71,71 @@ func GetExternalInfo(ctx iris.Context) (*ExternalInfo, error) {
 		ExternalID:   externalID,
 		ExternalName: parseExternalName(ctx),
 	}, nil
+}
+
+func VerifyUserToken(userToken, secret string) (*UserTokenClaims, error) {
+	userToken = strings.TrimSpace(userToken)
+	secret = strings.TrimSpace(secret)
+	if userToken == "" {
+		return nil, errorsx.Unauthorized("用户身份不能为空")
+	}
+	if secret == "" {
+		return nil, errorsx.Unauthorized("用户身份校验未配置")
+	}
+
+	claims := &userTokenJWTClaims{}
+	token, err := jwt.ParseWithClaims(userToken, claims, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unsupported signing method")
+		}
+		return []byte(secret), nil
+	}, jwt.WithExpirationRequired(), jwt.WithValidMethods([]string{
+		jwt.SigningMethodHS256.Alg(),
+		jwt.SigningMethodHS384.Alg(),
+		jwt.SigningMethodHS512.Alg(),
+	}))
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, errorsx.Unauthorized("用户身份已过期")
+		}
+		return nil, errorsx.Unauthorized("用户身份校验失败")
+	}
+	if token == nil || !token.Valid {
+		return nil, errorsx.Unauthorized("用户身份校验失败")
+	}
+
+	userID := strings.TrimSpace(claims.UserID)
+	name := strings.TrimSpace(claims.Name)
+	if userID == "" {
+		return nil, errorsx.Unauthorized("用户标识不能为空")
+	}
+	if name == "" {
+		return nil, errorsx.Unauthorized("用户名称不能为空")
+	}
+	if claims.ExpiresAt == nil {
+		return nil, errorsx.Unauthorized("用户身份已过期")
+	}
+
+	result := &UserTokenClaims{
+		UserID: userID,
+		Name:   name,
+		Exp:    claims.ExpiresAt.Unix(),
+	}
+	if claims.IssuedAt != nil {
+		result.Iat = claims.IssuedAt.Unix()
+	}
+	return result, nil
+}
+
+func parseUserToken(ctx iris.Context) string {
+	auth := strings.TrimSpace(ctx.GetHeader("Authorization"))
+	if len(auth) > 7 && strings.EqualFold(auth[:7], "Bearer ") {
+		if token := strings.TrimSpace(auth[7:]); token != "" {
+			return token
+		}
+	}
+	userToken, _ := params.Get(ctx, "userToken")
+	return strings.TrimSpace(userToken)
 }
 
 func parseExternalSource(ctx iris.Context) (enums.ExternalSource, error) {

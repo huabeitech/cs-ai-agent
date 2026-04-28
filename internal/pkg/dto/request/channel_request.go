@@ -22,3 +22,7 @@ type UpdateChannelStatusRequest struct {
 type DeleteChannelRequest struct {
 	ID int64 `json:"id"`
 }
+
+type ResetChannelUserTokenSecretRequest struct {
+	ID int64 `json:"id"`
+}

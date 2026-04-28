@@ -17,15 +17,17 @@ type WxWorkKFChannelConfig struct {
 }
 
 type WebChannelConfig struct {
-	Title      string `json:"title"`
-	Subtitle   string `json:"subtitle"`
-	ThemeColor string `json:"themeColor"`
-	Position   string `json:"position"`
-	Width      string `json:"width"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
+	ThemeColor      string `json:"themeColor"`
+	Position        string `json:"position"`
+	Width           string `json:"width"`
+	UserTokenSecret string `json:"userTokenSecret,omitempty"`
 }
 
 type WechatMPChannelConfig struct {
-	Title      string `json:"title"`
-	Subtitle   string `json:"subtitle"`
-	ThemeColor string `json:"themeColor"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
+	ThemeColor      string `json:"themeColor"`
+	UserTokenSecret string `json:"userTokenSecret,omitempty"`
 }

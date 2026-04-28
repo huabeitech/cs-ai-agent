@@ -205,6 +205,10 @@ export type UpdateAdminChannelPayload = CreateAdminChannelPayload & {
   id: number
 }
 
+export type ResetChannelUserTokenSecretResult = {
+  userTokenSecret: string
+}
+
 export type AIAgent = {
   id: number
   name: string
@@ -587,6 +591,16 @@ export function updateChannelStatus(id: number, status: number) {
     method: "POST",
     body: JSON.stringify({ id, status }),
   })
+}
+
+export function resetChannelUserTokenSecret(id: number) {
+  return request<ResetChannelUserTokenSecretResult>(
+    "/api/dashboard/channel/reset_user_token_secret",
+    {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }
+  )
 }
 
 export function deleteChannel(id: number) {
