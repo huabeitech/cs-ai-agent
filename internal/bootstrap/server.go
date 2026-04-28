@@ -101,6 +101,7 @@ func addRouter(app *iris.Application) {
 
 	mvc.Configure(app.Party("/api/ws"), func(m *mvc.Application) {
 		m.Router.Get("/dashboard", middleware.AuthMiddleware, services.WsService.HandleDashboardWS)
+		m.Router.Get("/dashboard/notification", middleware.AuthMiddleware, services.WsService.HandleDashboardNotificationWS)
 		m.Router.Get("/open", services.WsService.HandleOpenWS)
 	})
 
@@ -116,6 +117,7 @@ func addRouter(app *iris.Application) {
 		m.Party("/tag").Handle(new(dashboard.TagController))
 		m.Party("/conversation").Handle(new(dashboard.ConversationController))
 		m.Party("/ticket").Handle(new(dashboard.TicketController))
+		m.Party("/notification").Handle(new(dashboard.NotificationController))
 		m.Party("/ticket-resolution-code").Handle(new(dashboard.TicketResolutionCodeController))
 		m.Party("/ticket-priority-config").Handle(new(dashboard.TicketPriorityConfigController))
 		m.Party("/quick-reply").Handle(new(dashboard.QuickReplyController))

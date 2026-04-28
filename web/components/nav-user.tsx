@@ -5,6 +5,8 @@ import { useState } from "react"
 
 import { useAuth } from "@/components/auth-provider"
 import { ChangePasswordDialog } from "@/components/change-password-dialog"
+import { useNotifications } from "@/components/notification-provider"
+import { Badge } from "@/components/ui/badge"
 import {
   Avatar,
   AvatarFallback,
@@ -42,7 +44,9 @@ export function NavUser({
   }
 }) {
   const { signOut } = useAuth()
+  const { unreadCount } = useNotifications()
   const { isMobile } = useSidebar()
+  const router = useRouter()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const fallback = user.name.slice(0, 1).toUpperCase() || "U"
   return (
@@ -99,9 +103,19 @@ export function NavUser({
                   <KeyRoundIcon />
                   修改密码
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push("/dashboard/notifications")
+                  }}
+                  className="gap-2"
+                >
                   <BellIcon />
-                  通知中心
+                  <span className="flex-1">通知中心</span>
+                  {unreadCount > 0 ? (
+                    <Badge className="h-5 min-w-5 px-1.5">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Badge>
+                  ) : null}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

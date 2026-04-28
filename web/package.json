@@ -29,6 +29,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "jose": "^6.2.3",
     "lucide-react": "^0.577.0",
     "markdown-it": "^14.1.1",
     "md-editor-rt": "^6.4.1",

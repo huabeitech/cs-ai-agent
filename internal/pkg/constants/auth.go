@@ -91,6 +91,10 @@ var (
 	PermissionTicketPriorityConfigUpdate = Permission{Name: "更新工单优先级", Code: "ticketPriorityConfig.update", Type: "api", GroupName: "ticketPriorityConfig", Method: "POST", APIPath: "/api/dashboard/ticket-priority-config/update", SortNo: 640}
 	PermissionTicketPriorityConfigDelete = Permission{Name: "删除工单优先级", Code: "ticketPriorityConfig.delete", Type: "api", GroupName: "ticketPriorityConfig", Method: "POST", APIPath: "/api/dashboard/ticket-priority-config/delete", SortNo: 650}
 
+	// 通知相关权限
+	PermissionNotificationView   = Permission{Name: "查看通知", Code: "notification.view", Type: "api", GroupName: "notification", Method: "ANY", APIPath: "/api/dashboard/notification/list", SortNo: 680}
+	PermissionNotificationUpdate = Permission{Name: "更新通知", Code: "notification.update", Type: "api", GroupName: "notification", Method: "POST", APIPath: "/api/dashboard/notification/mark_read", SortNo: 690}
+
 	// 快捷回复相关权限
 	PermissionQuickReplyView   = Permission{Name: "查看快捷回复", Code: "quickReply.view", Type: "api", GroupName: "quickReply", Method: "ANY", APIPath: "/api/dashboard/quick-reply/list", SortNo: 610}
 	PermissionQuickReplyCreate = Permission{Name: "创建快捷回复", Code: "quickReply.create", Type: "api", GroupName: "quickReply", Method: "POST", APIPath: "/api/dashboard/quick-reply/create", SortNo: 620}
@@ -227,6 +231,8 @@ var Permissions = []Permission{
 	PermissionTicketPriorityConfigCreate,
 	PermissionTicketPriorityConfigUpdate,
 	PermissionTicketPriorityConfigDelete,
+	PermissionNotificationView,
+	PermissionNotificationUpdate,
 	PermissionQuickReplyView,
 	PermissionQuickReplyCreate,
 	PermissionQuickReplyUpdate,
@@ -327,6 +333,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
 		PermissionTicketResolutionCodeView, PermissionTicketResolutionCodeCreate, PermissionTicketResolutionCodeUpdate, PermissionTicketResolutionCodeDelete,
 		PermissionTicketPriorityConfigView, PermissionTicketPriorityConfigCreate, PermissionTicketPriorityConfigUpdate, PermissionTicketPriorityConfigDelete,
+		PermissionNotificationView, PermissionNotificationUpdate,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView, PermissionCompanyCreate, PermissionCompanyUpdate, PermissionCompanyDelete,
@@ -349,6 +356,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketUpdate, PermissionTicketAssign, PermissionTicketChangeStatus, PermissionTicketReply, PermissionTicketClose, PermissionTicketReopen,
 		PermissionTicketResolutionCodeView, PermissionTicketResolutionCodeCreate, PermissionTicketResolutionCodeUpdate, PermissionTicketResolutionCodeDelete,
 		PermissionTicketPriorityConfigView, PermissionTicketPriorityConfigCreate, PermissionTicketPriorityConfigUpdate, PermissionTicketPriorityConfigDelete,
+		PermissionNotificationView, PermissionNotificationUpdate,
 		PermissionQuickReplyView, PermissionQuickReplyCreate, PermissionQuickReplyUpdate, PermissionQuickReplyDelete,
 		PermissionTagView, PermissionTagCreate, PermissionTagUpdate, PermissionTagDelete,
 		PermissionCompanyView,
@@ -369,6 +377,7 @@ var RolePermissions = map[string][]Permission{
 		PermissionConversationView,
 		PermissionTicketView, PermissionTicketCreate, PermissionTicketReply,
 		PermissionTicketResolutionCodeView, PermissionTicketPriorityConfigView,
+		PermissionNotificationView, PermissionNotificationUpdate,
 		PermissionQuickReplyView,
 		PermissionTagView,
 		PermissionCompanyView,

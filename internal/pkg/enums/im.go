@@ -250,6 +250,7 @@ const (
 	IMRealtimeEventConversationTransferred = "conversation.transferred"
 	IMRealtimeEventConversationClosed      = "conversation.closed"
 	IMRealtimeEventConversationRead        = "conversation.read"
+	IMRealtimeEventNotificationCreated     = "notification.created"
 )
 
 const (

@@ -22,8 +22,9 @@ const (
 )
 
 const (
-	realtimeRoleUser  = "user"
-	realtimeRoleAdmin = "admin"
+	realtimeRoleUser         = "user"
+	realtimeRoleAdmin        = "admin"
+	realtimeRoleNotification = "notification"
 )
 
 const (
@@ -31,6 +32,7 @@ const (
 	realtimeTopicGuestPrefix        = "guest:"
 	realtimeTopicAdminPrefix        = "admin:"
 	realtimeTopicConversationPrefix = "conversation:"
+	realtimeTopicNotificationPrefix = "notification:"
 	realtimeTopicAdminAll           = "admin:all"
 )
 
@@ -216,6 +218,24 @@ func (e RealtimeConversationChangedEvent) EventType() string {
 }
 
 func (e RealtimeConversationChangedEvent) EventPayload() RealtimeEventPayload {
+	return e.Payload
+}
+
+type RealtimeNotificationCreatedPayload struct {
+	Notification response.NotificationResponse `json:"notification"`
+}
+
+func (RealtimeNotificationCreatedPayload) realtimeEventPayload() {}
+
+type RealtimeNotificationCreatedEvent struct {
+	Payload RealtimeNotificationCreatedPayload
+}
+
+func (e RealtimeNotificationCreatedEvent) EventType() string {
+	return enums.IMRealtimeEventNotificationCreated
+}
+
+func (e RealtimeNotificationCreatedEvent) EventPayload() RealtimeEventPayload {
 	return e.Payload
 }
 

@@ -48,6 +48,7 @@ var Models = []any{
 	&TicketEventLog{},
 	&TicketSLARecord{},
 	&TicketRelation{},
+	&Notification{},
 	&AIAgent{},
 	&Channel{},
 	&AgentProfile{},
@@ -110,6 +111,21 @@ type TicketView struct {
 	FiltersJSON string `gorm:"column:filters_json;type:text;not null"`
 	SortNo      int    `gorm:"column:sort_no;type:int;not null;default:0;index"`
 	AuditFields
+}
+
+// Notification 站内通知。
+type Notification struct {
+	ID               int64        `gorm:"primaryKey;autoIncrement"`
+	RecipientUserID  int64        `gorm:"type:bigint;not null;default:0;index"`
+	Title            string       `gorm:"type:varchar(255);not null;default:''"`
+	Content          string       `gorm:"type:text"`
+	NotificationType string       `gorm:"type:varchar(50);not null;default:'';index"`
+	BizType          string       `gorm:"type:varchar(50);not null;default:'';index"`
+	BizID            int64        `gorm:"type:bigint;not null;default:0;index"`
+	ActionURL        string       `gorm:"type:varchar(255);not null;default:''"`
+	ReadAt           *time.Time   `gorm:"type:datetime;index"`
+	Status           enums.Status `gorm:"type:int;not null;default:0;index"`
+	CreatedAt        time.Time    `gorm:"type:datetime;not null;index"`
 }
 
 // AuditFields 定义涉及用户操作数据的统一审计字段。
