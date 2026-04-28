@@ -113,9 +113,9 @@ func (s *customerService) CountByCompanyIDs(companyIDs []int64) map[int64]int64 
 	return repositories.CustomerRepository.CountByCompanyIDs(sqls.DB(), companyIDs, int(enums.StatusDeleted))
 }
 
-func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalInfo openidentity.ExternalInfo) (int64, error) {
-	externalSource := externalInfo.ExternalSource
-	externalID := strings.TrimSpace(externalInfo.ExternalID)
+func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalUser openidentity.ExternalUser) (int64, error) {
+	externalSource := externalUser.ExternalSource
+	externalID := strings.TrimSpace(externalUser.ExternalID)
 	if strings.TrimSpace(string(externalSource)) == "" || externalID == "" {
 		return 0, errorsx.Unauthorized("外部用户标识不能为空")
 	}
@@ -129,7 +129,7 @@ func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalInfo openi
 	}
 
 	customer := &models.Customer{
-		Name:         buildExternalCustomerName(externalInfo),
+		Name:         buildExternalCustomerName(externalUser),
 		LastActiveAt: &now,
 		Status:       enums.StatusOk,
 		AuditFields:  utils.BuildAuditFields(nil),
@@ -149,11 +149,11 @@ func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalInfo openi
 	return customer.ID, nil
 }
 
-func buildExternalCustomerName(externalInfo openidentity.ExternalInfo) string {
-	if strs.IsNotBlank(externalInfo.ExternalName) {
-		return externalInfo.ExternalName
+func buildExternalCustomerName(externalUser openidentity.ExternalUser) string {
+	if strs.IsNotBlank(externalUser.ExternalName) {
+		return externalUser.ExternalName
 	}
-	return "访客" + hashUUID(externalInfo.ExternalID)
+	return "访客" + hashUUID(externalUser.ExternalID)
 }
 
 func hashUUID(uuid string) string {

@@ -9,7 +9,7 @@ import (
 	"github.com/mlogclub/simple/web"
 )
 
-func ExternalInfoMiddleware(ctx iris.Context) {
+func ExternalUserMiddleware(ctx iris.Context) {
 	channel := services.ChannelService.GetEnabledChannel(ctx)
 	if channel == nil {
 		ctx.StopExecution()
@@ -17,12 +17,12 @@ func ExternalInfoMiddleware(ctx iris.Context) {
 		return
 	}
 	secret := services.ChannelService.GetUserTokenSecret(channel)
-	ext, err := openidentity.GetExternalInfo(ctx, secret)
+	ext, err := openidentity.GetExternalUser(ctx, secret)
 	if err != nil {
 		ctx.StopExecution()
 		_ = ctx.JSON(web.JsonError(err))
 		return
 	}
-	irisx.SetExternalInfo(ctx, ext)
+	irisx.SetExternalUser(ctx, ext)
 	ctx.Next()
 }

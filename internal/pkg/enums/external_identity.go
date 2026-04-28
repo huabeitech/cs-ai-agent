@@ -23,13 +23,3 @@ func GetExternalSourceLabel(v ExternalSource) string {
 	}
 	return string(v)
 }
-
-// IsAllowedOpenImExternalSource 开放 IM 入口允许的外部来源（闭集校验）。
-func IsAllowedOpenImExternalSource(s ExternalSource) bool {
-	switch s {
-	case ExternalSourceGuest, ExternalSourceUser:
-		return true
-	default:
-		return false
-	}
-}

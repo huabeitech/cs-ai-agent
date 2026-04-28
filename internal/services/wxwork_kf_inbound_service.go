@@ -119,7 +119,7 @@ func (s *wxWorkKFInboundService) handleTextMessage(item syncmsg.Message) error {
 		enums.IMMessageTypeText,
 		strings.TrimSpace(payload.Text.Content),
 		"",
-		s.buildExternalInfo(payload.ExternalUserID),
+		s.buildExternalUser(payload.ExternalUserID),
 	)
 	if err != nil {
 		return err
@@ -149,7 +149,7 @@ func (s *wxWorkKFInboundService) handleImageMessage(item syncmsg.Message) error 
 		enums.IMMessageTypeImage,
 		content,
 		canonicalPayload,
-		s.buildExternalInfo(payload.ExternalUserID),
+		s.buildExternalUser(payload.ExternalUserID),
 	)
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (s *wxWorkKFInboundService) handleFileMessage(item syncmsg.Message) error {
 		enums.IMMessageTypeAttachment,
 		content,
 		canonicalPayload,
-		s.buildExternalInfo(payload.ExternalUserID),
+		s.buildExternalUser(payload.ExternalUserID),
 	)
 	if err != nil {
 		return err
@@ -203,7 +203,7 @@ func (s *wxWorkKFInboundService) handleUnsupportedMessage(item syncmsg.Message) 
 		enums.IMMessageTypeText,
 		content,
 		string(item.OriginData),
-		s.buildExternalInfo(base.ExternalUserID),
+		s.buildExternalUser(base.ExternalUserID),
 	)
 	if err != nil {
 		return err
@@ -376,7 +376,7 @@ func (s *wxWorkKFInboundService) ensureConversation(base syncmsg.BaseMessage, pr
 		return nil, err
 	}
 
-	external := s.buildExternalInfo(externalID)
+	external := s.buildExternalUser(externalID)
 	conversation, err := ConversationService.Create(external, channel.ID, channel.AIAgentID)
 	if err != nil {
 		return nil, err
@@ -558,8 +558,8 @@ func (s *wxWorkKFInboundService) getChannelByOpenKfID(openKfID string) (*models.
 	return channel, nil
 }
 
-func (s *wxWorkKFInboundService) buildExternalInfo(externalUserID string) openidentity.ExternalInfo {
-	return openidentity.ExternalInfo{
+func (s *wxWorkKFInboundService) buildExternalUser(externalUserID string) openidentity.ExternalUser {
+	return openidentity.ExternalUser{
 		ExternalSource: enums.ExternalSourceWxWorkKF,
 		ExternalID:     strings.TrimSpace(externalUserID),
 		ExternalName:   strings.TrimSpace(externalUserID),

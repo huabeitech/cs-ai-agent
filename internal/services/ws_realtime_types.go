@@ -229,7 +229,7 @@ type ClientSession struct {
 	ID           string
 	Conn         *websocket.Conn
 	Principal    *dto.AuthPrincipal
-	External     *openidentity.ExternalInfo
+	External     *openidentity.ExternalUser
 	Role         string
 	TerminalType string
 	Topics       map[string]struct{}

@@ -23,7 +23,7 @@ func (c *MessageController) AnyList() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -57,7 +57,7 @@ func (c *MessageController) PostSend() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -78,7 +78,7 @@ func (c *MessageController) PostRead() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -97,7 +97,7 @@ func (c *MessageController) PostUpload_image() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -142,7 +142,7 @@ func (c *MessageController) PostUpload_attachment() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}

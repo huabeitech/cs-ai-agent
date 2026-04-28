@@ -1,4 +1,3 @@
-// Package openidentity 解析开放 IM 场景下的外部访客身份（HTTP Header / Query），与 JSON 请求体 DTO 解耦。
 package openidentity
 
 import (
@@ -14,8 +13,8 @@ import (
 	"github.com/mlogclub/simple/web/params"
 )
 
-// ExternalInfo 外部访客身份（IM 客户），与站内 AuthPrincipal 区分。
-type ExternalInfo struct {
+// ExternalUser 外部访客身份（IM 客户），与站内 AuthPrincipal 区分。
+type ExternalUser struct {
 	ExternalSource enums.ExternalSource `json:"externalSource"`
 	ExternalID     string               `json:"externalId"`
 	ExternalName   string               `json:"externalName"`
@@ -27,37 +26,19 @@ type UserTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GetExternalInfo(ctx iris.Context, secret string) (*ExternalInfo, error) {
+func GetExternalUser(ctx iris.Context, secret string) (*ExternalUser, error) {
 	if userToken := getUserToken(ctx); strs.IsNotBlank(userToken) {
 		claims, err := verifyUserToken(userToken, secret)
 		if err != nil {
 			return nil, err
 		}
-		return &ExternalInfo{
+		return &ExternalUser{
 			ExternalSource: enums.ExternalSourceUser,
 			ExternalID:     claims.UserID,
 			ExternalName:   claims.Name,
 		}, nil
 	}
-	externalSource, err := getExternalSource(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if !enums.IsAllowedOpenImExternalSource(externalSource) {
-		return nil, errorsx.InvalidParam("不支持的外部来源")
-	}
-	if externalSource == enums.ExternalSourceUser {
-		return nil, errorsx.Unauthorized("用户身份不能为空")
-	}
-	externalID, err := getExternalID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &ExternalInfo{
-		ExternalSource: externalSource,
-		ExternalID:     externalID,
-		ExternalName:   getExternalName(ctx),
-	}, nil
+	return getGuestUser(ctx)
 }
 
 func verifyUserToken(userToken, secret string) (*UserTokenClaims, error) {
@@ -113,26 +94,24 @@ func getUserToken(ctx iris.Context) string {
 	return strings.TrimSpace(userToken)
 }
 
-func getExternalSource(ctx iris.Context) (enums.ExternalSource, error) {
-	externalSource := ctx.GetHeader("X-External-Source")
-	if strs.IsBlank(externalSource) {
-		externalSource, _ = params.Get(ctx, "externalSource")
+func getGuestUser(ctx iris.Context) (*ExternalUser, error) {
+	externalID := getExternalID(ctx)
+	if strs.IsBlank(externalID) {
+		return nil, errorsx.Unauthorized("用户标识不能为空")
 	}
-	if strs.IsBlank(externalSource) {
-		return "", errorsx.Unauthorized("用户来源不能为空")
-	}
-	return enums.ExternalSource(strings.TrimSpace(externalSource)), nil
+	return &ExternalUser{
+		ExternalSource: enums.ExternalSourceGuest,
+		ExternalID:     externalID,
+		ExternalName:   getExternalName(ctx),
+	}, nil
 }
 
-func getExternalID(ctx iris.Context) (string, error) {
+func getExternalID(ctx iris.Context) string {
 	externalID := ctx.GetHeader("X-External-Id")
 	if strs.IsBlank(externalID) {
 		externalID, _ = params.Get(ctx, "externalId")
 	}
-	if strs.IsBlank(externalID) {
-		return "", errorsx.Unauthorized("用户标识不能为空")
-	}
-	return strings.TrimSpace(externalID), nil
+	return externalID
 }
 
 func getExternalName(ctx iris.Context) string {
@@ -140,11 +119,12 @@ func getExternalName(ctx iris.Context) string {
 	if strs.IsBlank(externalName) {
 		externalName, _ = params.Get(ctx, "externalName")
 	}
-	return decodeExternalDisplayName(externalName)
+	if strs.IsNotBlank(externalName) {
+		externalName, _ = url.QueryUnescape(externalName)
+	}
+	return externalName
 }
 
-// decodeExternalDisplayName 将客户端对 X-External-Name / externalName 做的 encodeURIComponent 还原为 UTF-8。
-// 无百分号编码时 QueryUnescape 原样返回，解码失败则保留原串（兼容异常或旧客户端明文）。
 func decodeExternalDisplayName(s string) string {
 	s = strings.TrimSpace(s)
 	if s == "" {

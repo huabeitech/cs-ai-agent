@@ -20,7 +20,7 @@ func (c *ConversationController) GetBy(id int64) *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -45,7 +45,7 @@ func (c *ConversationController) PostCreate_or_match() *web.JsonResult {
 	if channel == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}
@@ -61,7 +61,7 @@ func (c *ConversationController) PostClose() *web.JsonResult {
 	if services.ChannelService.GetEnabledChannel(c.Ctx) == nil {
 		return web.JsonErrorMsg("接入渠道未初始化")
 	}
-	external := irisx.GetExternalInfo(c.Ctx)
+	external := irisx.GetExternalUser(c.Ctx)
 	if external == nil {
 		return web.JsonErrorMsg("外部身份未初始化")
 	}

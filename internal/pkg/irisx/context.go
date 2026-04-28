@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	ctxKeyExternalInfo = "externalInfo"
+	ctxKeyExternalUser = "externalUser"
 )
 
-func SetExternalInfo(ctx iris.Context, ext *openidentity.ExternalInfo) {
-	ctx.Values().Set(ctxKeyExternalInfo, ext)
+func SetExternalUser(ctx iris.Context, ext *openidentity.ExternalUser) {
+	ctx.Values().Set(ctxKeyExternalUser, ext)
 }
 
-func GetExternalInfo(ctx iris.Context) *openidentity.ExternalInfo {
-	v := ctx.Values().Get(ctxKeyExternalInfo)
-	ext, _ := v.(*openidentity.ExternalInfo)
+func GetExternalUser(ctx iris.Context) *openidentity.ExternalUser {
+	v := ctx.Values().Get(ctxKeyExternalUser)
+	ext, _ := v.(*openidentity.ExternalUser)
 	return ext
 }
 

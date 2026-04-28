@@ -100,7 +100,7 @@ func (s *conversationService) getLatestNotFinishedByCustomerID(db *gorm.DB, cust
 	return repositories.ConversationRepository.FindOne(db, cnd)
 }
 
-func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, channelID, aiAgentID int64) (*models.Conversation, error) {
+func (s *conversationService) Create(externalUser openidentity.ExternalUser, channelID, aiAgentID int64) (*models.Conversation, error) {
 	aiAgent := AIAgentService.Get(aiAgentID)
 	if aiAgent == nil || aiAgent.Status != enums.StatusOk {
 		return nil, errorsx.InvalidParam("AI Agent not found")
@@ -109,7 +109,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 	var conversation *models.Conversation
 	created := false
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		customerID, err := CustomerService.EnsureExternalCustomer(ctx.Tx, externalInfo)
+		customerID, err := CustomerService.EnsureExternalCustomer(ctx.Tx, externalUser)
 		if err != nil {
 			return err
 		}
@@ -146,7 +146,7 @@ func (s *conversationService) Create(externalInfo openidentity.ExternalInfo, cha
 		if err := ctx.Tx.Create(conversation).Error; err != nil {
 			return err
 		}
-		if err := ConversationParticipantService.CreateCustomerParticipant(ctx, conversation.ID, externalInfo); err != nil {
+		if err := ConversationParticipantService.CreateCustomerParticipant(ctx, conversation.ID, externalUser); err != nil {
 			return err
 		}
 		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "")
@@ -378,12 +378,12 @@ func (s *conversationService) CloseConversation(conversationID int64, closeReaso
 	return s.closeConversation(conversationID, enums.IMSenderTypeAgent, closeReason, operator)
 }
 
-func (s *conversationService) CloseCustomerConversation(conversationID int64, externalInfo openidentity.ExternalInfo) error {
+func (s *conversationService) CloseCustomerConversation(conversationID int64, externalUser openidentity.ExternalUser) error {
 	conversation := s.Get(conversationID)
 	if conversation == nil {
 		return errorsx.InvalidParam("会话不存在")
 	}
-	if !s.IsCustomerConversationOwner(conversation, externalInfo) {
+	if !s.IsCustomerConversationOwner(conversation, externalUser) {
 		return errorsx.Forbidden("无权访问该会话")
 	}
 	return s.closeConversation(conversationID, enums.IMSenderTypeCustomer, "", nil)
@@ -477,7 +477,7 @@ func (s *conversationService) MarkAgentConversationReadToMessage(conversationID,
 }
 
 // MarkCustomerConversationReadToMessage IM 客户将会话已读推进到指定消息（需为会话归属外部身份）。
-func (s *conversationService) MarkCustomerConversationReadToMessage(conversationID, messageID int64, external *openidentity.ExternalInfo) error {
+func (s *conversationService) MarkCustomerConversationReadToMessage(conversationID, messageID int64, external *openidentity.ExternalUser) error {
 	if external == nil || strings.TrimSpace(external.ExternalID) == "" {
 		return errorsx.Unauthorized("外部用户标识不能为空")
 	}
@@ -500,7 +500,7 @@ func (s *conversationService) MarkCustomerConversationReadToMessage(conversation
 	return nil
 }
 
-func displayExternalName(ext *openidentity.ExternalInfo) string {
+func displayExternalName(ext *openidentity.ExternalUser) string {
 	if ext == nil {
 		return ""
 	}
@@ -541,7 +541,7 @@ func (a agentConversationReadActor) conversationUpdateAudit() (int64, string) {
 }
 
 type customerConversationReadActor struct {
-	external *openidentity.ExternalInfo
+	external *openidentity.ExternalUser
 }
 
 func (a customerConversationReadActor) isAgentSide() bool { return false }
@@ -651,15 +651,15 @@ func (s *conversationService) countUnreadByState(ctx *sqls.TxContext, conversati
 	return int(count), err
 }
 
-func (s *conversationService) IsCustomerConversationOwner(conversation *models.Conversation, externalInfo openidentity.ExternalInfo) bool {
+func (s *conversationService) IsCustomerConversationOwner(conversation *models.Conversation, externalUser openidentity.ExternalUser) bool {
 	if conversation == nil {
 		return false
 	}
-	extID := strings.TrimSpace(externalInfo.ExternalID)
-	if extID == "" || strings.TrimSpace(string(externalInfo.ExternalSource)) == "" || conversation.CustomerID <= 0 {
+	extID := strings.TrimSpace(externalUser.ExternalID)
+	if extID == "" || strings.TrimSpace(string(externalUser.ExternalSource)) == "" || conversation.CustomerID <= 0 {
 		return false
 	}
-	identity := repositories.CustomerIdentityRepository.GetBy(sqls.DB(), externalInfo.ExternalSource, extID)
+	identity := repositories.CustomerIdentityRepository.GetBy(sqls.DB(), externalUser.ExternalSource, extID)
 	if identity == nil {
 		return false
 	}

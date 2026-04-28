@@ -63,10 +63,10 @@ func (s *wsService) HandleOpenWS(ctx iris.Context) {
 
 	var (
 		principal = AuthService.GetAuthPrincipal(ctx)
-		external  *openidentity.ExternalInfo
+		external  *openidentity.ExternalUser
 	)
 	if principal == nil {
-		ext, err := openidentity.GetExternalInfoWithUserTokenSecret(ctx, ChannelService.GetUserTokenSecret(channel))
+		ext, err := openidentity.GetExternalUser(ctx, ChannelService.GetUserTokenSecret(channel))
 		if err != nil {
 			_ = ctx.StopWithJSON(iris.StatusUnauthorized, web.JsonError(err))
 			return
@@ -80,7 +80,7 @@ func (s *wsService) HandleOpenWS(ctx iris.Context) {
 	}
 }
 
-func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalInfo, role string) error {
+func (s *wsService) upgradeConnection(ctx iris.Context, principal *dto.AuthPrincipal, external *openidentity.ExternalUser, role string) error {
 	conn, err := s.upgrader.Upgrade(ctx.ResponseWriter().Naive(), ctx.Request(), nil)
 	if err != nil {
 		return err
