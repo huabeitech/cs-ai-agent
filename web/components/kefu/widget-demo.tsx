@@ -28,7 +28,6 @@ declare global {
     CSAgentWidget?: {
       mount: (config: KefuWidgetHostConfig) => void
       destroy: () => void
-      open: () => void
       close: () => void
     }
   }
@@ -134,6 +133,7 @@ export function KefuWidgetDemo() {
   const [status, setStatus] = useState("请填写 channelId")
   const [origin, setOrigin] = useState("")
   const [generatedToken, setGeneratedToken] = useState("")
+  const [copied, setCopied] = useState(false)
 
   async function mountWidget(configToMount: WidgetDemoConfig) {
     let userToken = ""
@@ -200,6 +200,21 @@ ${configLines.join(",\n")}
 <script async src="${scriptSrc}"></script>`
   }, [config, generatedToken, origin])
 
+  const directChatUrl = useMemo(() => {
+    const base = origin || ""
+    const channelId = (config.channelId || "").trim()
+    if (!base || !channelId) {
+      return ""
+    }
+
+    const url = new URL("/kefu/chat/", base)
+    url.searchParams.set("channelId", channelId)
+    if (config.authMode === "jwt" && generatedToken) {
+      url.searchParams.set("userToken", generatedToken)
+    }
+    return url.toString()
+  }, [config.authMode, config.channelId, generatedToken, origin])
+
   function updateField<K extends keyof WidgetDemoConfig>(
     key: K,
     value: WidgetDemoConfig[K]
@@ -215,6 +230,15 @@ ${configLines.join(",\n")}
       setGeneratedToken("")
       setStatus(error instanceof Error ? error.message : "生成 userToken 失败")
     }
+  }
+
+  async function handleCopyDirectUrl() {
+    if (!directChatUrl || typeof navigator === "undefined") {
+      return
+    }
+    await navigator.clipboard.writeText(directChatUrl)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1600)
   }
 
   return (
@@ -277,13 +301,6 @@ ${configLines.join(",\n")}
             </button>
             <button
               type="button"
-              onClick={() => window.CSAgentWidget?.open()}
-              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium"
-            >
-              打开
-            </button>
-            <button
-              type="button"
               onClick={() => {
                 removeMountedWidget()
                 setStatus("Widget 已卸载")
@@ -305,6 +322,38 @@ ${configLines.join(",\n")}
           <pre className="mt-4 overflow-x-auto rounded-md bg-slate-950 p-4 text-xs leading-5 text-slate-100">
             <code>{snippet}</code>
           </pre>
+          <div className="mt-5">
+            <div className="text-sm font-medium text-slate-700">直接访问客户对话</div>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                readOnly
+                value={directChatUrl || "请先填写 channelId 并挂载"}
+                className="h-9 min-w-0 flex-1 rounded-md border border-slate-200 px-3 font-mono text-xs outline-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={!directChatUrl}
+                  onClick={() => void handleCopyDirectUrl()}
+                  className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {copied ? "已复制" : "复制"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!directChatUrl}
+                  onClick={() => {
+                    if (directChatUrl) {
+                      window.open(directChatUrl, "_blank", "noopener,noreferrer")
+                    }
+                  }}
+                  className="rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  新窗口打开
+                </button>
+              </div>
+            </div>
+          </div>
           {generatedToken ? (
             <div className="mt-4">
               <div className="text-sm font-medium text-slate-700">当前 userToken</div>

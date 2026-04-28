@@ -121,10 +121,21 @@ func (s *customerService) EnsureExternalCustomer(db *gorm.DB, externalUser openi
 	}
 	now := time.Now()
 	if identity := repositories.CustomerIdentityRepository.GetBy(db, externalSource, externalID); identity != nil {
-		_ = repositories.CustomerRepository.Updates(db, identity.CustomerID, map[string]any{
+		updates := map[string]any{
 			"last_active_at": now,
 			"updated_at":     now,
-		})
+		}
+		if strs.IsNotBlank(externalUser.ExternalName) {
+			updates["name"] = externalUser.ExternalName
+		}
+		if err := repositories.CustomerRepository.Updates(db, identity.CustomerID, updates); err != nil {
+			return 0, err
+		}
+		if strs.IsNotBlank(externalUser.ExternalName) {
+			if err := s.syncConversationCustomerName(db, identity.CustomerID, externalUser.ExternalName, nil, now); err != nil {
+				return 0, err
+			}
+		}
 		return identity.CustomerID, nil
 	}
 
@@ -255,7 +266,7 @@ func (s *customerService) syncConversationCustomerName(db *gorm.DB, customerID i
 		return nil
 	}
 	updates := map[string]any{
-		"customer_name": strings.TrimSpace(name),
+		"customer_name": name,
 		"updated_at":    now,
 	}
 	if operator != nil {
