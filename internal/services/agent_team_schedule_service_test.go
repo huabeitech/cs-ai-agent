@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
@@ -76,6 +77,109 @@ func TestAgentTeamScheduleServiceFindCalendarSchedulesValidatesTimeRange(t *test
 	}
 }
 
+func TestAgentTeamScheduleServiceCreateRejectsCrossDaySchedule(t *testing.T) {
+	setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, sqls.DB())
+
+	tomorrow := time.Now().AddDate(0, 0, 1)
+	_, err := services.AgentTeamScheduleService.CreateAgentTeamSchedule(request.CreateAgentTeamScheduleRequest{
+		TeamID:     1,
+		StartAt:    formatTestDateTime(tomorrow, "22:00:00"),
+		EndAt:      formatTestDateTime(tomorrow.AddDate(0, 0, 1), "08:00:00"),
+		SourceType: "manual",
+	}, testOperator())
+	if err == nil {
+		t.Fatalf("expected cross-day schedule to fail")
+	}
+	if !strings.Contains(err.Error(), "不能跨天") {
+		t.Fatalf("expected cross-day error, got %v", err)
+	}
+}
+
+func TestAgentTeamScheduleServiceCreateRejectsHistoricalScheduleByDay(t *testing.T) {
+	setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, sqls.DB())
+
+	yesterday := time.Now().AddDate(0, 0, -1)
+	_, err := services.AgentTeamScheduleService.CreateAgentTeamSchedule(request.CreateAgentTeamScheduleRequest{
+		TeamID:     1,
+		StartAt:    formatTestDateTime(yesterday, "09:00:00"),
+		EndAt:      formatTestDateTime(yesterday, "18:00:00"),
+		SourceType: "manual",
+	}, testOperator())
+	if err == nil {
+		t.Fatalf("expected historical schedule to fail")
+	}
+	if !strings.Contains(err.Error(), "历史日期") {
+		t.Fatalf("expected historical date error, got %v", err)
+	}
+}
+
+func TestAgentTeamScheduleServiceCreateAllowsTodayEarlierThanCurrentTime(t *testing.T) {
+	setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, sqls.DB())
+
+	today := time.Now()
+	item, err := services.AgentTeamScheduleService.CreateAgentTeamSchedule(request.CreateAgentTeamScheduleRequest{
+		TeamID:     1,
+		StartAt:    formatTestDateTime(today, "00:00:00"),
+		EndAt:      formatTestDateTime(today, "01:00:00"),
+		SourceType: "manual",
+	}, testOperator())
+	if err != nil {
+		t.Fatalf("expected today's schedule to pass, got %v", err)
+	}
+	if item == nil || item.ID == 0 {
+		t.Fatalf("expected created schedule, got %+v", item)
+	}
+}
+
+func TestAgentTeamScheduleServiceUpdateRejectsCrossDaySchedule(t *testing.T) {
+	db := setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, db)
+	existingID := createFutureAgentTeamSchedule(t, db)
+	tomorrow := time.Now().AddDate(0, 0, 1)
+
+	err := services.AgentTeamScheduleService.UpdateAgentTeamSchedule(request.UpdateAgentTeamScheduleRequest{
+		ID: existingID,
+		CreateAgentTeamScheduleRequest: request.CreateAgentTeamScheduleRequest{
+			TeamID:     1,
+			StartAt:    formatTestDateTime(tomorrow, "22:00:00"),
+			EndAt:      formatTestDateTime(tomorrow.AddDate(0, 0, 1), "08:00:00"),
+			SourceType: "manual",
+		},
+	}, testOperator())
+	if err == nil {
+		t.Fatalf("expected cross-day update to fail")
+	}
+	if !strings.Contains(err.Error(), "不能跨天") {
+		t.Fatalf("expected cross-day error, got %v", err)
+	}
+}
+
+func TestAgentTeamScheduleServiceUpdateRejectsHistoricalScheduleByDay(t *testing.T) {
+	db := setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, db)
+	existingID := createFutureAgentTeamSchedule(t, db)
+	yesterday := time.Now().AddDate(0, 0, -1)
+
+	err := services.AgentTeamScheduleService.UpdateAgentTeamSchedule(request.UpdateAgentTeamScheduleRequest{
+		ID: existingID,
+		CreateAgentTeamScheduleRequest: request.CreateAgentTeamScheduleRequest{
+			TeamID:     1,
+			StartAt:    formatTestDateTime(yesterday, "09:00:00"),
+			EndAt:      formatTestDateTime(yesterday, "18:00:00"),
+			SourceType: "manual",
+		},
+	}, testOperator())
+	if err == nil {
+		t.Fatalf("expected historical update to fail")
+	}
+	if !strings.Contains(err.Error(), "历史日期") {
+		t.Fatalf("expected historical date error, got %v", err)
+	}
+}
+
 func setupAgentTeamScheduleTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -105,13 +209,7 @@ func setupAgentTeamScheduleTestDB(t *testing.T) *gorm.DB {
 func createAgentTeamScheduleTestData(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	teams := []models.AgentTeam{
-		{ID: 1, Name: "售前组", Status: enums.StatusOk},
-		{ID: 2, Name: "售后组", Status: enums.StatusOk},
-	}
-	if err := db.Create(&teams).Error; err != nil {
-		t.Fatalf("create teams error = %v", err)
-	}
+	createAgentTeamScheduleTestTeams(t, db)
 
 	parse := func(value string) time.Time {
 		t.Helper()
@@ -131,4 +229,48 @@ func createAgentTeamScheduleTestData(t *testing.T, db *gorm.DB) {
 	if err := db.Create(&schedules).Error; err != nil {
 		t.Fatalf("create schedules error = %v", err)
 	}
+}
+
+func createAgentTeamScheduleTestTeams(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	teams := []models.AgentTeam{
+		{ID: 1, Name: "售前组", Status: enums.StatusOk},
+		{ID: 2, Name: "售后组", Status: enums.StatusOk},
+	}
+	if err := db.Create(&teams).Error; err != nil {
+		t.Fatalf("create teams error = %v", err)
+	}
+}
+
+func formatTestDateTime(date time.Time, clock string) string {
+	return date.Format(time.DateOnly) + " " + clock
+}
+
+func createFutureAgentTeamSchedule(t *testing.T, db *gorm.DB) int64 {
+	t.Helper()
+	tomorrow := time.Now().AddDate(0, 0, 1)
+	item := models.AgentTeamSchedule{
+		TeamID:     1,
+		StartAt:    parseTestDateTime(t, formatTestDateTime(tomorrow, "09:00:00")),
+		EndAt:      parseTestDateTime(t, formatTestDateTime(tomorrow, "18:00:00")),
+		SourceType: "manual",
+		Status:     enums.StatusOk,
+	}
+	if err := db.Create(&item).Error; err != nil {
+		t.Fatalf("create future schedule error = %v", err)
+	}
+	return item.ID
+}
+
+func parseTestDateTime(t *testing.T, value string) time.Time {
+	t.Helper()
+	ret, err := time.ParseInLocation(time.DateTime, value, time.Local)
+	if err != nil {
+		t.Fatalf("parse time %q error = %v", value, err)
+	}
+	return ret
+}
+
+func testOperator() *dto.AuthPrincipal {
+	return &dto.AuthPrincipal{UserID: 1, Username: "tester", Status: enums.StatusOk}
 }

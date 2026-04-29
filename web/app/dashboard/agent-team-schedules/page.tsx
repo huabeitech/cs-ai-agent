@@ -101,6 +101,16 @@ function formatDateTimeValue(date: Date) {
   return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}:${second}`
 }
 
+function parseLocalDateTime(value: string) {
+  const ret = new Date(value.replace(" ", "T"))
+  return Number.isNaN(ret.getTime()) ? null : ret
+}
+
+function isHistoricalSchedule(item: AdminAgentTeamSchedule) {
+  const startAt = parseLocalDateTime(item.startAt)
+  return !!startAt && startAt < startOfDay(new Date())
+}
+
 function addMonths(date: Date, months: number) {
   const ret = startOfMonth(date)
   ret.setMonth(ret.getMonth() + months)
@@ -220,6 +230,10 @@ export default function DashboardAgentTeamSchedulesPage() {
   }
 
   function openEditDialog(item: AdminAgentTeamSchedule) {
+    if (isHistoricalSchedule(item)) {
+      toast.error("不能修改历史日期的排班")
+      return
+    }
     setDialogDefaults(null)
     setEditingItem(item)
     setDialogOpen(true)
@@ -281,6 +295,11 @@ export default function DashboardAgentTeamSchedulesPage() {
   }
 
   async function handleCalendarUpdate(payload: UpdateAdminAgentTeamSchedulePayload) {
+    const startAt = parseLocalDateTime(payload.startAt)
+    if (startAt && startAt < startOfDay(new Date())) {
+      toast.error("不能修改历史日期的排班")
+      return
+    }
     setActionLoadingId(payload.id)
     try {
       await updateAgentTeamSchedule(payload)
@@ -398,7 +417,7 @@ export default function DashboardAgentTeamSchedulesPage() {
                 </TableHeader>
                 <TableBody>
                   {result.results.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className={isHistoricalSchedule(item) ? "opacity-60" : undefined}>
                       <TableCell>
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -419,7 +438,7 @@ export default function DashboardAgentTeamSchedulesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <ButtonGroup className="ml-auto">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)}>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)} disabled={isHistoricalSchedule(item)}>
                             编辑
                           </Button>
                           <DropdownMenu>

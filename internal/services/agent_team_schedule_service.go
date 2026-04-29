@@ -165,6 +165,12 @@ func (s *agentTeamScheduleService) buildScheduleModel(id, teamID int64, startAt,
 	if !endAtValue.After(startAtValue) {
 		return nil, errorsx.InvalidParam("结束时间必须晚于开始时间")
 	}
+	if !sameLocalDay(startAtValue, endAtValue) {
+		return nil, errorsx.InvalidParam("单条排班记录不能跨天")
+	}
+	if startAtValue.Before(startOfLocalDay(time.Now())) {
+		return nil, errorsx.InvalidParam("不能添加或修改历史日期的排班")
+	}
 	var count int64
 	sqls.DB().Model(&models.AgentTeamSchedule{}).
 		Where("team_id = ? AND id <> ? AND start_at < ? AND end_at > ?", teamID, id, endAtValue, startAtValue).
@@ -206,6 +212,17 @@ func parseDateTimeValue(value string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, errorsx.InvalidParam("时间格式错误")
+}
+
+func startOfLocalDay(value time.Time) time.Time {
+	year, month, day := value.In(time.Local).Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
+}
+
+func sameLocalDay(a, b time.Time) bool {
+	aYear, aMonth, aDay := a.In(time.Local).Date()
+	bYear, bMonth, bDay := b.In(time.Local).Date()
+	return aYear == bYear && aMonth == bMonth && aDay == bDay
 }
 
 func (s *agentTeamScheduleService) dispatchPendingConversationsIfActive(item *models.AgentTeamSchedule) {

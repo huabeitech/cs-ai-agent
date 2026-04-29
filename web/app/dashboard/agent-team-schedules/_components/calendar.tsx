@@ -126,6 +126,14 @@ function getDropCell(event: PointerEvent) {
   return element?.closest("[data-schedule-cell]")
 }
 
+function isHistoricalDay(day: Date) {
+  return startOfDay(day).getTime() < startOfDay(new Date()).getTime()
+}
+
+function isSameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
 function buildMovePayload(item: AdminAgentTeamSchedule, date: string): UpdateAdminAgentTeamSchedulePayload {
   const originalStart = parseLocalDateTime(item.startAt)
   const originalEnd = parseLocalDateTime(item.endAt)
@@ -152,6 +160,9 @@ function buildResizePayload(
 ): UpdateAdminAgentTeamSchedulePayload | null {
   const startAt = parseLocalDateTime(item.startAt)
   const endAt = parseLocalDateTime(item.endAt)
+  if (!isSameLocalDay(startAt, nextTime)) {
+    return null
+  }
   if (edge === "start") {
     if (endAt.getTime() - nextTime.getTime() < minDurationMs) {
       return null
@@ -254,6 +265,16 @@ export function ScheduleCalendar({
     if (!date) {
       return null
     }
+    if (isHistoricalDay(parseLocalDateTime(`${date} 00:00:00`))) {
+      return {
+        itemId: state.item.id,
+        date,
+        label: "不能修改历史日期",
+        invalid: true,
+        x: pointerEvent.clientX,
+        y: pointerEvent.clientY,
+      }
+    }
 
     const point = { x: pointerEvent.clientX, y: pointerEvent.clientY }
     if (state.type === "move") {
@@ -261,7 +282,7 @@ export function ScheduleCalendar({
     }
 
     const payload = buildResizePayload(state.item, state.edge, getPointerDateInCell(pointerEvent, cell))
-    return buildPreviewFromPayload(state.item.id, date, payload, point, "至少保留 15 分钟")
+    return buildPreviewFromPayload(state.item.id, date, payload, point, "不能跨天或少于 15 分钟")
   }
 
   function cleanupPointerInteraction(
@@ -324,6 +345,9 @@ export function ScheduleCalendar({
         if (!date) {
           return
         }
+        if (isHistoricalDay(parseLocalDateTime(`${date} 00:00:00`))) {
+          return
+        }
         await onMove(buildMovePayload(item, date))
         return
       }
@@ -363,6 +387,7 @@ export function ScheduleCalendar({
         {days.map((day, dayIndex) => {
           const date = formatDate(day)
           const inMonth = day.getMonth() === monthStart.getMonth()
+          const historical = isHistoricalDay(day)
           const daySchedules = schedules
             .filter((item) => intersectsDay(item, day))
             .sort((a, b) => parseLocalDateTime(a.startAt).getTime() - parseLocalDateTime(b.startAt).getTime())
@@ -378,6 +403,7 @@ export function ScheduleCalendar({
                 "min-h-36 border-l border-t bg-background p-2 text-left outline-none transition-colors first:border-l-0 hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring",
                 dayIndex % 7 === 0 && "border-l-0",
                 !inMonth && "bg-muted/20 text-muted-foreground",
+                historical && "cursor-not-allowed bg-muted/30 hover:bg-muted/30",
                 interactionPreview?.date === date &&
                   (interactionPreview.invalid ? "bg-destructive/5 ring-2 ring-destructive/30" : "bg-primary/5 ring-2 ring-primary/35")
               )}
@@ -385,9 +411,15 @@ export function ScheduleCalendar({
                 if ((event.target as HTMLElement).closest("[data-schedule-block]")) {
                   return
                 }
+                if (historical) {
+                  return
+                }
                 handleBlankCellClick(day)
               }}
               onKeyDown={(event) => {
+                if (historical) {
+                  return
+                }
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault()
                   handleBlankCellClick(day)
@@ -401,7 +433,7 @@ export function ScheduleCalendar({
                     <div className="mt-0.5 text-[10px] leading-none text-muted-foreground">{dayTimeLayout.rangeLabel}</div>
                   ) : null}
                 </div>
-                <CalendarPlusIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                {historical ? null : <CalendarPlusIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />}
               </div>
               <div className="space-y-1">
                 {daySchedules.slice(0, 5).map((item) => {
@@ -409,6 +441,7 @@ export function ScheduleCalendar({
                   const busy = savingId === item.id
                   const active = interactionPreview?.itemId === item.id
                   const timeLayout = dayTimeLayout.items.get(item.id)
+                  const readonly = historical || isHistoricalDay(parseLocalDateTime(item.startAt))
                   return (
                     <div key={`${item.id}-${date}`} className="relative h-10 rounded-sm bg-muted/25">
                       <div
@@ -420,6 +453,7 @@ export function ScheduleCalendar({
                         className={cn(
                           "absolute inset-y-0 cursor-grab overflow-hidden rounded-md border border-primary/20 bg-primary/10 px-2 py-1.5 pl-4 pr-4 text-primary shadow-sm outline-none transition active:cursor-grabbing",
                           active && "scale-[0.98] border-primary/50 bg-primary/15 opacity-80 ring-2 ring-primary/30",
+                          readonly && "cursor-not-allowed opacity-60",
                           busy && "pointer-events-none opacity-60"
                         )}
                         style={{
@@ -427,8 +461,18 @@ export function ScheduleCalendar({
                           width: `${timeLayout?.widthPercent ?? 100}%`,
                           minWidth: 34,
                         }}
-                        onPointerDown={(event) => handlePointerDown(event, item, "move")}
+                        onPointerDown={(event) => {
+                          if (readonly) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            return
+                          }
+                          handlePointerDown(event, item, "move")
+                        }}
                         onKeyDown={(event) => {
+                          if (readonly) {
+                            return
+                          }
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault()
                             onEdit(item)
@@ -437,13 +481,27 @@ export function ScheduleCalendar({
                       >
                         <div
                           className="absolute left-0 top-0 flex h-full w-3 cursor-ew-resize items-center justify-center bg-primary/15"
-                          onPointerDown={(event) => handlePointerDown(event, item, "resize", "start")}
+                          onPointerDown={(event) => {
+                            if (readonly) {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              return
+                            }
+                            handlePointerDown(event, item, "resize", "start")
+                          }}
                         >
                           <GripVerticalIcon className="size-3" />
                         </div>
                         <div
                           className="absolute right-0 top-0 flex h-full w-3 cursor-ew-resize items-center justify-center bg-primary/15"
-                          onPointerDown={(event) => handlePointerDown(event, item, "resize", "end")}
+                          onPointerDown={(event) => {
+                            if (readonly) {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              return
+                            }
+                            handlePointerDown(event, item, "resize", "end")
+                          }}
                         >
                           <GripVerticalIcon className="size-3" />
                         </div>

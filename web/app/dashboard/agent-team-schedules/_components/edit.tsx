@@ -61,6 +61,34 @@ const editFormSchema = z.object({
   endAt: z.string().trim().min(1, "结束时间不能为空"),
   sourceType: z.enum(["manual", "batch_import", "template_generate"], { message: "请选择排班来源" }),
   remark: z.string().trim(),
+}).superRefine((value, ctx) => {
+  const startAt = parseDateTimeLocal(value.startAt)
+  const endAt = parseDateTimeLocal(value.endAt)
+  if (!startAt || !endAt) {
+    return
+  }
+  if (!endAt || endAt <= startAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["endAt"],
+      message: "结束时间必须晚于开始时间",
+    })
+    return
+  }
+  if (!isSameLocalDay(startAt, endAt)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["endAt"],
+      message: "单条排班记录不能跨天",
+    })
+  }
+  if (startAt < startOfLocalDay(new Date())) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["startAt"],
+      message: "不能添加或修改历史日期的排班",
+    })
+  }
 })
 
 type EditForm = z.infer<typeof editFormSchema>
@@ -75,6 +103,28 @@ function toDateTimeLocal(value?: string) {
     return ""
   }
   return value.replace(" ", "T").slice(0, 16)
+}
+
+function parseDateTimeLocal(value: string) {
+  const ret = new Date(value)
+  return Number.isNaN(ret.getTime()) ? null : ret
+}
+
+function startOfLocalDay(value: Date) {
+  const ret = new Date(value)
+  ret.setHours(0, 0, 0, 0)
+  return ret
+}
+
+function isSameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+function todayDateTimeLocalMin() {
+  const today = startOfLocalDay(new Date())
+  const month = String(today.getMonth() + 1).padStart(2, "0")
+  const day = String(today.getDate()).padStart(2, "0")
+  return `${today.getFullYear()}-${month}-${day}T00:00`
 }
 
 function buildForm(item: AdminAgentTeamSchedule | null, defaultValues?: Partial<CreateAdminAgentTeamSchedulePayload> | null): EditForm {
@@ -167,6 +217,7 @@ function ScheduleEditDialogBody({
     register,
     formState: { errors },
   } = form
+  const minDateTime = todayDateTimeLocalMin()
 
   useEffect(() => {
     async function loadDetail() {
@@ -235,14 +286,14 @@ function ScheduleEditDialogBody({
               <Field data-invalid={!!errors.startAt}>
                 <FieldLabel htmlFor="agent-team-schedule-start-at">开始时间</FieldLabel>
                 <FieldContent>
-                  <Input id="agent-team-schedule-start-at" type="datetime-local" {...register("startAt")} />
+                  <Input id="agent-team-schedule-start-at" type="datetime-local" min={minDateTime} {...register("startAt")} />
                   <FieldError errors={[errors.startAt]} />
                 </FieldContent>
               </Field>
               <Field data-invalid={!!errors.endAt}>
                 <FieldLabel htmlFor="agent-team-schedule-end-at">结束时间</FieldLabel>
                 <FieldContent>
-                  <Input id="agent-team-schedule-end-at" type="datetime-local" {...register("endAt")} />
+                  <Input id="agent-team-schedule-end-at" type="datetime-local" min={minDateTime} {...register("endAt")} />
                   <FieldError errors={[errors.endAt]} />
                 </FieldContent>
               </Field>
