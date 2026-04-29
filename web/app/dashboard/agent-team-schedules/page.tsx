@@ -8,6 +8,7 @@ import {
   CalendarSearchIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  LayersIcon,
   ListIcon,
   MoreHorizontalIcon,
   PlusIcon,
@@ -49,6 +50,7 @@ import {
   type UpdateAdminAgentTeamSchedulePayload,
 } from "@/lib/api/admin"
 import { formatDateTime } from "@/lib/utils"
+import { BatchScheduleDialog } from "./_components/batch-schedule-dialog"
 import { ScheduleCalendar } from "./_components/calendar"
 import {
   addDays,
@@ -89,6 +91,7 @@ export default function DashboardAgentTeamSchedulesPage() {
   const [saving, setSaving] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<AdminAgentTeamSchedule | null>(null)
   const [dialogDefaults, setDialogDefaults] = useState<Partial<CreateAdminAgentTeamSchedulePayload> | null>(null)
   const [teams, setTeams] = useState<AdminAgentTeam[]>([])
@@ -230,6 +233,10 @@ export default function DashboardAgentTeamSchedulesPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleBatchSuccess() {
+    await refreshActiveView()
   }
 
   async function handleDeleteById(id: number) {
@@ -374,6 +381,10 @@ export default function DashboardAgentTeamSchedulesPage() {
               <RefreshCwIcon className={loading || calendarLoading ? "animate-spin" : ""} />
               刷新
             </Button>
+            <Button variant="outline" onClick={() => setBatchDialogOpen(true)}>
+              <LayersIcon />
+              批量排班
+            </Button>
             <Button onClick={() => openCreateDialog()}>
               <PlusIcon />
               新建
@@ -485,6 +496,11 @@ export default function DashboardAgentTeamSchedulesPage() {
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleSubmit}
         onDelete={handleDeleteById}
+      />
+      <BatchScheduleDialog
+        open={batchDialogOpen}
+        onOpenChange={setBatchDialogOpen}
+        onSuccess={handleBatchSuccess}
       />
     </>
   )
