@@ -1,6 +1,7 @@
 "use client"
 
 import { CalendarPlusIcon, GripVerticalIcon } from "lucide-react"
+import { useState, type PointerEvent as ReactPointerEvent } from "react"
 
 import type {
   AdminAgentTeam,
@@ -44,6 +45,15 @@ type DragState =
       moved: boolean
     }
 
+type InteractionPreview = {
+  itemId: number
+  date: string | null
+  label: string
+  invalid: boolean
+  x: number
+  y: number
+}
+
 function addDays(date: Date, days: number) {
   const ret = new Date(date)
   ret.setDate(ret.getDate() + days)
@@ -84,6 +94,10 @@ function formatDateTimeValue(date: Date) {
   const minute = String(date.getMinutes()).padStart(2, "0")
   const second = String(date.getSeconds()).padStart(2, "0")
   return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}:${second}`
+}
+
+function formatTime(dateTime: string) {
+  return formatDateTime(dateTime).slice(11, 16)
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -158,6 +172,23 @@ function buildResizePayload(
   }
 }
 
+function buildPreviewFromPayload(
+  itemId: number,
+  date: string | null,
+  payload: UpdateAdminAgentTeamSchedulePayload | null,
+  point: { x: number; y: number },
+  fallbackLabel: string
+): InteractionPreview {
+  return {
+    itemId,
+    date,
+    label: payload ? `${formatTime(payload.startAt)} - ${formatTime(payload.endAt)}` : fallbackLabel,
+    invalid: !payload,
+    x: point.x,
+    y: point.y,
+  }
+}
+
 function intersectsDay(item: AdminAgentTeamSchedule, day: Date) {
   const dayStart = startOfDay(day)
   const dayEnd = addDays(dayStart, 1)
@@ -189,6 +220,7 @@ export function ScheduleCalendar({
 }: ScheduleCalendarProps) {
   const days = buildCalendarDays(calendarStart, calendarEnd)
   const defaultTeamID = teams[0]?.id ?? 0
+  const [interactionPreview, setInteractionPreview] = useState<InteractionPreview | null>(null)
 
   function handleBlankCellClick(day: Date) {
     const startAt = new Date(day)
@@ -204,11 +236,60 @@ export function ScheduleCalendar({
     })
   }
 
-  function handlePointerDown(event: React.PointerEvent, item: AdminAgentTeamSchedule, type: DragState["type"], edge?: "start" | "end") {
+  function buildInteractionPreview(state: DragState, pointerEvent: PointerEvent): InteractionPreview | null {
+    const cell = getDropCell(pointerEvent)
+    if (!cell) {
+      return {
+        itemId: state.item.id,
+        date: null,
+        label: "拖到日历日期格内",
+        invalid: true,
+        x: pointerEvent.clientX,
+        y: pointerEvent.clientY,
+      }
+    }
+
+    const date = cell.getAttribute("data-date")
+    if (!date) {
+      return null
+    }
+
+    const point = { x: pointerEvent.clientX, y: pointerEvent.clientY }
+    if (state.type === "move") {
+      return buildPreviewFromPayload(state.item.id, date, buildMovePayload(state.item, date), point, "无法移动到这里")
+    }
+
+    const payload = buildResizePayload(state.item, state.edge, getPointerDateInCell(pointerEvent, cell))
+    return buildPreviewFromPayload(state.item.id, date, payload, point, "至少保留 15 分钟")
+  }
+
+  function cleanupPointerInteraction(
+    target: HTMLElement,
+    pointerId: number,
+    handlePointerMove: (moveEvent: PointerEvent) => void,
+    handlePointerUp: (upEvent: PointerEvent) => void,
+    handlePointerCancel: () => void
+  ) {
+    if (target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId)
+    }
+    window.removeEventListener("pointermove", handlePointerMove)
+    window.removeEventListener("pointerup", handlePointerUp)
+    window.removeEventListener("pointercancel", handlePointerCancel)
+    setInteractionPreview(null)
+  }
+
+  function handlePointerDown(event: ReactPointerEvent, item: AdminAgentTeamSchedule, type: DragState["type"], edge?: "start" | "end") {
     event.preventDefault()
     event.stopPropagation()
     const target = event.currentTarget as HTMLElement
-    target.setPointerCapture(event.pointerId)
+    if (target.isConnected) {
+      try {
+        target.setPointerCapture(event.pointerId)
+      } catch {
+        // Some synthetic/browser edge events do not expose a capturable pointer id.
+      }
+    }
     const state: DragState =
       type === "resize"
         ? { type: "resize", edge: edge ?? "end", item, moved: false }
@@ -218,16 +299,17 @@ export function ScheduleCalendar({
       if (state.type === "move") {
         if (Math.abs(moveEvent.clientX - state.startX) > 4 || Math.abs(moveEvent.clientY - state.startY) > 4) {
           state.moved = true
+        } else {
+          return
         }
       } else {
         state.moved = true
       }
+      setInteractionPreview(buildInteractionPreview(state, moveEvent))
     }
 
     async function handlePointerUp(upEvent: PointerEvent) {
-      target.releasePointerCapture(event.pointerId)
-      window.removeEventListener("pointermove", handlePointerMove)
-      window.removeEventListener("pointerup", handlePointerUp)
+      cleanupPointerInteraction(target, event.pointerId, handlePointerMove, handlePointerUp, handlePointerCancel)
       if (!state.moved) {
         onEdit(item)
         return
@@ -250,8 +332,13 @@ export function ScheduleCalendar({
       }
     }
 
+    function handlePointerCancel() {
+      cleanupPointerInteraction(target, event.pointerId, handlePointerMove, handlePointerUp, handlePointerCancel)
+    }
+
     window.addEventListener("pointermove", handlePointerMove)
     window.addEventListener("pointerup", handlePointerUp)
+    window.addEventListener("pointercancel", handlePointerCancel)
   }
 
   if (teams.length === 0 && !loading) {
@@ -286,7 +373,9 @@ export function ScheduleCalendar({
               className={cn(
                 "min-h-36 border-l border-t bg-background p-2 text-left outline-none transition-colors first:border-l-0 hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring",
                 dayIndex % 7 === 0 && "border-l-0",
-                !inMonth && "bg-muted/20 text-muted-foreground"
+                !inMonth && "bg-muted/20 text-muted-foreground",
+                interactionPreview?.date === date &&
+                  (interactionPreview.invalid ? "bg-destructive/5 ring-2 ring-destructive/30" : "bg-primary/5 ring-2 ring-primary/35")
               )}
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest("[data-schedule-block]")) {
@@ -309,6 +398,7 @@ export function ScheduleCalendar({
                 {daySchedules.slice(0, 5).map((item) => {
                   const teamName = item.teamName || teams.find((team) => team.id === item.teamId)?.name || `客服组#${item.teamId}`
                   const busy = savingId === item.id
+                  const active = interactionPreview?.itemId === item.id
                   return (
                     <div
                       key={`${item.id}-${date}`}
@@ -316,7 +406,8 @@ export function ScheduleCalendar({
                       role="button"
                       tabIndex={0}
                       className={cn(
-                        "relative cursor-grab rounded-md border border-primary/20 bg-primary/10 px-2 py-1.5 pl-4 pr-4 text-primary shadow-sm outline-none active:cursor-grabbing",
+                        "relative cursor-grab rounded-md border border-primary/20 bg-primary/10 px-2 py-1.5 pl-4 pr-4 text-primary shadow-sm outline-none transition active:cursor-grabbing",
+                        active && "scale-[0.98] border-primary/50 bg-primary/15 opacity-80 ring-2 ring-primary/30",
                         busy && "pointer-events-none opacity-60"
                       )}
                       onPointerDown={(event) => handlePointerDown(event, item, "move")}
@@ -341,7 +432,7 @@ export function ScheduleCalendar({
                       </div>
                       <div className="truncate text-xs font-medium">{teamName}</div>
                       <div className="truncate text-xs">
-                        {formatDateTime(item.startAt).slice(11, 16)} - {formatDateTime(item.endAt).slice(11, 16)}
+                        {formatTime(item.startAt)} - {formatTime(item.endAt)}
                       </div>
                       {item.remark ? <div className="truncate text-[11px] text-primary/80">{item.remark}</div> : null}
                     </div>
@@ -355,6 +446,21 @@ export function ScheduleCalendar({
           )
         })}
       </div>
+      {interactionPreview ? (
+        <div
+          data-schedule-preview
+          className={cn(
+            "pointer-events-none fixed z-50 rounded-md border bg-popover px-3 py-2 text-xs font-medium text-popover-foreground shadow-md",
+            interactionPreview.invalid && "border-destructive/40 bg-destructive text-destructive-foreground"
+          )}
+          style={{
+            left: interactionPreview.x + 12,
+            top: interactionPreview.y + 12,
+          }}
+        >
+          {interactionPreview.label}
+        </div>
+      ) : null}
     </div>
   )
 }
