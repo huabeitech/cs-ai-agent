@@ -5,6 +5,7 @@ import {
   CalendarClockIcon,
   CalendarDaysIcon,
   CalendarRangeIcon,
+  CalendarSearchIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ListIcon,
@@ -270,6 +271,12 @@ export default function DashboardAgentTeamSchedulesPage() {
     }
   }
 
+  function goToToday() {
+    const today = new Date()
+    setMonthStart(startOfMonth(today))
+    setWeekStart(startOfWeek(today))
+  }
+
   return (
     <>
       <div className="flex h-[calc(100vh-var(--header-height))] min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6">
@@ -332,6 +339,12 @@ export default function DashboardAgentTeamSchedulesPage() {
             ) : null}
             {viewMode === "week" ? (
               <div className="text-sm text-muted-foreground">{formatWeekTitle(weekStart)}</div>
+            ) : null}
+            {viewMode !== "list" ? (
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                <CalendarSearchIcon />
+                今天
+              </Button>
             ) : null}
           </div>
 

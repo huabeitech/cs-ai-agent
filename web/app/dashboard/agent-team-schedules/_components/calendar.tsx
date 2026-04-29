@@ -10,6 +10,7 @@ import type {
   UpdateAdminAgentTeamSchedulePayload,
 } from "@/lib/api/admin"
 import { cn, formatDateTime } from "@/lib/utils"
+import { isSameLocalDay } from "./calendar-date-range"
 import { buildDayTimeLayout } from "./calendar-time-layout"
 
 const weekDayNames = ["一", "二", "三", "四", "五", "六", "日"]
@@ -129,10 +130,6 @@ function getDropCell(event: PointerEvent) {
 
 function isHistoricalDay(day: Date) {
   return startOfDay(day).getTime() < startOfDay(new Date()).getTime()
-}
-
-function isSameLocalDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
 function buildMovePayload(item: AdminAgentTeamSchedule, date: string): UpdateAdminAgentTeamSchedulePayload {
@@ -380,6 +377,7 @@ export function ScheduleCalendar({
     const date = formatDate(day)
     const inMonth = options?.inMonth ?? day.getMonth() === monthStart.getMonth()
     const historical = isHistoricalDay(day)
+    const today = isSameLocalDay(day, new Date())
     const daySchedules = schedules
       .filter((item) => intersectsDay(item, day))
       .sort((a, b) => parseLocalDateTime(a.startAt).getTime() - parseLocalDateTime(b.startAt).getTime())
@@ -428,7 +426,14 @@ export function ScheduleCalendar({
               <div className="mt-0.5 text-[10px] leading-none text-muted-foreground">{dayTimeLayout.rangeLabel}</div>
             ) : null}
           </div>
-          {historical ? null : <CalendarPlusIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />}
+          <div className="flex shrink-0 items-center gap-1">
+            {today ? (
+              <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary-foreground">
+                今天
+              </span>
+            ) : null}
+            {historical ? null : <CalendarPlusIcon className="size-3.5 text-muted-foreground" />}
+          </div>
         </div>
         <div className="space-y-1">
           {daySchedules.slice(0, 5).map((item) => {

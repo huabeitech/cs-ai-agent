@@ -12,6 +12,10 @@ export function startOfWeek(date: Date) {
   return ret
 }
 
+export function isSameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
 export function startOfMonth(date: Date) {
   const ret = startOfDay(date)
   ret.setDate(1)
