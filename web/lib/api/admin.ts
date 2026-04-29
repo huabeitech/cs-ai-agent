@@ -525,6 +525,38 @@ export type UpdateAdminAgentTeamSchedulePayload =
     id: number
   }
 
+export type BatchAdminAgentTeamSchedulePayload = {
+  teamIds: number[]
+  startDate: string
+  endDate: string
+  weekdays: number[]
+  startTime: string
+  endTime: string
+  remark: string
+}
+
+export type AdminAgentTeamScheduleBatchPreviewItem = {
+  teamId: number
+  teamName: string
+  date: string
+  weekday: number
+  startAt: string
+  endAt: string
+  remark: string
+  conflict: boolean
+  conflictReason: string
+}
+
+export type AdminAgentTeamScheduleBatchPreview = {
+  total: number
+  conflict: boolean
+  items: AdminAgentTeamScheduleBatchPreviewItem[]
+}
+
+export type AdminAgentTeamScheduleBatchGenerateResult = {
+  created: number
+}
+
 function toQueryString(query?: Record<string, string | number | undefined>) {
   if (!query) {
     return ""
@@ -1121,6 +1153,26 @@ export function deleteAgentTeamSchedule(id: number) {
     method: "POST",
     body: JSON.stringify({ id }),
   })
+}
+
+export function previewAgentTeamScheduleBatch(payload: BatchAdminAgentTeamSchedulePayload) {
+  return request<AdminAgentTeamScheduleBatchPreview>(
+    "/api/dashboard/agent-team-schedule/batch_preview",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  )
+}
+
+export function generateAgentTeamScheduleBatch(payload: BatchAdminAgentTeamSchedulePayload) {
+  return request<AdminAgentTeamScheduleBatchGenerateResult>(
+    "/api/dashboard/agent-team-schedule/batch_generate",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  )
 }
 
 export type AIConfig = {
