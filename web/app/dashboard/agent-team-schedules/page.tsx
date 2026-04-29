@@ -296,8 +296,8 @@ export default function DashboardAgentTeamSchedulesPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex h-[calc(100vh-var(--header-height))] min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6">
+        <div className="shrink-0 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <ButtonGroup>
               <Button
@@ -369,22 +369,24 @@ export default function DashboardAgentTeamSchedulesPage() {
         </div>
 
         {viewMode === "calendar" ? (
-          <ScheduleCalendar
-            monthStart={monthStart}
-            calendarStart={startOfMonthCalendar(monthStart)}
-            calendarEnd={endOfMonthCalendar(monthStart)}
-            teams={visibleTeams}
-            schedules={calendarItems}
-            loading={calendarLoading}
-            savingId={actionLoadingId}
-            onCreate={openCreateDialog}
-            onEdit={openEditDialog}
-            onMove={handleCalendarUpdate}
-            onResize={handleCalendarUpdate}
-          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            <ScheduleCalendar
+              monthStart={monthStart}
+              calendarStart={startOfMonthCalendar(monthStart)}
+              calendarEnd={endOfMonthCalendar(monthStart)}
+              teams={visibleTeams}
+              schedules={calendarItems}
+              loading={calendarLoading}
+              savingId={actionLoadingId}
+              onCreate={openCreateDialog}
+              onEdit={openEditDialog}
+              onMove={handleCalendarUpdate}
+              onResize={handleCalendarUpdate}
+            />
+          </div>
         ) : (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-lg border bg-background">
+          <div className="min-h-0 flex-1 space-y-4 overflow-auto">
+            <div className="min-w-[720px] overflow-hidden rounded-lg border bg-background">
               <Table>
                 <TableHeader className="bg-muted/40">
                   <TableRow>

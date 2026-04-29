@@ -263,7 +263,7 @@ export function ScheduleCalendar({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-background">
+    <div className="min-w-[960px] overflow-hidden rounded-lg border bg-background">
       <div className="grid grid-cols-7 border-b bg-muted/40">
         {weekDayNames.map((name) => (
           <div key={name} className="flex h-10 items-center justify-center border-l first:border-l-0 text-sm font-medium">
