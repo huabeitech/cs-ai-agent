@@ -67,3 +67,13 @@ type AgentTeamScheduleCalendarRequest struct {
 	EndAt   string `json:"endAt"`
 	TeamID  int64  `json:"teamId"`
 }
+
+type AgentTeamScheduleBatchRequest struct {
+	TeamIDs   []int64 `json:"teamIds"`
+	StartDate string  `json:"startDate"`
+	EndDate   string  `json:"endDate"`
+	Weekdays  []int   `json:"weekdays"`
+	StartTime string  `json:"startTime"`
+	EndTime   string  `json:"endTime"`
+	Remark    string  `json:"remark"`
+}

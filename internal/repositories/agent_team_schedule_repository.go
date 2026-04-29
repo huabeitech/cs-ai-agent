@@ -49,6 +49,26 @@ func (r *agentTeamScheduleRepository) FindByTimeRange(db *gorm.DB, startAt, endA
 	return
 }
 
+func (r *agentTeamScheduleRepository) FindOverlappingByTeamIDsAndTimeRange(db *gorm.DB, teamIDs []int64, startAt, endAt time.Time) (list []models.AgentTeamSchedule) {
+	if len(teamIDs) == 0 {
+		return
+	}
+	db.Model(&models.AgentTeamSchedule{}).
+		Where("team_id IN ? AND start_at < ? AND end_at > ?", teamIDs, endAt, startAt).
+		Order("team_id ASC").
+		Order("start_at ASC").
+		Order("id ASC").
+		Find(&list)
+	return
+}
+
+func (r *agentTeamScheduleRepository) CreateBatch(db *gorm.DB, list []models.AgentTeamSchedule) error {
+	if len(list) == 0 {
+		return nil
+	}
+	return db.Create(&list).Error
+}
+
 func (r *agentTeamScheduleRepository) FindOne(db *gorm.DB, cnd *sqls.Cnd) *models.AgentTeamSchedule {
 	ret := &models.AgentTeamSchedule{}
 	if err := cnd.FindOne(db, &ret); err != nil {
