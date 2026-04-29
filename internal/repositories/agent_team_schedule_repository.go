@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/enums"
 	"time"
 
 	"github.com/mlogclub/simple/sqls"
@@ -54,7 +55,7 @@ func (r *agentTeamScheduleRepository) FindOverlappingByTeamIDsAndTimeRange(db *g
 		return
 	}
 	db.Model(&models.AgentTeamSchedule{}).
-		Where("team_id IN ? AND start_at < ? AND end_at > ?", teamIDs, endAt, startAt).
+		Where("team_id IN ? AND status = ? AND start_at < ? AND end_at > ?", teamIDs, enums.StatusOk, endAt, startAt).
 		Order("team_id ASC").
 		Order("start_at ASC").
 		Order("id ASC").

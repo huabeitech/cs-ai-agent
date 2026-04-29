@@ -354,6 +354,39 @@ func TestAgentTeamScheduleServiceBatchPreviewMarksConflicts(t *testing.T) {
 	}
 }
 
+func TestAgentTeamScheduleServiceBatchPreviewIgnoresDisabledOverlappingSchedule(t *testing.T) {
+	db := setupAgentTeamScheduleTestDB(t)
+	createAgentTeamScheduleTestTeams(t, db)
+	targetDay := time.Now().AddDate(0, 0, 2)
+	existing := models.AgentTeamSchedule{
+		TeamID:  1,
+		StartAt: parseTestDateTime(t, formatTestDateTime(targetDay, "10:00:00")),
+		EndAt:   parseTestDateTime(t, formatTestDateTime(targetDay, "12:00:00")),
+		Status:  enums.StatusDisabled,
+	}
+	if err := db.Create(&existing).Error; err != nil {
+		t.Fatalf("create existing schedule error = %v", err)
+	}
+
+	preview, err := services.AgentTeamScheduleService.BatchPreview(request.AgentTeamScheduleBatchRequest{
+		TeamIDs:   []int64{1},
+		StartDate: targetDay.Format(time.DateOnly),
+		EndDate:   targetDay.Format(time.DateOnly),
+		Weekdays:  []int{weekdayForRequest(targetDay)},
+		StartTime: "09:00",
+		EndTime:   "18:00",
+	}, testOperator())
+	if err != nil {
+		t.Fatalf("BatchPreview() error = %v", err)
+	}
+	if preview.Conflict {
+		t.Fatalf("expected disabled overlapping schedule to be ignored, got %+v", preview)
+	}
+	if len(preview.Items) != 1 || preview.Items[0].Conflict {
+		t.Fatalf("expected one non-conflicting preview item, got %+v", preview.Items)
+	}
+}
+
 func TestAgentTeamScheduleServiceBatchGenerateCreatesAllSchedules(t *testing.T) {
 	db := setupAgentTeamScheduleTestDB(t)
 	createAgentTeamScheduleTestTeams(t, db)
