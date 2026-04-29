@@ -53,6 +53,38 @@ func (c *AgentTeamScheduleController) AnyCalendar() *web.JsonResult {
 	return web.JsonData(results)
 }
 
+func (c *AgentTeamScheduleController) PostBatch_preview() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleBatchGenerate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.AgentTeamScheduleBatchRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	ret, err := services.AgentTeamScheduleService.BatchPreview(req, operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(ret)
+}
+
+func (c *AgentTeamScheduleController) PostBatch_generate() *web.JsonResult {
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleBatchGenerate)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	req := request.AgentTeamScheduleBatchRequest{}
+	if err := params.ReadJSON(c.Ctx, &req); err != nil {
+		return web.JsonError(err)
+	}
+	ret, err := services.AgentTeamScheduleService.BatchGenerate(req, operator)
+	if err != nil {
+		return web.JsonError(err)
+	}
+	return web.JsonData(ret)
+}
+
 func (c *AgentTeamScheduleController) GetBy(id int64) *web.JsonResult {
 	if _, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionAgentTeamScheduleView); err != nil {
 		return web.JsonError(err)
