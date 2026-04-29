@@ -8,7 +8,6 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
-	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
@@ -214,9 +213,9 @@ func TestAgentTeamScheduleServiceBatchPreviewExpandsSharedRule(t *testing.T) {
 		teamID int64
 		date   string
 	}
-	itemsByKey := make(map[previewKey]response.AgentTeamScheduleBatchPreviewItem)
+	itemsByKey := make(map[previewKey]services.AgentTeamScheduleBatchPreviewItem)
 	for _, item := range preview.Items {
-		itemsByKey[previewKey{teamID: item.TeamID, date: item.Date}] = item
+		itemsByKey[previewKey{teamID: item.TeamID, date: item.Date.Format(time.DateOnly)}] = item
 	}
 	expected := []struct {
 		teamID  int64
@@ -235,8 +234,8 @@ func TestAgentTeamScheduleServiceBatchPreviewExpandsSharedRule(t *testing.T) {
 			t.Fatalf("expected preview item for teamID=%d date=%s, got %+v", want.teamID, wantDate, preview.Items)
 		}
 		if item.Weekday != want.weekday ||
-			item.StartAt != formatTestDateTime(want.date, "09:00:00") ||
-			item.EndAt != formatTestDateTime(want.date, "18:00:00") ||
+			item.StartAt.Format(time.DateTime) != formatTestDateTime(want.date, "09:00:00") ||
+			item.EndAt.Format(time.DateTime) != formatTestDateTime(want.date, "18:00:00") ||
 			item.Remark != "工作日白班" {
 			t.Fatalf("unexpected preview item for teamID=%d date=%s: %+v", want.teamID, wantDate, item)
 		}
@@ -334,7 +333,7 @@ func TestAgentTeamScheduleServiceBatchPreviewMarksConflicts(t *testing.T) {
 	if !preview.Conflict {
 		t.Fatalf("expected preview conflict, got %+v", preview)
 	}
-	itemsByTeamID := make(map[int64]response.AgentTeamScheduleBatchPreviewItem)
+	itemsByTeamID := make(map[int64]services.AgentTeamScheduleBatchPreviewItem)
 	for _, item := range preview.Items {
 		itemsByTeamID[item.TeamID] = item
 	}

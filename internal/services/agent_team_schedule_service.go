@@ -4,7 +4,6 @@ import (
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/dto"
 	"cs-agent/internal/pkg/dto/request"
-	"cs-agent/internal/pkg/dto/response"
 	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/pkg/errorsx"
 	"cs-agent/internal/pkg/utils"
@@ -31,6 +30,28 @@ type agentTeamScheduleService struct {
 }
 
 const maxAgentTeamScheduleBatchItems = 500
+
+type AgentTeamScheduleBatchPreviewResult struct {
+	Total    int
+	Conflict bool
+	Items    []AgentTeamScheduleBatchPreviewItem
+}
+
+type AgentTeamScheduleBatchPreviewItem struct {
+	TeamID         int64
+	TeamName       string
+	Date           time.Time
+	Weekday        int
+	StartAt        time.Time
+	EndAt          time.Time
+	Remark         string
+	Conflict       bool
+	ConflictReason string
+}
+
+type AgentTeamScheduleBatchGenerateResult struct {
+	Created int
+}
 
 type batchScheduleCandidate struct {
 	TeamID   int64
@@ -163,7 +184,7 @@ func (s *agentTeamScheduleService) DeleteAgentTeamSchedule(id int64) error {
 	return nil
 }
 
-func (s *agentTeamScheduleService) BatchPreview(req request.AgentTeamScheduleBatchRequest, operator *dto.AuthPrincipal) (*response.AgentTeamScheduleBatchPreviewResponse, error) {
+func (s *agentTeamScheduleService) BatchPreview(req request.AgentTeamScheduleBatchRequest, operator *dto.AuthPrincipal) (*AgentTeamScheduleBatchPreviewResult, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
 	}
@@ -172,10 +193,10 @@ func (s *agentTeamScheduleService) BatchPreview(req request.AgentTeamScheduleBat
 		return nil, err
 	}
 	conflicts := s.findBatchConflict(candidates)
-	return buildBatchPreviewResponse(candidates, conflicts), nil
+	return buildBatchPreviewResult(candidates, conflicts), nil
 }
 
-func (s *agentTeamScheduleService) BatchGenerate(req request.AgentTeamScheduleBatchRequest, operator *dto.AuthPrincipal) (*response.AgentTeamScheduleBatchGenerateResponse, error) {
+func (s *agentTeamScheduleService) BatchGenerate(req request.AgentTeamScheduleBatchRequest, operator *dto.AuthPrincipal) (*AgentTeamScheduleBatchGenerateResult, error) {
 	if operator == nil {
 		return nil, errorsx.Unauthorized("未登录或登录已过期")
 	}
@@ -220,7 +241,7 @@ func (s *agentTeamScheduleService) BatchGenerate(req request.AgentTeamScheduleBa
 	for i := range schedules {
 		s.dispatchPendingConversationsIfActive(&schedules[i])
 	}
-	return &response.AgentTeamScheduleBatchGenerateResponse{Created: len(schedules)}, nil
+	return &AgentTeamScheduleBatchGenerateResult{Created: len(schedules)}, nil
 }
 
 func (s *agentTeamScheduleService) buildScheduleModel(id, teamID int64, startAt, endAt, remark string) (*models.AgentTeamSchedule, error) {
@@ -380,8 +401,8 @@ func combineDateAndClock(date, clock time.Time) time.Time {
 	return time.Date(year, month, day, hour, minute, second, 0, time.Local)
 }
 
-func buildBatchPreviewResponse(candidates []batchScheduleCandidate, conflicts map[int]string) *response.AgentTeamScheduleBatchPreviewResponse {
-	items := make([]response.AgentTeamScheduleBatchPreviewItem, 0, len(candidates))
+func buildBatchPreviewResult(candidates []batchScheduleCandidate, conflicts map[int]string) *AgentTeamScheduleBatchPreviewResult {
+	items := make([]AgentTeamScheduleBatchPreviewItem, 0, len(candidates))
 	hasConflict := false
 	for i, candidate := range candidates {
 		conflictReason := conflicts[i]
@@ -389,19 +410,19 @@ func buildBatchPreviewResponse(candidates []batchScheduleCandidate, conflicts ma
 		if conflict {
 			hasConflict = true
 		}
-		items = append(items, response.AgentTeamScheduleBatchPreviewItem{
+		items = append(items, AgentTeamScheduleBatchPreviewItem{
 			TeamID:         candidate.TeamID,
 			TeamName:       candidate.TeamName,
-			Date:           candidate.Date.Format(time.DateOnly),
+			Date:           candidate.Date,
 			Weekday:        weekdayForBatchRequest(candidate.Date),
-			StartAt:        candidate.StartAt.Format(time.DateTime),
-			EndAt:          candidate.EndAt.Format(time.DateTime),
+			StartAt:        candidate.StartAt,
+			EndAt:          candidate.EndAt,
 			Remark:         candidate.Remark,
 			Conflict:       conflict,
 			ConflictReason: conflictReason,
 		})
 	}
-	return &response.AgentTeamScheduleBatchPreviewResponse{
+	return &AgentTeamScheduleBatchPreviewResult{
 		Total:    len(items),
 		Conflict: hasConflict,
 		Items:    items,

@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"cs-agent/internal/builders"
 	"cs-agent/internal/models"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
@@ -66,7 +67,7 @@ func (c *AgentTeamScheduleController) PostBatch_preview() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(ret)
+	return web.JsonData(builders.BuildAgentTeamScheduleBatchPreviewResponse(ret))
 }
 
 func (c *AgentTeamScheduleController) PostBatch_generate() *web.JsonResult {
@@ -82,7 +83,7 @@ func (c *AgentTeamScheduleController) PostBatch_generate() *web.JsonResult {
 	if err != nil {
 		return web.JsonError(err)
 	}
-	return web.JsonData(ret)
+	return web.JsonData(builders.BuildAgentTeamScheduleBatchGenerateResponse(ret))
 }
 
 func (c *AgentTeamScheduleController) GetBy(id int64) *web.JsonResult {
