@@ -324,13 +324,6 @@ func setupAuthServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("migrate auth tables: %v", err)
 	}
 	sqls.SetDB(db)
-	t.Cleanup(func() {
-		sqls.SetDB(nil)
-		sqlDB, err := db.DB()
-		if err == nil {
-			_ = sqlDB.Close()
-		}
-	})
 	return db
 }
 
