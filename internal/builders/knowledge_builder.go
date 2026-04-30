@@ -54,6 +54,26 @@ func BuildKnowledgeDocument(item *models.KnowledgeDocument) response.KnowledgeDo
 	}
 }
 
+func BuildKnowledgeDocumentList(item *models.KnowledgeDocument) response.KnowledgeDocumentListResponse {
+	return response.KnowledgeDocumentListResponse{
+		ID:              item.ID,
+		KnowledgeBaseID: item.KnowledgeBaseID,
+		Title:           item.Title,
+		Status:          item.Status,
+		StatusName:      enums.GetStatusLabel(item.Status),
+		IndexStatus:     item.IndexStatus,
+		IndexStatusName: enums.GetKnowledgeDocumentIndexStatusLabel(item.IndexStatus),
+		IndexedAt:       item.IndexedAt,
+		IndexError:      item.IndexError,
+		ContentHash:     item.ContentHash,
+		ContentType:     item.ContentType,
+		CreatedAt:       item.CreatedAt,
+		UpdatedAt:       item.UpdatedAt,
+		CreateUserName:  item.CreateUserName,
+		UpdateUserName:  item.UpdateUserName,
+	}
+}
+
 func BuildKnowledgeFAQ(item *models.KnowledgeFAQ) response.KnowledgeFAQResponse {
 	return response.KnowledgeFAQResponse{
 		ID:               item.ID,

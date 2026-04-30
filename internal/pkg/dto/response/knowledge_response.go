@@ -51,6 +51,25 @@ type KnowledgeDocumentResponse struct {
 	UpdateUserName    string                             `json:"updateUserName"`
 }
 
+type KnowledgeDocumentListResponse struct {
+	ID                int64                              `json:"id"`
+	KnowledgeBaseID   int64                              `json:"knowledgeBaseId"`
+	KnowledgeBaseName string                             `json:"knowledgeBaseName,omitempty"`
+	Title             string                             `json:"title"`
+	ContentType       enums.KnowledgeDocumentContentType `json:"contentType"`
+	Status            enums.Status                       `json:"status"`
+	StatusName        string                             `json:"statusName"`
+	IndexStatus       enums.KnowledgeDocumentIndexStatus `json:"indexStatus"`
+	IndexStatusName   string                             `json:"indexStatusName"`
+	IndexedAt         *time.Time                         `json:"indexedAt"`
+	IndexError        string                             `json:"indexError"`
+	ContentHash       string                             `json:"contentHash"`
+	CreatedAt         time.Time                          `json:"createdAt"`
+	UpdatedAt         time.Time                          `json:"updatedAt"`
+	CreateUserName    string                             `json:"createUserName"`
+	UpdateUserName    string                             `json:"updateUserName"`
+}
+
 type KnowledgeFAQResponse struct {
 	ID                int64                              `json:"id"`
 	KnowledgeBaseID   int64                              `json:"knowledgeBaseId"`

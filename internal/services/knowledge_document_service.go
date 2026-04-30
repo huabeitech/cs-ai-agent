@@ -54,6 +54,10 @@ func (s *knowledgeDocumentService) FindPageByCnd(cnd *sqls.Cnd) (list []models.K
 	return repositories.KnowledgeDocumentRepository.FindPageByCnd(sqls.DB(), cnd)
 }
 
+func (s *knowledgeDocumentService) FindPageListByCnd(cnd *sqls.Cnd) (list []models.KnowledgeDocument, paging *sqls.Paging) {
+	return repositories.KnowledgeDocumentRepository.FindPageListByCnd(sqls.DB(), cnd)
+}
+
 func (s *knowledgeDocumentService) Count(cnd *sqls.Cnd) int64 {
 	return repositories.KnowledgeDocumentRepository.Count(sqls.DB(), cnd)
 }

@@ -1336,6 +1336,8 @@ export type KnowledgeDocument = {
   updateUserName: string
 }
 
+export type KnowledgeDocumentListItem = Omit<KnowledgeDocument, "content">
+
 export type KnowledgeFAQ = {
   id: number
   knowledgeBaseId: number
@@ -1579,7 +1581,7 @@ export function rebuildKnowledgeBaseIndex(id: number) {
 export function fetchKnowledgeDocuments(
   query?: Record<string, string | number | undefined>
 ) {
-  return request<PageResult<KnowledgeDocument>>(
+  return request<PageResult<KnowledgeDocumentListItem>>(
     `/api/dashboard/knowledge-document/list${toQueryString(query)}`
   )
 }

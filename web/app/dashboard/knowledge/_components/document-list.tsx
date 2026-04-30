@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ListPagination } from "@/components/list-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,7 +48,7 @@ import {
   fetchKnowledgeDocuments,
   updateKnowledgeDocument,
   type CreateKnowledgeDocumentPayload,
-  type KnowledgeDocument,
+  type KnowledgeDocumentListItem,
   type PageResult,
 } from "@/lib/api/admin";
 import { getEnumLabel, getEnumOptions } from "@/lib/enums";
@@ -93,7 +94,7 @@ function getIndexStatusBadgeVariant(status: string) {
   }
 }
 
-function renderIndexStatusBadge(item: KnowledgeDocument) {
+function renderIndexStatusBadge(item: KnowledgeDocumentListItem) {
   const badge = (
     <Badge variant={getIndexStatusBadgeVariant(item.indexStatus)}>
       {item.indexStatusName}
@@ -121,21 +122,6 @@ function renderIndexStatusBadge(item: KnowledgeDocument) {
   )
 }
 
-function getDocumentPreview(content: string, contentType: string) {
-  const preview =
-    contentType === "markdown"
-      ? content
-          .replace(/[`*_>#-]/g, " ")
-          .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-          .replace(/\s+/g, " ")
-          .trim()
-      : content
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-  return preview || "暂无内容";
-}
-
 const VIEW_MODE_STORAGE_KEY = "knowledge-document-view-mode";
 
 export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentListProps) {
@@ -145,11 +131,13 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [indexStatusFilter, setIndexStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<number, { rebuildIndex: boolean; delete: boolean }>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<KnowledgeDocument | null>(
+  const [editingItem, setEditingItem] = useState<KnowledgeDocumentListItem | null>(
     null,
   );
   const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
@@ -157,14 +145,26 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return saved === "list" || saved === "grid" ? saved : "grid";
   });
-  const [documents, setDocuments] = useState<PageResult<KnowledgeDocument>>({
+  const [documents, setDocuments] = useState<PageResult<KnowledgeDocumentListItem>>({
     results: [],
     page: { page: 1, limit: 20, total: 0 },
   });
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (options?: {
+    keyword?: string;
+    statusFilter?: string;
+    indexStatusFilter?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const nextKeyword = options?.keyword ?? keyword;
+    const nextStatusFilter = options?.statusFilter ?? statusFilter;
+    const nextIndexStatusFilter = options?.indexStatusFilter ?? indexStatusFilter;
+    const nextPage = options?.page ?? page;
+    const nextLimit = options?.limit ?? limit;
+
     if (!knowledgeBaseId) {
-      setDocuments({ results: [], page: { page: 1, limit: 20, total: 0 } });
+      setDocuments({ results: [], page: { page: 1, limit, total: 0 } });
       setLoading(false);
       return;
     }
@@ -172,11 +172,12 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     setLoading(true);
     try {
       const data = await fetchKnowledgeDocuments({
-        title: keyword.trim() || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
-        indexStatus: indexStatusFilter === "all" ? undefined : indexStatusFilter,
+        title: nextKeyword.trim() || undefined,
+        status: nextStatusFilter === "all" ? undefined : nextStatusFilter,
+        indexStatus: nextIndexStatusFilter === "all" ? undefined : nextIndexStatusFilter,
         knowledgeBaseId,
-        limit: 1000,
+        page: nextPage,
+        limit: nextLimit,
       });
       setDocuments(data);
     } catch (error) {
@@ -184,7 +185,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     } finally {
       setLoading(false);
     }
-  }, [indexStatusFilter, keyword, statusFilter, knowledgeBaseId]);
+  }, [indexStatusFilter, keyword, statusFilter, knowledgeBaseId, limit, page]);
 
   useEffect(() => {
     void loadData();
@@ -207,9 +208,19 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
   }
 
   function applyFilters() {
-    setKeyword(keywordInput);
-    setStatusFilter(statusFilterInput);
-    setIndexStatusFilter(indexStatusFilterInput);
+    const nextKeyword = keywordInput;
+    const nextStatusFilter = statusFilterInput;
+    const nextIndexStatusFilter = indexStatusFilterInput;
+    setKeyword(nextKeyword);
+    setStatusFilter(nextStatusFilter);
+    setIndexStatusFilter(nextIndexStatusFilter);
+    setPage(1);
+    void loadData({
+      keyword: nextKeyword,
+      statusFilter: nextStatusFilter,
+      indexStatusFilter: nextIndexStatusFilter,
+      page: 1,
+    });
   }
 
   function handleFilterKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -239,7 +250,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     });
   }, [onActionStateChange, loadData, openCreateDialog, viewMode, loading]);
 
-  function openEditDialog(item: KnowledgeDocument) {
+  function openEditDialog(item: KnowledgeDocumentListItem) {
     setEditingItem(item);
     setDialogOpen(true);
   }
@@ -281,7 +292,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     }
   }
 
-  async function handleDelete(item: KnowledgeDocument) {
+  async function handleDelete(item: KnowledgeDocumentListItem) {
     setActionLoadingMap((prev) => ({ ...prev, [item.id]: { ...prev[item.id], delete: true } }));
     try {
       await deleteKnowledgeDocument(item.id);
@@ -294,7 +305,7 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
     }
   }
 
-  async function handleBuildIndex(item: KnowledgeDocument) {
+  async function handleBuildIndex(item: KnowledgeDocumentListItem) {
     setActionLoadingMap((prev) => ({ ...prev, [item.id]: { ...prev[item.id], rebuildIndex: true } }));
     try {
       await buildKnowledgeDocumentIndex(item.id);
@@ -398,9 +409,6 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                               <div className="text-sm font-medium">{item.title}</div>
                               {renderIndexStatusBadge(item)}
                             </div>
-                            <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                              {getDocumentPreview(item.content, item.contentType)}
-                            </div>
                             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                               <span>{item.createUserName || "-"}</span>
                               <span>{formatDateTime(item.createdAt)}</span>
@@ -477,9 +485,6 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
                           <div className="truncate text-sm font-medium">{item.title}</div>
                           {renderIndexStatusBadge(item)}
                         </div>
-                        <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {getDocumentPreview(item.content, item.contentType)}
-                        </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                           {item.indexStatus === KnowledgeDocumentIndexStatus.Indexed
                             ? `索引时间：${formatDateTime(item.indexedAt)}`
@@ -550,6 +555,23 @@ export function DocumentList({ knowledgeBaseId, onActionStateChange }: DocumentL
             ) : null}
             </div>
           </ScrollArea>
+        </div>
+        <div className="border-t px-6 py-3">
+          <ListPagination
+            page={documents.page.page}
+            limit={documents.page.limit}
+            total={documents.page.total}
+            loading={loading}
+            onPageChange={(nextPage) => {
+              setPage(nextPage);
+              void loadData({ page: nextPage });
+            }}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+              void loadData({ limit: nextLimit, page: 1 });
+            }}
+          />
         </div>
       </div>
       <DocumentEditDialog

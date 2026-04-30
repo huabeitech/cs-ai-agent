@@ -62,6 +62,18 @@ func (r *knowledgeDocumentRepository) FindPageByCnd(db *gorm.DB, cnd *sqls.Cnd) 
 	return
 }
 
+func (r *knowledgeDocumentRepository) FindPageListByCnd(db *gorm.DB, cnd *sqls.Cnd) (list []models.KnowledgeDocument, paging *sqls.Paging) {
+	cnd.Find(db.Omit("content"), &list)
+	count := cnd.Count(db, &models.KnowledgeDocument{})
+
+	paging = &sqls.Paging{
+		Page:  cnd.Paging.Page,
+		Limit: cnd.Paging.Limit,
+		Total: count,
+	}
+	return
+}
+
 func (r *knowledgeDocumentRepository) Count(db *gorm.DB, cnd *sqls.Cnd) int64 {
 	return cnd.Count(db, &models.KnowledgeDocument{})
 }

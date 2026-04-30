@@ -39,10 +39,10 @@ func (c *KnowledgeDocumentController) AnyList() *web.JsonResult {
 		cnd.Where("index_status = ?", indexStatus)
 	}
 
-	list, paging := services.KnowledgeDocumentService.FindPageByCnd(cnd)
-	results := make([]response.KnowledgeDocumentResponse, 0, len(list))
+	list, paging := services.KnowledgeDocumentService.FindPageListByCnd(cnd)
+	results := make([]response.KnowledgeDocumentListResponse, 0, len(list))
 	for _, item := range list {
-		results = append(results, builders.BuildKnowledgeDocument(&item))
+		results = append(results, builders.BuildKnowledgeDocumentList(&item))
 	}
 	return web.JsonData(&web.PageResult{Results: results, Page: paging})
 }
