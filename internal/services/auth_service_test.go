@@ -155,6 +155,74 @@ func TestAuthServiceLoginCredentialLockout(t *testing.T) {
 	}
 }
 
+func TestAuthServiceCredentialLockoutDoesNotExtendWhileLocked(t *testing.T) {
+	db := setupAuthServiceTestDB(t)
+	createAuthTestUser(t, db, "admin", "secret")
+	now := time.Now()
+	entries := []models.LoginCredentialLog{
+		{
+			Principal: "admin",
+			UserID:    1,
+			Success:   false,
+			Reason:    "password mismatch",
+			CreatedAt: now.Add(-2 * time.Minute),
+		},
+		{
+			Principal: "admin",
+			UserID:    0,
+			Success:   false,
+			Reason:    "credential locked",
+			CreatedAt: now.Add(-1 * time.Minute),
+		},
+	}
+	if err := db.Create(&entries).Error; err != nil {
+		t.Fatalf("seed credential logs: %v", err)
+	}
+
+	ret, err := newAuthService().Login(request.LoginRequest{Username: "admin", Password: "secret"}, config.AuthConfig{
+		TokenTTLHours:        2,
+		MaxFailedAttempts:    2,
+		CredentialLockMinute: 15,
+	}, "127.0.0.1", "go-test")
+	if err != nil {
+		t.Fatalf("expected locked attempt logs not to extend lockout, got %v", err)
+	}
+	if ret == nil || !strings.HasPrefix(ret.AccessToken, "ak_") {
+		t.Fatalf("expected login response with ak_ token, got %+v", ret)
+	}
+}
+
+func TestAuthServiceCredentialLockoutNormalizesPrincipalCase(t *testing.T) {
+	db := setupAuthServiceTestDB(t)
+	createAuthTestUser(t, db, "admin", "secret")
+	if err := db.Create(&models.LoginCredentialLog{
+		Principal: "admin",
+		UserID:    1,
+		Success:   false,
+		Reason:    "password mismatch",
+		CreatedAt: time.Now().Add(-time.Minute),
+	}).Error; err != nil {
+		t.Fatalf("seed credential log: %v", err)
+	}
+
+	_, err := newAuthService().Login(request.LoginRequest{Username: "ADMIN", Password: "secret"}, config.AuthConfig{
+		TokenTTLHours:        2,
+		MaxFailedAttempts:    1,
+		CredentialLockMinute: 15,
+	}, "127.0.0.1", "go-test")
+	if !hasCode(err, errorsx.CodeAuthCredentialLocked) {
+		t.Fatalf("expected normalized principal to be locked, got %v", err)
+	}
+
+	var lockedLog models.LoginCredentialLog
+	if err := db.Order("id DESC").Take(&lockedLog).Error; err != nil {
+		t.Fatalf("query latest credential log: %v", err)
+	}
+	if lockedLog.Principal != "admin" || lockedLog.Reason != "credential locked" {
+		t.Fatalf("unexpected locked log: %+v", lockedLog)
+	}
+}
+
 func TestAuthServiceCredentialLockoutDisabledWhenMaxAttemptsNonPositive(t *testing.T) {
 	db := setupAuthServiceTestDB(t)
 	user := createAuthTestUser(t, db, "admin", "secret")

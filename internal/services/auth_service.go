@@ -81,23 +81,24 @@ func (s *authService) RequirePermission(ctx iris.Context, permission constants.P
 
 func (s *authService) Login(req request.LoginRequest, authCfg config.AuthConfig, clientIP, userAgent string) (*response.LoginResponse, error) {
 	username := strings.TrimSpace(req.Username)
+	principal := normalizeLoginPrincipal(username)
 	password := req.Password
 	if username == "" || strings.TrimSpace(password) == "" {
 		return nil, errorsx.InvalidParam("用户名和密码不能为空")
 	}
 
-	if s.isCredentialLocked(username, authCfg) {
-		_ = s.createLoginCredentialLog(username, 0, false, clientIP, userAgent, "credential locked")
+	if s.isCredentialLocked(principal, authCfg) {
+		_ = s.createLoginCredentialLog(principal, 0, false, clientIP, userAgent, "credential locked")
 		return nil, errorsx.CredentialLocked("登录失败次数过多，请稍后再试")
 	}
 
 	user := UserService.GetByUsername(username)
 	if user == nil || user.Status != enums.StatusOk {
-		_ = s.createLoginCredentialLog(username, 0, false, clientIP, userAgent, "user not found")
+		_ = s.createLoginCredentialLog(principal, 0, false, clientIP, userAgent, "user not found")
 		return nil, errorsx.InvalidAccount("用户名或密码错误")
 	}
 	if strs.IsBlank(user.Password) || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
-		_ = s.createLoginCredentialLog(username, user.ID, false, clientIP, userAgent, "password mismatch")
+		_ = s.createLoginCredentialLog(principal, user.ID, false, clientIP, userAgent, "password mismatch")
 		return nil, errorsx.InvalidAccount("用户名或密码错误")
 	}
 
@@ -122,7 +123,7 @@ func (s *authService) Login(req request.LoginRequest, authCfg config.AuthConfig,
 		return nil, err
 	}
 
-	_ = s.createLoginCredentialLog(username, user.ID, true, clientIP, userAgent, "")
+	_ = s.createLoginCredentialLog(principal, user.ID, true, clientIP, userAgent, "")
 	return ret, nil
 }
 
@@ -405,7 +406,7 @@ func (s *authService) createLoginCredentialLog(principal string, userID int64, s
 	})
 }
 
-func (s *authService) isCredentialLocked(username string, authCfg config.AuthConfig) bool {
+func (s *authService) isCredentialLocked(principal string, authCfg config.AuthConfig) bool {
 	maxFailedAttempts := authCfg.MaxFailedAttempts
 	if maxFailedAttempts <= 0 {
 		return false
@@ -416,9 +417,14 @@ func (s *authService) isCredentialLocked(username string, authCfg config.AuthCon
 	}
 	since := time.Now().Add(-time.Duration(lockMinute) * time.Minute)
 	return LoginCredentialLogService.Count(sqls.NewCnd().
-		Eq("principal", username).
+		Eq("principal", normalizeLoginPrincipal(principal)).
 		Eq("success", false).
+		NotEq("reason", "credential locked").
 		Where("created_at >= ?", since)) >= int64(maxFailedAttempts)
+}
+
+func normalizeLoginPrincipal(principal string) string {
+	return strings.ToLower(strings.TrimSpace(principal))
 }
 
 func randomToken(prefix string) (string, error) {
