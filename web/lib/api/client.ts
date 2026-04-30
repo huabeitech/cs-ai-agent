@@ -1,4 +1,4 @@
-import { clearSession, readSession } from "@/lib/auth"
+import { expireSession, readSession } from "@/lib/auth"
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || ""
@@ -20,7 +20,7 @@ async function parseResult<T>(response: Response) {
   const payload = (await response.json()) as JsonResult<T>
   if (!response.ok || !payload.success) {
     if (payload.errorCode === 3000 || payload.errorCode === 3002) {
-      clearSession()
+      expireSession()
     }
     const error = new Error(payload.message || "请求失败")
     ;(error as Error & { errorCode?: number }).errorCode = payload.errorCode

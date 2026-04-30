@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation"
 
 import { fetchProfile, logout } from "@/lib/api/auth"
 import {
+  AUTH_SESSION_EXPIRED_EVENT,
   clearSession,
   readSession,
   writeSession,
@@ -68,16 +69,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [requiresAuth, router])
 
   async function signOut() {
-    await logout()
-    setSession(null)
-    startTransition(() => {
-      router.replace("/dashboard/login")
-    })
+    try {
+      await logout()
+    } finally {
+      setSession(null)
+      startTransition(() => {
+        router.replace("/dashboard/login")
+      })
+    }
   }
 
   useEffect(() => {
+    function handleAuthExpired() {
+      setSession(null)
+      if (requiresAuth) {
+        startTransition(() => {
+          router.replace("/dashboard/login")
+        })
+      }
+    }
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleAuthExpired)
+    return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleAuthExpired)
+    }
+  }, [requiresAuth, router])
+
+  useEffect(() => {
     const stored = readSession()
-      setSession(stored)
+    setSession(stored)
     if (stored) {
       void refreshProfile()
       return

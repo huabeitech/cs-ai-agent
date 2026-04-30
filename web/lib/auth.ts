@@ -16,6 +16,7 @@ export type AuthSession = {
 }
 
 const SESSION_STORAGE_KEY = "cs-ai-agent-session"
+export const AUTH_SESSION_EXPIRED_EVENT = "cs-ai-agent-auth-expired"
 
 function hasWindow() {
   return typeof window !== "undefined"
@@ -51,4 +52,12 @@ export function clearSession() {
     return
   }
   window.localStorage.removeItem(SESSION_STORAGE_KEY)
+}
+
+export function expireSession() {
+  if (!hasWindow()) {
+    return
+  }
+  clearSession()
+  window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT))
 }
