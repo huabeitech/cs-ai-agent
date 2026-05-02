@@ -353,34 +353,15 @@ export const ThirdProviderLabels: Record<ThirdProvider, string> = {
   [ThirdProvider.Dingtalk]: "钉钉",
 }
 
-export enum TicketSeverity {
-  Minor = 1,
-  Major = 2,
-  Critical = 3,
-}
-export const TicketSeverityLabels: Record<TicketSeverity, string> = {
-  [TicketSeverity.Minor]: "轻微",
-  [TicketSeverity.Major]: "严重",
-  [TicketSeverity.Critical]: "致命",
-}
-
 export enum TicketStatus {
-  New = "new",
-  Open = "open",
-  PendingCustomer = "pending_customer",
-  PendingInternal = "pending_internal",
-  Resolved = "resolved",
-  Closed = "closed",
-  Cancelled = "cancelled",
+  Pending = "pending",
+  InProgress = "in_progress",
+  Done = "done",
 }
 export const TicketStatusLabels: Record<TicketStatus, string> = {
-  [TicketStatus.New]: "新建",
-  [TicketStatus.Open]: "处理中",
-  [TicketStatus.PendingCustomer]: "待客户反馈",
-  [TicketStatus.PendingInternal]: "待内部处理",
-  [TicketStatus.Resolved]: "已解决",
-  [TicketStatus.Closed]: "已关闭",
-  [TicketStatus.Cancelled]: "已取消",
+  [TicketStatus.Pending]: "待处理",
+  [TicketStatus.InProgress]: "处理中",
+  [TicketStatus.Done]: "已处理",
 }
 
 export enum VectorDBType {
