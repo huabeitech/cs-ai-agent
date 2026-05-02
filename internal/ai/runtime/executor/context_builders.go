@@ -6,13 +6,12 @@ import (
 
 	"cs-agent/internal/ai/runtime/internal/impl/adapter"
 	"cs-agent/internal/ai/runtime/internal/impl/callbacks"
-	"cs-agent/internal/ai/runtime/internal/impl/retrievers"
 	"cs-agent/internal/pkg/utils"
 
 	"github.com/cloudwego/eino/schema"
 )
 
-func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector) []*schema.Message {
+func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector, gate *KnowledgeAnswerabilityGate) []*schema.Message {
 	history := adapter.BuildHistoryMessages(req.Conversation.ID, req.UserMessage.ID, 12)
 	if summary != nil {
 		summary.HistoryMessageCount = len(history.Messages)
@@ -24,7 +23,7 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 	}
 	messages := make([]*schema.Message, 0, len(history.Messages)+3)
 	messages = append(messages, history.Messages...)
-	decision := appendRetrievedContext(ctx, req, summary, collector, &messages)
+	decision := appendRetrievedContext(ctx, req, summary, collector, gate, &messages)
 	if strings.TrimSpace(decision.FallbackReply) != "" {
 		if summary != nil {
 			summary.ReplyText = decision.FallbackReply
@@ -35,30 +34,32 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 	return messages
 }
 
-func appendRetrievedContext(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector, messages *[]*schema.Message) knowledgeGuardDecision {
+func appendRetrievedContext(ctx context.Context, req RunInput, summary *RunResult, collector *callbacks.RuntimeTraceCollector, gate *KnowledgeAnswerabilityGate, messages *[]*schema.Message) knowledgeGuardDecision {
 	if messages == nil {
 		return knowledgeGuardDecision{}
 	}
-	retriever := retrievers.NewKnowledgeRetriever(req.AIAgent)
-	retrieveOptions := retrievers.DefaultKnowledgeRetrieveOptions()
-	retrieveOptions.QueryPreview = preview(req.UserMessage.Content, 120)
-	retrieveResult, retrieveErr := retriever.RetrieveContextByOptions(ctx, retrieveOptions, strings.TrimSpace(req.UserMessage.Content))
-	if retrieveErr != nil || retrieveResult == nil {
-		return buildKnowledgeUnavailableDecision(req.AIAgent, retriever.KnowledgeBaseIDs())
+	if gate == nil {
+		gate = NewKnowledgeAnswerabilityGate()
 	}
-	if summary != nil {
-		summary.RetrieverCount = len(retrieveResult.Hits)
+	state, err := gate.Evaluate(ctx, answerabilityGateInput{
+		Request:   req,
+		Summary:   summary,
+		Collector: collector,
+		Messages:  append([]*schema.Message(nil), (*messages)...),
+	})
+	if err != nil || state == nil {
+		decision := buildKnowledgeUnavailableDecision(req.AIAgent, utils.SplitInt64s(req.AIAgent.KnowledgeIDs))
+		if strings.TrimSpace(decision.FallbackReply) != "" {
+			decision.FallbackReply = resolveKnowledgeHumanSupportFallback(req.AIAgent)
+		}
+		return decision
 	}
-	if collector != nil {
-		collector.SetRetrieverSummary(retrieveResult.TraceSummary)
-		collector.AddRetrieverItems(retrieveResult.TraceItems)
+	if strings.TrimSpace(state.FallbackReply) != "" {
+		return knowledgeGuardDecision{FallbackReply: state.FallbackReply}
 	}
-	decision := buildKnowledgeGuardDecision(req.AIAgent, retrieveResult)
-	if len(decision.Instructions) > 0 {
-		*messages = append(*messages, decision.Instructions...)
+	if state.SkipGate {
+		return knowledgeGuardDecision{}
 	}
-	if strings.TrimSpace(retrieveResult.ContextText) != "" {
-		*messages = append(*messages, schema.SystemMessage(retrieveResult.ContextText))
-	}
-	return decision
+	*messages = append((*messages)[:0], state.Input.Messages...)
+	return state.Decision
 }

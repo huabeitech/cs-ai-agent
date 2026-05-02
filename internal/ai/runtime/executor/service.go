@@ -13,14 +13,16 @@ import (
 )
 
 type Service struct {
-	agentFactory  *factory.AgentFactory
-	runnerFactory *factory.RunnerFactory
+	agentFactory      *factory.AgentFactory
+	runnerFactory     *factory.RunnerFactory
+	answerabilityGate *KnowledgeAnswerabilityGate
 }
 
 func NewService() *Service {
 	return &Service{
-		agentFactory:  factory.NewAgentFactory(),
-		runnerFactory: factory.NewRunnerFactory(),
+		agentFactory:      factory.NewAgentFactory(),
+		runnerFactory:     factory.NewRunnerFactory(),
+		answerabilityGate: NewKnowledgeAnswerabilityGate(),
 	}
 }
 
@@ -84,7 +86,7 @@ func (s *Service) ExecuteRun(ctx context.Context, req RunInput) (*RunResult, err
 		summary.TraceData = collector.Marshal()
 		return summary, fmt.Errorf("%s", summary.ErrorMessage)
 	}
-	messages := buildRunMessages(ctx, req, summary, collector)
+	messages := buildRunMessages(ctx, req, summary, collector, s.answerabilityGate)
 	if strings.TrimSpace(summary.ReplyText) != "" {
 		summary.Status = "completed"
 		summary.ModelName = req.AIConfig.ModelName

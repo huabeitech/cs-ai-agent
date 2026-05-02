@@ -186,6 +186,46 @@ func TestKnowledgeAnswerabilityGateEvaluateAllowsAnswerableDecisionAndProducesKn
 	}
 }
 
+func TestBuildRunMessagesReturnsFallbackWhenGateRejectsGrayZoneQuestion(t *testing.T) {
+	summary := &RunResult{}
+	question := "满足什么条件可以退款？"
+	gate := newTestKnowledgeAnswerabilityGate(newAnswerabilityRetrieverWithHit(), &fakeAnswerabilityChatModel{
+		response: `{"answerable": false, "reason": "retrieved snippets mention refunds but not the requested condition", "missingInfo": ["refund condition"]}`,
+	})
+
+	messages := buildRunMessages(context.Background(), newAnswerabilityGateRunInput(question, "1"), summary, nil, gate)
+
+	if !strings.Contains(summary.ReplyText, "建议你联系人工客服进一步确认。") {
+		t.Fatalf("expected human-support fallback, got %q", summary.ReplyText)
+	}
+	if messagesContainContent(messages, question) {
+		t.Fatalf("expected returned messages to omit current user message, got %#v", messages)
+	}
+}
+
+func TestBuildRunMessagesInjectsKnowledgeWhenGateAllows(t *testing.T) {
+	summary := &RunResult{}
+	question := "满足什么条件可以退款？"
+	gate := newTestKnowledgeAnswerabilityGate(newAnswerabilityRetrieverWithHit(), &fakeAnswerabilityChatModel{
+		response: `{"answerable": true, "reason": "refund condition is directly supported", "supportingChunkIds": ["101"]}`,
+	})
+
+	messages := buildRunMessages(context.Background(), newAnswerabilityGateRunInput(question, "1"), summary, nil, gate)
+
+	if summary.ReplyText != "" {
+		t.Fatalf("expected no fallback, got %q", summary.ReplyText)
+	}
+	if !messagesContainContent(messages, "知识库回答约束") {
+		t.Fatalf("expected knowledge instruction in messages, got %#v", messages)
+	}
+	if !messagesContainContent(messages, "购买后七天内且未使用可以退款。") {
+		t.Fatalf("expected knowledge context in messages, got %#v", messages)
+	}
+	if !messagesContainContent(messages, question) {
+		t.Fatalf("expected current user message in messages, got %#v", messages)
+	}
+}
+
 func newTestKnowledgeAnswerabilityGate(retriever knowledgeContextRetriever, chatModel model.BaseChatModel) *KnowledgeAnswerabilityGate {
 	return &KnowledgeAnswerabilityGate{
 		newRetriever: func(aiAgent models.AIAgent) knowledgeContextRetriever {
@@ -256,4 +296,13 @@ func (f *fakeAnswerabilityChatModel) Generate(ctx context.Context, input []*sche
 
 func (f *fakeAnswerabilityChatModel) Stream(ctx context.Context, input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
 	return nil, errors.New("stream is not implemented in fakeAnswerabilityChatModel")
+}
+
+func messagesContainContent(messages []*schema.Message, text string) bool {
+	for _, message := range messages {
+		if message != nil && strings.Contains(message.Content, text) {
+			return true
+		}
+	}
+	return false
 }
