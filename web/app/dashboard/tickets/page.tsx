@@ -1,6 +1,6 @@
 "use client"
 
-import { RefreshCcwIcon, SearchXIcon } from "lucide-react"
+import { PlusIcon, RefreshCcwIcon, SearchXIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -24,14 +24,17 @@ import {
   type TagTree,
 } from "@/lib/api/admin"
 import {
+  createTicket,
   fetchTicketSummary,
   fetchTickets,
+  type CreateTicketPayload,
   type TicketItem,
   type TicketListQuery,
   type TicketStatus,
   type TicketSummary,
 } from "@/lib/api/ticket"
 import { cn, formatDateTime } from "@/lib/utils"
+import { EditDialog } from "./_components/edit"
 import { TicketAssignDialog } from "./_components/ticket-assign-dialog"
 import { TicketDetailDialog } from "./_components/ticket-detail-dialog"
 import { TicketStatusBadge } from "./_components/ticket-status-badge"
@@ -114,6 +117,8 @@ export default function TicketsPage() {
   const [batchAssignOpen, setBatchAssignOpen] = useState(false)
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [savingCreate, setSavingCreate] = useState(false)
 
   const quickViews = useMemo(
     () =>
@@ -237,6 +242,20 @@ export default function TicketsPage() {
     setStaleHours("24")
   }
 
+  async function handleCreateTicket(payload: CreateTicketPayload) {
+    setSavingCreate(true)
+    try {
+      await createTicket(payload)
+      toast.success("工单已创建")
+      setCreateOpen(false)
+      await loadData()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "创建工单失败")
+    } finally {
+      setSavingCreate(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -244,10 +263,16 @@ export default function TicketsPage() {
           <h1 className="text-2xl font-semibold tracking-normal">工单</h1>
           <p className="text-sm text-muted-foreground">按状态、负责人和标签快速处理轻量工单</p>
         </div>
-        <Button type="button" variant="outline" onClick={() => void loadData()} disabled={loading}>
-          <RefreshCcwIcon className={cn("size-4", loading ? "animate-spin" : "")} />
-          刷新
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => void loadData()} disabled={loading}>
+            <RefreshCcwIcon className={cn("size-4", loading ? "animate-spin" : "")} />
+            刷新
+          </Button>
+          <Button type="button" onClick={() => setCreateOpen(true)}>
+            <PlusIcon className="size-4" />
+            新建工单
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border bg-background/80 p-2">
@@ -430,6 +455,13 @@ export default function TicketsPage() {
         ticketIds={selectedIds}
         onOpenChange={setBatchAssignOpen}
         onSuccess={loadData}
+      />
+      <EditDialog
+        open={createOpen}
+        saving={savingCreate}
+        itemId={null}
+        onOpenChange={setCreateOpen}
+        onSubmit={handleCreateTicket}
       />
       <TicketDetailDialog
         open={detailOpen}

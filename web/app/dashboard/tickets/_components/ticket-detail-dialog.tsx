@@ -19,10 +19,14 @@ import {
   changeTicketStatus,
   createTicketProgress,
   fetchTicketDetail,
+  type CreateTicketPayload,
   type TicketDetail,
   type TicketStatus,
+  type UpdateTicketPayload,
+  updateTicket,
 } from "@/lib/api/ticket"
 import { cn, formatDateTime } from "@/lib/utils"
+import { EditDialog } from "./edit"
 import { TicketAssignDialog } from "./ticket-assign-dialog"
 import { TicketStatusBadge } from "./ticket-status-badge"
 
@@ -69,6 +73,8 @@ export function TicketDetailDialog({
   const [progressSaving, setProgressSaving] = useState(false)
   const [progressContent, setProgressContent] = useState("")
   const [assignOpen, setAssignOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
 
   const loadDetail = useCallback(async () => {
     if (!open || !ticketId) {
@@ -136,6 +142,25 @@ export function TicketDetailDialog({
   async function handleAssigned() {
     await loadDetail()
     onChanged()
+  }
+
+  async function handleUpdateTicket(payload: CreateTicketPayload | UpdateTicketPayload) {
+    if (!("ticketId" in payload) || payload.ticketId <= 0) {
+      toast.error("请选择工单")
+      return
+    }
+    setEditSaving(true)
+    try {
+      await updateTicket(payload)
+      toast.success("工单已更新")
+      setEditOpen(false)
+      await loadDetail()
+      onChanged()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "更新工单失败")
+    } finally {
+      setEditSaving(false)
+    }
   }
 
   const ticket = detail?.ticket
@@ -206,7 +231,12 @@ export function TicketDetailDialog({
                 </section>
 
                 <section className="space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground">标签</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-medium text-muted-foreground">标签</div>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                      编辑
+                    </Button>
+                  </div>
                   {ticket.tags && ticket.tags.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {ticket.tags.map((tag) => (
@@ -294,6 +324,13 @@ export function TicketDetailDialog({
         currentAssigneeId={ticket?.currentAssigneeId}
         onOpenChange={setAssignOpen}
         onSuccess={handleAssigned}
+      />
+      <EditDialog
+        open={editOpen}
+        saving={editSaving}
+        itemId={ticket?.id ?? null}
+        onOpenChange={setEditOpen}
+        onSubmit={handleUpdateTicket}
       />
     </>
   )
