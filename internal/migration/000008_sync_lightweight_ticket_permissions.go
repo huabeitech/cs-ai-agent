@@ -13,6 +13,9 @@ func init() {
 			if err := resetLightweightTicketData(ctx.Tx); err != nil {
 				return err
 			}
+			if err := deleteObsoleteTicketPermissions(ctx.Tx); err != nil {
+				return err
+			}
 
 			permissions, err := ensurePermissions(ctx.Tx)
 			if err != nil {
@@ -27,6 +30,38 @@ func init() {
 			return ensureRolePermissions(ctx.Tx, roles, permissions)
 		})
 	})
+}
+
+func deleteObsoleteTicketPermissions(tx *gorm.DB) error {
+	codes := obsoleteTicketPermissionCodes()
+	if len(codes) == 0 {
+		return nil
+	}
+	permissionIDs := tx.Model(&models.Permission{}).Select("id").Where("code IN ?", codes)
+	if err := tx.Where("permission_id IN (?)", permissionIDs).Delete(&models.RolePermission{}).Error; err != nil {
+		return err
+	}
+	permissionIDs = tx.Model(&models.Permission{}).Select("id").Where("code IN ?", codes)
+	if err := tx.Where("permission_id IN (?)", permissionIDs).Delete(&models.UserPermission{}).Error; err != nil {
+		return err
+	}
+	return tx.Where("code IN ?", codes).Delete(&models.Permission{}).Error
+}
+
+func obsoleteTicketPermissionCodes() []string {
+	return []string{
+		"ticket.reply",
+		"ticket.close",
+		"ticket.reopen",
+		"ticketResolutionCode.view",
+		"ticketResolutionCode.create",
+		"ticketResolutionCode.update",
+		"ticketResolutionCode.delete",
+		"ticketPriorityConfig.view",
+		"ticketPriorityConfig.create",
+		"ticketPriorityConfig.update",
+		"ticketPriorityConfig.delete",
+	}
 }
 
 func resetLightweightTicketData(tx *gorm.DB) error {
