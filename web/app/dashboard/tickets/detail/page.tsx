@@ -972,7 +972,7 @@ export default function TicketDetailPage() {
                                   size="icon"
                                   onClick={() =>
                                     router.push(
-                                      `/tickets/detail?id=${relation.relatedTicketId}`,
+                                      `/dashboard/tickets/detail?id=${relation.relatedTicketId}`,
                                     )
                                   }
                                 >

@@ -92,7 +92,7 @@ function RiskTable({ title, description, items, emptyText }: RiskTableProps) {
                   <TableCell>{item.currentAssigneeName || "未指派"}</TableCell>
                   <TableCell>{item.updatedAt ? formatDateTime(item.updatedAt) : "—"}</TableCell>
                   <TableCell className="text-right">
-                    <Link href={`/tickets/detail?id=${item.id}`} target="_blank" rel="noreferrer">
+                    <Link href={`/dashboard/tickets/detail?id=${item.id}`} target="_blank" rel="noreferrer">
                       <Button variant="outline" size="sm">
                         查看详情
                       </Button>

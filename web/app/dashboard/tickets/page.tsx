@@ -1109,7 +1109,7 @@ export default function TicketsPage() {
                     <TableCell>{item.updatedAt ? formatDateTime(item.updatedAt) : "—"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/tickets/detail?id=${item.id}`} target="_blank" rel="noreferrer">
+                        <Link href={`/dashboard/tickets/detail?id=${item.id}`} target="_blank" rel="noreferrer">
                           <Button variant="outline" size="sm">
                             <ClipboardListIcon className="size-4" />
                             详情
