@@ -232,6 +232,12 @@ export const KefuMessageList = forwardRef<KefuMessageListHandle, KefuMessageList
             </div>
           ) : null}
 
+          {safeMessages.length === 0 ? (
+            <div className="flex min-h-32 items-center justify-center px-3 py-6 text-center text-sm leading-6 text-muted-foreground">
+              请描述你的问题，我们会尽快为你处理。
+            </div>
+          ) : null}
+
           {safeMessages.map((message, index) => {
             const previousMessage = index > 0 ? safeMessages[index - 1] : null
             const showTimeline =

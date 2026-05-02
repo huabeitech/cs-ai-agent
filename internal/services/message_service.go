@@ -258,6 +258,97 @@ func (s *messageService) SendAIServiceNotice(conversationID int64, aiAgentID int
 	}, nil)
 }
 
+func (s *messageService) CreateAIWelcomeMessageTx(ctx *sqls.TxContext, conversation *models.Conversation, aiAgent *models.AIAgent, now time.Time) (*models.Message, error) {
+	if ctx == nil || conversation == nil || aiAgent == nil || strings.TrimSpace(aiAgent.WelcomeMessage) == "" {
+		return nil, nil
+	}
+
+	content, payload, summary, err := s.normalizeMessageContent(conversation.ID, enums.IMMessageTypeText, aiAgent.WelcomeMessage, "")
+	if err != nil {
+		return nil, err
+	}
+	if strs.IsBlank(content) && strs.IsBlank(payload) {
+		return nil, nil
+	}
+
+	operator := &dto.AuthPrincipal{
+		UserID:   0,
+		Username: "system",
+		Nickname: "system",
+	}
+	message := &models.Message{
+		ConversationID: conversation.ID,
+		SenderType:     enums.IMSenderTypeAI,
+		SenderID:       aiAgent.ID,
+		MessageType:    enums.IMMessageTypeText,
+		Content:        content,
+		Payload:        payload,
+		SeqNo:          repositories.MessageRepository.NextSeqNo(ctx.Tx, conversation.ID),
+		SendStatus:     enums.IMMessageStatusSent,
+		SentAt:         &now,
+		AuditFields: models.AuditFields{
+			CreatedAt:      now,
+			CreateUserID:   operator.UserID,
+			CreateUserName: operator.Username,
+			UpdatedAt:      now,
+			UpdateUserID:   operator.UserID,
+			UpdateUserName: operator.Username,
+		},
+	}
+	if err := repositories.MessageRepository.Create(ctx.Tx, message); err != nil {
+		return nil, err
+	}
+
+	if _, err := ConversationReadStateService.MarkAgentRead(ctx, conversation, operator, message, now); err != nil {
+		return nil, err
+	}
+	agentReadState, customerReadState := ConversationReadStateService.getConversationReadStates(ctx.Tx, conversation.ID)
+	agentUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversation.ID, s.readSeqNo(agentReadState), enums.IMSenderTypeCustomer)
+	if err != nil {
+		return nil, err
+	}
+	customerUnreadCount, err := ConversationReadStateService.CountUnreadMessages(ctx, conversation.ID, s.readSeqNo(customerReadState), enums.IMSenderTypeAgent, enums.IMSenderTypeAI)
+	if err != nil {
+		return nil, err
+	}
+
+	conversationUpdates := map[string]any{
+		"last_message_id":       message.ID,
+		"last_message_at":       now,
+		"last_active_at":        now,
+		"last_message_summary":  limitText(summary, 255),
+		"update_user_id":        operator.UserID,
+		"update_user_name":      operator.Username,
+		"updated_at":            now,
+		"agent_unread_count":    agentUnreadCount,
+		"customer_unread_count": customerUnreadCount,
+	}
+	if err := repositories.ConversationRepository.Updates(ctx.Tx, conversation.ID, conversationUpdates); err != nil {
+		return nil, err
+	}
+	if err := ConversationEventLogService.CreateEvent(ctx,
+		conversation.ID,
+		enums.IMEventTypeMessageSend,
+		enums.IMSenderTypeAI,
+		0,
+		enums.GetIMSenderTypeLabel(enums.IMSenderTypeAI)+"发送消息",
+		"",
+	); err != nil {
+		return nil, err
+	}
+
+	conversation.LastMessageID = message.ID
+	conversation.LastMessageAt = now
+	conversation.LastActiveAt = now
+	conversation.LastMessageSummary = limitText(summary, 255)
+	conversation.AgentUnreadCount = int(agentUnreadCount)
+	conversation.CustomerUnreadCount = int(customerUnreadCount)
+	conversation.UpdatedAt = now
+	conversation.UpdateUserID = operator.UserID
+	conversation.UpdateUserName = operator.Username
+	return message, nil
+}
+
 func (s *messageService) SendCustomerMessage(conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external openidentity.ExternalUser) (*models.Message, error) {
 	ext := external
 	return s.sendMessage(conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, &ext)

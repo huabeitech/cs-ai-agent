@@ -107,6 +107,7 @@ func (s *conversationService) Create(externalUser openidentity.ExternalUser, cha
 	}
 
 	var conversation *models.Conversation
+	var welcomeMessage *models.Message
 	created := false
 	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
 		customerID, err := CustomerService.EnsureExternalCustomer(ctx, externalUser)
@@ -149,7 +150,11 @@ func (s *conversationService) Create(externalUser openidentity.ExternalUser, cha
 		if err := ConversationParticipantService.CreateCustomerParticipant(ctx, conversation.ID, externalUser); err != nil {
 			return err
 		}
-		return ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", "")
+		if err := ConversationEventLogService.CreateEvent(ctx, conversation.ID, enums.IMEventTypeCreate, enums.IMSenderTypeCustomer, 0, "用户创建会话", ""); err != nil {
+			return err
+		}
+		welcomeMessage, err = MessageService.CreateAIWelcomeMessageTx(ctx, conversation, aiAgent, now)
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -162,6 +167,12 @@ func (s *conversationService) Create(externalUser openidentity.ExternalUser, cha
 
 	// 推送会话创建事件
 	WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationCreated)
+	if welcomeMessage != nil {
+		if updatedConversation := s.Get(conversation.ID); updatedConversation != nil {
+			WsService.PublishMessageCreated(updatedConversation, welcomeMessage)
+			WsService.PublishConversationChanged(updatedConversation, enums.IMRealtimeEventConversationUpdated)
+		}
+	}
 
 	if aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly {
 		if _, err := ConversationHumanDispatchService.ApplyHumanOnlyCreate(conversation.ID, *aiAgent); err != nil {
