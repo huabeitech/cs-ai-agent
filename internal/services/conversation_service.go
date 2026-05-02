@@ -163,14 +163,9 @@ func (s *conversationService) Create(externalUser openidentity.ExternalUser, cha
 	// 推送会话创建事件
 	WsService.PublishConversationChanged(conversation, enums.IMRealtimeEventConversationCreated)
 
-	// AI Agent仅人工模式，且有值班客服，尝试自动分配会话
-	if conversation.Status == enums.IMConversationStatusPending &&
-		aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly &&
-		len(utils.SplitInt64s(aiAgent.TeamIDs)) > 0 {
-		if dispatched, err := ConversationDispatchService.DispatchPendingConversation(conversation, aiAgent); err != nil {
+	if aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly {
+		if _, err := ConversationHumanDispatchService.ApplyHumanOnlyCreate(conversation.ID, *aiAgent); err != nil {
 			return nil, err
-		} else if dispatched != nil {
-			return dispatched, nil
 		}
 	}
 	return s.Get(conversation.ID), nil
@@ -253,12 +248,16 @@ func (s *conversationService) AutoAssignConversation(conversationID int64, opera
 		return errorsx.InvalidParam("当前会话已分配客服")
 	}
 
-	dispatched, err := ConversationDispatchService.DispatchConversation(conversationID)
+	aiAgent := AIAgentService.Get(conversation.AIAgentID)
+	if aiAgent == nil || aiAgent.Status != enums.StatusOk {
+		return errorsx.InvalidParam("AI Agent 不存在或已停用")
+	}
+	result, err := ConversationHumanDispatchService.DispatchPendingConversation(conversationID, *aiAgent)
 	if err != nil {
 		return err
 	}
-	if dispatched == nil {
-		return errorsx.InvalidParam("当前暂无可自动分配的值班客服")
+	if result == nil || result.Decision == HandoffDecisionOffHours {
+		return errorsx.InvalidParam("当前暂不在人工客服服务时间内")
 	}
 	return nil
 }
@@ -340,35 +339,14 @@ func (s *conversationService) HandoffByAI(conversationID int64, aiAgent models.A
 	if conversationID <= 0 {
 		return errorsx.InvalidParam("会话不存在")
 	}
-	now := time.Now()
-	if err := sqls.WithTransaction(func(ctx *sqls.TxContext) error {
-		conversation := repositories.ConversationRepository.Get(ctx.Tx, conversationID)
-		if conversation == nil {
-			return errorsx.InvalidParam("会话不存在")
-		}
-		if err := repositories.ConversationRepository.Updates(ctx.Tx, conversationID, map[string]any{
-			"handoff_at":          now,
-			"handoff_reason":      strings.TrimSpace(reason),
-			"status":              enums.IMConversationStatusPending,
-			"current_team_id":     0,
-			"current_assignee_id": 0,
-			"update_user_id":      0,
-			"update_user_name":    aiAgent.Name,
-			"updated_at":          now,
-		}); err != nil {
-			return err
-		}
-		return ConversationEventLogService.CreateEvent(ctx, conversationID, enums.IMEventTypeTransfer, enums.IMSenderTypeAI, aiAgent.ID, "AI转人工", strings.TrimSpace(reason))
-	}); err != nil {
-		return err
-	}
-	if _, err := ConversationDispatchService.DispatchConversation(conversationID); err != nil {
-		slog.Warn("auto dispatch conversation after ai handoff failed",
+	_, err := ConversationHumanDispatchService.HandoffByAI(conversationID, aiAgent, reason)
+	if err != nil {
+		slog.Warn("schedule-aware ai handoff failed",
 			"conversation_id", conversationID,
 			"ai_agent_id", aiAgent.ID,
 			"error", err)
 	}
-	return nil
+	return err
 }
 
 func (s *conversationService) CloseConversation(conversationID int64, closeReason string, operator *dto.AuthPrincipal) error {

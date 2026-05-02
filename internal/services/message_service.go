@@ -243,6 +243,21 @@ func (s *messageService) SendAIMessage(conversationID int64, aiAgentID int64, cl
 	return s.sendMessage(conversationID, enums.IMSenderTypeAI, aiAgentID, clientMsgID, messageType, content, payload, operator, nil)
 }
 
+func (s *messageService) SendAIServiceNotice(conversationID int64, aiAgentID int64, content string) (*models.Message, error) {
+	conversation := ConversationService.Get(conversationID)
+	if conversation == nil {
+		return nil, errorsx.InvalidParam("会话不存在")
+	}
+	if conversation.Status == enums.IMConversationStatusClosed {
+		return nil, errorsx.InvalidParam("会话已关闭")
+	}
+	return s.sendValidatedMessage(conversation, enums.IMSenderTypeAI, aiAgentID, "", enums.IMMessageTypeText, content, "", &dto.AuthPrincipal{
+		UserID:   0,
+		Username: "system",
+		Nickname: "system",
+	}, nil)
+}
+
 func (s *messageService) SendCustomerMessage(conversationID int64, clientMsgID string, messageType enums.IMMessageType, content, payload string, external openidentity.ExternalUser) (*models.Message, error) {
 	ext := external
 	return s.sendMessage(conversationID, enums.IMSenderTypeCustomer, 0, clientMsgID, messageType, content, payload, nil, &ext)
@@ -266,7 +281,13 @@ func (s *messageService) sendMessage(conversationID int64, senderType enums.IMSe
 	if err != nil {
 		return nil, err
 	}
+	return s.sendValidatedMessage(conversation, senderType, reqSenderID, clientMsgID, messageType, content, payload, operator, external)
+}
 
+func (s *messageService) sendValidatedMessage(conversation *models.Conversation, senderType enums.IMSenderType, reqSenderID int64, clientMsgID string,
+	messageType enums.IMMessageType, content, payload string, operator *dto.AuthPrincipal, external *openidentity.ExternalUser) (*models.Message, error) {
+	conversationID := conversation.ID
+	var err error
 	var summary string
 	content, payload, summary, err = s.normalizeMessageContent(conversationID, messageType, content, payload)
 	if err != nil {

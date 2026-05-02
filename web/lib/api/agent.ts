@@ -43,6 +43,8 @@ export type AgentConversation = {
   priority: number
   currentAssigneeId: number
   currentAssigneeName?: string
+  currentTeamId: number
+  currentTeamName?: string
   lastMessageId: number
   lastMessageAt?: string
   lastActiveAt?: string

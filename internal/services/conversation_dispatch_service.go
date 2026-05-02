@@ -361,14 +361,22 @@ func (s *conversationDispatchService) findActiveScheduleTeamIDs(teamIDs []int64,
 		Lte("start_at", now).
 		Gt("end_at", now))
 
-	ret := make([]int64, 0, len(schedules))
-	seen := make(map[int64]struct{})
+	activeSet := make(map[int64]struct{}, len(schedules))
 	for _, schedule := range schedules {
-		if _, exists := seen[schedule.TeamID]; exists {
+		activeSet[schedule.TeamID] = struct{}{}
+	}
+
+	ret := make([]int64, 0, len(teamIDs))
+	seen := make(map[int64]struct{})
+	for _, teamID := range teamIDs {
+		if _, active := activeSet[teamID]; !active {
 			continue
 		}
-		seen[schedule.TeamID] = struct{}{}
-		ret = append(ret, schedule.TeamID)
+		if _, exists := seen[teamID]; exists {
+			continue
+		}
+		seen[teamID] = struct{}{}
+		ret = append(ret, teamID)
 	}
 	return ret
 }

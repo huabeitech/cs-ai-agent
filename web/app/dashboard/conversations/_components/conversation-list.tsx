@@ -101,6 +101,12 @@ export function ConversationList({ onAfterSelect }: ConversationListProps) {
                     >
                       {getEnumLabel(IMConversationStatusLabels, conversation.status)}
                     </span>
+                    {conversation.status === IMConversationStatus.Pending &&
+                    conversation.currentTeamName ? (
+                      <span className="rounded bg-muted px-1 py-0.5">
+                        值班组：{conversation.currentTeamName}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>

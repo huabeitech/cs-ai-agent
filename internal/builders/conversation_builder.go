@@ -24,6 +24,7 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 		ServiceMode:               item.ServiceMode,
 		Priority:                  item.Priority,
 		CurrentAssigneeID:         item.CurrentAssigneeID,
+		CurrentTeamID:             item.CurrentTeamID,
 		LastMessageID:             item.LastMessageID,
 		LastMessageAt:             utils.FormatTime(item.LastMessageAt),
 		LastActiveAt:              utils.FormatTime(item.LastActiveAt),
@@ -49,6 +50,11 @@ func BuildConversation(item *models.Conversation) response.ConversationResponse 
 			if ret.CurrentAssigneeName == "" {
 				ret.CurrentAssigneeName = user.Username
 			}
+		}
+	}
+	if item.CurrentTeamID > 0 {
+		if team := services.AgentTeamService.Get(item.CurrentTeamID); team != nil {
+			ret.CurrentTeamName = team.Name
 		}
 	}
 	if item.ClosedBy > 0 {

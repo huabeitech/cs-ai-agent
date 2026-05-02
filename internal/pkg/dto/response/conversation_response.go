@@ -28,6 +28,8 @@ type ConversationResponse struct {
 	Priority                  int                             `json:"priority"`
 	CurrentAssigneeID         int64                           `json:"currentAssigneeId"`
 	CurrentAssigneeName       string                          `json:"currentAssigneeName,omitempty"`
+	CurrentTeamID             int64                           `json:"currentTeamId"`
+	CurrentTeamName           string                          `json:"currentTeamName,omitempty"`
 	LastMessageID             int64                           `json:"lastMessageId"`
 	LastMessageAt             string                          `json:"lastMessageAt,omitempty"`
 	LastActiveAt              string                          `json:"lastActiveAt,omitempty"`
