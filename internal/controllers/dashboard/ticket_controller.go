@@ -2,10 +2,12 @@ package dashboard
 
 import (
 	"strings"
+	"time"
 
 	"cs-agent/internal/builders"
 	"cs-agent/internal/pkg/constants"
 	"cs-agent/internal/pkg/dto/request"
+	"cs-agent/internal/pkg/enums"
 	"cs-agent/internal/services"
 
 	"github.com/kataras/iris/v12"
@@ -42,6 +44,11 @@ func (c *TicketController) AnyList() *web.JsonResult {
 	}
 	if unassigned, _ := params.Get(c.Ctx, "unassigned"); unassigned == "1" || strings.EqualFold(unassigned, "true") {
 		cnd.Eq("current_assignee_id", 0)
+	}
+	if staleHours, _ := params.GetInt(c.Ctx, "staleHours"); staleHours > 0 {
+		cnd.
+			NotEq("status", enums.TicketStatusDone).
+			Where("updated_at < ?", time.Now().Add(-time.Duration(staleHours)*time.Hour))
 	}
 	aggregate, err := services.TicketService.FindPageAggregateByCnd(cnd, operator.UserID)
 	if err != nil {

@@ -284,6 +284,58 @@ func TestTicketServiceSummaryCountsStaleTickets(t *testing.T) {
 	}
 }
 
+func TestTicketServiceFindPageAggregateFiltersStaleTickets(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := createTestOperator(t, "stale-list-operator")
+	staleOpen, err := services.TicketService.CreateTicket(createTestTicketRequest("stale open ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() stale open error = %v", err)
+	}
+	staleDone, err := services.TicketService.CreateTicket(createTestTicketRequest("stale done ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() stale done error = %v", err)
+	}
+	freshOpen, err := services.TicketService.CreateTicket(createTestTicketRequest("fresh open ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() fresh open error = %v", err)
+	}
+
+	if err := services.TicketService.ChangeStatus(request.ChangeTicketStatusRequest{
+		TicketID: staleDone.ID,
+		Status:   string(enums.TicketStatusDone),
+	}, operator); err != nil {
+		t.Fatalf("ChangeStatus() stale done error = %v", err)
+	}
+	staleUpdatedAt := time.Now().Add(-48 * time.Hour)
+	for _, ticketID := range []int64{staleOpen.ID, staleDone.ID} {
+		if err := repositories.TicketRepository.Updates(sqls.DB(), ticketID, map[string]any{
+			"updated_at": staleUpdatedAt,
+		}); err != nil {
+			t.Fatalf("update stale ticket %d error = %v", ticketID, err)
+		}
+	}
+
+	aggregate, err := services.TicketService.FindPageAggregateByCnd(
+		sqls.NewCnd().
+			NotEq("status", enums.TicketStatusDone).
+			Where("updated_at < ?", time.Now().Add(-24*time.Hour)).
+			Page(1, 10),
+		operator.UserID,
+	)
+	if err != nil {
+		t.Fatalf("FindPageAggregateByCnd() error = %v", err)
+	}
+	if len(aggregate.List) != 1 {
+		t.Fatalf("expected 1 stale non-done ticket, got %d: %+v", len(aggregate.List), aggregate.List)
+	}
+	if aggregate.List[0].ID != staleOpen.ID {
+		t.Fatalf("expected stale open ticket %d, got %d", staleOpen.ID, aggregate.List[0].ID)
+	}
+	if aggregate.List[0].ID == freshOpen.ID || aggregate.List[0].ID == staleDone.ID {
+		t.Fatalf("stale list included fresh or done ticket: %+v", aggregate.List[0])
+	}
+}
+
 func TestTicketServiceFindPageAggregateEnrichesLookups(t *testing.T) {
 	setupTicketTestDB(t)
 	operator := createTestOperator(t, "aggregate-operator")
