@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -84,6 +84,7 @@ function TicketAssignDialogBody({
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
+  const activeRef = useRef(false)
 
   const form = useForm<
     z.input<typeof schema>,
@@ -103,6 +104,13 @@ function TicketAssignDialogBody({
   } = form
 
   useEffect(() => {
+    activeRef.current = true
+    return () => {
+      activeRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
     reset({
       toUserId: currentAssigneeId ? String(currentAssigneeId) : "",
       reason: "",
@@ -113,12 +121,22 @@ function TicketAssignDialogBody({
     setLoading(true)
     fetchAgentProfilesAll()
       .then((agentData) => {
+        if (!activeRef.current) {
+          return
+        }
         setAgents(Array.isArray(agentData) ? agentData : [])
       })
       .catch((error) => {
+        if (!activeRef.current) {
+          return
+        }
         toast.error(error instanceof Error ? error.message : "加载处理人失败")
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (activeRef.current) {
+          setLoading(false)
+        }
+      })
   }, [])
 
   async function onFormSubmit(values: FormValues) {
@@ -135,6 +153,9 @@ function TicketAssignDialogBody({
           toUserId: Number(values.toUserId),
           reason: values.reason.trim() || undefined,
         })
+        if (!activeRef.current) {
+          return
+        }
         toast.success(`已批量指派 ${validTicketIds.length} 张工单`)
       } else {
         await assignTicket({
@@ -142,14 +163,25 @@ function TicketAssignDialogBody({
           toUserId: Number(values.toUserId),
           reason: values.reason.trim() || undefined,
         })
+        if (!activeRef.current) {
+          return
+        }
         toast.success("处理人已更新")
+      }
+      if (!activeRef.current) {
+        return
       }
       onOpenChange(false)
       await onSuccess?.()
     } catch (error) {
+      if (!activeRef.current) {
+        return
+      }
       toast.error(error instanceof Error ? error.message : "指派工单失败")
     } finally {
-      setSaving(false)
+      if (activeRef.current) {
+        setSaving(false)
+      }
     }
   }
 
