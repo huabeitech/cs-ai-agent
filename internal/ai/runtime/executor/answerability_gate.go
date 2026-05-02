@@ -11,6 +11,7 @@ import (
 	"cs-agent/internal/ai/runtime/internal/impl/factory"
 	"cs-agent/internal/ai/runtime/internal/impl/retrievers"
 	"cs-agent/internal/models"
+	"cs-agent/internal/pkg/utils"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/prompt"
@@ -178,10 +179,17 @@ func (g *KnowledgeAnswerabilityGate) retrieveKnowledge(ctx context.Context, stat
 	}
 	gate := g.withDefaults()
 	req := state.Input.Request
+	configuredKnowledgeIDs := utils.SplitInt64s(req.AIAgent.KnowledgeIDs)
 	retriever := gate.newRetriever(req.AIAgent)
 	if retriever == nil {
-		state.SkipGate = true
-		state.recordAnswerability(answerabilityStatusSkipped, "knowledge retriever unavailable", nil)
+		state.KnowledgeIDs = append([]int64(nil), configuredKnowledgeIDs...)
+		if len(configuredKnowledgeIDs) == 0 {
+			state.SkipGate = true
+			state.recordAnswerability(answerabilityStatusSkipped, "no knowledge configured", nil)
+			return state, nil
+		}
+		state.FallbackReply = resolveKnowledgeHumanSupportFallback(req.AIAgent)
+		state.recordAnswerability(answerabilityStatusUnanswerable, "knowledge retriever unavailable", nil)
 		return state, nil
 	}
 	knowledgeIDs := retriever.KnowledgeBaseIDs()
@@ -212,7 +220,7 @@ func (g *KnowledgeAnswerabilityGate) retrieveKnowledge(ctx context.Context, stat
 	}
 	if state.Input.Collector != nil && result != nil {
 		state.Input.Collector.SetRetrieverSummary(result.TraceSummary)
-		state.Input.Collector.Data.Retriever.Items = append(state.Input.Collector.Data.Retriever.Items, result.TraceItems...)
+		state.Input.Collector.AddRetrieverItems(result.TraceItems)
 	}
 	if result == nil || len(result.Hits) == 0 || strings.TrimSpace(result.ContextText) == "" {
 		state.FallbackReply = resolveKnowledgeHumanSupportFallback(req.AIAgent)
@@ -230,7 +238,7 @@ func (g *KnowledgeAnswerabilityGate) gradeAnswerability(ctx context.Context, sta
 		return state, nil
 	}
 	gate := g.withDefaults()
-	started := time.Now()
+	started := gate.now()
 	req := state.Input.Request
 	modelInstance, err := gate.newChatModel(ctx, req.AIConfig)
 	if err != nil {

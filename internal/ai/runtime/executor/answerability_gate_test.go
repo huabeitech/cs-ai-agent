@@ -95,6 +95,32 @@ func TestKnowledgeAnswerabilityGateEvaluateSkipsWhenNoKnowledgeConfigured(t *tes
 	}
 }
 
+func TestKnowledgeAnswerabilityGateEvaluateFallsBackWhenConfiguredRetrieverUnavailable(t *testing.T) {
+	collector := callbacks.NewRuntimeTraceCollector()
+	gate := newTestKnowledgeAnswerabilityGate(nil, nil)
+
+	state, err := gate.Evaluate(context.Background(), answerabilityGateInput{
+		Request:   newAnswerabilityGateRunInput("是否支持退款？", "1"),
+		Collector: collector,
+	})
+	if err != nil {
+		t.Fatalf("Evaluate returned error: %v", err)
+	}
+
+	if state.SkipGate {
+		t.Fatal("expected configured knowledge to fail closed, not skip")
+	}
+	if !strings.Contains(state.FallbackReply, "建议你联系人工客服进一步确认。") {
+		t.Fatalf("expected human-support fallback, got %q", state.FallbackReply)
+	}
+	if collector.Data.Answerability.Status != answerabilityStatusUnanswerable {
+		t.Fatalf("unexpected answerability status: %q", collector.Data.Answerability.Status)
+	}
+	if collector.Data.Answerability.Reason != "knowledge retriever unavailable" {
+		t.Fatalf("unexpected reason: %q", collector.Data.Answerability.Reason)
+	}
+}
+
 func TestKnowledgeAnswerabilityGateEvaluateFallsBackOnGrayZoneUnanswerableDecision(t *testing.T) {
 	collector := callbacks.NewRuntimeTraceCollector()
 	gate := newTestKnowledgeAnswerabilityGate(newAnswerabilityRetrieverWithHit(), &fakeAnswerabilityChatModel{

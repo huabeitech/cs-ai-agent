@@ -51,7 +51,7 @@ func appendRetrievedContext(ctx context.Context, req RunInput, summary *RunResul
 	}
 	if collector != nil {
 		collector.SetRetrieverSummary(retrieveResult.TraceSummary)
-		collector.Data.Retriever.Items = append(collector.Data.Retriever.Items, retrieveResult.TraceItems...)
+		collector.AddRetrieverItems(retrieveResult.TraceItems)
 	}
 	decision := buildKnowledgeGuardDecision(req.AIAgent, retrieveResult)
 	if len(decision.Instructions) > 0 {
