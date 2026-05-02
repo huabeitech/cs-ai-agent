@@ -117,6 +117,15 @@ export function TicketDetailDialog({
     void loadDetail()
   }, [loadDetail])
 
+  useEffect(() => {
+    setStatusSaving(null)
+    setProgressSaving(false)
+    setEditSaving(false)
+    setAssignOpen(false)
+    setEditOpen(false)
+    setProgressContent("")
+  }, [open, ticketId])
+
   async function handleStatusChange(status: TicketStatus) {
     if (!detail || detail.ticket.status === status) {
       return
@@ -130,6 +139,9 @@ export function TicketDetailDialog({
       }
       toast.success("工单状态已更新")
       await loadDetail(activeTicketId)
+      if (!isCurrentTicket(activeTicketId)) {
+        return
+      }
       onChanged()
     } catch (error) {
       if (!isCurrentTicket(activeTicketId)) {
@@ -165,6 +177,9 @@ export function TicketDetailDialog({
       toast.success("处理进展已记录")
       setProgressContent("")
       await loadDetail(activeTicketId)
+      if (!isCurrentTicket(activeTicketId)) {
+        return
+      }
       onChanged()
     } catch (error) {
       if (!isCurrentTicket(activeTicketId)) {
@@ -204,6 +219,9 @@ export function TicketDetailDialog({
       toast.success("工单已更新")
       setEditOpen(false)
       await loadDetail(payload.ticketId)
+      if (!isCurrentTicket(payload.ticketId)) {
+        return
+      }
       onChanged()
     } catch (error) {
       if (!isCurrentTicket(payload.ticketId)) {
