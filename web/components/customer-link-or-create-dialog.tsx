@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { linkConversationToCustomer } from "@/lib/api/agent"
 import { fetchCustomers, saveCustomerProfile, type AdminCustomer } from "@/lib/api/customer"
-import { linkTicketToCustomer } from "@/lib/api/ticket"
 
 export type CustomerLinkOrCreateDialogProps = {
   open: boolean
@@ -88,10 +87,8 @@ export function CustomerLinkOrCreateDialog({
           customerId: customer.id,
         })
       } else if (ticketId) {
-        await linkTicketToCustomer({
-          ticketId,
-          customerId: customer.id,
-        })
+        toast.error("轻量工单暂不支持在此关联客户")
+        return
       }
       toast.success("已关联客户")
       onOpenChange(false)
@@ -114,11 +111,7 @@ export function CustomerLinkOrCreateDialog({
         })
         toast.success("已创建客户并关联当前会话")
       } else if (ticketId) {
-        await linkTicketToCustomer({
-          ticketId,
-          customerId: created.id,
-        })
-        toast.success("已创建客户并关联当前工单")
+        toast.success("已创建客户")
       } else {
         toast.success("已创建客户")
       }

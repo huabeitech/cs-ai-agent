@@ -19,15 +19,12 @@ import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/fie
 import { Textarea } from "@/components/ui/textarea"
 import {
   fetchAgentProfilesAll,
-  fetchAgentTeamsAll,
   type AdminAgentProfile,
-  type AdminAgentTeam,
 } from "@/lib/api/admin"
 import { assignTicket, batchAssignTickets } from "@/lib/api/ticket"
 
 const schema = z.object({
   toUserId: z.string().trim().min(1, "请选择处理人"),
-  toTeamId: z.string().trim(),
   reason: z.string().trim(),
 })
 
@@ -41,7 +38,6 @@ const resolver = zodResolver(schema as never) as Resolver<
 
 const emptyForm: FormValues = {
   toUserId: "",
-  toTeamId: "",
   reason: "",
 }
 
@@ -49,7 +45,6 @@ type TicketAssignDialogProps = {
   open: boolean
   ticketId: number | null
   ticketIds?: number[]
-  currentTeamId?: number
   currentAssigneeId?: number
   onOpenChange: (open: boolean) => void
   onSuccess?: () => Promise<void> | void
@@ -59,7 +54,6 @@ export function TicketAssignDialog({
   open,
   ticketId,
   ticketIds,
-  currentTeamId,
   currentAssigneeId,
   onOpenChange,
   onSuccess,
@@ -71,7 +65,6 @@ export function TicketAssignDialog({
           key={ticketId ?? "ticket-assign"}
           ticketId={ticketId}
           ticketIds={ticketIds}
-          currentTeamId={currentTeamId}
           currentAssigneeId={currentAssigneeId}
           onOpenChange={onOpenChange}
           onSuccess={onSuccess}
@@ -84,14 +77,12 @@ export function TicketAssignDialog({
 function TicketAssignDialogBody({
   ticketId,
   ticketIds,
-  currentTeamId,
   currentAssigneeId,
   onOpenChange,
   onSuccess,
 }: Omit<TicketAssignDialogProps, "open">) {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
 
   const form = useForm<
@@ -114,16 +105,14 @@ function TicketAssignDialogBody({
   useEffect(() => {
     reset({
       toUserId: currentAssigneeId ? String(currentAssigneeId) : "",
-      toTeamId: currentTeamId ? String(currentTeamId) : "",
       reason: "",
     })
-  }, [currentAssigneeId, currentTeamId, reset, ticketId])
+  }, [currentAssigneeId, reset, ticketId])
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([fetchAgentTeamsAll(), fetchAgentProfilesAll()])
-      .then(([teamData, agentData]) => {
-        setTeams(Array.isArray(teamData) ? teamData : [])
+    fetchAgentProfilesAll()
+      .then((agentData) => {
         setAgents(Array.isArray(agentData) ? agentData : [])
       })
       .catch((error) => {
@@ -144,7 +133,6 @@ function TicketAssignDialogBody({
         await batchAssignTickets({
           ticketIds: validTicketIds,
           toUserId: Number(values.toUserId),
-          toTeamId: values.toTeamId ? Number(values.toTeamId) : undefined,
           reason: values.reason.trim() || undefined,
         })
         toast.success(`已批量指派 ${validTicketIds.length} 张工单`)
@@ -152,7 +140,6 @@ function TicketAssignDialogBody({
         await assignTicket({
           ticketId: ticketId!,
           toUserId: Number(values.toUserId),
-          toTeamId: values.toTeamId ? Number(values.toTeamId) : undefined,
           reason: values.reason.trim() || undefined,
         })
         toast.success("处理人已更新")
@@ -173,29 +160,6 @@ function TicketAssignDialogBody({
       </DialogHeader>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <div className="space-y-4 p-6">
-          <Field>
-            <FieldLabel>处理团队</FieldLabel>
-            <FieldContent>
-              <Controller
-                control={control}
-                name="toTeamId"
-                render={({ field }) => (
-                  <OptionCombobox
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder={loading ? "加载中..." : "选择处理团队"}
-                    options={[
-                      { value: "", label: "不指定团队" },
-                      ...teams.map((team) => ({
-                        value: String(team.id),
-                        label: team.name,
-                      })),
-                    ]}
-                  />
-                )}
-              />
-            </FieldContent>
-          </Field>
           <Field data-invalid={!!errors.toUserId}>
             <FieldLabel>处理人</FieldLabel>
             <FieldContent>

@@ -31,16 +31,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea"
 import {
   fetchAgentProfilesAll,
-  fetchAgentTeamsAll,
   fetchTagsAll,
   type AdminAgentProfile,
-  type AdminAgentTeam,
   type TagTree,
 } from "@/lib/api/admin"
-import {
-  fetchTicketPriorityConfigsAll,
-  type TicketPriorityConfig,
-} from "@/lib/api/ticket-config"
 import {
   fetchTicketDetail,
   type CreateTicketPayload,
@@ -61,34 +55,26 @@ type EditDialogProps = {
   onSubmit: (payload: CreateTicketPayload | UpdateTicketPayload) => Promise<void>
 }
 
-const ticketFormSchema = z.object({
-  title: z.string().trim().min(1, "标题不能为空"),
-  description: z.string().trim(),
-  tagIds: z.array(z.string().trim()).default([]),
-  priority: z.string().trim().min(1, "请选择优先级"),
-  severity: z.enum(["1", "2", "3"], { message: "请选择严重度" }),
-  currentTeamId: z.string().trim(),
-  currentAssigneeId: z.string().trim(),
-  dueAt: z.string().trim(),
+const schema = z.object({
+  title: z.string().trim().min(1, "请输入工单标题"),
+  description: z.string().trim().min(1, "请输入问题描述"),
+  currentAssigneeId: z.coerce.number().int().min(0).optional(),
+  tagIds: z.array(z.number().int().positive()).default([]),
 })
 
-type EditForm = z.infer<typeof ticketFormSchema>
+type EditForm = z.infer<typeof schema>
 
-const editFormResolver = zodResolver(ticketFormSchema as never) as Resolver<
-  z.input<typeof ticketFormSchema>,
+const editFormResolver = zodResolver(schema as never) as Resolver<
+  z.input<typeof schema>,
   undefined,
-  z.output<typeof ticketFormSchema>
+  z.output<typeof schema>
 >
 
 const emptyForm: EditForm = {
   title: "",
   description: "",
+  currentAssigneeId: 0,
   tagIds: [],
-  priority: "",
-  severity: "1",
-  currentTeamId: "",
-  currentAssigneeId: "",
-  dueAt: "",
 }
 
 function buildForm(item: TicketItem | null): EditForm {
@@ -98,12 +84,8 @@ function buildForm(item: TicketItem | null): EditForm {
   return {
     title: item.title ?? "",
     description: item.description ?? "",
-    tagIds: (item.tags ?? []).map((tag) => String(tag.id)),
-    priority: item.priority ? String(item.priority) : "",
-    severity: String(item.severity || 1) as EditForm["severity"],
-    currentTeamId: item.currentTeamId ? String(item.currentTeamId) : "",
-    currentAssigneeId: item.currentAssigneeId ? String(item.currentAssigneeId) : "",
-    dueAt: item.dueAt ? item.dueAt.replace(" ", "T").slice(0, 16) : "",
+    currentAssigneeId: item.currentAssigneeId ?? 0,
+    tagIds: (item.tags ?? []).map((tag) => tag.id),
   }
 }
 
@@ -111,27 +93,18 @@ function buildInitialForm(initialValues?: Partial<CreateTicketPayload>): EditFor
   return {
     title: initialValues?.title?.trim() ?? "",
     description: initialValues?.description?.trim() ?? "",
-    tagIds: (initialValues?.tagIds ?? []).map((tagId) => String(tagId)),
-    priority: initialValues?.priority ? String(initialValues.priority) : "",
-    severity: String(initialValues?.severity ?? 1) as EditForm["severity"],
-    currentTeamId: initialValues?.currentTeamId ? String(initialValues.currentTeamId) : "",
-    currentAssigneeId: initialValues?.currentAssigneeId
-      ? String(initialValues.currentAssigneeId)
-      : "",
-    dueAt: initialValues?.dueAt ? initialValues.dueAt.replace(" ", "T").slice(0, 16) : "",
+    currentAssigneeId: initialValues?.currentAssigneeId ?? 0,
+    tagIds: initialValues?.tagIds ?? [],
   }
 }
 
 function buildPayload(form: EditForm): CreateTicketPayload {
+  const currentAssigneeId = form.currentAssigneeId ?? 0
   return {
     title: form.title.trim(),
     description: form.description.trim(),
-    tagIds: form.tagIds.length > 0 ? form.tagIds.map((tagId) => Number(tagId)) : undefined,
-    priority: Number(form.priority),
-    severity: Number(form.severity),
-    currentTeamId: form.currentTeamId ? Number(form.currentTeamId) : undefined,
-    currentAssigneeId: form.currentAssigneeId ? Number(form.currentAssigneeId) : undefined,
-    dueAt: form.dueAt ? `${form.dueAt.replace("T", " ")}:00` : undefined,
+    currentAssigneeId,
+    tagIds: form.tagIds,
   }
 }
 
@@ -153,8 +126,8 @@ function flattenTagTree(nodes: TagTree[], depth = 0, parentPath = ""): FlatTagNo
 }
 
 type TicketTagSelectorProps = {
-  value?: string[]
-  onChange: (value: string[]) => void
+  value?: number[]
+  onChange: (value: number[]) => void
   availableTags: TagTree[]
 }
 
@@ -163,11 +136,11 @@ function TicketTagSelector({ value, onChange, availableTags }: TicketTagSelector
   const flatTags = useMemo(() => flattenTagTree(availableTags), [availableTags])
   const selectedTagIDs = useMemo(() => new Set(selectedValues), [selectedValues])
   const selectedTags = useMemo(
-    () => flatTags.filter((tag) => selectedTagIDs.has(String(tag.id))),
+    () => flatTags.filter((tag) => selectedTagIDs.has(tag.id)),
     [flatTags, selectedTagIDs],
   )
 
-  function handleToggle(tagID: string) {
+  function handleToggle(tagID: number) {
     if (selectedTagIDs.has(tagID)) {
       onChange(selectedValues.filter((item) => item !== tagID))
       return
@@ -183,8 +156,8 @@ function TicketTagSelector({ value, onChange, availableTags }: TicketTagSelector
             <Button type="button" variant="outline" className="w-full justify-start" />
           }
         >
-            <TagIcon className="size-4" />
-            {selectedTags.length > 0 ? `已选择 ${selectedTags.length} 个标签` : "请选择工单标签"}
+          <TagIcon className="size-4" />
+          {selectedTags.length > 0 ? `已选择 ${selectedTags.length} 个标签` : "请选择工单标签"}
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[320px] p-0">
           <Command>
@@ -193,12 +166,12 @@ function TicketTagSelector({ value, onChange, availableTags }: TicketTagSelector
               <CommandEmpty>暂无可用标签</CommandEmpty>
               <CommandGroup heading="标签">
                 {flatTags.map((tag) => {
-                  const checked = selectedTagIDs.has(String(tag.id))
+                  const checked = selectedTagIDs.has(tag.id)
                   return (
                     <CommandItem
                       key={tag.id}
                       value={`${tag.id} ${tag.path} ${tag.remark}`}
-                      onSelect={() => handleToggle(String(tag.id))}
+                      onSelect={() => handleToggle(tag.id)}
                     >
                       <CheckIcon className={`mr-2 size-4 ${checked ? "opacity-100" : "opacity-0"}`} />
                       <span className="truncate" style={{ paddingLeft: `${tag.depth * 12}px` }}>
@@ -274,13 +247,11 @@ function TicketEditDialogBody({
   const formId = "ticket-edit-form"
   const [loading, setLoading] = useState(false)
   const [tags, setTags] = useState<TagTree[]>([])
-  const [priorities, setPriorities] = useState<TicketPriorityConfig[]>([])
-  const [teams, setTeams] = useState<AdminAgentTeam[]>([])
   const [agents, setAgents] = useState<AdminAgentProfile[]>([])
   const form = useForm<
-    z.input<typeof ticketFormSchema>,
+    z.input<typeof schema>,
     undefined,
-    z.output<typeof ticketFormSchema>
+    z.output<typeof schema>
   >({
     resolver: editFormResolver,
     defaultValues: emptyForm,
@@ -315,31 +286,16 @@ function TicketEditDialogBody({
       return
     }
     void (async () => {
-      const [tagData, priorityData, teamData, agentData] = await Promise.all([
+      const [tagData, agentData] = await Promise.all([
         fetchTagsAll(),
-        fetchTicketPriorityConfigsAll(),
-        fetchAgentTeamsAll(),
         fetchAgentProfilesAll(),
       ])
       setTags(Array.isArray(tagData) ? tagData : [])
-      setPriorities(Array.isArray(priorityData) ? priorityData : [])
-      setTeams(Array.isArray(teamData) ? teamData : [])
       setAgents(Array.isArray(agentData) ? agentData : [])
     })()
   }, [open])
 
-  const priorityOptions = priorities.map((priority) => ({
-    value: String(priority.id),
-    label: priority.name,
-  }))
-
-  const teamOptions = [{ value: "", label: "不指定团队" }].concat(
-    teams.map((team) => ({
-      value: String(team.id),
-      label: team.name,
-    })),
-  )
-  const agentOptions = [{ value: "", label: "不指定处理人" }].concat(
+  const agentOptions = [{ value: "0", label: "不指定处理人" }].concat(
     agents.map((agent) => ({
       value: String(agent.userId),
       label:
@@ -426,9 +382,25 @@ function TicketEditDialogBody({
             </Field>
 
             <Field>
-              <div className="flex items-center justify-between gap-3">
-                <FieldLabel>工单标签</FieldLabel>
-              </div>
+              <FieldLabel>处理人</FieldLabel>
+              <FieldContent>
+                <Controller
+                  control={control}
+                  name="currentAssigneeId"
+                  render={({ field }) => (
+                    <OptionCombobox
+                      value={String(field.value ?? 0)}
+                      onChange={(value) => field.onChange(Number(value))}
+                      placeholder="请选择处理人"
+                      options={agentOptions}
+                    />
+                  )}
+                />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel>工单标签</FieldLabel>
               <FieldContent>
                 <Controller
                   control={control}
@@ -441,101 +413,6 @@ function TicketEditDialogBody({
                     />
                   )}
                 />
-              </FieldContent>
-            </Field>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field data-invalid={!!errors.priority}>
-                <FieldLabel>优先级</FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={control}
-                    name="priority"
-                    render={({ field }) => (
-                      <OptionCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="请选择优先级"
-                        options={priorityOptions}
-                      />
-                    )}
-                  />
-                  <FieldError errors={[errors.priority]} />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={!!errors.severity}>
-                <FieldLabel>严重度</FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={control}
-                    name="severity"
-                    render={({ field }) => (
-                      <OptionCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="请选择严重度"
-                        options={[
-                          { value: "1", label: "轻微" },
-                          { value: "2", label: "严重" },
-                          { value: "3", label: "致命" },
-                        ]}
-                      />
-                    )}
-                  />
-                  <FieldError errors={[errors.severity]} />
-                </FieldContent>
-              </Field>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field>
-                <FieldLabel>处理团队</FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={control}
-                    name="currentTeamId"
-                    render={({ field }) => (
-                      <OptionCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="请选择团队"
-                        options={teamOptions}
-                      />
-                    )}
-                  />
-                </FieldContent>
-              </Field>
-
-              <Field>
-                <FieldLabel>处理人</FieldLabel>
-                <FieldContent>
-                  <Controller
-                    control={control}
-                    name="currentAssigneeId"
-                    render={({ field }) => (
-                      <OptionCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="请选择处理人"
-                        options={agentOptions}
-                      />
-                    )}
-                  />
-                </FieldContent>
-              </Field>
-            </div>
-
-            <Field data-invalid={!!errors.dueAt}>
-              <FieldLabel htmlFor="ticket-due-at">截止时间</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="ticket-due-at"
-                  type="datetime-local"
-                  aria-invalid={!!errors.dueAt}
-                  {...register("dueAt")}
-                />
-                <FieldError errors={[errors.dueAt]} />
               </FieldContent>
             </Field>
           </FieldGroup>

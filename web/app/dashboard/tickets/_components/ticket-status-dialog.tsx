@@ -1,10 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Settings2Icon } from "lucide-react"
-import { Controller, Resolver, useForm } from "react-hook-form"
+import { Controller, type Resolver, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod/v4"
 
@@ -18,20 +15,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  fetchTicketResolutionCodesAll,
-  type TicketResolutionCode,
-} from "@/lib/api/ticket-config"
-import { batchChangeTicketStatus, changeTicketStatus } from "@/lib/api/ticket"
+import { changeTicketStatus, type TicketStatus } from "@/lib/api/ticket"
+
+const ticketStatuses = [
+  { value: "pending", label: "待处理" },
+  { value: "in_progress", label: "处理中" },
+  { value: "done", label: "已处理" },
+] satisfies Array<{ value: TicketStatus; label: string }>
 
 const schema = z.object({
-  status: z.string().trim().min(1, "请选择状态"),
-  pendingReason: z.string().trim(),
-  closeReason: z.string().trim(),
-  resolutionCode: z.string().trim(),
-  resolutionSummary: z.string().trim(),
-  reason: z.string().trim(),
+  status: z.enum(["pending", "in_progress", "done"], { message: "请选择状态" }),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -66,56 +59,23 @@ export function TicketStatusDialog({
   >({
     resolver,
     defaultValues: {
-      status: "",
-      pendingReason: "",
-      closeReason: "",
-      resolutionCode: "",
-      resolutionSummary: "",
-      reason: "",
+      status: isTicketStatus(currentStatus) ? currentStatus : "pending",
     },
   })
 
   const {
     control,
-    watch,
-    register,
     reset,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = form
-  const [resolutionCodes, setResolutionCodes] = useState<TicketResolutionCode[]>([])
 
-  const targetStatus = watch("status")
-
-  useEffect(() => {
-    reset({
-      status: currentStatus || "",
-      pendingReason: "",
-      closeReason: "",
-      resolutionCode: "",
-      resolutionSummary: "",
-      reason: "",
-    })
-  }, [currentStatus, reset, ticketId])
-
-  useEffect(() => {
-    if (!open) {
-      return
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      reset({ status: isTicketStatus(currentStatus) ? currentStatus : "pending" })
     }
-    void (async () => {
-      try {
-        const data = await fetchTicketResolutionCodesAll()
-        setResolutionCodes(Array.isArray(data) ? data : [])
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "加载解决码失败")
-      }
-    })()
-  }, [open])
-
-  const resolutionCodeOptions = resolutionCodes.map((item) => ({
-    value: item.code,
-    label: item.name,
-  }))
+    onOpenChange(nextOpen)
+  }
 
   async function onFormSubmit(values: FormValues) {
     const validTicketIds = (ticketIds ?? []).filter((item) => item > 0)
@@ -125,25 +85,14 @@ export function TicketStatusDialog({
     }
     try {
       if (validTicketIds.length > 0) {
-        await batchChangeTicketStatus({
-          ticketIds: validTicketIds,
-          status: values.status,
-          pendingReason: values.pendingReason || undefined,
-          closeReason: values.status === "closed" ? values.closeReason || undefined : undefined,
-          resolutionCode: values.resolutionCode || undefined,
-          resolutionSummary: values.resolutionSummary || undefined,
-          reason: values.reason || undefined,
-        })
+        await Promise.all(
+          validTicketIds.map((id) => changeTicketStatus({ ticketId: id, status: values.status })),
+        )
         toast.success(`已批量更新 ${validTicketIds.length} 张工单`)
       } else {
         await changeTicketStatus({
           ticketId: ticketId!,
           status: values.status,
-          pendingReason: values.pendingReason || undefined,
-          closeReason: values.status === "closed" ? values.closeReason || undefined : undefined,
-          resolutionCode: values.resolutionCode || undefined,
-          resolutionSummary: values.resolutionSummary || undefined,
-          reason: values.reason || undefined,
         })
         toast.success("状态已更新")
       }
@@ -155,7 +104,7 @@ export function TicketStatusDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg gap-0 p-0 sm:max-w-lg">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>{ticketIds?.length ? `批量变更状态（${ticketIds.length}）` : "变更工单状态"}</DialogTitle>
@@ -173,94 +122,11 @@ export function TicketStatusDialog({
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="请选择状态"
-                      options={[
-                        { value: "new", label: "新建" },
-                        { value: "open", label: "处理中" },
-                        { value: "pending_customer", label: "待客户反馈" },
-                        { value: "pending_internal", label: "待内部处理" },
-                        { value: "resolved", label: "已解决" },
-                        { value: "closed", label: "已关闭" },
-                        { value: "cancelled", label: "已取消" },
-                      ]}
+                      options={ticketStatuses}
                     />
                   )}
                 />
                 <FieldError errors={[errors.status]} />
-              </FieldContent>
-            </Field>
-
-            {(targetStatus === "pending_customer" ||
-              targetStatus === "pending_internal") && (
-              <Field data-invalid={!!errors.pendingReason}>
-                <FieldLabel>挂起原因</FieldLabel>
-                <FieldContent>
-                  <Textarea rows={3} placeholder="请输入待处理原因" {...register("pendingReason")} />
-                  <FieldError errors={[errors.pendingReason]} />
-                </FieldContent>
-              </Field>
-            )}
-
-            {targetStatus === "resolved" && (
-              <>
-                <Field>
-                  <div className="flex items-center justify-between gap-3">
-                    <FieldLabel>解决编码</FieldLabel>
-                  </div>
-                  <FieldContent>
-                    <Controller
-                      control={control}
-                      name="resolutionCode"
-                      render={({ field }) => (
-                        <OptionCombobox
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="请选择解决编码"
-                          options={resolutionCodeOptions}
-                          emptyText="暂无可选解决码"
-                        />
-                      )}
-                    />
-                    {resolutionCodeOptions.length === 0 ? (
-                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
-                        当前没有可用解决码，解决结果无法标准化统计。
-                        <Link
-                          href="/dashboard/ticket-resolution-codes"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="ml-1 font-medium underline underline-offset-4"
-                        >
-                          前往配置解决码
-                        </Link>
-                      </div>
-                    ) : null}
-                  </FieldContent>
-                </Field>
-                <Field>
-                  <FieldLabel>解决说明</FieldLabel>
-                  <FieldContent>
-                    <Textarea rows={3} placeholder="请输入解决说明" {...register("resolutionSummary")} />
-                  </FieldContent>
-                </Field>
-              </>
-            )}
-
-            {targetStatus === "closed" && (
-              <Field>
-                <FieldLabel>关闭原因</FieldLabel>
-                <FieldContent>
-                  <Textarea rows={3} placeholder="请输入关闭原因" {...register("closeReason")} />
-                </FieldContent>
-              </Field>
-            )}
-
-            <Field>
-              <FieldLabel>操作说明</FieldLabel>
-              <FieldContent>
-                <Textarea
-                  rows={3}
-                  placeholder={targetStatus === "closed" ? "可补充本次批量关闭说明" : "填写本次状态变更说明"}
-                  {...register("reason")}
-                />
               </FieldContent>
             </Field>
           </div>
@@ -276,4 +142,8 @@ export function TicketStatusDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function isTicketStatus(status: string | undefined): status is TicketStatus {
+  return status === "pending" || status === "in_progress" || status === "done"
 }

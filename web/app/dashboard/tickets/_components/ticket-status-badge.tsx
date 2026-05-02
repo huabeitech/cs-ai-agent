@@ -1,35 +1,24 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import type { TicketStatus } from "@/lib/api/ticket"
 
-const statusLabelMap: Record<string, string> = {
-  new: "新建",
-  open: "处理中",
-  pending_customer: "待客户反馈",
-  pending_internal: "待内部处理",
-  resolved: "已解决",
-  closed: "已关闭",
-  cancelled: "已取消",
-}
-
-const statusClassNameMap: Record<string, string> = {
-  new: "bg-sky-500/10 text-sky-700 border-sky-500/20",
-  open: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  pending_customer: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  pending_internal: "bg-orange-500/10 text-orange-700 border-orange-500/20",
-  resolved: "bg-lime-500/10 text-lime-700 border-lime-500/20",
-  closed: "bg-muted text-muted-foreground border-border",
-  cancelled: "bg-rose-500/10 text-rose-700 border-rose-500/20",
-}
+const statusMap = {
+  pending: { label: "待处理", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  in_progress: { label: "处理中", className: "border-blue-200 bg-blue-50 text-blue-700" },
+  done: { label: "已处理", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+} as const
 
 export function ticketStatusLabel(status: string) {
-  return statusLabelMap[status] ?? status
+  return statusMap[status as TicketStatus]?.label ?? status
 }
 
 export function TicketStatusBadge({ status }: { status: string }) {
+  const option = statusMap[status as TicketStatus]
+
   return (
-    <Badge variant="outline" className={statusClassNameMap[status] ?? statusClassNameMap.closed}>
-      {ticketStatusLabel(status)}
+    <Badge variant="outline" className={option?.className ?? "border-border bg-muted text-muted-foreground"}>
+      {option?.label ?? status}
     </Badge>
   )
 }

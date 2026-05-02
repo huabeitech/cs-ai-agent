@@ -12,6 +12,9 @@ export type PageResult<T> = {
   page: Paging
 }
 
+export type TicketStatus = "pending" | "in_progress" | "done"
+export type TicketSource = "manual" | "conversation"
+
 export type TicketCustomer = {
   id: number
   name: string
@@ -28,41 +31,12 @@ export type TicketCustomer = {
   primaryEmail?: string
 }
 
-export type TicketSLA = {
-  slaType: string
-  targetMinutes: number
-  status: string
-  startedAt?: string
-  pausedAt?: string
-  stoppedAt?: string
-  breachedAt?: string
-  elapsedMin: number
-}
-
-export type TicketComment = {
+export type TicketProgress = {
   id: number
   ticketId: number
-  commentType: string
-  authorType: string
+  content: string
   authorId: number
   authorName?: string
-  contentType: string
-  content: string
-  payload?: string
-  createdAt?: string
-}
-
-export type TicketEvent = {
-  id: number
-  ticketId: number
-  eventType: string
-  operatorType: string
-  operatorId: number
-  operatorName?: string
-  oldValue?: string
-  newValue?: string
-  content?: string
-  payload?: string
   createdAt?: string
 }
 
@@ -71,100 +45,35 @@ export type TicketItem = {
   ticketNo: string
   title: string
   description: string
-  source: string
+  source: TicketSource
   channel: string
   customerId: number
   conversationId: number
   tags?: Tag[]
-  type: string
-  priority: number
-  priorityName?: string
-  severity: number
-  status: string
-  currentTeamId: number
-  currentTeamName?: string
+  status: TicketStatus
   currentAssigneeId: number
   currentAssigneeName?: string
-  watchedByMe: boolean
-  pendingReason?: string
-  closeReason?: string
-  resolutionCode?: string
-  resolutionCodeName?: string
-  resolutionSummary?: string
-  firstResponseAt?: string
-  resolvedAt?: string
-  closedAt?: string
-  dueAt?: string
-  nextReplyDeadlineAt?: string
-  resolveDeadlineAt?: string
-  reopenedCount: number
+  createdBy: number
+  createdByName?: string
+  handledAt?: string
   createdAt?: string
   updatedAt?: string
   customer?: TicketCustomer
-  sla?: TicketSLA[]
 }
 
 export type TicketDetail = {
   ticket: TicketItem
-  watchers?: Array<{
-    id: number
-    userId: number
-    userName?: string
-  }>
-  collaborators?: TicketCollaborator[]
-  comments?: TicketComment[]
-  events?: TicketEvent[]
-  relatedTickets?: TicketRelation[]
-}
-
-export type TicketCollaborator = {
-  id: number
-  userId: number
-  userName?: string
-  teamName?: string
-}
-
-export type TicketRelation = {
-  id: number
-  ticketId: number
-  relatedTicketId: number
-  relationType: string
-  relatedTicketNo?: string
-  relatedTicketTitle?: string
-  relatedTicketStatus?: string
-  currentTeamName?: string
-  currentAssigneeName?: string
-  updatedAt?: string
+  progresses?: TicketProgress[]
 }
 
 export type TicketSummary = {
   all: number
+  pending: number
+  inProgress: number
+  done: number
+  unassigned: number
   mine: number
-  watching: number
-  collaboration: number
-  participating: number
-  mentioned: number
-  unassigned: number
-  pendingCustomer: number
-  pendingInternal: number
-  overdue: number
-}
-
-export type TicketRiskReason = {
-  code: string
-  title: string
-  description: string
-  count: number
-}
-
-export type TicketRiskOverview = {
-  overdue: number
-  highRisk: number
-  unassigned: number
-  pendingInternal: number
-  pendingCustomer: number
-  riskWindowMins: number
-  reasons?: TicketRiskReason[]
+  stale: number
 }
 
 export type TicketSavedView = {
@@ -178,47 +87,26 @@ export type TicketListQuery = {
   page?: number
   limit?: number
   keyword?: string
-  status?: string
-  priority?: number
-  severity?: number
+  status?: TicketStatus
   tagId?: number
-  currentTeamId?: number
   currentAssigneeId?: number
   customerId?: number
   conversationId?: number
-  source?: string
-  watching?: number
-  collaboration?: number
-  collaborating?: number
-  mentioned?: number
-  mine?: number
-  unassigned?: number
-  overdue?: number
-}
-
-export type TicketRiskListQuery = {
-  riskType: "overdue" | "high_risk" | "unassigned" | "pending_internal" | "pending_customer"
-  currentTeamId?: number
-  riskWindowMins?: number
-  page?: number
-  limit?: number
+  source?: TicketSource
+  channel?: string
+  mine?: number | boolean
+  unassigned?: number | boolean
 }
 
 export type CreateTicketPayload = {
   title: string
   description: string
-  source?: string
+  source?: TicketSource
   channel?: string
   customerId?: number
   conversationId?: number
   tagIds?: number[]
-  type?: string
-  priority: number
-  severity: number
-  currentTeamId?: number
   currentAssigneeId?: number
-  dueAt?: string
-  customFields?: Record<string, unknown>
 }
 
 export type CreateTicketFromConversationPayload = {
@@ -226,12 +114,7 @@ export type CreateTicketFromConversationPayload = {
   title: string
   description: string
   tagIds?: number[]
-  priority: number
-  severity: number
-  currentTeamId?: number
   currentAssigneeId?: number
-  syncToConversation: boolean
-  customFields?: Record<string, unknown>
 }
 
 export type UpdateTicketPayload = {
@@ -239,16 +122,10 @@ export type UpdateTicketPayload = {
   title: string
   description: string
   tagIds?: number[]
-  type?: string
-  priority: number
-  severity: number
-  currentTeamId?: number
   currentAssigneeId?: number
-  dueAt?: string
-  customFields?: Record<string, unknown>
 }
 
-function toQueryString(query?: Record<string, string | number | undefined>) {
+function toQueryString(query?: Record<string, string | number | boolean | undefined>) {
   if (!query) {
     return ""
   }
@@ -268,45 +145,12 @@ export function fetchTickets(query?: TicketListQuery) {
   return request<PageResult<TicketItem>>(`/api/dashboard/ticket/list${toQueryString(query)}`)
 }
 
+export function fetchTicketSummary(query?: { staleHours?: number }) {
+  return request<TicketSummary>(`/api/dashboard/ticket/summary${toQueryString(query)}`)
+}
+
 export function fetchTicketDetail(id: number) {
   return request<TicketDetail>(`/api/dashboard/ticket/${id}`)
-}
-
-export function fetchTicketSummary() {
-  return request<TicketSummary>("/api/dashboard/ticket/summary")
-}
-
-export function fetchTicketViews() {
-  return request<TicketSavedView[]>("/api/dashboard/ticket/view_list")
-}
-
-export function saveTicketView(payload: {
-  id?: number
-  name: string
-  filters?: Record<string, unknown>
-}) {
-  return request<TicketSavedView>("/api/dashboard/ticket/save_view", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function deleteTicketView(id: number) {
-  return request<void>("/api/dashboard/ticket/delete_view", {
-    method: "POST",
-    body: JSON.stringify({ id }),
-  })
-}
-
-export function fetchTicketRiskOverview(query?: {
-  currentTeamId?: number
-  riskWindowMins?: number
-}) {
-  return request<TicketRiskOverview>(`/api/dashboard/ticket/risk_overview${toQueryString(query)}`)
-}
-
-export function fetchTicketRiskList(query: TicketRiskListQuery) {
-  return request<PageResult<TicketItem>>(`/api/dashboard/ticket/risk_list${toQueryString(query)}`)
 }
 
 export function createTicket(payload: CreateTicketPayload) {
@@ -330,20 +174,9 @@ export function updateTicket(payload: UpdateTicketPayload) {
   })
 }
 
-export function linkTicketToCustomer(payload: {
-  ticketId: number
-  customerId: number
-}) {
-  return request<void>("/api/dashboard/ticket/link_customer", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
 export function assignTicket(payload: {
   ticketId: number
   toUserId: number
-  toTeamId?: number
   reason?: string
 }) {
   return request<void>("/api/dashboard/ticket/assign", {
@@ -355,7 +188,6 @@ export function assignTicket(payload: {
 export function batchAssignTickets(payload: {
   ticketIds: number[]
   toUserId: number
-  toTeamId?: number
   reason?: string
 }) {
   return request<void>("/api/dashboard/ticket/batch_assign", {
@@ -366,12 +198,7 @@ export function batchAssignTickets(payload: {
 
 export function changeTicketStatus(payload: {
   ticketId: number
-  status: string
-  pendingReason?: string
-  closeReason?: string
-  resolutionCode?: string
-  resolutionSummary?: string
-  reason?: string
+  status: TicketStatus
 }) {
   return request<void>("/api/dashboard/ticket/change_status", {
     method: "POST",
@@ -379,109 +206,44 @@ export function changeTicketStatus(payload: {
   })
 }
 
-export function batchChangeTicketStatus(payload: {
-  ticketIds: number[]
-  status: string
-  pendingReason?: string
-  closeReason?: string
-  resolutionCode?: string
-  resolutionSummary?: string
-  reason?: string
+export function fetchTicketProgresses(query: {
+  ticketId: number
+  page?: number
+  limit?: number
 }) {
-  return request<void>("/api/dashboard/ticket/batch_change_status", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
+  return request<PageResult<TicketProgress>>(
+    `/api/dashboard/ticket/progress/list${toQueryString(query)}`,
+  )
 }
 
-export function replyTicket(payload: {
+export function createTicketProgress(payload: {
   ticketId: number
-  contentType?: string
   content: string
-  payload?: string
 }) {
-  return request<TicketComment>("/api/dashboard/ticket/reply", {
+  return request<TicketProgress>("/api/dashboard/ticket/progress/create", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function addTicketInternalNote(payload: {
-  ticketId: number
-  contentType?: string
-  content: string
-  payload?: string
+export function fetchTicketViews() {
+  return request<TicketSavedView[]>("/api/dashboard/ticket/view_list")
+}
+
+export function saveTicketView(payload: {
+  id?: number
+  name: string
+  filters: Record<string, unknown>
 }) {
-  return request<TicketComment>("/api/dashboard/ticket/internal_note", {
+  return request<TicketSavedView>("/api/dashboard/ticket/save_view", {
     method: "POST",
     body: JSON.stringify(payload),
   })
 }
 
-export function closeTicket(payload: { ticketId: number; closeReason: string }) {
-  return request<void>("/api/dashboard/ticket/close", {
+export function deleteTicketView(id: number) {
+  return request<void>("/api/dashboard/ticket/delete_view", {
     method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function reopenTicket(payload: { ticketId: number; reason: string }) {
-  return request<void>("/api/dashboard/ticket/reopen", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function watchTicket(ticketId: number) {
-  return request<void>("/api/dashboard/ticket/watch", {
-    method: "POST",
-    body: JSON.stringify({ ticketId }),
-  })
-}
-
-export function unwatchTicket(ticketId: number) {
-  return request<void>("/api/dashboard/ticket/unwatch", {
-    method: "POST",
-    body: JSON.stringify({ ticketId }),
-  })
-}
-
-export function batchWatchTickets(payload: { ticketIds: number[]; watched: boolean }) {
-  return request<void>("/api/dashboard/ticket/batch_watch", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function addTicketRelation(payload: {
-  ticketId: number
-  relatedTicketId?: number
-  relatedTicketNo?: string
-  relationType: string
-}) {
-  return request<void>("/api/dashboard/ticket/add_relation", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function deleteTicketRelation(payload: { ticketId: number; relationId: number }) {
-  return request<void>("/api/dashboard/ticket/delete_relation", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function addTicketCollaborator(payload: { ticketId: number; userId: number }) {
-  return request<void>("/api/dashboard/ticket/add_collaborator", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export function deleteTicketCollaborator(payload: { ticketId: number; collaboratorId: number }) {
-  return request<void>("/api/dashboard/ticket/delete_collaborator", {
-    method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ id }),
   })
 }

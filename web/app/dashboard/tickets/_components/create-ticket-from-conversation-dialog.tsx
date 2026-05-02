@@ -30,8 +30,6 @@ export function CreateTicketFromConversationDialog({
     ? {
         title: conversation.customerName || "",
         description: conversation.lastMessageSummary || "",
-        priority: 2,
-        severity: 1,
         currentAssigneeId: conversation.currentAssigneeId || undefined,
       }
     : undefined
@@ -55,11 +53,8 @@ export function CreateTicketFromConversationDialog({
           conversationId: conversation.id,
           title: payload.title,
           description: payload.description,
-          priority: payload.priority,
-          severity: payload.severity,
-          currentTeamId: payload.currentTeamId,
           currentAssigneeId: payload.currentAssigneeId,
-          syncToConversation: true,
+          tagIds: payload.tagIds,
         })
         toast.success("工单创建成功")
         onSuccess?.()

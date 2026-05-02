@@ -55,7 +55,6 @@ import {
   ConversationTagBadges,
   ConversationTagPicker,
 } from "./conversation-tag-picker";
-import { TicketPriorityBadge } from "../../tickets/_components/ticket-priority-badge";
 import { TicketStatusBadge } from "../../tickets/_components/ticket-status-badge";
 
 function contactTypeLabel(contactType: ContactType | string) {
@@ -629,9 +628,7 @@ function RelatedTicketsSection({ conversation }: { conversation: AgentConversati
           {tickets.map((ticket) => (
             <Link
               key={ticket.id}
-              href={`/dashboard/tickets/detail?id=${ticket.id}`}
-              target="_blank"
-              rel="noreferrer"
+              href={`/dashboard/tickets?ticketId=${ticket.id}`}
               className="block rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-muted/40"
             >
               <div className="flex items-start justify-between gap-3">
@@ -643,10 +640,9 @@ function RelatedTicketsSection({ conversation }: { conversation: AgentConversati
                     {ticket.ticketNo}
                   </div>
                 </div>
-                <TicketPriorityBadge priority={ticket.priority} priorityName={ticket.priorityName} />
+                <TicketStatusBadge status={ticket.status} />
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
-                <TicketStatusBadge status={ticket.status} />
                 <span className="text-xs text-muted-foreground">
                   {ticket.updatedAt ? formatDateTime(ticket.updatedAt) : "—"}
                 </span>
