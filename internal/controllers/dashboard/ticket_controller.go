@@ -43,7 +43,8 @@ func (c *TicketController) AnyList() *web.JsonResult {
 	if unassigned, _ := params.Get(c.Ctx, "unassigned"); unassigned == "1" || strings.EqualFold(unassigned, "true") {
 		cnd.Eq("current_assignee_id", 0)
 	}
-	if staleHours, _ := params.GetInt(c.Ctx, "staleHours"); staleHours > 0 {
+	if staleHoursValue, _ := params.Get(c.Ctx, "staleHours"); strings.TrimSpace(staleHoursValue) != "" {
+		staleHours, _ := params.GetInt(c.Ctx, "staleHours")
 		services.TicketService.ApplyStaleFilter(cnd, staleHours)
 	}
 	aggregate, err := services.TicketService.FindPageAggregateByCnd(cnd, operator.UserID)

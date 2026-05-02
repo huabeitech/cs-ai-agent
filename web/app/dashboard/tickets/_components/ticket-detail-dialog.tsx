@@ -76,24 +76,29 @@ export function TicketDetailDialog({
   const [editOpen, setEditOpen] = useState(false)
   const [editSaving, setEditSaving] = useState(false)
   const loadSeqRef = useRef(0)
+  const currentTicketIdRef = useRef<number | null>(null)
+  currentTicketIdRef.current = open ? ticketId : null
 
-  const loadDetail = useCallback(async () => {
+  const loadDetail = useCallback(async (targetTicketId = ticketId) => {
+    if (currentTicketIdRef.current !== targetTicketId) {
+      return
+    }
     const seq = loadSeqRef.current + 1
     loadSeqRef.current = seq
-    if (!open || !ticketId) {
+    if (!open || !targetTicketId) {
       setDetail(null)
       setLoading(false)
       return
     }
     setLoading(true)
     try {
-      const data = await fetchTicketDetail(ticketId)
-      if (loadSeqRef.current !== seq) {
+      const data = await fetchTicketDetail(targetTicketId)
+      if (loadSeqRef.current !== seq || currentTicketIdRef.current !== targetTicketId) {
         return
       }
       setDetail(data)
     } catch (error) {
-      if (loadSeqRef.current !== seq) {
+      if (loadSeqRef.current !== seq || currentTicketIdRef.current !== targetTicketId) {
         return
       }
       toast.error(error instanceof Error ? error.message : "加载工单详情失败")
@@ -112,11 +117,12 @@ export function TicketDetailDialog({
     if (!detail || detail.ticket.status === status) {
       return
     }
+    const activeTicketId = detail.ticket.id
     setStatusSaving(status)
     try {
-      await changeTicketStatus({ ticketId: detail.ticket.id, status })
+      await changeTicketStatus({ ticketId: activeTicketId, status })
       toast.success("工单状态已更新")
-      await loadDetail()
+      await loadDetail(activeTicketId)
       onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新工单状态失败")
@@ -129,6 +135,7 @@ export function TicketDetailDialog({
     if (!detail) {
       return
     }
+    const activeTicketId = detail.ticket.id
     const content = progressContent.trim()
     if (!content) {
       toast.error("请填写处理进展")
@@ -137,12 +144,12 @@ export function TicketDetailDialog({
     setProgressSaving(true)
     try {
       await createTicketProgress({
-        ticketId: detail.ticket.id,
+        ticketId: activeTicketId,
         content,
       })
       toast.success("处理进展已记录")
       setProgressContent("")
-      await loadDetail()
+      await loadDetail(activeTicketId)
       onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "记录处理进展失败")
@@ -152,7 +159,10 @@ export function TicketDetailDialog({
   }
 
   async function handleAssigned() {
-    await loadDetail()
+    if (!ticket?.id) {
+      return
+    }
+    await loadDetail(ticket.id)
     onChanged()
   }
 
@@ -166,7 +176,7 @@ export function TicketDetailDialog({
       await updateTicket(payload)
       toast.success("工单已更新")
       setEditOpen(false)
-      await loadDetail()
+      await loadDetail(payload.ticketId)
       onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新工单失败")
