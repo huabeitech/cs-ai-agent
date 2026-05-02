@@ -136,17 +136,15 @@ func (s *customerService) EnsureExternalCustomer(ctx *sqls.TxContext, externalUs
 		}
 
 		ctx.RegisterCallback(func() {
-			go func() {
-				if strs.IsNotBlank(externalUser.ExternalName) {
-					if err := s.syncConversationCustomerName(sqls.DB(), identity.CustomerID, externalUser.ExternalName, nil, now); err != nil {
-						slog.Error("sync conversation customer name failed",
-							"customerId", identity.CustomerID,
-							"customerName", externalUser.ExternalName,
-							"error", err,
-						)
-					}
+			if strs.IsNotBlank(externalUser.ExternalName) {
+				if err := s.syncConversationCustomerName(sqls.DB(), identity.CustomerID, externalUser.ExternalName, nil, now); err != nil {
+					slog.Error("sync conversation customer name failed",
+						"customerId", identity.CustomerID,
+						"customerName", externalUser.ExternalName,
+						"error", err,
+					)
 				}
-			}()
+			}
 		})
 		return identity.CustomerID, nil
 	}
