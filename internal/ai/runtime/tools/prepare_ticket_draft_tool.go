@@ -95,20 +95,6 @@ func (t *PrepareTicketDraftTool) Info(ctx context.Context) (*schema.ToolInfo, er
 						Description: "当前已尝试过的处理步骤，可选。",
 					},
 				},
-				orderedmap.Pair[string, *einojsonschema.Schema]{
-					Key: "priority",
-					Value: &einojsonschema.Schema{
-						Type:        "integer",
-						Description: "建议工单优先级，可选。",
-					},
-				},
-				orderedmap.Pair[string, *einojsonschema.Schema]{
-					Key: "severity",
-					Value: &einojsonschema.Schema{
-						Type:        "integer",
-						Description: "建议严重度，可选；1=轻微，2=严重，3=致命。",
-					},
-				},
 			)),
 		}),
 		Extra: map[string]any{

@@ -75,20 +75,6 @@ func (t *CreateTicketGraphTool) Info(ctx context.Context) (*schema.ToolInfo, err
 						Description: "工单描述，清晰整理用户问题、现象和诉求。",
 					},
 				},
-				orderedmap.Pair[string, *einojsonschema.Schema]{
-					Key: "priority",
-					Value: &einojsonschema.Schema{
-						Type:        "integer",
-						Description: "工单优先级，可选；未知时可不传。",
-					},
-				},
-				orderedmap.Pair[string, *einojsonschema.Schema]{
-					Key: "severity",
-					Value: &einojsonschema.Schema{
-						Type:        "integer",
-						Description: "严重度，可选；1=轻微，2=严重，3=致命。",
-					},
-				},
 			)),
 		}),
 		Extra: map[string]any{
