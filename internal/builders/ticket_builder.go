@@ -47,23 +47,15 @@ func BuildTicketWithContext(item *models.Ticket, ctx *TicketBuildContext) *respo
 	}
 	if ctx != nil && ctx.TagsByTicketID != nil {
 		ret.Tags = BuildTagResponses(ctx.TagsByTicketID[item.ID])
-	} else {
-		ret.Tags = BuildTagResponses(services.TicketService.GetTags(item.ID))
 	}
 	if item.CurrentAssigneeID > 0 {
 		if ctx != nil && ctx.Users != nil {
 			ret.CurrentAssigneeName = buildTicketUserDisplayName(ctx.Users[item.CurrentAssigneeID])
 		}
-		if ret.CurrentAssigneeName == "" {
-			ret.CurrentAssigneeName = buildTicketUserDisplayName(services.UserService.Get(item.CurrentAssigneeID))
-		}
 	}
 	if item.CustomerID > 0 {
 		if ctx != nil && ctx.Customers != nil {
 			ret.Customer = BuildCustomer(ctx.Customers[item.CustomerID])
-		}
-		if ret.Customer == nil {
-			ret.Customer = BuildCustomer(services.CustomerService.Get(item.CustomerID))
 		}
 	}
 	return ret
@@ -104,9 +96,6 @@ func BuildTicketProgressWithContext(item *models.TicketProgress, ctx *TicketDeta
 	if item.AuthorID > 0 {
 		if ctx != nil && ctx.Users != nil {
 			ret.AuthorName = buildTicketUserDisplayName(ctx.Users[item.AuthorID])
-		}
-		if ret.AuthorName == "" {
-			ret.AuthorName = buildTicketUserDisplayName(services.UserService.Get(item.AuthorID))
 		}
 	}
 	return ret

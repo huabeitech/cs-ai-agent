@@ -190,6 +190,24 @@ func TestTicketServiceAddProgressStoresContentAndAuthor(t *testing.T) {
 	}
 }
 
+func TestTicketServiceAssignTicketRequiresTargetUser(t *testing.T) {
+	setupTicketTestDB(t)
+	operator := createTestOperator(t, "assign-operator")
+	ticket, err := services.TicketService.CreateTicket(createTestTicketRequest("assign-ticket"), operator)
+	if err != nil {
+		t.Fatalf("CreateTicket() error = %v", err)
+	}
+
+	err = services.TicketService.AssignTicket(request.AssignTicketRequest{
+		TicketID: ticket.ID,
+		ToUserID: 0,
+		Reason:   "invalid assignment",
+	}, operator)
+	if err == nil {
+		t.Fatalf("expected AssignTicket() to reject empty target user")
+	}
+}
+
 func TestTicketServiceSummaryCountsStaleTickets(t *testing.T) {
 	setupTicketTestDB(t)
 	operator := createTestOperator(t, "summary-operator")

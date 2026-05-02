@@ -58,6 +58,39 @@ func TestBuildLightweightTicket(t *testing.T) {
 	}
 }
 
+func TestBuildTicketWithoutContextLeavesOptionalLookupsEmpty(t *testing.T) {
+	now := time.Date(2026, 5, 2, 12, 30, 0, 0, time.Local)
+	ticket := &models.Ticket{
+		ID:                12,
+		TicketNo:          "TK202605020001",
+		Title:             "登录失败",
+		Description:       "客户反馈无法登录",
+		CustomerID:        3,
+		CurrentAssigneeID: 5,
+		Status:            enums.TicketStatusPending,
+		AuditFields: models.AuditFields{
+			CreateUserID:   1,
+			CreateUserName: "admin",
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		},
+	}
+
+	out := BuildTicket(ticket)
+	if out == nil {
+		t.Fatalf("expected ticket response")
+	}
+	if out.Tags != nil {
+		t.Fatalf("expected tags to stay empty without context, got %+v", out.Tags)
+	}
+	if out.Customer != nil {
+		t.Fatalf("expected customer to stay empty without context, got %+v", out.Customer)
+	}
+	if out.CurrentAssigneeName != "" {
+		t.Fatalf("expected assignee name to stay empty without context, got %q", out.CurrentAssigneeName)
+	}
+}
+
 func TestBuildTicketProgress(t *testing.T) {
 	now := time.Date(2026, 5, 2, 12, 30, 0, 0, time.Local)
 	progress := &models.TicketProgress{

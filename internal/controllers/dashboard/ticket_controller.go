@@ -208,7 +208,7 @@ func (c *TicketController) PostChange_status() *web.JsonResult {
 }
 
 func (c *TicketController) PostAdd_progress() *web.JsonResult {
-	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketUpdate)
+	operator, err := services.AuthService.RequirePermission(c.Ctx, constants.PermissionTicketProgress)
 	if err != nil {
 		return web.JsonError(err)
 	}

@@ -462,7 +462,7 @@ func (s *ticketService) assignTicketTx(tx *gorm.DB, req request.AssignTicketRequ
 	if ticket == nil {
 		return nil, errorsx.InvalidParam("工单不存在")
 	}
-	if err := s.validateAssignee(req.ToUserID); err != nil {
+	if err := s.validateRequiredAssignee(req.ToUserID); err != nil {
 		return nil, err
 	}
 	now := time.Now()
@@ -585,6 +585,13 @@ func (s *ticketService) validateTicketRefs(customerID, conversationID, assigneeI
 func (s *ticketService) validateAssignee(userID int64) error {
 	if userID <= 0 {
 		return nil
+	}
+	return s.validateRequiredAssignee(userID)
+}
+
+func (s *ticketService) validateRequiredAssignee(userID int64) error {
+	if userID <= 0 {
+		return errorsx.InvalidParam("负责人不存在")
 	}
 	user := UserService.Get(userID)
 	if user == nil || user.Status == enums.StatusDeleted {
