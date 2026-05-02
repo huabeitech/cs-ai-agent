@@ -51,6 +51,18 @@ func resolveKnowledgeFallbackReply(aiAgent models.AIAgent) string {
 	}
 }
 
+func resolveKnowledgeHumanSupportFallback(aiAgent models.AIAgent) string {
+	base := strings.TrimSpace(resolveKnowledgeFallbackReply(aiAgent))
+	if base == "" {
+		base = "当前知识库暂无明确信息。"
+	}
+	suggestion := "建议你联系人工客服进一步确认。"
+	if strings.Contains(base, suggestion) {
+		return base
+	}
+	return strings.TrimSpace(base + " " + suggestion)
+}
+
 func buildKnowledgeRuntimeInstruction(answerMode enums.KnowledgeAnswerMode, fallbackReply string) string {
 	fallbackReply = strings.TrimSpace(fallbackReply)
 	if fallbackReply == "" {

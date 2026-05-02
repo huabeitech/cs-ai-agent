@@ -100,6 +100,29 @@ func TestBuildKnowledgeUnavailableDecisionSkipsWhenAgentHasNoKnowledge(t *testin
 	}
 }
 
+func TestResolveKnowledgeHumanSupportFallbackUsesAgentMessage(t *testing.T) {
+	agent := newKnowledgeGuardAgentFixture()
+	agent.FallbackMessage = "我暂时没有找到足够准确的信息。"
+
+	got := resolveKnowledgeHumanSupportFallback(agent)
+
+	want := "我暂时没有找到足够准确的信息。 建议你联系人工客服进一步确认。"
+	if got != want {
+		t.Fatalf("unexpected fallback: %q", got)
+	}
+}
+
+func TestResolveKnowledgeHumanSupportFallbackUsesDefault(t *testing.T) {
+	agent := newKnowledgeGuardAgentFixture()
+
+	got := resolveKnowledgeHumanSupportFallback(agent)
+
+	want := "当前知识库暂无明确信息。 建议你联系人工客服进一步确认。"
+	if got != want {
+		t.Fatalf("unexpected fallback: %q", got)
+	}
+}
+
 func newKnowledgeGuardAgentFixture() models.AIAgent {
 	return models.AIAgent{
 		FallbackMode: enums.AIAgentFallbackModeNoAnswer,
