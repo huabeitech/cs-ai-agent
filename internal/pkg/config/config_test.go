@@ -92,12 +92,22 @@ PASSWORD_LOGIN_ENABLED=false
 JWT_SECRET=super-secret-key-12345
 QDRANT_HOST=10.0.0.5
 QDRANT_PORT=6334
+OPENAI_API_KEY=sk-test-openai-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_LLM_MODEL=gpt-4o
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_EMBEDDING_DIMENSION=1536
 OIDC_ENABLED=true
 OIDC_ISSUER=https://auth.example.com
 OIDC_CLIENT_ID=client-123
 OIDC_CLIENT_SECRET=secret-456
 OIDC_REDIRECT_URL=https://desk.example.com/api/auth/oidc_callback
 ORG_SYNC_SECRET=webhook-secret-789
+EMAIL_PROVIDER=brevo
+EMAIL_FROM=help@example.com
+EMAIL_FROM_NAME=Helpdesk Team
+BREVO_API_KEY=xkeysib-test-123
+EMAIL_INBOUND_SECRET=inbound-secret-456
 `)
 	if err := os.WriteFile(envPath, envContent, 0600); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
@@ -137,6 +147,21 @@ ORG_SYNC_SECRET=webhook-secret-789
 	if cfg.VectorDB.Qdrant.GrpcPort != 6334 {
 		t.Fatalf("Qdrant.GrpcPort=%d", cfg.VectorDB.Qdrant.GrpcPort)
 	}
+	if cfg.AI.APIKey != "sk-test-openai-key" {
+		t.Fatalf("AI.APIKey=%q", cfg.AI.APIKey)
+	}
+	if cfg.AI.BaseURL != "https://api.openai.com/v1" {
+		t.Fatalf("AI.BaseURL=%q", cfg.AI.BaseURL)
+	}
+	if cfg.AI.LLMModel != "gpt-4o" {
+		t.Fatalf("AI.LLMModel=%q", cfg.AI.LLMModel)
+	}
+	if cfg.AI.EmbeddingModel != "text-embedding-3-small" {
+		t.Fatalf("AI.EmbeddingModel=%q", cfg.AI.EmbeddingModel)
+	}
+	if cfg.AI.EmbeddingDimension != 1536 {
+		t.Fatalf("AI.EmbeddingDimension=%d", cfg.AI.EmbeddingDimension)
+	}
 	if !cfg.OIDC.Enabled {
 		t.Fatalf("expected OIDC.Enabled=true")
 	}
@@ -154,5 +179,20 @@ ORG_SYNC_SECRET=webhook-secret-789
 	}
 	if cfg.Webhook.OrgSyncSecret != "webhook-secret-789" {
 		t.Fatalf("Webhook.OrgSyncSecret=%q", cfg.Webhook.OrgSyncSecret)
+	}
+	if cfg.Email.Provider != "brevo" {
+		t.Fatalf("Email.Provider=%q want brevo", cfg.Email.Provider)
+	}
+	if cfg.Email.FromAddress != "help@example.com" {
+		t.Fatalf("Email.FromAddress=%q want help@example.com", cfg.Email.FromAddress)
+	}
+	if cfg.Email.FromName != "Helpdesk Team" {
+		t.Fatalf("Email.FromName=%q want Helpdesk Team", cfg.Email.FromName)
+	}
+	if cfg.Email.APIKey != "xkeysib-test-123" {
+		t.Fatalf("Email.APIKey=%q want xkeysib-test-123", cfg.Email.APIKey)
+	}
+	if cfg.Email.InboundSecret != "inbound-secret-456" {
+		t.Fatalf("Email.InboundSecret=%q want inbound-secret-456", cfg.Email.InboundSecret)
 	}
 }

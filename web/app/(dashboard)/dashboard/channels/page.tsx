@@ -2,6 +2,7 @@
 
 import {
   Building2Icon,
+  MailIcon,
   MessagesSquareIcon,
   MessageSquareMoreIcon,
   SendIcon,
@@ -27,6 +28,9 @@ import { useI18n } from "@/i18n/provider"
 import { EditDialog } from "./_components/edit"
 
 function getChannelTypeLabel(channelType: string, t: (key: string) => string) {
+  if (channelType === "email") {
+    return t("channel.typeEmail")
+  }
   if (channelType === "wechat_mp") {
     return t("channel.typeWechatMp")
   }
@@ -53,6 +57,9 @@ function getStatusLabel(status: Status, t: (key: string) => string) {
 }
 
 function ChannelIcon({ channelType }: { channelType: string }) {
+  if (channelType === "email") {
+    return <MailIcon className="size-4" />
+  }
   if (channelType === "wechat_mp") {
     return <MessagesSquareIcon className="size-4" />
   }
@@ -77,6 +84,7 @@ export default function DashboardChannelsPage() {
   const channelTypeOptions = [
     { value: "all", label: t("channel.allTypes") },
     { value: "web", label: t("channel.typeWeb") },
+    { value: "email", label: t("channel.typeEmail") },
     { value: "telegram", label: t("channel.typeTelegram") },
     { value: "zalo_oa", label: t("channel.typeZaloOa") },
     { value: "wechat_mp", label: t("channel.typeWechatMp") },
